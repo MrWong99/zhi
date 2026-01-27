@@ -1,0 +1,78 @@
+// Copyright 2025 Lukas Schmidt
+// SPDX-License-Identifier: MIT
+
+syntax = "proto3";
+
+package zhiplugin.v1;
+
+option go_package = "github.com/MrWong99/zhi/pkg/zhiplugin/config/proto";
+
+// ConfigService is the gRPC interface every zhi configuration plugin must
+// implement.
+service ConfigService {
+  // List returns every configuration path managed by this plugin.
+  rpc List(ListRequest) returns (ListResponse);
+  // Get retrieves a single configuration value by path.
+  rpc Get(GetRequest) returns (GetResponse);
+  // Set stores a configuration value at the given path.
+  rpc Set(SetRequest) returns (SetResponse);
+  // Validate checks a single value. The full configuration tree is provided
+  // so the plugin can perform cross-value validation.
+  rpc Validate(ValidateRequest) returns (ValidateResponse);
+}
+
+// ListRequest is intentionally empty.
+message ListRequest {}
+
+message ListResponse {
+  repeated string paths = 1;
+}
+
+message GetRequest {
+  string path = 1;
+}
+
+message GetResponse {
+  bool found = 1;
+  // JSON-encoded configuration value. Empty when found is false.
+  bytes value_json = 2;
+  // JSON-encoded metadata. May be empty.
+  bytes metadata_json = 3;
+}
+
+message SetRequest {
+  string path = 1;
+  bytes value_json = 2;
+  bytes metadata_json = 3;
+}
+
+// SetResponse is intentionally empty.
+message SetResponse {}
+
+// TreeEntry is a single value in the configuration tree snapshot sent during
+// validation.
+message TreeEntry {
+  string path = 1;
+  bytes value_json = 2;
+  bytes metadata_json = 3;
+}
+
+message ValidateRequest {
+  // The path of the value to validate.
+  string path = 1;
+  // A snapshot of the full merged configuration tree so that cross-value
+  // validation is possible.
+  repeated TreeEntry tree = 2;
+}
+
+message ValidationResultMsg {
+  // 0 = Info, 1 = Warning, 2 = Blocking.
+  int32 severity = 1;
+  string message = 2;
+  // JSON-encoded metadata. May be empty.
+  bytes metadata_json = 3;
+}
+
+message ValidateResponse {
+  repeated ValidationResultMsg results = 1;
+}
