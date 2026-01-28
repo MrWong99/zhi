@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-zhi is a security-first platform for configuration management and provisioning, built in Go. It uses an extensible plugin system over gRPC (via hashicorp/go-plugin) with two plugin types: **config** and **transform**. Plugins run as separate processes communicating over stdio with gRPC transport.
+zhi is a security-first platform for configuration management and provisioning, built in Go. It uses an extensible plugin system over gRPC (via hashicorp/go-plugin) with three plugin types: **config**, **transform**, and **store**. Plugins run as separate processes communicating over stdio with gRPC transport.
 
 ## Build & Development Commands
 
@@ -43,6 +43,19 @@ All plugins share a handshake (`pkg/zhiplugin/plugin.go`): magic cookie `ZHI_PLU
 - `AfterSave(ctx, *Tree) error` — mutate tree after user saves
 - `ValidatePolicy(ctx) (ValidatePolicy, error)` — control validation timing relative to transforms
 
+**Store plugins** (`pkg/zhiplugin/store/`) implement the `Plugin` interface:
+- `Save(ctx, id, TreeReader) error` — persist a configuration tree
+- `Load(ctx, id) (*Tree, bool, error)` — retrieve the latest tree version
+- `Delete(ctx, id) error` — remove a tree and all its versions
+- `ListTrees(ctx) ([]string, error)` — list all stored tree IDs
+- `SupportsVersioning(ctx) (bool, error)` — report versioning capability
+- `ListVersions(ctx, id) ([]string, error)` — list versions (newest first)
+- `LoadVersion(ctx, id, version) (*Tree, bool, error)` — load a specific version
+- `DeleteVersion(ctx, id, version) error` — permanently remove a single version
+- `EncryptionStatus(ctx) (EncryptionStatus, error)` — report encryption state (None, Supported, Active)
+- `InitEncryption(ctx, passphrase) error` — initialize encryption
+- `RotateEncryption(ctx, old, new) error` — rotate encryption keys
+
 ### Configuration Tree Model
 
 `config.Tree` is a flat key-value store with slash-delimited paths (e.g. `database/host`, `app/tls/cert.pem`). Path segments must match `[a-z][a-z0-9._-]*[a-z0-9]`. `Tree` implements `TreeReader` (read-only) and also exposes `GetPtr` for mutable access and `Delete` for removal. `Value` holds the data (`Val any`), optional `Metadata`, and local `Validators` (closures that never cross the gRPC wire).
@@ -51,14 +64,14 @@ Validation results carry a `Severity`: Info, Warning, or Blocking.
 
 ### gRPC Layer
 
-Proto definitions: `api/proto/zhiplugin/v1/` (config.proto, transform.proto). Generated Go stubs go to `pkg/zhiplugin/{config,transform}/proto/`. After editing `.proto` files, run `make proto` and commit the generated `*.pb.go` files. Configuration values are JSON-encoded for wire transfer.
+Proto definitions: `api/proto/zhiplugin/v1/`. Generated Go stubs go to `pkg/zhiplugin/{plugin}/proto/`. After editing `.proto` files, run `make proto` and commit the generated `*.pb.go` files. Configuration values are JSON-encoded for wire transfer.
 
 Each plugin type has `grpc_client.go` (host-side) and `grpc_server.go` (plugin-side) implementing the translation between the Go interface and protobuf messages.
 
 ## Key Directories
 
 - `cmd/zhi/` — CLI entry point
-- `pkg/zhiplugin/` — public plugin framework (config, transform)
+- `pkg/zhiplugin/` — public plugin framework
 - `pkg/providers/` — built-in provider implementations
 - `api/proto/zhiplugin/v1/` — protobuf service definitions
 - `examples/` — working plugin examples

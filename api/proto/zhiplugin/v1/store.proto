@@ -1,0 +1,141 @@
+// Copyright 2025 Lukas Schmidt
+// SPDX-License-Identifier: MIT
+
+syntax = "proto3";
+
+package zhiplugin.v1;
+
+import "zhiplugin/v1/config.proto";
+
+option go_package = "github.com/MrWong99/zhi/pkg/zhiplugin/store/proto";
+
+// StoreService is the gRPC interface every zhi store plugin must implement.
+// Store plugins persist, retrieve, and delete configuration trees.
+service StoreService {
+  // Save persists a configuration tree under the given ID.
+  // If versioning is supported, this creates a new version.
+  rpc Save(SaveRequest) returns (SaveResponse);
+  // Load retrieves the latest version of the configuration tree with the
+  // given ID.
+  rpc Load(LoadRequest) returns (LoadResponse);
+  // Delete removes the configuration tree and all its versions.
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
+  // ListTrees returns all stored tree IDs.
+  rpc ListTrees(ListTreesRequest) returns (ListTreesResponse);
+  // SupportsVersioning reports whether this store keeps older versions of
+  // trees.
+  rpc SupportsVersioning(SupportsVersioningRequest) returns (SupportsVersioningResponse);
+  // ListVersions returns version identifiers for a given tree ID, ordered
+  // newest first. Returns an error if versioning is not supported.
+  rpc ListVersions(ListVersionsRequest) returns (ListVersionsResponse);
+  // LoadVersion retrieves a specific version of the configuration tree.
+  // Returns an error if versioning is not supported.
+  rpc LoadVersion(LoadVersionRequest) returns (LoadVersionResponse);
+  // DeleteVersion permanently removes a single version of a configuration
+  // tree. Returns an error if versioning is not supported.
+  rpc DeleteVersion(DeleteVersionRequest) returns (DeleteVersionResponse);
+  // EncryptionStatus reports the current encryption state of the store.
+  rpc EncryptionStatus(EncryptionStatusRequest) returns (EncryptionStatusResponse);
+  // InitEncryption initializes encryption for the store with the given
+  // passphrase. Returns an error if encryption is not supported or is
+  // already active.
+  rpc InitEncryption(InitEncryptionRequest) returns (InitEncryptionResponse);
+  // RotateEncryption re-encrypts all stored data with a new passphrase.
+  // Returns an error if encryption is not supported or not active.
+  rpc RotateEncryption(RotateEncryptionRequest) returns (RotateEncryptionResponse);
+}
+
+message SaveRequest {
+  // The identifier for this configuration tree.
+  string id = 1;
+  // The full configuration tree to persist.
+  repeated TreeEntry tree = 2;
+}
+
+// SaveResponse is intentionally empty.
+message SaveResponse {}
+
+message LoadRequest {
+  string id = 1;
+}
+
+message LoadResponse {
+  bool found = 1;
+  // The configuration tree entries. Empty when found is false.
+  repeated TreeEntry tree = 2;
+}
+
+message DeleteRequest {
+  string id = 1;
+}
+
+// DeleteResponse is intentionally empty.
+message DeleteResponse {}
+
+// ListTreesRequest is intentionally empty.
+message ListTreesRequest {}
+
+message ListTreesResponse {
+  repeated string ids = 1;
+}
+
+// SupportsVersioningRequest is intentionally empty.
+message SupportsVersioningRequest {}
+
+message SupportsVersioningResponse {
+  bool supported = 1;
+}
+
+message ListVersionsRequest {
+  string id = 1;
+}
+
+message ListVersionsResponse {
+  // Version identifiers, ordered newest first.
+  repeated string versions = 1;
+}
+
+message LoadVersionRequest {
+  string id = 1;
+  string version = 2;
+}
+
+message LoadVersionResponse {
+  bool found = 1;
+  // The configuration tree entries. Empty when found is false.
+  repeated TreeEntry tree = 2;
+}
+
+message DeleteVersionRequest {
+  string id = 1;
+  string version = 2;
+}
+
+// DeleteVersionResponse is intentionally empty.
+message DeleteVersionResponse {}
+
+// EncryptionStatusRequest is intentionally empty.
+message EncryptionStatusRequest {}
+
+message EncryptionStatusResponse {
+  // 0 = EncryptionNone, 1 = EncryptionSupported, 2 = EncryptionActive.
+  int32 status = 1;
+}
+
+message InitEncryptionRequest {
+  // The passphrase or key material to initialize encryption with.
+  bytes passphrase = 1;
+}
+
+// InitEncryptionResponse is intentionally empty.
+message InitEncryptionResponse {}
+
+message RotateEncryptionRequest {
+  // The current passphrase.
+  bytes old_passphrase = 1;
+  // The new passphrase to rotate to.
+  bytes new_passphrase = 2;
+}
+
+// RotateEncryptionResponse is intentionally empty.
+message RotateEncryptionResponse {}
