@@ -125,14 +125,28 @@ func (t *Tree) Set(path string, v *Value) error {
 	return nil
 }
 
+// GetPtr returns a pointer to the Value stored at path. The bool reports
+// whether the path exists. Because a pointer is returned the caller can
+// mutate the value in place. Use Get for a safe, read-only copy instead.
+func (t *Tree) GetPtr(path string) (*Value, bool) {
+	v, ok := t.values[path]
+	return v, ok
+}
+
 // Get returns a copy of the Value at path. The bool reports whether the
 // path exists.
 func (t *Tree) Get(path string) (Value, bool) {
-	v, ok := t.values[path]
+	v, ok := t.GetPtr(path)
 	if !ok {
 		return Value{}, false
 	}
 	return *v, true
+}
+
+// Delete removes the value at path from the tree. It is a no-op if the
+// path does not exist.
+func (t *Tree) Delete(path string) {
+	delete(t.values, path)
 }
 
 // List returns all paths present in the tree in no guaranteed order.

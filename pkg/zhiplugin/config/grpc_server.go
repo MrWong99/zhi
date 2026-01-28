@@ -49,7 +49,7 @@ func (s *GRPCServer) Get(ctx context.Context, req *pb.GetRequest) (*pb.GetRespon
 }
 
 func (s *GRPCServer) Set(ctx context.Context, req *pb.SetRequest) (*pb.SetResponse, error) {
-	v, err := valueFromProto(req.GetValueJson(), req.GetMetadataJson())
+	v, err := ValueFromProto(req.GetValueJson(), req.GetMetadataJson())
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func (s *GRPCServer) Set(ctx context.Context, req *pb.SetRequest) (*pb.SetRespon
 }
 
 func (s *GRPCServer) Validate(ctx context.Context, req *pb.ValidateRequest) (*pb.ValidateResponse, error) {
-	tree := treeFromProto(req.GetTree())
+	tree := TreeFromProto(req.GetTree())
 	results, err := s.Impl.Validate(ctx, req.GetPath(), tree)
 	if err != nil {
 		return nil, err
@@ -79,13 +79,13 @@ func (s *GRPCServer) Validate(ctx context.Context, req *pb.ValidateRequest) (*pb
 	return &pb.ValidateResponse{Results: msgs}, nil
 }
 
-// treeFromProto reconstructs a Tree from the proto TreeEntry slice received
+// TreeFromProto reconstructs a Tree from the proto TreeEntry slice received
 // over the wire. Path validation is skipped because the entries were
 // validated when they were originally Set.
-func treeFromProto(entries []*pb.TreeEntry) *Tree {
+func TreeFromProto(entries []*pb.TreeEntry) *Tree {
 	t := NewTree()
 	for _, e := range entries {
-		v, err := valueFromProto(e.GetValueJson(), e.GetMetadataJson())
+		v, err := ValueFromProto(e.GetValueJson(), e.GetMetadataJson())
 		if err != nil {
 			continue
 		}

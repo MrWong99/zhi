@@ -1,0 +1,46 @@
+// Copyright 2025 Lukas Schmidt
+// SPDX-License-Identifier: MIT
+
+syntax = "proto3";
+
+package zhiplugin.v1;
+
+option go_package = "github.com/MrWong99/zhi/pkg/zhiplugin/transform/proto";
+
+import "config.proto";
+
+// TransformService is the gRPC interface every zhi transform plugin must
+// implement.
+service TransformService {
+  // BeforeDisplay transforms the configuration tree before values are
+  // displayed in the UI.
+  rpc BeforeDisplay(TransformRequest) returns (TransformResponse);
+  // AfterSave transforms the configuration tree after the UI stores
+  // updates.
+  rpc AfterSave(TransformRequest) returns (TransformResponse);
+  // ValidatePolicy reports when config-plugin validations should run
+  // relative to the transformation.
+  rpc ValidatePolicy(ValidatePolicyRequest) returns (ValidatePolicyResponse);
+}
+
+// TransformRequest carries the full configuration tree for transformation.
+message TransformRequest {
+  // A snapshot of the full merged configuration tree.
+  repeated TreeEntry tree = 1;
+}
+
+// TransformResponse carries the transformed configuration tree back to the
+// host.
+message TransformResponse {
+  // The modified configuration tree.
+  repeated TreeEntry tree = 1;
+}
+
+// ValidatePolicyRequest is intentionally empty.
+message ValidatePolicyRequest {}
+
+message ValidatePolicyResponse {
+  // 0 = ValidateBeforeTransform, 1 = ValidateAfterTransform,
+  // 2 = ValidateBoth.
+  int32 policy = 1;
+}

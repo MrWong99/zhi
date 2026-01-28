@@ -29,7 +29,7 @@ func (c *GRPCClient) Get(ctx context.Context, path string) (Value, bool, error) 
 	if !resp.GetFound() {
 		return Value{}, false, nil
 	}
-	v, err := valueFromProto(resp.GetValueJson(), resp.GetMetadataJson())
+	v, err := ValueFromProto(resp.GetValueJson(), resp.GetMetadataJson())
 	if err != nil {
 		return Value{}, false, err
 	}
@@ -57,7 +57,7 @@ func (c *GRPCClient) Set(ctx context.Context, path string, v Value) error {
 }
 
 func (c *GRPCClient) Validate(ctx context.Context, path string, tree TreeReader) ([]ValidationResult, error) {
-	entries := treeToProto(tree)
+	entries := TreeToProto(tree)
 	resp, err := c.client.Validate(ctx, &pb.ValidateRequest{
 		Path: path,
 		Tree: entries,
@@ -68,9 +68,9 @@ func (c *GRPCClient) Validate(ctx context.Context, path string, tree TreeReader)
 	return resultsFromProto(resp.GetResults())
 }
 
-// treeToProto serialises a TreeReader into a slice of proto TreeEntry
+// TreeToProto serialises a TreeReader into a slice of proto TreeEntry
 // messages for transmission over the wire.
-func treeToProto(tree TreeReader) []*pb.TreeEntry {
+func TreeToProto(tree TreeReader) []*pb.TreeEntry {
 	paths := tree.List()
 	entries := make([]*pb.TreeEntry, 0, len(paths))
 	for _, p := range paths {
@@ -114,9 +114,9 @@ func resultsFromProto(msgs []*pb.ValidationResultMsg) ([]ValidationResult, error
 	return results, nil
 }
 
-// valueFromProto reconstructs a Value from JSON-encoded bytes received over
+// ValueFromProto reconstructs a Value from JSON-encoded bytes received over
 // the wire.
-func valueFromProto(valJSON, metaJSON []byte) (Value, error) {
+func ValueFromProto(valJSON, metaJSON []byte) (Value, error) {
 	var v Value
 	if len(valJSON) > 0 {
 		if err := json.Unmarshal(valJSON, &v.Val); err != nil {
