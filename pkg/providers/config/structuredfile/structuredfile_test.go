@@ -269,7 +269,7 @@ func TestPluginSetNewPath(t *testing.T) {
 func TestPluginValidateNoValidation(t *testing.T) {
 	p := newTestPlugin(t, "basic.yaml")
 	tree := config.NewTree()
-	tree.Set("pokedex/trainer.name", &config.Value{Val: "Ash"})
+	_ = tree.Set("pokedex/trainer.name", &config.Value{Val: "Ash"})
 
 	results, err := p.Validate(context.Background(), "pokedex/trainer.name", tree)
 	if err != nil {
@@ -286,7 +286,7 @@ func TestPluginValidateWithCode(t *testing.T) {
 
 	t.Run("valid name", func(t *testing.T) {
 		tree := config.NewTree()
-		tree.Set("pokedex/trainer.name", &config.Value{Val: "Ash"})
+		_ = tree.Set("pokedex/trainer.name", &config.Value{Val: "Ash"})
 
 		results, err := p.Validate(ctx, "pokedex/trainer.name", tree)
 		if err != nil {
@@ -299,7 +299,7 @@ func TestPluginValidateWithCode(t *testing.T) {
 
 	t.Run("empty name", func(t *testing.T) {
 		tree := config.NewTree()
-		tree.Set("pokedex/trainer.name", &config.Value{Val: ""})
+		_ = tree.Set("pokedex/trainer.name", &config.Value{Val: ""})
 
 		results, err := p.Validate(ctx, "pokedex/trainer.name", tree)
 		if err != nil {
@@ -315,7 +315,7 @@ func TestPluginValidateWithCode(t *testing.T) {
 
 	t.Run("wrong type", func(t *testing.T) {
 		tree := config.NewTree()
-		tree.Set("pokedex/trainer.name", &config.Value{Val: 42})
+		_ = tree.Set("pokedex/trainer.name", &config.Value{Val: 42})
 
 		results, err := p.Validate(ctx, "pokedex/trainer.name", tree)
 		if err != nil {
@@ -336,7 +336,7 @@ func TestPluginValidateWithImports(t *testing.T) {
 
 	t.Run("valid name", func(t *testing.T) {
 		tree := config.NewTree()
-		tree.Set("pokedex/trainer.name", &config.Value{Val: "Ash"})
+		_ = tree.Set("pokedex/trainer.name", &config.Value{Val: "Ash"})
 
 		results, err := p.Validate(ctx, "pokedex/trainer.name", tree)
 		if err != nil {
@@ -349,7 +349,7 @@ func TestPluginValidateWithImports(t *testing.T) {
 
 	t.Run("wrong prefix", func(t *testing.T) {
 		tree := config.NewTree()
-		tree.Set("pokedex/trainer.name", &config.Value{Val: "Misty"})
+		_ = tree.Set("pokedex/trainer.name", &config.Value{Val: "Misty"})
 
 		results, err := p.Validate(ctx, "pokedex/trainer.name", tree)
 		if err != nil {
@@ -365,7 +365,7 @@ func TestPluginValidateWithImports(t *testing.T) {
 
 	t.Run("invalid characters", func(t *testing.T) {
 		tree := config.NewTree()
-		tree.Set("pokedex/trainer.name", &config.Value{Val: "Ash123"})
+		_ = tree.Set("pokedex/trainer.name", &config.Value{Val: "Ash123"})
 
 		results, err := p.Validate(ctx, "pokedex/trainer.name", tree)
 		if err != nil {
@@ -381,7 +381,7 @@ func TestPluginValidateWithImports(t *testing.T) {
 
 	t.Run("wrong type", func(t *testing.T) {
 		tree := config.NewTree()
-		tree.Set("pokedex/trainer.name", &config.Value{Val: 42})
+		_ = tree.Set("pokedex/trainer.name", &config.Value{Val: 42})
 
 		results, err := p.Validate(ctx, "pokedex/trainer.name", tree)
 		if err != nil {
@@ -496,7 +496,7 @@ func TestGRPCValidate(t *testing.T) {
 	ctx := context.Background()
 
 	tree := config.NewTree()
-	tree.Set("pokedex/trainer.name", &config.Value{Val: ""})
+	_ = tree.Set("pokedex/trainer.name", &config.Value{Val: ""})
 
 	results, err := p.Validate(ctx, "pokedex/trainer.name", tree)
 	if err != nil {

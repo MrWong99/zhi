@@ -58,6 +58,6 @@ func applyTree(src, dst *config.Tree) {
 			continue
 		}
 		// Paths were already validated when originally Set; skip re-validation.
-		dst.Set(p, v)
+		_ = dst.Set(p, v)
 	}
 }

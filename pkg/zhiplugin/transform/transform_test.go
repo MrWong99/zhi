@@ -25,7 +25,7 @@ func (p *testPlugin) BeforeDisplay(_ context.Context, tree *config.Tree) error {
 			v.Val = "[display] " + s
 		}
 	}
-	tree.Set("meta/transformed", &config.Value{Val: "before-display"})
+	_ = tree.Set("meta/transformed", &config.Value{Val: "before-display"})
 	return nil
 }
 
@@ -86,8 +86,8 @@ func TestBeforeDisplayModifiesTree(t *testing.T) {
 	ctx := context.Background()
 
 	tree := config.NewTree()
-	tree.Set("app/name", &config.Value{Val: "zhi"})
-	tree.Set("app/port", &config.Value{Val: float64(8080)})
+	_ = tree.Set("app/name", &config.Value{Val: "zhi"})
+	_ = tree.Set("app/port", &config.Value{Val: float64(8080)})
 
 	if err := p.BeforeDisplay(ctx, tree); err != nil {
 		t.Fatalf("BeforeDisplay: %v", err)
@@ -126,8 +126,8 @@ func TestAfterSaveModifiesTree(t *testing.T) {
 	ctx := context.Background()
 
 	tree := config.NewTree()
-	tree.Set("app/name", &config.Value{Val: "[saved] zhi"})
-	tree.Set("meta/temporary", &config.Value{Val: "tmp"})
+	_ = tree.Set("app/name", &config.Value{Val: "[saved] zhi"})
+	_ = tree.Set("meta/temporary", &config.Value{Val: "tmp"})
 
 	if err := p.AfterSave(ctx, tree); err != nil {
 		t.Fatalf("AfterSave: %v", err)
@@ -186,7 +186,7 @@ func TestNoopTransformLeavesTreeUnchanged(t *testing.T) {
 	ctx := context.Background()
 
 	tree := config.NewTree()
-	tree.Set("a/b", &config.Value{Val: "original"})
+	_ = tree.Set("a/b", &config.Value{Val: "original"})
 
 	if err := p.BeforeDisplay(ctx, tree); err != nil {
 		t.Fatalf("BeforeDisplay: %v", err)
@@ -211,7 +211,7 @@ func TestMetadataPreservedAcrossTransform(t *testing.T) {
 	ctx := context.Background()
 
 	tree := config.NewTree()
-	tree.Set("db/host", &config.Value{
+	_ = tree.Set("db/host", &config.Value{
 		Val:      "localhost",
 		Metadata: map[string]any{"description": "Database host"},
 	})
