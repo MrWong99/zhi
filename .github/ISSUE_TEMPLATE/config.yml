@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://github.com/MrWong99/zhi/tree/main/docs
+    about: Browse the architecture and API documentation.
+  - name: Example Plugins
+    url: https://github.com/MrWong99/zhi/tree/main/examples
+    about: Check out the Pokedex example plugins for reference.

@@ -1,3 +1,5 @@
+<img src="assets/logo.png" alt="zhi logo" width="120" align="right" />
+
 # Contributing to zhi
 
 Thank you for your interest in contributing to **zhi**! This document explains how

@@ -1,0 +1,76 @@
+name: Plugin Idea
+description: Propose a new plugin -- expand the zhi Pokedex of capabilities!
+title: "[Plugin]: "
+labels: ["plugin", "enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have an idea for a new plugin?
+        Every great ecosystem grows one plugin at a time -- like
+        catching Pokemon on a new route.
+
+  - type: dropdown
+    id: plugin-type
+    attributes:
+      label: Plugin Type
+      description: What kind of plugin are you proposing?
+      options:
+        - Config Plugin (manages configuration values)
+        - Transform Plugin (mutates values before display / after save)
+        - Both / Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: >
+        Describe what this plugin would do. What configuration does
+        it manage or transform?
+      placeholder: |
+        A plugin that manages Nginx reverse proxy configuration,
+        exposing paths like `nginx/upstream`, `nginx/listen.port`, etc.
+    validations:
+      required: true
+
+  - type: textarea
+    id: config-paths
+    attributes:
+      label: Proposed Configuration Paths
+      description: >
+        If this is a config plugin, sketch out the paths it would own.
+        Use the `prefix/key` format.
+      placeholder: |
+        myapp/database.host    string   "localhost"
+        myapp/database.port    int      5432
+        myapp/tls.enabled      bool     true
+      render: text
+
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation Rules
+      description: >
+        Any validation logic this plugin should enforce?
+        Single-value constraints, cross-value checks, etc.
+      placeholder: |
+        - database.port must be between 1 and 65535
+        - If tls.enabled is true, tls.cert and tls.key must be set
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: >
+        Links to relevant tools, services, or specs that this plugin
+        would integrate with.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched the existing issues to make sure this plugin has not already been proposed.
+          required: true

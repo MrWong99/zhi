@@ -1,0 +1,108 @@
+name: Bug Report
+description: Something isn't working as expected. A wild bug appeared!
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this bug!
+        A well-described report helps us squash it faster than a
+        Hyper Beam from a fully evolved Dragonite.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of the bug.
+      placeholder: "What happened? What did you expect to happen instead?"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: >
+        Walk us through the steps to trigger the bug, like
+        navigating a tricky route.
+      placeholder: |
+        1. Run `zhi ...`
+        2. Configure '...'
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What you expected to happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened.
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: zhi Version
+      description: >
+        Output of `zhi --version` or the commit SHA you are running.
+      placeholder: "e.g. v0.1.0 or abc1234"
+    validations:
+      required: true
+
+  - type: input
+    id: go-version
+    attributes:
+      label: Go Version
+      description: Output of `go version`.
+      placeholder: "e.g. go1.24.6 linux/amd64"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      options:
+        - Linux
+        - macOS
+        - Windows
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Log Output
+      description: >
+        Paste any relevant logs, error messages, or stack traces.
+        This will be automatically formatted as code.
+      render: shell
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: >
+        Anything else that might help -- screenshots, configuration
+        snippets, plugin details, etc.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched the existing issues to make sure this is not a duplicate.
+          required: true
+        - label: I have run `make check` and confirmed the issue is not caused by my local setup.
+          required: false
