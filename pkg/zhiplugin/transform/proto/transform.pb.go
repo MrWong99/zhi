@@ -5,7 +5,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v6.33.1
-// source: transform.proto
+// source: zhiplugin/v1/transform.proto
 
 package proto
 
@@ -25,8 +25,9 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// TransformRequest carries the full configuration tree for transformation.
-type TransformRequest struct {
+// BeforeDisplayRequest carries the full configuration tree for the
+// BeforeDisplay transformation.
+type BeforeDisplayRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// A snapshot of the full merged configuration tree.
 	Tree          []*proto.TreeEntry `protobuf:"bytes,1,rep,name=tree,proto3" json:"tree,omitempty"`
@@ -34,21 +35,21 @@ type TransformRequest struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *TransformRequest) Reset() {
-	*x = TransformRequest{}
-	mi := &file_transform_proto_msgTypes[0]
+func (x *BeforeDisplayRequest) Reset() {
+	*x = BeforeDisplayRequest{}
+	mi := &file_zhiplugin_v1_transform_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *TransformRequest) String() string {
+func (x *BeforeDisplayRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*TransformRequest) ProtoMessage() {}
+func (*BeforeDisplayRequest) ProtoMessage() {}
 
-func (x *TransformRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_transform_proto_msgTypes[0]
+func (x *BeforeDisplayRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_transform_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -59,21 +60,21 @@ func (x *TransformRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use TransformRequest.ProtoReflect.Descriptor instead.
-func (*TransformRequest) Descriptor() ([]byte, []int) {
-	return file_transform_proto_rawDescGZIP(), []int{0}
+// Deprecated: Use BeforeDisplayRequest.ProtoReflect.Descriptor instead.
+func (*BeforeDisplayRequest) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_transform_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *TransformRequest) GetTree() []*proto.TreeEntry {
+func (x *BeforeDisplayRequest) GetTree() []*proto.TreeEntry {
 	if x != nil {
 		return x.Tree
 	}
 	return nil
 }
 
-// TransformResponse carries the transformed configuration tree back to the
-// host.
-type TransformResponse struct {
+// BeforeDisplayResponse carries the transformed configuration tree back to
+// the host after the BeforeDisplay transformation.
+type BeforeDisplayResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The modified configuration tree.
 	Tree          []*proto.TreeEntry `protobuf:"bytes,1,rep,name=tree,proto3" json:"tree,omitempty"`
@@ -81,21 +82,21 @@ type TransformResponse struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *TransformResponse) Reset() {
-	*x = TransformResponse{}
-	mi := &file_transform_proto_msgTypes[1]
+func (x *BeforeDisplayResponse) Reset() {
+	*x = BeforeDisplayResponse{}
+	mi := &file_zhiplugin_v1_transform_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *TransformResponse) String() string {
+func (x *BeforeDisplayResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*TransformResponse) ProtoMessage() {}
+func (*BeforeDisplayResponse) ProtoMessage() {}
 
-func (x *TransformResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_transform_proto_msgTypes[1]
+func (x *BeforeDisplayResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_transform_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -106,12 +107,106 @@ func (x *TransformResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use TransformResponse.ProtoReflect.Descriptor instead.
-func (*TransformResponse) Descriptor() ([]byte, []int) {
-	return file_transform_proto_rawDescGZIP(), []int{1}
+// Deprecated: Use BeforeDisplayResponse.ProtoReflect.Descriptor instead.
+func (*BeforeDisplayResponse) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_transform_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *TransformResponse) GetTree() []*proto.TreeEntry {
+func (x *BeforeDisplayResponse) GetTree() []*proto.TreeEntry {
+	if x != nil {
+		return x.Tree
+	}
+	return nil
+}
+
+// AfterSaveRequest carries the full configuration tree for the AfterSave
+// transformation.
+type AfterSaveRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// A snapshot of the full merged configuration tree.
+	Tree          []*proto.TreeEntry `protobuf:"bytes,1,rep,name=tree,proto3" json:"tree,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AfterSaveRequest) Reset() {
+	*x = AfterSaveRequest{}
+	mi := &file_zhiplugin_v1_transform_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AfterSaveRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AfterSaveRequest) ProtoMessage() {}
+
+func (x *AfterSaveRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_transform_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AfterSaveRequest.ProtoReflect.Descriptor instead.
+func (*AfterSaveRequest) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_transform_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *AfterSaveRequest) GetTree() []*proto.TreeEntry {
+	if x != nil {
+		return x.Tree
+	}
+	return nil
+}
+
+// AfterSaveResponse carries the transformed configuration tree back to the
+// host after the AfterSave transformation.
+type AfterSaveResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The modified configuration tree.
+	Tree          []*proto.TreeEntry `protobuf:"bytes,1,rep,name=tree,proto3" json:"tree,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AfterSaveResponse) Reset() {
+	*x = AfterSaveResponse{}
+	mi := &file_zhiplugin_v1_transform_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AfterSaveResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AfterSaveResponse) ProtoMessage() {}
+
+func (x *AfterSaveResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_transform_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AfterSaveResponse.ProtoReflect.Descriptor instead.
+func (*AfterSaveResponse) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_transform_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *AfterSaveResponse) GetTree() []*proto.TreeEntry {
 	if x != nil {
 		return x.Tree
 	}
@@ -127,7 +222,7 @@ type ValidatePolicyRequest struct {
 
 func (x *ValidatePolicyRequest) Reset() {
 	*x = ValidatePolicyRequest{}
-	mi := &file_transform_proto_msgTypes[2]
+	mi := &file_zhiplugin_v1_transform_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -139,7 +234,7 @@ func (x *ValidatePolicyRequest) String() string {
 func (*ValidatePolicyRequest) ProtoMessage() {}
 
 func (x *ValidatePolicyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_transform_proto_msgTypes[2]
+	mi := &file_zhiplugin_v1_transform_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -152,7 +247,7 @@ func (x *ValidatePolicyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidatePolicyRequest.ProtoReflect.Descriptor instead.
 func (*ValidatePolicyRequest) Descriptor() ([]byte, []int) {
-	return file_transform_proto_rawDescGZIP(), []int{2}
+	return file_zhiplugin_v1_transform_proto_rawDescGZIP(), []int{4}
 }
 
 type ValidatePolicyResponse struct {
@@ -166,7 +261,7 @@ type ValidatePolicyResponse struct {
 
 func (x *ValidatePolicyResponse) Reset() {
 	*x = ValidatePolicyResponse{}
-	mi := &file_transform_proto_msgTypes[3]
+	mi := &file_zhiplugin_v1_transform_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -178,7 +273,7 @@ func (x *ValidatePolicyResponse) String() string {
 func (*ValidatePolicyResponse) ProtoMessage() {}
 
 func (x *ValidatePolicyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_transform_proto_msgTypes[3]
+	mi := &file_zhiplugin_v1_transform_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -191,7 +286,7 @@ func (x *ValidatePolicyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidatePolicyResponse.ProtoReflect.Descriptor instead.
 func (*ValidatePolicyResponse) Descriptor() ([]byte, []int) {
-	return file_transform_proto_rawDescGZIP(), []int{3}
+	return file_zhiplugin_v1_transform_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ValidatePolicyResponse) GetPolicy() int32 {
@@ -201,79 +296,87 @@ func (x *ValidatePolicyResponse) GetPolicy() int32 {
 	return 0
 }
 
-var File_transform_proto protoreflect.FileDescriptor
+var File_zhiplugin_v1_transform_proto protoreflect.FileDescriptor
 
-const file_transform_proto_rawDesc = "" +
+const file_zhiplugin_v1_transform_proto_rawDesc = "" +
 	"\n" +
-	"\x0ftransform.proto\x12\fzhiplugin.v1\x1a\fconfig.proto\"?\n" +
-	"\x10TransformRequest\x12+\n" +
+	"\x1czhiplugin/v1/transform.proto\x12\fzhiplugin.v1\x1a\x19zhiplugin/v1/config.proto\"C\n" +
+	"\x14BeforeDisplayRequest\x12+\n" +
+	"\x04tree\x18\x01 \x03(\v2\x17.zhiplugin.v1.TreeEntryR\x04tree\"D\n" +
+	"\x15BeforeDisplayResponse\x12+\n" +
+	"\x04tree\x18\x01 \x03(\v2\x17.zhiplugin.v1.TreeEntryR\x04tree\"?\n" +
+	"\x10AfterSaveRequest\x12+\n" +
 	"\x04tree\x18\x01 \x03(\v2\x17.zhiplugin.v1.TreeEntryR\x04tree\"@\n" +
-	"\x11TransformResponse\x12+\n" +
+	"\x11AfterSaveResponse\x12+\n" +
 	"\x04tree\x18\x01 \x03(\v2\x17.zhiplugin.v1.TreeEntryR\x04tree\"\x17\n" +
 	"\x15ValidatePolicyRequest\"0\n" +
 	"\x16ValidatePolicyResponse\x12\x16\n" +
-	"\x06policy\x18\x01 \x01(\x05R\x06policy2\x8f\x02\n" +
-	"\x10TransformService\x12P\n" +
-	"\rBeforeDisplay\x12\x1e.zhiplugin.v1.TransformRequest\x1a\x1f.zhiplugin.v1.TransformResponse\x12L\n" +
-	"\tAfterSave\x12\x1e.zhiplugin.v1.TransformRequest\x1a\x1f.zhiplugin.v1.TransformResponse\x12[\n" +
+	"\x06policy\x18\x01 \x01(\x05R\x06policy2\x97\x02\n" +
+	"\x10TransformService\x12X\n" +
+	"\rBeforeDisplay\x12\".zhiplugin.v1.BeforeDisplayRequest\x1a#.zhiplugin.v1.BeforeDisplayResponse\x12L\n" +
+	"\tAfterSave\x12\x1e.zhiplugin.v1.AfterSaveRequest\x1a\x1f.zhiplugin.v1.AfterSaveResponse\x12[\n" +
 	"\x0eValidatePolicy\x12#.zhiplugin.v1.ValidatePolicyRequest\x1a$.zhiplugin.v1.ValidatePolicyResponseB7Z5github.com/MrWong99/zhi/pkg/zhiplugin/transform/protob\x06proto3"
 
 var (
-	file_transform_proto_rawDescOnce sync.Once
-	file_transform_proto_rawDescData []byte
+	file_zhiplugin_v1_transform_proto_rawDescOnce sync.Once
+	file_zhiplugin_v1_transform_proto_rawDescData []byte
 )
 
-func file_transform_proto_rawDescGZIP() []byte {
-	file_transform_proto_rawDescOnce.Do(func() {
-		file_transform_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_transform_proto_rawDesc), len(file_transform_proto_rawDesc)))
+func file_zhiplugin_v1_transform_proto_rawDescGZIP() []byte {
+	file_zhiplugin_v1_transform_proto_rawDescOnce.Do(func() {
+		file_zhiplugin_v1_transform_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_zhiplugin_v1_transform_proto_rawDesc), len(file_zhiplugin_v1_transform_proto_rawDesc)))
 	})
-	return file_transform_proto_rawDescData
+	return file_zhiplugin_v1_transform_proto_rawDescData
 }
 
-var file_transform_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
-var file_transform_proto_goTypes = []any{
-	(*TransformRequest)(nil),       // 0: zhiplugin.v1.TransformRequest
-	(*TransformResponse)(nil),      // 1: zhiplugin.v1.TransformResponse
-	(*ValidatePolicyRequest)(nil),  // 2: zhiplugin.v1.ValidatePolicyRequest
-	(*ValidatePolicyResponse)(nil), // 3: zhiplugin.v1.ValidatePolicyResponse
-	(*proto.TreeEntry)(nil),        // 4: zhiplugin.v1.TreeEntry
+var file_zhiplugin_v1_transform_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_zhiplugin_v1_transform_proto_goTypes = []any{
+	(*BeforeDisplayRequest)(nil),   // 0: zhiplugin.v1.BeforeDisplayRequest
+	(*BeforeDisplayResponse)(nil),  // 1: zhiplugin.v1.BeforeDisplayResponse
+	(*AfterSaveRequest)(nil),       // 2: zhiplugin.v1.AfterSaveRequest
+	(*AfterSaveResponse)(nil),      // 3: zhiplugin.v1.AfterSaveResponse
+	(*ValidatePolicyRequest)(nil),  // 4: zhiplugin.v1.ValidatePolicyRequest
+	(*ValidatePolicyResponse)(nil), // 5: zhiplugin.v1.ValidatePolicyResponse
+	(*proto.TreeEntry)(nil),        // 6: zhiplugin.v1.TreeEntry
 }
-var file_transform_proto_depIdxs = []int32{
-	4, // 0: zhiplugin.v1.TransformRequest.tree:type_name -> zhiplugin.v1.TreeEntry
-	4, // 1: zhiplugin.v1.TransformResponse.tree:type_name -> zhiplugin.v1.TreeEntry
-	0, // 2: zhiplugin.v1.TransformService.BeforeDisplay:input_type -> zhiplugin.v1.TransformRequest
-	0, // 3: zhiplugin.v1.TransformService.AfterSave:input_type -> zhiplugin.v1.TransformRequest
-	2, // 4: zhiplugin.v1.TransformService.ValidatePolicy:input_type -> zhiplugin.v1.ValidatePolicyRequest
-	1, // 5: zhiplugin.v1.TransformService.BeforeDisplay:output_type -> zhiplugin.v1.TransformResponse
-	1, // 6: zhiplugin.v1.TransformService.AfterSave:output_type -> zhiplugin.v1.TransformResponse
-	3, // 7: zhiplugin.v1.TransformService.ValidatePolicy:output_type -> zhiplugin.v1.ValidatePolicyResponse
-	5, // [5:8] is the sub-list for method output_type
-	2, // [2:5] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+var file_zhiplugin_v1_transform_proto_depIdxs = []int32{
+	6, // 0: zhiplugin.v1.BeforeDisplayRequest.tree:type_name -> zhiplugin.v1.TreeEntry
+	6, // 1: zhiplugin.v1.BeforeDisplayResponse.tree:type_name -> zhiplugin.v1.TreeEntry
+	6, // 2: zhiplugin.v1.AfterSaveRequest.tree:type_name -> zhiplugin.v1.TreeEntry
+	6, // 3: zhiplugin.v1.AfterSaveResponse.tree:type_name -> zhiplugin.v1.TreeEntry
+	0, // 4: zhiplugin.v1.TransformService.BeforeDisplay:input_type -> zhiplugin.v1.BeforeDisplayRequest
+	2, // 5: zhiplugin.v1.TransformService.AfterSave:input_type -> zhiplugin.v1.AfterSaveRequest
+	4, // 6: zhiplugin.v1.TransformService.ValidatePolicy:input_type -> zhiplugin.v1.ValidatePolicyRequest
+	1, // 7: zhiplugin.v1.TransformService.BeforeDisplay:output_type -> zhiplugin.v1.BeforeDisplayResponse
+	3, // 8: zhiplugin.v1.TransformService.AfterSave:output_type -> zhiplugin.v1.AfterSaveResponse
+	5, // 9: zhiplugin.v1.TransformService.ValidatePolicy:output_type -> zhiplugin.v1.ValidatePolicyResponse
+	7, // [7:10] is the sub-list for method output_type
+	4, // [4:7] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
-func init() { file_transform_proto_init() }
-func file_transform_proto_init() {
-	if File_transform_proto != nil {
+func init() { file_zhiplugin_v1_transform_proto_init() }
+func file_zhiplugin_v1_transform_proto_init() {
+	if File_zhiplugin_v1_transform_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_transform_proto_rawDesc), len(file_transform_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_zhiplugin_v1_transform_proto_rawDesc), len(file_zhiplugin_v1_transform_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_transform_proto_goTypes,
-		DependencyIndexes: file_transform_proto_depIdxs,
-		MessageInfos:      file_transform_proto_msgTypes,
+		GoTypes:           file_zhiplugin_v1_transform_proto_goTypes,
+		DependencyIndexes: file_zhiplugin_v1_transform_proto_depIdxs,
+		MessageInfos:      file_zhiplugin_v1_transform_proto_msgTypes,
 	}.Build()
-	File_transform_proto = out.File
-	file_transform_proto_goTypes = nil
-	file_transform_proto_depIdxs = nil
+	File_zhiplugin_v1_transform_proto = out.File
+	file_zhiplugin_v1_transform_proto_goTypes = nil
+	file_zhiplugin_v1_transform_proto_depIdxs = nil
 }

@@ -5,7 +5,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.0
 // - protoc             v6.33.1
-// source: config.proto
+// source: zhiplugin/v1/config.proto
 
 package proto
 
@@ -250,5 +250,5 @@ var ConfigService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "config.proto",
+	Metadata: "zhiplugin/v1/config.proto",
 }

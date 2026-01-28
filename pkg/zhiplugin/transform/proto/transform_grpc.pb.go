@@ -5,7 +5,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.0
 // - protoc             v6.33.1
-// source: transform.proto
+// source: zhiplugin/v1/transform.proto
 
 package proto
 
@@ -36,10 +36,10 @@ const (
 type TransformServiceClient interface {
 	// BeforeDisplay transforms the configuration tree before values are
 	// displayed in the UI.
-	BeforeDisplay(ctx context.Context, in *TransformRequest, opts ...grpc.CallOption) (*TransformResponse, error)
+	BeforeDisplay(ctx context.Context, in *BeforeDisplayRequest, opts ...grpc.CallOption) (*BeforeDisplayResponse, error)
 	// AfterSave transforms the configuration tree after the UI stores
 	// updates.
-	AfterSave(ctx context.Context, in *TransformRequest, opts ...grpc.CallOption) (*TransformResponse, error)
+	AfterSave(ctx context.Context, in *AfterSaveRequest, opts ...grpc.CallOption) (*AfterSaveResponse, error)
 	// ValidatePolicy reports when config-plugin validations should run
 	// relative to the transformation.
 	ValidatePolicy(ctx context.Context, in *ValidatePolicyRequest, opts ...grpc.CallOption) (*ValidatePolicyResponse, error)
@@ -53,9 +53,9 @@ func NewTransformServiceClient(cc grpc.ClientConnInterface) TransformServiceClie
 	return &transformServiceClient{cc}
 }
 
-func (c *transformServiceClient) BeforeDisplay(ctx context.Context, in *TransformRequest, opts ...grpc.CallOption) (*TransformResponse, error) {
+func (c *transformServiceClient) BeforeDisplay(ctx context.Context, in *BeforeDisplayRequest, opts ...grpc.CallOption) (*BeforeDisplayResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(TransformResponse)
+	out := new(BeforeDisplayResponse)
 	err := c.cc.Invoke(ctx, TransformService_BeforeDisplay_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -63,9 +63,9 @@ func (c *transformServiceClient) BeforeDisplay(ctx context.Context, in *Transfor
 	return out, nil
 }
 
-func (c *transformServiceClient) AfterSave(ctx context.Context, in *TransformRequest, opts ...grpc.CallOption) (*TransformResponse, error) {
+func (c *transformServiceClient) AfterSave(ctx context.Context, in *AfterSaveRequest, opts ...grpc.CallOption) (*AfterSaveResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(TransformResponse)
+	out := new(AfterSaveResponse)
 	err := c.cc.Invoke(ctx, TransformService_AfterSave_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -92,10 +92,10 @@ func (c *transformServiceClient) ValidatePolicy(ctx context.Context, in *Validat
 type TransformServiceServer interface {
 	// BeforeDisplay transforms the configuration tree before values are
 	// displayed in the UI.
-	BeforeDisplay(context.Context, *TransformRequest) (*TransformResponse, error)
+	BeforeDisplay(context.Context, *BeforeDisplayRequest) (*BeforeDisplayResponse, error)
 	// AfterSave transforms the configuration tree after the UI stores
 	// updates.
-	AfterSave(context.Context, *TransformRequest) (*TransformResponse, error)
+	AfterSave(context.Context, *AfterSaveRequest) (*AfterSaveResponse, error)
 	// ValidatePolicy reports when config-plugin validations should run
 	// relative to the transformation.
 	ValidatePolicy(context.Context, *ValidatePolicyRequest) (*ValidatePolicyResponse, error)
@@ -109,10 +109,10 @@ type TransformServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedTransformServiceServer struct{}
 
-func (UnimplementedTransformServiceServer) BeforeDisplay(context.Context, *TransformRequest) (*TransformResponse, error) {
+func (UnimplementedTransformServiceServer) BeforeDisplay(context.Context, *BeforeDisplayRequest) (*BeforeDisplayResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method BeforeDisplay not implemented")
 }
-func (UnimplementedTransformServiceServer) AfterSave(context.Context, *TransformRequest) (*TransformResponse, error) {
+func (UnimplementedTransformServiceServer) AfterSave(context.Context, *AfterSaveRequest) (*AfterSaveResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method AfterSave not implemented")
 }
 func (UnimplementedTransformServiceServer) ValidatePolicy(context.Context, *ValidatePolicyRequest) (*ValidatePolicyResponse, error) {
@@ -140,7 +140,7 @@ func RegisterTransformServiceServer(s grpc.ServiceRegistrar, srv TransformServic
 }
 
 func _TransformService_BeforeDisplay_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TransformRequest)
+	in := new(BeforeDisplayRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -152,13 +152,13 @@ func _TransformService_BeforeDisplay_Handler(srv interface{}, ctx context.Contex
 		FullMethod: TransformService_BeforeDisplay_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TransformServiceServer).BeforeDisplay(ctx, req.(*TransformRequest))
+		return srv.(TransformServiceServer).BeforeDisplay(ctx, req.(*BeforeDisplayRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _TransformService_AfterSave_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TransformRequest)
+	in := new(AfterSaveRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -170,7 +170,7 @@ func _TransformService_AfterSave_Handler(srv interface{}, ctx context.Context, d
 		FullMethod: TransformService_AfterSave_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TransformServiceServer).AfterSave(ctx, req.(*TransformRequest))
+		return srv.(TransformServiceServer).AfterSave(ctx, req.(*AfterSaveRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -214,5 +214,5 @@ var TransformService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "transform.proto",
+	Metadata: "zhiplugin/v1/transform.proto",
 }

@@ -5,7 +5,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v6.33.1
-// source: config.proto
+// source: zhiplugin/v1/config.proto
 
 package proto
 
@@ -33,7 +33,7 @@ type ListRequest struct {
 
 func (x *ListRequest) Reset() {
 	*x = ListRequest{}
-	mi := &file_config_proto_msgTypes[0]
+	mi := &file_zhiplugin_v1_config_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -45,7 +45,7 @@ func (x *ListRequest) String() string {
 func (*ListRequest) ProtoMessage() {}
 
 func (x *ListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_config_proto_msgTypes[0]
+	mi := &file_zhiplugin_v1_config_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -58,7 +58,7 @@ func (x *ListRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRequest.ProtoReflect.Descriptor instead.
 func (*ListRequest) Descriptor() ([]byte, []int) {
-	return file_config_proto_rawDescGZIP(), []int{0}
+	return file_zhiplugin_v1_config_proto_rawDescGZIP(), []int{0}
 }
 
 type ListResponse struct {
@@ -70,7 +70,7 @@ type ListResponse struct {
 
 func (x *ListResponse) Reset() {
 	*x = ListResponse{}
-	mi := &file_config_proto_msgTypes[1]
+	mi := &file_zhiplugin_v1_config_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -82,7 +82,7 @@ func (x *ListResponse) String() string {
 func (*ListResponse) ProtoMessage() {}
 
 func (x *ListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_config_proto_msgTypes[1]
+	mi := &file_zhiplugin_v1_config_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -95,7 +95,7 @@ func (x *ListResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListResponse.ProtoReflect.Descriptor instead.
 func (*ListResponse) Descriptor() ([]byte, []int) {
-	return file_config_proto_rawDescGZIP(), []int{1}
+	return file_zhiplugin_v1_config_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *ListResponse) GetPaths() []string {
@@ -114,7 +114,7 @@ type GetRequest struct {
 
 func (x *GetRequest) Reset() {
 	*x = GetRequest{}
-	mi := &file_config_proto_msgTypes[2]
+	mi := &file_zhiplugin_v1_config_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -126,7 +126,7 @@ func (x *GetRequest) String() string {
 func (*GetRequest) ProtoMessage() {}
 
 func (x *GetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_config_proto_msgTypes[2]
+	mi := &file_zhiplugin_v1_config_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -139,7 +139,7 @@ func (x *GetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRequest.ProtoReflect.Descriptor instead.
 func (*GetRequest) Descriptor() ([]byte, []int) {
-	return file_config_proto_rawDescGZIP(), []int{2}
+	return file_zhiplugin_v1_config_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *GetRequest) GetPath() string {
@@ -162,7 +162,7 @@ type GetResponse struct {
 
 func (x *GetResponse) Reset() {
 	*x = GetResponse{}
-	mi := &file_config_proto_msgTypes[3]
+	mi := &file_zhiplugin_v1_config_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -174,7 +174,7 @@ func (x *GetResponse) String() string {
 func (*GetResponse) ProtoMessage() {}
 
 func (x *GetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_config_proto_msgTypes[3]
+	mi := &file_zhiplugin_v1_config_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -187,7 +187,7 @@ func (x *GetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetResponse.ProtoReflect.Descriptor instead.
 func (*GetResponse) Descriptor() ([]byte, []int) {
-	return file_config_proto_rawDescGZIP(), []int{3}
+	return file_zhiplugin_v1_config_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *GetResponse) GetFound() bool {
@@ -222,7 +222,7 @@ type SetRequest struct {
 
 func (x *SetRequest) Reset() {
 	*x = SetRequest{}
-	mi := &file_config_proto_msgTypes[4]
+	mi := &file_zhiplugin_v1_config_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -234,7 +234,7 @@ func (x *SetRequest) String() string {
 func (*SetRequest) ProtoMessage() {}
 
 func (x *SetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_config_proto_msgTypes[4]
+	mi := &file_zhiplugin_v1_config_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -247,7 +247,7 @@ func (x *SetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetRequest.ProtoReflect.Descriptor instead.
 func (*SetRequest) Descriptor() ([]byte, []int) {
-	return file_config_proto_rawDescGZIP(), []int{4}
+	return file_zhiplugin_v1_config_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *SetRequest) GetPath() string {
@@ -280,7 +280,7 @@ type SetResponse struct {
 
 func (x *SetResponse) Reset() {
 	*x = SetResponse{}
-	mi := &file_config_proto_msgTypes[5]
+	mi := &file_zhiplugin_v1_config_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -292,7 +292,7 @@ func (x *SetResponse) String() string {
 func (*SetResponse) ProtoMessage() {}
 
 func (x *SetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_config_proto_msgTypes[5]
+	mi := &file_zhiplugin_v1_config_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -305,7 +305,7 @@ func (x *SetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetResponse.ProtoReflect.Descriptor instead.
 func (*SetResponse) Descriptor() ([]byte, []int) {
-	return file_config_proto_rawDescGZIP(), []int{5}
+	return file_zhiplugin_v1_config_proto_rawDescGZIP(), []int{5}
 }
 
 // TreeEntry is a single value in the configuration tree snapshot sent during
@@ -321,7 +321,7 @@ type TreeEntry struct {
 
 func (x *TreeEntry) Reset() {
 	*x = TreeEntry{}
-	mi := &file_config_proto_msgTypes[6]
+	mi := &file_zhiplugin_v1_config_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -333,7 +333,7 @@ func (x *TreeEntry) String() string {
 func (*TreeEntry) ProtoMessage() {}
 
 func (x *TreeEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_config_proto_msgTypes[6]
+	mi := &file_zhiplugin_v1_config_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -346,7 +346,7 @@ func (x *TreeEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TreeEntry.ProtoReflect.Descriptor instead.
 func (*TreeEntry) Descriptor() ([]byte, []int) {
-	return file_config_proto_rawDescGZIP(), []int{6}
+	return file_zhiplugin_v1_config_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *TreeEntry) GetPath() string {
@@ -383,7 +383,7 @@ type ValidateRequest struct {
 
 func (x *ValidateRequest) Reset() {
 	*x = ValidateRequest{}
-	mi := &file_config_proto_msgTypes[7]
+	mi := &file_zhiplugin_v1_config_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -395,7 +395,7 @@ func (x *ValidateRequest) String() string {
 func (*ValidateRequest) ProtoMessage() {}
 
 func (x *ValidateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_config_proto_msgTypes[7]
+	mi := &file_zhiplugin_v1_config_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -408,7 +408,7 @@ func (x *ValidateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidateRequest.ProtoReflect.Descriptor instead.
 func (*ValidateRequest) Descriptor() ([]byte, []int) {
-	return file_config_proto_rawDescGZIP(), []int{7}
+	return file_zhiplugin_v1_config_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ValidateRequest) GetPath() string {
@@ -438,7 +438,7 @@ type ValidationResultMsg struct {
 
 func (x *ValidationResultMsg) Reset() {
 	*x = ValidationResultMsg{}
-	mi := &file_config_proto_msgTypes[8]
+	mi := &file_zhiplugin_v1_config_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -450,7 +450,7 @@ func (x *ValidationResultMsg) String() string {
 func (*ValidationResultMsg) ProtoMessage() {}
 
 func (x *ValidationResultMsg) ProtoReflect() protoreflect.Message {
-	mi := &file_config_proto_msgTypes[8]
+	mi := &file_zhiplugin_v1_config_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -463,7 +463,7 @@ func (x *ValidationResultMsg) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidationResultMsg.ProtoReflect.Descriptor instead.
 func (*ValidationResultMsg) Descriptor() ([]byte, []int) {
-	return file_config_proto_rawDescGZIP(), []int{8}
+	return file_zhiplugin_v1_config_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *ValidationResultMsg) GetSeverity() int32 {
@@ -496,7 +496,7 @@ type ValidateResponse struct {
 
 func (x *ValidateResponse) Reset() {
 	*x = ValidateResponse{}
-	mi := &file_config_proto_msgTypes[9]
+	mi := &file_zhiplugin_v1_config_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -508,7 +508,7 @@ func (x *ValidateResponse) String() string {
 func (*ValidateResponse) ProtoMessage() {}
 
 func (x *ValidateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_config_proto_msgTypes[9]
+	mi := &file_zhiplugin_v1_config_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -521,7 +521,7 @@ func (x *ValidateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidateResponse.ProtoReflect.Descriptor instead.
 func (*ValidateResponse) Descriptor() ([]byte, []int) {
-	return file_config_proto_rawDescGZIP(), []int{9}
+	return file_zhiplugin_v1_config_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ValidateResponse) GetResults() []*ValidationResultMsg {
@@ -531,11 +531,11 @@ func (x *ValidateResponse) GetResults() []*ValidationResultMsg {
 	return nil
 }
 
-var File_config_proto protoreflect.FileDescriptor
+var File_zhiplugin_v1_config_proto protoreflect.FileDescriptor
 
-const file_config_proto_rawDesc = "" +
+const file_zhiplugin_v1_config_proto_rawDesc = "" +
 	"\n" +
-	"\fconfig.proto\x12\fzhiplugin.v1\"\r\n" +
+	"\x19zhiplugin/v1/config.proto\x12\fzhiplugin.v1\"\r\n" +
 	"\vListRequest\"$\n" +
 	"\fListResponse\x12\x14\n" +
 	"\x05paths\x18\x01 \x03(\tR\x05paths\" \n" +
@@ -575,19 +575,19 @@ const file_config_proto_rawDesc = "" +
 	"\bValidate\x12\x1d.zhiplugin.v1.ValidateRequest\x1a\x1e.zhiplugin.v1.ValidateResponseB4Z2github.com/MrWong99/zhi/pkg/zhiplugin/config/protob\x06proto3"
 
 var (
-	file_config_proto_rawDescOnce sync.Once
-	file_config_proto_rawDescData []byte
+	file_zhiplugin_v1_config_proto_rawDescOnce sync.Once
+	file_zhiplugin_v1_config_proto_rawDescData []byte
 )
 
-func file_config_proto_rawDescGZIP() []byte {
-	file_config_proto_rawDescOnce.Do(func() {
-		file_config_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_config_proto_rawDesc), len(file_config_proto_rawDesc)))
+func file_zhiplugin_v1_config_proto_rawDescGZIP() []byte {
+	file_zhiplugin_v1_config_proto_rawDescOnce.Do(func() {
+		file_zhiplugin_v1_config_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_zhiplugin_v1_config_proto_rawDesc), len(file_zhiplugin_v1_config_proto_rawDesc)))
 	})
-	return file_config_proto_rawDescData
+	return file_zhiplugin_v1_config_proto_rawDescData
 }
 
-var file_config_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
-var file_config_proto_goTypes = []any{
+var file_zhiplugin_v1_config_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_zhiplugin_v1_config_proto_goTypes = []any{
 	(*ListRequest)(nil),         // 0: zhiplugin.v1.ListRequest
 	(*ListResponse)(nil),        // 1: zhiplugin.v1.ListResponse
 	(*GetRequest)(nil),          // 2: zhiplugin.v1.GetRequest
@@ -599,7 +599,7 @@ var file_config_proto_goTypes = []any{
 	(*ValidationResultMsg)(nil), // 8: zhiplugin.v1.ValidationResultMsg
 	(*ValidateResponse)(nil),    // 9: zhiplugin.v1.ValidateResponse
 }
-var file_config_proto_depIdxs = []int32{
+var file_zhiplugin_v1_config_proto_depIdxs = []int32{
 	6, // 0: zhiplugin.v1.ValidateRequest.tree:type_name -> zhiplugin.v1.TreeEntry
 	8, // 1: zhiplugin.v1.ValidateResponse.results:type_name -> zhiplugin.v1.ValidationResultMsg
 	0, // 2: zhiplugin.v1.ConfigService.List:input_type -> zhiplugin.v1.ListRequest
@@ -617,26 +617,26 @@ var file_config_proto_depIdxs = []int32{
 	0, // [0:2] is the sub-list for field type_name
 }
 
-func init() { file_config_proto_init() }
-func file_config_proto_init() {
-	if File_config_proto != nil {
+func init() { file_zhiplugin_v1_config_proto_init() }
+func file_zhiplugin_v1_config_proto_init() {
+	if File_zhiplugin_v1_config_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_config_proto_rawDesc), len(file_config_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_zhiplugin_v1_config_proto_rawDesc), len(file_zhiplugin_v1_config_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_config_proto_goTypes,
-		DependencyIndexes: file_config_proto_depIdxs,
-		MessageInfos:      file_config_proto_msgTypes,
+		GoTypes:           file_zhiplugin_v1_config_proto_goTypes,
+		DependencyIndexes: file_zhiplugin_v1_config_proto_depIdxs,
+		MessageInfos:      file_zhiplugin_v1_config_proto_msgTypes,
 	}.Build()
-	File_config_proto = out.File
-	file_config_proto_goTypes = nil
-	file_config_proto_depIdxs = nil
+	File_zhiplugin_v1_config_proto = out.File
+	file_zhiplugin_v1_config_proto_goTypes = nil
+	file_zhiplugin_v1_config_proto_depIdxs = nil
 }

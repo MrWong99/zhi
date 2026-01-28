@@ -14,26 +14,22 @@ type GRPCServer struct {
 	Impl Plugin
 }
 
-func (s *GRPCServer) BeforeDisplay(ctx context.Context, req *pb.TransformRequest) (*pb.TransformResponse, error) {
-	return s.transform(ctx, req, s.Impl.BeforeDisplay)
-}
-
-func (s *GRPCServer) AfterSave(ctx context.Context, req *pb.TransformRequest) (*pb.TransformResponse, error) {
-	return s.transform(ctx, req, s.Impl.AfterSave)
-}
-
-// transform is shared logic for both BeforeDisplay and AfterSave: rebuild
-// the tree from proto, call the plugin, serialise the result back.
-func (s *GRPCServer) transform(
-	ctx context.Context,
-	req *pb.TransformRequest,
-	fn func(context.Context, *config.Tree) error,
-) (*pb.TransformResponse, error) {
+func (s *GRPCServer) BeforeDisplay(ctx context.Context, req *pb.BeforeDisplayRequest) (*pb.BeforeDisplayResponse, error) {
 	tree := config.TreeFromProto(req.GetTree())
-	if err := fn(ctx, tree); err != nil {
+	if err := s.Impl.BeforeDisplay(ctx, tree); err != nil {
 		return nil, err
 	}
-	return &pb.TransformResponse{
+	return &pb.BeforeDisplayResponse{
+		Tree: config.TreeToProto(tree),
+	}, nil
+}
+
+func (s *GRPCServer) AfterSave(ctx context.Context, req *pb.AfterSaveRequest) (*pb.AfterSaveResponse, error) {
+	tree := config.TreeFromProto(req.GetTree())
+	if err := s.Impl.AfterSave(ctx, tree); err != nil {
+		return nil, err
+	}
+	return &pb.AfterSaveResponse{
 		Tree: config.TreeToProto(tree),
 	}, nil
 }
