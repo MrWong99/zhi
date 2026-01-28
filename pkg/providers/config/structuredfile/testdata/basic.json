@@ -1,0 +1,18 @@
+{
+  "pokedex": {
+    "region": {
+      "val": "kanto",
+      "metadata": {
+        "description": "Home region of the trainer",
+        "ui.select.from": ["kanto", "johto", "hoenn", "sinnoh", "unova", "kalos", "alola", "galar", "paldea"]
+      }
+    },
+    "pokedex.goal": {
+      "val": 150,
+      "metadata": {
+        "description": "Number of Pokemon to catch",
+        "ui.readonly": true
+      }
+    }
+  }
+}

@@ -1,0 +1,20 @@
+pokedex:
+  trainer.name:
+    val: Ash
+    metadata:
+      description: Name of the Pokemon trainer
+    validation: |-
+      name, ok := v.Val.(string)
+      if !ok {
+      	return []config.ValidationResult{{
+      		Severity: config.Blocking,
+      		Message:  "trainer name must be a string",
+      	}}, nil
+      }
+      if name == "" {
+      	return []config.ValidationResult{{
+      		Severity: config.Blocking,
+      		Message:  "every trainer needs a name!",
+      	}}, nil
+      }
+      return nil, nil

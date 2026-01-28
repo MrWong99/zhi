@@ -4,8 +4,10 @@ go 1.24.6
 
 require (
 	github.com/hashicorp/go-plugin v1.7.0
+	github.com/traefik/yaegi v0.16.1
 	google.golang.org/grpc v1.78.0
 	google.golang.org/protobuf v1.36.10
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (

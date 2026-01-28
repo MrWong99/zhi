@@ -1,0 +1,33 @@
+pokedex:
+  trainer.name:
+    val: Ash
+    metadata:
+      description: Name of the Pokemon trainer
+    imports:
+      - strings
+      - regexp
+    validation: |-
+      name, ok := v.Val.(string)
+      if !ok {
+        return []config.ValidationResult{{
+          Severity: config.Blocking,
+          Message:  "trainer name must be a string",
+        }}, nil
+      }
+      if !strings.HasPrefix(name, "A") {
+        return []config.ValidationResult{{
+          Severity: config.Warning,
+          Message:  "trainer name should start with A",
+        }}, nil
+      }
+      matched, err := regexp.MatchString(`^[A-Za-z]+$`, name)
+      if err != nil {
+        return nil, err
+      }
+      if !matched {
+        return []config.ValidationResult{{
+          Severity: config.Blocking,
+          Message:  "trainer name must only contain letters",
+        }}, nil
+      }
+      return nil, nil

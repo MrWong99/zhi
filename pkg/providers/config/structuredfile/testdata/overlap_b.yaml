@@ -1,0 +1,5 @@
+app:
+  name:
+    val: bravo
+    metadata:
+      description: Overridden application name

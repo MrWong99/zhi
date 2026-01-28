@@ -1,0 +1,15 @@
+pokedex:
+  trainer.name:
+    val: Ash
+    metadata:
+      description: Name of the Pokemon trainer
+      ui.readonly: true
+  starter:
+    val: pikachu
+    metadata:
+      description: Chosen starter Pokemon
+      ui.select.from:
+        - pikachu
+        - bulbasaur
+        - charmander
+        - squirtle
