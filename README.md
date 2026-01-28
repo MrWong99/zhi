@@ -51,14 +51,7 @@ past the tall grass into production.
 ## Examples
 
 The [`examples/`](examples/) directory contains fully working plugins you can
-build and experiment with:
-
-| Plugin | Type | What it does |
-|--------|------|--------------|
-| [pokedex-config](examples/pokedex-config/) | Config | Manages a Pokedex with trainer name, starter, region, and catch goal -- complete with cross-value validation |
-| [pokedex-transform](examples/pokedex-transform/) | Transform | Evolves your starter Pokemon before display (Charmander -> Charizard) and maps them back after saving |
-
-Build everything with:
+build and experiment with. Build everything with:
 
 ```sh
 make build-all
