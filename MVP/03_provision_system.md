@@ -1,0 +1,152 @@
+# Step 3: Export/Provision System
+
+## Overview
+
+Build the template-based export system that renders configuration trees into standard file formats. This is zhi's provisioning mechanism: rather than embedding Docker/K8s SDKs, zhi exports configuration to files that external tools consume.
+
+## Relevant Existing Files
+
+- `internal/core/engine.go` — core engine from Step 1 (will be extended)
+- `internal/core/workspace.go` — workspace config, already defines `export.templates` section
+- `internal/cli/root.go` — CLI root from Step 2
+- `pkg/zhiplugin/config/config.go` — `Tree`, `TreeReader` interfaces (export reads from these)
+- `go.mod` — dependencies (may need `github.com/BurntSushi/toml` for TOML output, `github.com/pelletier/go-toml/v2`, or similar)
+
+## Implementation Plan
+
+### 3.1 Export Engine (`internal/core/export.go`)
+
+The export engine renders a Go template file with the configuration tree as data. It supports multiple output formats through template helper functions.
+
+**Components:**
+
+- `ExportConfig` struct — holds template path, output path, and format options (from workspace config)
+- `ExportResult` struct — rendered content, output path, any warnings
+- `Export(ctx, tree TreeReader, config ExportConfig) (*ExportResult, error)` — main export function
+- `ExportAll(ctx, tree TreeReader, configs []ExportConfig) ([]*ExportResult, error)` — export all templates defined in workspace
+
+**Template execution:**
+
+1. Read the template file from disk
+2. Create a `text/template.Template` with custom function map
+3. Execute the template with a `TreeData` wrapper around `TreeReader`
+4. Write output to the configured path (or stdout if `-` is specified)
+
+### 3.2 Template Data (`internal/core/export_data.go`)
+
+A wrapper around `TreeReader` that provides template-friendly access methods.
+
+**Template functions available in `.tmpl` files:**
+
+- `.Get "path"` — get a value as string (returns empty string if missing)
+- `.GetOr "path" "default"` — get a value with a default fallback
+- `.Has "path"` — returns bool indicating whether the path exists
+- `.All` — returns all key-value pairs as a `map[string]any`
+- `.Prefix "prefix"` — returns all key-value pairs under a path prefix as a flat map
+- `.Nested "prefix"` — returns all key-value pairs under a prefix as a nested map (splitting on `/`)
+- `.Meta "path" "key"` — get a metadata value for a path
+
+**Built-in format helper functions (registered in the template FuncMap):**
+
+- `toJSON` — marshal a value to JSON (indented)
+- `toJSONCompact` — marshal to compact JSON
+- `toYAML` — marshal to YAML
+- `toTOML` — marshal to TOML
+- `toDotenv` — render a flat map as `KEY=value` lines (keys uppercased, `/` replaced with `_`)
+- `quote` — shell-safe quoting
+- `indent` — indent a multi-line string by N spaces
+- `upper`, `lower`, `replace` — string manipulation helpers
+
+### 3.3 Built-in Format Shortcuts (`internal/core/export_formats.go`)
+
+For common cases where users just want "export this tree as JSON", provide built-in templates that don't require a `.tmpl` file:
+
+- `ExportAsJSON(ctx, tree, output) error` — render entire tree as JSON
+- `ExportAsYAML(ctx, tree, output) error` — render entire tree as YAML
+- `ExportAsTOML(ctx, tree, output) error` — render entire tree as TOML
+- `ExportAsDotenv(ctx, tree, output) error` — render entire tree as dotenv
+
+These are implemented as hardcoded templates that use the `.All` or `.Nested` data functions.
+
+### 3.4 CLI: `zhi export` Command (`internal/cli/export.go`)
+
+Expose the export system via CLI.
+
+**Usage:**
+
+```
+zhi export [--template <path>] [--format <json|yaml|toml|dotenv>] [--output <path>]
+```
+
+**Behavior:**
+
+1. If `--template` is specified: use that template file
+2. If `--format` is specified (without template): use the built-in format shortcut
+3. If neither: export all templates defined in `zhi.yaml`
+4. If `--output` is `-` or not specified with a single template: write to stdout
+5. Print summary of exported files
+
+**Flags:**
+
+- `--template` — path to a Go template file
+- `--format` — built-in format (`json`, `yaml`, `toml`, `dotenv`)
+- `--output` / `-o` — output file path (default: stdout for single, workspace-defined for batch)
+- `--prefix` — only export paths under this prefix
+- `--dry-run` — print rendered output without writing to disk
+
+### 3.5 Workspace Export Configuration
+
+The workspace `zhi.yaml` already defines an export section. Expand the schema:
+
+```yaml
+export:
+  templates:
+    - name: docker-compose
+      template: ./templates/docker-compose.yml.tmpl
+      output: ./docker-compose.override.yml
+    - name: env-file
+      format: dotenv          # use built-in format instead of template
+      output: ./.env
+      prefix: app/env         # only export paths under this prefix
+```
+
+### 3.6 Sample Templates
+
+Create sample templates in the init scaffolding (Step 2's `zhi init` should create these):
+
+**`templates/config.json.tmpl`:**
+```
+{{ .All | toJSON }}
+```
+
+**`templates/dotenv.tmpl`:**
+```
+# Generated by zhi - do not edit manually
+{{ .All | toDotenv }}
+```
+
+### 3.7 Tests
+
+- `internal/core/export_test.go` — test template rendering with mock trees:
+  - `.Get` returns correct values
+  - `.GetOr` falls back to default
+  - `.Has` returns correct booleans
+  - `.Prefix` filters correctly
+  - `.Nested` builds nested maps
+  - `toJSON`, `toYAML`, `toTOML`, `toDotenv` format correctly
+- `internal/core/export_formats_test.go` — test built-in format shortcuts produce valid output
+- `internal/cli/export_test.go` — test CLI flag combinations and output
+- Use fixture data from `pkg/providers/config/structuredfile/testdata/` as input
+
+## Verification Criteria
+
+1. A `.tmpl` file can reference `.Get "database/host"` and render the correct value
+2. `toJSON` produces valid, indented JSON from a tree
+3. `toYAML` produces valid YAML from a tree
+4. `toDotenv` produces `KEY=value` lines with uppercased, underscore-delimited keys
+5. `zhi export --format json` outputs the entire tree as JSON to stdout
+6. `zhi export --template ./templates/my.tmpl --output ./out.txt` writes rendered output to file
+7. `zhi export` (no flags) exports all templates defined in `zhi.yaml`
+8. `--dry-run` prints output without writing files
+9. Missing paths in templates produce empty strings (not errors) by default
+10. All tests pass with `go test -race ./internal/core/... ./internal/cli/...`
