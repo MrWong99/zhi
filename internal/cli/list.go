@@ -14,7 +14,17 @@ import (
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List workspace information",
-	Long:  "List available information about the workspace (providers, trees, paths, components).",
+	Long: `List available information about the workspace.
+
+Subcommands:
+  providers    List all registered config, transform, and store providers
+  trees        List all stored tree IDs
+  paths        List all configuration paths in the current tree
+  components   List all defined components with their status`,
+	Example: `  zhi list providers
+  zhi list paths --json
+  zhi list trees
+  zhi list components`,
 }
 
 var listJSON bool

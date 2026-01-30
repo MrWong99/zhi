@@ -11,8 +11,23 @@ import (
 var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize a new zhi workspace",
-	Long:  "Scaffold a new zhi workspace in the current (or specified) directory.",
-	RunE:  runInit,
+	Long: `Initialize a new zhi workspace by scaffolding the directory structure
+and configuration files needed to get started.
+
+This creates:
+  - zhi.yaml                 Workspace configuration
+  - config/app.yaml          Starter configuration values
+  - templates/sample.tmpl    Example export template
+  - .zhi/                    Internal data directory
+
+Examples:
+  zhi init                        # initialize in the current directory
+  zhi init --workspace ./myapp    # initialize in ./myapp
+  zhi init --force                # overwrite existing zhi.yaml`,
+	Example: `  zhi init
+  zhi init --config-provider structuredfile --store-provider json-store
+  zhi init --force`,
+	RunE: runInit,
 }
 
 var (
@@ -146,22 +161,28 @@ monitoring:
 	}
 	created = append(created, "templates/sample.tmpl")
 
-	// 4. Create ./.zhi/store/ directory
-	storeDir := filepath.Join(absDir, ".zhi", "store")
-	if err := os.MkdirAll(storeDir, 0o755); err != nil {
+	// 4. Create ./.zhi/ directory with user-only permissions (0700)
+	zhiDir := filepath.Join(absDir, ".zhi")
+	if err := os.MkdirAll(zhiDir, 0o700); err != nil {
+		return fmt.Errorf("creating .zhi directory: %w", err)
+	}
+
+	// Create .zhi/store/ subdirectory
+	storeDir := filepath.Join(zhiDir, "store")
+	if err := os.MkdirAll(storeDir, 0o700); err != nil {
 		return fmt.Errorf("creating .zhi/store directory: %w", err)
 	}
 	created = append(created, ".zhi/store/")
 
-	// 5. Create ./.zhi/components.json with default component state
+	// 5. Create ./.zhi/components.json with default component state (0600 permissions)
 	componentState := `{
   "app": true,
   "database": true,
   "monitoring": false
 }
 `
-	componentsFile := filepath.Join(absDir, ".zhi", "components.json")
-	if err := os.WriteFile(componentsFile, []byte(componentState), 0o644); err != nil {
+	componentsFile := filepath.Join(zhiDir, "components.json")
+	if err := os.WriteFile(componentsFile, []byte(componentState), 0o600); err != nil {
 		return fmt.Errorf("writing .zhi/components.json: %w", err)
 	}
 	created = append(created, ".zhi/components.json")
@@ -171,6 +192,17 @@ monitoring:
 	for _, f := range created {
 		fmt.Fprintf(w, "  %s\n", f)
 	}
+
+	// 7. Print what's next message
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "What's next?")
+	fmt.Fprintln(w, "  Edit configuration values:   zhi edit")
+	fmt.Fprintln(w, "  Export configuration:         zhi export --format json")
+	fmt.Fprintln(w, "  Validate configuration:       zhi validate")
+	fmt.Fprintln(w, "  List config paths:            zhi list paths")
+	fmt.Fprintln(w, "  Manage components:            zhi component list")
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "Add .zhi/ to your .gitignore to keep internal state out of version control.")
 
 	return nil
 }

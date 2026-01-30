@@ -44,7 +44,53 @@ past the tall grass into production.
 
 ## Getting Started
 
-*Coming soon...*
+### Prerequisites
+
+- Go 1.24+
+- protoc (optional, for regenerating gRPC stubs)
+
+### Installation
+
+```sh
+git clone https://github.com/MrWong99/zhi.git
+cd zhi
+make build
+```
+
+The `zhi` binary will be placed in `bin/`.
+
+### Quick Start
+
+```sh
+# Initialize a new workspace
+zhi init
+
+# View all configuration paths
+zhi list paths
+
+# Get a specific value
+zhi get database/host
+
+# Set a value
+zhi set database/host mydb.example.com
+
+# Validate the configuration
+zhi validate
+
+# Export as JSON
+zhi export --format json
+
+# Launch the interactive TUI editor
+zhi edit
+```
+
+### Verbose / Debug Logging
+
+Pass `--verbose` to any command to enable debug-level logging to stderr:
+
+```sh
+zhi validate --verbose
+```
 
 ---
 

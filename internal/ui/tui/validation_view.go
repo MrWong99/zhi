@@ -11,13 +11,13 @@ import (
 
 // ValidationView displays validation results grouped by severity.
 type ValidationView struct {
-	results  []config.ValidationResult
-	lines    []string
-	cursor   int
-	offset   int
-	summary  string
-	width    int
-	height   int
+	results []config.ValidationResult
+	lines   []string
+	cursor  int
+	offset  int
+	summary string
+	width   int
+	height  int
 }
 
 // NewValidationView creates an empty validation view.

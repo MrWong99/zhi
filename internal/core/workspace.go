@@ -6,9 +6,15 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
+
+// componentNamePattern defines valid component names: starts with a lowercase
+// letter, may contain lowercase letters, digits, and hyphens.
+var componentNamePattern = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
 
 // ProviderRef identifies a provider and its options in a workspace config.
 type ProviderRef struct {
@@ -240,8 +246,22 @@ func ValidateWorkspace(ws *WorkspaceConfig, reg *Registry) error {
 	}
 
 	// Validate component definitions.
+	for i, c := range ws.Components {
+		if c.Name == "" {
+			errs = append(errs, fmt.Errorf("components[%d]: name is required", i))
+		} else if !componentNamePattern.MatchString(c.Name) {
+			errs = append(errs, fmt.Errorf("components[%d]: invalid name %q (must match [a-z][a-z0-9-]*)", i, c.Name))
+		}
+	}
 	if _, err := NewComponentManager(ws.Components); err != nil {
 		errs = append(errs, fmt.Errorf("components: %w", err))
+	}
+
+	// Validate plugin directories: reject paths containing ".." traversal.
+	for _, dir := range ws.Plugins.Directories {
+		if containsPathTraversal(dir) {
+			errs = append(errs, fmt.Errorf("plugin directory %q: path traversal (.. segments) is not allowed", dir))
+		}
 	}
 
 	// Check that template files exist on disk (only for templates with a file, not built-in formats).
@@ -260,4 +280,14 @@ func ValidateWorkspace(ws *WorkspaceConfig, reg *Registry) error {
 	}
 
 	return errors.Join(errs...)
+}
+
+// containsPathTraversal reports whether a path contains ".." segments.
+func containsPathTraversal(path string) bool {
+	for _, seg := range strings.Split(filepath.ToSlash(path), "/") {
+		if seg == ".." {
+			return true
+		}
+	}
+	return false
 }

@@ -20,7 +20,7 @@ Examples:
   zhi export --template ./tmpl/app.tmpl -o out   # render template to file
   zhi export                                     # export all templates from zhi.yaml`,
 	PersistentPreRunE: withEngine,
-	RunE:             runExport,
+	RunE:              runExport,
 }
 
 var (

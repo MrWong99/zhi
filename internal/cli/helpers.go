@@ -24,16 +24,18 @@ func parseComponentState(data []byte) (map[string]bool, error) {
 }
 
 // saveComponentState persists component state to the state file.
+// The .zhi directory is created with 0700 (user-only) and state files
+// are written with 0600 permissions.
 func saveComponentState(wsDir string, state map[string]bool) error {
 	path := stateFilePath(wsDir)
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return err
 	}
 	data, err := json.MarshalIndent(state, "", "  ")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, data, 0o644)
+	return os.WriteFile(path, data, 0o600)
 }
 
 // padRight pads a string to the given width.

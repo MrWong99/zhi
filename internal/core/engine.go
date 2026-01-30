@@ -137,7 +137,11 @@ func (e *Engine) Validate(ctx context.Context, tree *config.Tree) ([]config.Vali
 }
 
 // SetValue stores a value at the given path via the config provider.
+// The path is validated before being sent to the plugin.
 func (e *Engine) SetValue(ctx context.Context, path string, value config.Value) error {
+	if err := config.ValidatePath(path); err != nil {
+		return fmt.Errorf("invalid path: %w", err)
+	}
 	return e.configPlugin.Set(ctx, path, value)
 }
 
@@ -205,7 +209,11 @@ func (e *Engine) WorkspaceDir() string {
 }
 
 // ValidatePath runs config provider validation for a single path in the tree.
+// If the path does not exist in the tree, an empty result is returned.
 func (e *Engine) ValidatePath(ctx context.Context, path string, tree *config.Tree) ([]config.ValidationResult, error) {
+	if _, ok := tree.Get(path); !ok {
+		return nil, nil
+	}
 	return e.configPlugin.Validate(ctx, path, tree)
 }
 

@@ -46,7 +46,7 @@ func (m *mockConfig) Validate(_ context.Context, _ string, _ config.TreeReader) 
 type mockTransform struct{}
 
 func (m *mockTransform) BeforeDisplay(_ context.Context, _ *config.Tree) error { return nil }
-func (m *mockTransform) AfterSave(_ context.Context, _ *config.Tree) error    { return nil }
+func (m *mockTransform) AfterSave(_ context.Context, _ *config.Tree) error     { return nil }
 func (m *mockTransform) ValidatePolicy(_ context.Context) (transform.ValidatePolicy, error) {
 	return 0, nil
 }
