@@ -298,3 +298,89 @@ func (cm *ComponentManager) SaveState() map[string]bool {
 	}
 	return out
 }
+
+// Definitions returns a copy of all component definitions.
+func (cm *ComponentManager) Definitions() []ComponentDef {
+	out := make([]ComponentDef, len(cm.definitions))
+	copy(out, cm.definitions)
+	return out
+}
+
+// Definition returns the definition of a component by name.
+func (cm *ComponentManager) Definition(name string) (ComponentDef, bool) {
+	d, ok := cm.defsByName[name]
+	if !ok {
+		return ComponentDef{}, false
+	}
+	return *d, true
+}
+
+// Dependents returns the names of components that depend on the given component.
+func (cm *ComponentManager) Dependents(name string) []string {
+	var deps []string
+	for _, d := range cm.definitions {
+		for _, dep := range d.Dependencies {
+			if dep == name {
+				deps = append(deps, d.Name)
+				break
+			}
+		}
+	}
+	return deps
+}
+
+// DisableCascade disables a component and all components that depend on it.
+// It returns an error if the component is mandatory.
+func (cm *ComponentManager) DisableCascade(name string) ([]string, error) {
+	def, ok := cm.defsByName[name]
+	if !ok {
+		return nil, fmt.Errorf("unknown component: %q", name)
+	}
+	if def.Mandatory {
+		return nil, fmt.Errorf("cannot disable %q: component is mandatory", name)
+	}
+	var disabled []string
+	cm.disableCascadeRecursive(name, &disabled)
+	return disabled, nil
+}
+
+func (cm *ComponentManager) disableCascadeRecursive(name string, disabled *[]string) {
+	if !cm.state[name] {
+		return
+	}
+	// First disable all dependents.
+	for _, d := range cm.definitions {
+		for _, dep := range d.Dependencies {
+			if dep == name && cm.state[d.Name] && !d.Mandatory {
+				cm.disableCascadeRecursive(d.Name, disabled)
+			}
+		}
+	}
+	cm.state[name] = false
+	*disabled = append(*disabled, name)
+}
+
+// EnabledDependencies returns the list of dependencies that were auto-enabled
+// during an Enable call. It enables the component and returns which additional
+// components were enabled.
+func (cm *ComponentManager) EnableWithReport(name string) ([]string, error) {
+	if _, ok := cm.defsByName[name]; !ok {
+		return nil, fmt.Errorf("unknown component: %q", name)
+	}
+	var enabled []string
+	cm.enableWithReport(name, &enabled)
+	return enabled, nil
+}
+
+func (cm *ComponentManager) enableWithReport(name string, enabled *[]string) {
+	if cm.state[name] {
+		return
+	}
+	// Enable dependencies first.
+	def := cm.defsByName[name]
+	for _, dep := range def.Dependencies {
+		cm.enableWithReport(dep, enabled)
+	}
+	cm.state[name] = true
+	*enabled = append(*enabled, name)
+}

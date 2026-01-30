@@ -188,3 +188,25 @@ func (e *Engine) FilteredTree(ctx context.Context) (*config.Tree, error) {
 func (e *Engine) StorePlugin() store.Plugin {
 	return e.storePlugin
 }
+
+// WorkspaceDir returns the directory containing the workspace config file.
+func (e *Engine) WorkspaceDir() string {
+	if e.workspace == nil {
+		return ""
+	}
+	return e.workspace.Dir
+}
+
+// ValidatePath runs config provider validation for a single path in the tree.
+func (e *Engine) ValidatePath(ctx context.Context, path string, tree *config.Tree) ([]config.ValidationResult, error) {
+	return e.configPlugin.Validate(ctx, path, tree)
+}
+
+// SetTestWorkspaceDir sets the workspace directory for testing purposes.
+// This should only be used in tests.
+func (e *Engine) SetTestWorkspaceDir(dir string) {
+	if e.workspace == nil {
+		e.workspace = &WorkspaceConfig{}
+	}
+	e.workspace.Dir = dir
+}
