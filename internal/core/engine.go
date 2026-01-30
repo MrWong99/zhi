@@ -202,6 +202,11 @@ func (e *Engine) ValidatePath(ctx context.Context, path string, tree *config.Tre
 	return e.configPlugin.Validate(ctx, path, tree)
 }
 
+// Workspace returns the workspace configuration.
+func (e *Engine) Workspace() *WorkspaceConfig {
+	return e.workspace
+}
+
 // SetTestWorkspaceDir sets the workspace directory for testing purposes.
 // This should only be used in tests.
 func (e *Engine) SetTestWorkspaceDir(dir string) {

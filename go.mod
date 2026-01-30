@@ -4,6 +4,7 @@ go 1.24.6
 
 require (
 	github.com/hashicorp/go-plugin v1.7.0
+	github.com/pelletier/go-toml/v2 v2.2.4
 	github.com/spf13/cobra v1.10.2
 	github.com/traefik/yaegi v0.16.1
 	google.golang.org/grpc v1.78.0
