@@ -19,8 +19,10 @@ type ProviderRef struct {
 // ExportTemplate describes a template-based export target.
 type ExportTemplate struct {
 	Name     string `yaml:"name" json:"name"`
-	Template string `yaml:"template" json:"template"`
+	Template string `yaml:"template,omitempty" json:"template,omitempty"`
+	Format   string `yaml:"format,omitempty" json:"format,omitempty"` // built-in format: json, yaml, toml, dotenv
 	Output   string `yaml:"output" json:"output"`
+	Prefix   string `yaml:"prefix,omitempty" json:"prefix,omitempty"` // only export paths under this prefix
 }
 
 // ExportConfig holds the export section of a workspace config.
@@ -154,8 +156,12 @@ func ValidateWorkspace(ws *WorkspaceConfig, reg *Registry) error {
 		errs = append(errs, fmt.Errorf("components: %w", err))
 	}
 
-	// Check that template files exist on disk.
+	// Check that template files exist on disk (only for templates with a file, not built-in formats).
 	for _, tmpl := range ws.Export.Templates {
+		if tmpl.Template == "" {
+			// Built-in format; no template file needed.
+			continue
+		}
 		tmplPath := tmpl.Template
 		if !filepath.IsAbs(tmplPath) {
 			tmplPath = filepath.Join(ws.Dir, tmplPath)
