@@ -30,10 +30,80 @@ type ExportConfig struct {
 	Templates []ExportTemplate `yaml:"templates,omitempty" json:"templates,omitempty"`
 }
 
-// ApplyConfig holds the apply section of a workspace config.
+// ApplyTargetConfig holds the configuration for a single apply target.
+type ApplyTargetConfig struct {
+	Command   string            `yaml:"command,omitempty" json:"command,omitempty"`
+	Workdir   string            `yaml:"workdir,omitempty" json:"workdir,omitempty"`
+	PreExport bool              `yaml:"pre-export,omitempty" json:"pre-export,omitempty"`
+	Env       map[string]string `yaml:"env,omitempty" json:"env,omitempty"`
+	Timeout   int               `yaml:"timeout,omitempty" json:"timeout,omitempty"` // seconds, 0 = no timeout
+}
+
+// ApplyConfig holds the apply section of a workspace config. It supports
+// both a simple form (single target) and named targets.
+//
+// Simple form:
+//
+//	apply:
+//	  command: "docker compose up -d"
+//	  pre-export: true
+//
+// Named targets:
+//
+//	apply:
+//	  default:
+//	    command: "docker compose up -d"
+//	  destroy:
+//	    command: "docker compose down -v"
 type ApplyConfig struct {
-	Command string `yaml:"command,omitempty" json:"command,omitempty"`
-	Workdir string `yaml:"workdir,omitempty" json:"workdir,omitempty"`
+	// Simple form fields (used when no named targets).
+	Command   string            `yaml:"command,omitempty" json:"command,omitempty"`
+	Workdir   string            `yaml:"workdir,omitempty" json:"workdir,omitempty"`
+	PreExport bool              `yaml:"pre-export,omitempty" json:"pre-export,omitempty"`
+	Env       map[string]string `yaml:"env,omitempty" json:"env,omitempty"`
+	Timeout   int               `yaml:"timeout,omitempty" json:"timeout,omitempty"`
+
+	// Named targets (keyed by target name).
+	Targets map[string]ApplyTargetConfig `yaml:"targets,omitempty" json:"targets,omitempty"`
+}
+
+// ResolveTarget returns the ApplyTargetConfig for the given target name.
+// If name is empty, it uses "default". For the simple form (no named
+// targets), the top-level fields are returned as the "default" target.
+func (ac *ApplyConfig) ResolveTarget(name string) (ApplyTargetConfig, error) {
+	if name == "" {
+		name = "default"
+	}
+
+	// If named targets exist, look up by name.
+	if len(ac.Targets) > 0 {
+		t, ok := ac.Targets[name]
+		if !ok {
+			available := make([]string, 0, len(ac.Targets))
+			for k := range ac.Targets {
+				available = append(available, k)
+			}
+			return ApplyTargetConfig{}, fmt.Errorf("unknown apply target %q (available: %v)", name, available)
+		}
+		return t, nil
+	}
+
+	// Simple form: only "default" is valid.
+	if name != "default" {
+		return ApplyTargetConfig{}, fmt.Errorf("unknown apply target %q (no named targets defined)", name)
+	}
+
+	if ac.Command == "" {
+		return ApplyTargetConfig{}, fmt.Errorf("no apply command configured; add an apply section to zhi.yaml")
+	}
+
+	return ApplyTargetConfig{
+		Command:   ac.Command,
+		Workdir:   ac.Workdir,
+		PreExport: ac.PreExport,
+		Env:       ac.Env,
+		Timeout:   ac.Timeout,
+	}, nil
 }
 
 // WorkspaceConfig is the parsed representation of a zhi.yaml (or zhi.json)
