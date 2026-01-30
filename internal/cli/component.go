@@ -11,7 +11,17 @@ import (
 var componentCmd = &cobra.Command{
 	Use:   "component",
 	Short: "Manage components",
-	Long:  "Manage component state: enable, disable, list, and inspect components.",
+	Long: `Manage component state: enable, disable, list, and inspect components.
+
+Components are logical groups of configuration paths. Enabling a component
+makes its paths visible; disabling it hides them from exports and the TUI.
+
+Mandatory components cannot be disabled. Dependencies are automatically
+enabled when a component that depends on them is enabled.`,
+	Example: `  zhi component list
+  zhi component enable monitoring
+  zhi component disable monitoring
+  zhi component info database`,
 }
 
 var (

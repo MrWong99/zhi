@@ -10,11 +10,11 @@ import (
 
 func TestParseFlatName(t *testing.T) {
 	tests := []struct {
-		name       string
-		input      string
-		wantType   PluginType
-		wantName   string
-		wantOK     bool
+		name     string
+		input    string
+		wantType PluginType
+		wantName string
+		wantOK   bool
 	}{
 		{"config plugin", "zhi-config-pokedex", PluginTypeConfig, "pokedex", true},
 		{"transform plugin", "zhi-transform-evolve", PluginTypeTransform, "evolve", true},

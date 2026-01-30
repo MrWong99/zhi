@@ -1,7 +1,10 @@
 package core
 
 import (
+	"crypto/sha256"
 	"fmt"
+	"io"
+	"os"
 	"os/exec"
 
 	goplugin "github.com/hashicorp/go-plugin"
@@ -12,10 +15,46 @@ import (
 	"github.com/MrWong99/zhi/pkg/zhiplugin/transform"
 )
 
+// auditPluginBinary logs the SHA-256 hash of the plugin binary and warns
+// if the file is world-writable. This helps with audit trailing and
+// detecting potentially tampered binaries.
+func auditPluginBinary(path string) {
+	log := Logger()
+
+	info, err := os.Stat(path)
+	if err != nil {
+		log.Warn("cannot stat plugin binary", "path", path, "error", err)
+		return
+	}
+
+	// Warn if world-writable.
+	if info.Mode()&0o002 != 0 {
+		log.Warn("plugin binary is world-writable", "path", path, "permissions", info.Mode().String())
+	}
+
+	// Compute SHA-256 hash.
+	f, err := os.Open(path)
+	if err != nil {
+		log.Warn("cannot open plugin binary for hashing", "path", path, "error", err)
+		return
+	}
+	defer func() { _ = f.Close() }()
+
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		log.Warn("cannot hash plugin binary", "path", path, "error", err)
+		return
+	}
+
+	log.Info("launching plugin", "path", path, "sha256", fmt.Sprintf("%x", h.Sum(nil)))
+}
+
 // LaunchConfig launches an external config plugin binary and returns the
 // config.Plugin interface along with a cleanup function that kills the
 // plugin process. The caller must call cleanup when done.
 func LaunchConfig(path string) (config.Plugin, func(), error) {
+	auditPluginBinary(path)
+
 	client := goplugin.NewClient(&goplugin.ClientConfig{
 		HandshakeConfig:  zhiplugin.Handshake,
 		Plugins:          config.PluginMap,
@@ -47,6 +86,8 @@ func LaunchConfig(path string) (config.Plugin, func(), error) {
 // LaunchTransform launches an external transform plugin binary and returns
 // the transform.Plugin interface along with a cleanup function.
 func LaunchTransform(path string) (transform.Plugin, func(), error) {
+	auditPluginBinary(path)
+
 	client := goplugin.NewClient(&goplugin.ClientConfig{
 		HandshakeConfig:  zhiplugin.Handshake,
 		Plugins:          transform.PluginMap,
@@ -78,6 +119,8 @@ func LaunchTransform(path string) (transform.Plugin, func(), error) {
 // LaunchStore launches an external store plugin binary and returns the
 // store.Plugin interface along with a cleanup function.
 func LaunchStore(path string) (store.Plugin, func(), error) {
+	auditPluginBinary(path)
+
 	client := goplugin.NewClient(&goplugin.ClientConfig{
 		HandshakeConfig:  zhiplugin.Handshake,
 		Plugins:          store.PluginMap,

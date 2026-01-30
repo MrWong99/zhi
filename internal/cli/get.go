@@ -8,9 +8,15 @@ import (
 )
 
 var getCmd = &cobra.Command{
-	Use:               "get <path>",
-	Short:             "Get a configuration value",
-	Long:              "Get a single value from the configuration tree at the specified path.",
+	Use:   "get <path>",
+	Short: "Get a configuration value",
+	Long: `Get a single value from the configuration tree at the specified path.
+
+By default, prints the value with its metadata. Use --raw for just the
+value, or --json for structured JSON output including metadata.`,
+	Example: `  zhi get database/host
+  zhi get database/port --raw
+  zhi get app/name --json`,
 	Args:              cobra.ExactArgs(1),
 	PersistentPreRunE: withEngine,
 	RunE:              runGet,

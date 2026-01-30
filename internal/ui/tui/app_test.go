@@ -54,7 +54,7 @@ func (m *mockConfig) Validate(_ context.Context, path string, _ config.TreeReade
 type mockTransform struct{}
 
 func (m *mockTransform) BeforeDisplay(_ context.Context, _ *config.Tree) error { return nil }
-func (m *mockTransform) AfterSave(_ context.Context, _ *config.Tree) error    { return nil }
+func (m *mockTransform) AfterSave(_ context.Context, _ *config.Tree) error     { return nil }
 func (m *mockTransform) ValidatePolicy(_ context.Context) (transform.ValidatePolicy, error) {
 	return 0, nil
 }
@@ -97,8 +97,8 @@ func (m *mockStore) ListTrees(_ context.Context) ([]string, error) {
 	return ids, nil
 }
 
-func (m *mockStore) SupportsVersioning(_ context.Context) (bool, error)           { return false, nil }
-func (m *mockStore) ListVersions(_ context.Context, _ string) ([]string, error)   { return nil, nil }
+func (m *mockStore) SupportsVersioning(_ context.Context) (bool, error)         { return false, nil }
+func (m *mockStore) ListVersions(_ context.Context, _ string) ([]string, error) { return nil, nil }
 func (m *mockStore) LoadVersion(_ context.Context, _, _ string) (*config.Tree, bool, error) {
 	return nil, false, nil
 }

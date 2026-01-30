@@ -79,12 +79,10 @@ func Export(_ context.Context, tree *TreeData, cfg ExportRunConfig) (*ExportResu
 
 	// Write output if not dry-run and output is a file path.
 	if !cfg.DryRun && cfg.OutputPath != "" && cfg.OutputPath != "-" {
-		if err := os.MkdirAll(filepath.Dir(cfg.OutputPath), 0o755); err != nil {
-			return nil, fmt.Errorf("creating output directory: %w", err)
+		if err := writeExportFile(cfg.OutputPath, []byte(content)); err != nil {
+			return nil, err
 		}
-		if err := os.WriteFile(cfg.OutputPath, []byte(content), 0o644); err != nil {
-			return nil, fmt.Errorf("writing output file: %w", err)
-		}
+		Logger().Debug("export written", "path", cfg.OutputPath)
 	}
 
 	return result, nil
@@ -304,4 +302,59 @@ func indentStr(n int, s string) string {
 		}
 	}
 	return strings.Join(lines, "\n")
+}
+
+// writeExportFile writes data to outputPath with security hardening:
+//   - Rejects paths containing ".." traversal
+//   - Resolves symlinks to determine the real destination
+//   - Uses atomic writes (temp file + rename) to prevent partial writes
+//   - Sets 0644 permissions on the output file and 0755 on directories
+func writeExportFile(outputPath string, data []byte) error {
+	// Reject path traversal.
+	if containsPathTraversal(outputPath) {
+		return fmt.Errorf("export output path %q: path traversal (.. segments) is not allowed", outputPath)
+	}
+
+	// Resolve the directory, creating it if needed.
+	dir := filepath.Dir(outputPath)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fmt.Errorf("creating output directory: %w", err)
+	}
+
+	// Resolve symlinks in the output path to determine real destination.
+	realDir, err := filepath.EvalSymlinks(dir)
+	if err != nil {
+		return fmt.Errorf("resolving output directory: %w", err)
+	}
+	realPath := filepath.Join(realDir, filepath.Base(outputPath))
+
+	// Atomic write: write to temp file, then rename.
+	tmp, err := os.CreateTemp(realDir, ".zhi-export-*")
+	if err != nil {
+		return fmt.Errorf("creating temp file for export: %w", err)
+	}
+	tmpName := tmp.Name()
+
+	if _, err := tmp.Write(data); err != nil {
+		_ = tmp.Close()
+		_ = os.Remove(tmpName)
+		return fmt.Errorf("writing export temp file: %w", err)
+	}
+	if err := tmp.Close(); err != nil {
+		_ = os.Remove(tmpName)
+		return fmt.Errorf("closing export temp file: %w", err)
+	}
+
+	// Set permissions before rename.
+	if err := os.Chmod(tmpName, 0o644); err != nil {
+		_ = os.Remove(tmpName)
+		return fmt.Errorf("setting export file permissions: %w", err)
+	}
+
+	if err := os.Rename(tmpName, realPath); err != nil {
+		_ = os.Remove(tmpName)
+		return fmt.Errorf("renaming export temp file: %w", err)
+	}
+
+	return nil
 }

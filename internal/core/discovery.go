@@ -56,10 +56,19 @@ func Discover(cfg DiscoveryConfig) ([]PluginInfo, error) {
 	seen := make(map[string]bool)
 	var plugins []PluginInfo
 
+	log := Logger()
+
 	for _, dir := range dirs {
+		// Reject directories containing path traversal.
+		if containsPathTraversal(dir) {
+			log.Warn("skipping plugin directory with path traversal", "dir", dir)
+			continue
+		}
+
 		expanded := expandHome(dir)
 		flat, err := discoverFlat(expanded)
 		if err != nil {
+			log.Debug("skipping plugin directory", "dir", expanded, "error", err)
 			continue // skip directories that don't exist or can't be read
 		}
 		for _, p := range flat {
@@ -67,6 +76,7 @@ func Discover(cfg DiscoveryConfig) ([]PluginInfo, error) {
 			if !seen[key] {
 				seen[key] = true
 				plugins = append(plugins, p)
+				log.Debug("discovered plugin", "type", p.Type, "name", p.Name, "path", p.Path)
 			}
 		}
 
@@ -79,10 +89,12 @@ func Discover(cfg DiscoveryConfig) ([]PluginInfo, error) {
 			if !seen[key] {
 				seen[key] = true
 				plugins = append(plugins, p)
+				log.Debug("discovered plugin", "type", p.Type, "name", p.Name, "path", p.Path)
 			}
 		}
 	}
 
+	log.Debug("plugin discovery complete", "count", len(plugins))
 	return plugins, nil
 }
 

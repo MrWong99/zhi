@@ -12,9 +12,18 @@ import (
 )
 
 var validateCmd = &cobra.Command{
-	Use:               "validate",
-	Short:             "Validate the current configuration tree",
-	Long:              "Validate the current configuration tree and print results grouped by severity.",
+	Use:   "validate",
+	Short: "Validate the current configuration tree",
+	Long: `Validate the current configuration tree and print results grouped by severity.
+
+Runs config provider validation for all paths and checks component dependency
+constraints. Results are grouped by severity: blocking errors prevent deployment,
+warnings signal potential issues, and info messages are informational.
+
+The exit code is 1 if any blocking errors are found.`,
+	Example: `  zhi validate
+  zhi validate --path database/host
+  zhi validate --json`,
 	PersistentPreRunE: withEngine,
 	RunE:              runValidate,
 }

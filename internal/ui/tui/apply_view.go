@@ -26,18 +26,18 @@ type ApplyDoneMsg struct {
 
 // ApplyView streams apply command output in a scrollable viewport.
 type ApplyView struct {
-	output    []core.ApplyOutput
-	lines     []string
-	running   bool
-	result    *core.ApplyResult
-	err       error
-	spinner   spinner.Model
-	cursor    int
-	offset    int
-	follow    bool
-	cancelFn  context.CancelFunc
-	width     int
-	height    int
+	output   []core.ApplyOutput
+	lines    []string
+	running  bool
+	result   *core.ApplyResult
+	err      error
+	spinner  spinner.Model
+	cursor   int
+	offset   int
+	follow   bool
+	cancelFn context.CancelFunc
+	width    int
+	height   int
 }
 
 // NewApplyView creates a new apply view.

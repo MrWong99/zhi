@@ -11,9 +11,20 @@ import (
 )
 
 var setCmd = &cobra.Command{
-	Use:               "set <path> <value>",
-	Short:             "Set a configuration value",
-	Long:              "Set a single value in the configuration tree at the specified path.",
+	Use:   "set <path> <value>",
+	Short: "Set a configuration value",
+	Long: `Set a single value in the configuration tree at the specified path.
+
+The path must be a valid slash-delimited configuration path where each
+segment matches [a-z][a-z0-9._-]*[a-z0-9].
+
+Values are parsed as JSON objects/arrays, booleans, numbers, or strings
+(in that order of precedence).`,
+	Example: `  zhi set database/host localhost
+  zhi set database/port 5432
+  zhi set app/debug true
+  zhi set app/tags '["web","api"]'
+  zhi set database/host myhost --validate`,
 	Args:              cobra.ExactArgs(2),
 	PersistentPreRunE: withEngine,
 	RunE:              runSet,
