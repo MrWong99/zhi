@@ -1,0 +1,10 @@
+{
+  "pokedex": {
+    "region": {
+      "val": "kanto",
+      "metadata": {
+        "description": "Home region of the trainer"
+      }
+    }
+  }
+}

@@ -1,0 +1,9 @@
+pokedex:
+  trainer.name:
+    val: Ash
+    metadata:
+      description: Name of the Pokemon trainer
+  starter:
+    val: pikachu
+    metadata:
+      description: Chosen starter Pokemon
