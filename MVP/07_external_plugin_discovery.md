@@ -1,4 +1,4 @@
-# Step 6: External Plugin Discovery
+# Step 7: External Plugin Discovery
 
 ## Overview
 
@@ -21,7 +21,7 @@ Extend the provider registry to discover and launch external plugins from `~/.zh
 
 ## Implementation Plan
 
-### 6.1 Plugin Discovery (`internal/core/discovery.go`)
+### 7.1 Plugin Discovery (`internal/core/discovery.go`)
 
 Scan directories for external plugin binaries and make them available to the registry.
 
@@ -69,7 +69,7 @@ Alternatively, type-based subdirectories:
 
 Both layouts are supported. Flat naming takes precedence.
 
-### 6.2 Plugin Launcher (`internal/core/launcher.go`)
+### 7.2 Plugin Launcher (`internal/core/launcher.go`)
 
 Launch an external plugin binary using hashicorp/go-plugin and return a typed provider interface.
 
@@ -108,7 +108,7 @@ func LaunchConfig(path string) (config.Plugin, func(), error) {
 
 This matches the pattern used in the example plugin tests (e.g., `examples/pokedex-config/main_test.go`).
 
-### 6.3 Registry Extension (`internal/core/registry.go` update)
+### 7.3 Registry Extension (`internal/core/registry.go` update)
 
 Extend the registry to support external plugin resolution as a fallback.
 
@@ -125,7 +125,7 @@ Extend the registry to support external plugin resolution as a fallback.
 
 **Caching:** Once launched, the plugin process stays alive and the interface is cached. Subsequent calls to `ConfigProvider("pokedex")` return the cached instance.
 
-### 6.4 Workspace Plugin Directories
+### 7.4 Workspace Plugin Directories
 
 Add optional `plugins` section to `zhi.yaml`:
 
@@ -139,7 +139,7 @@ plugins:
 
 Default if not specified: `~/.zhi/plugins/` only.
 
-### 6.5 CLI: `zhi list plugins` Enhancement
+### 7.5 CLI: `zhi list plugins` Enhancement
 
 Update `zhi list providers` to show both built-in and discovered external plugins:
 
@@ -156,7 +156,7 @@ STORE PROVIDERS:
   json-store        (external: ~/.zhi/plugins/zhi-store-json)
 ```
 
-### 6.6 Plugin Health and Error Handling
+### 7.6 Plugin Health and Error Handling
 
 - **Binary not executable**: skip with a warning logged, don't fail discovery
 - **Plugin crash**: detect via `client.Exited()`, return error to caller, remove from cache so next call re-launches
@@ -164,7 +164,7 @@ STORE PROVIDERS:
 - **Protocol mismatch**: log clear error about version incompatibility
 - **Timeout on connect**: configurable timeout (default 10s), return error if exceeded
 
-### 6.7 Engine Shutdown
+### 7.7 Engine Shutdown
 
 The engine's cleanup must kill all external plugin processes:
 
@@ -176,7 +176,7 @@ func (e *Engine) Close() {
 
 The CLI root command should defer `engine.Close()` to ensure cleanup on exit.
 
-### 6.8 Tests
+### 7.8 Tests
 
 - `internal/core/discovery_test.go`:
   - Test flat directory layout discovery

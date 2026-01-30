@@ -2,7 +2,7 @@
 
 ## Overview
 
-Build the CLI entry point and subcommands that expose core engine operations from the terminal. This step makes zhi usable as a command-line tool (without the TUI, which comes in Step 5).
+Build the CLI entry point and subcommands that expose core engine operations from the terminal, including **component management commands**. This step makes zhi usable as a command-line tool (without the interactive UI, which comes in Steps 5-6).
 
 ## Relevant Existing Files
 
@@ -62,11 +62,12 @@ Scaffold a new zhi workspace in the current (or specified) directory.
 
 **Behavior:**
 
-1. Create `zhi.yaml` with default config (structuredfile provider, json-store, empty transforms)
-2. Create `./config/` directory with a starter configuration file (e.g., `app.yaml`)
-3. Create `./templates/` directory with a sample export template
+1. Create `zhi.yaml` with default config (structuredfile provider, json-store, empty transforms, **sample component definitions**)
+2. Create `./config/` directory with a starter configuration file (e.g., `app.yaml`) organized by component path prefixes
+3. Create `./templates/` directory with a sample export template (demonstrating component-aware rendering with `{{ if .ComponentEnabled "..." }}`)
 4. Create `./.zhi/store/` directory for local store data
-5. Print a summary of created files
+5. Create `./.zhi/components.json` with default component state (all non-mandatory components enabled)
+6. Print a summary of created files
 
 **Flags:**
 
@@ -83,8 +84,18 @@ List available information about the workspace.
 - `zhi list providers` — list all registered providers (built-in + external) grouped by type
 - `zhi list trees` — list all stored tree IDs (calls `storePlugin.ListTrees()`)
 - `zhi list paths` — list all config paths in the current tree (calls `configPlugin.List()`)
+- `zhi list components` — list all defined components with their enabled/disabled status, mandatory flag, and dependencies
 
 **Output format:** plain text table by default. Optional `--json` flag for machine-readable output.
+
+**Component list output example:**
+```
+$ zhi list components
+NAME          STATUS     MANDATORY  DEPENDENCIES  PATHS
+database      enabled    yes        -             database/
+redis         enabled    no         database      redis/
+monitoring    disabled   no         -             monitoring/
+```
 
 ### 2.6 `zhi validate` Command (`internal/cli/validate.go`)
 
@@ -137,30 +148,83 @@ Set a single value in the configuration tree.
 2. Optionally validate after set (`--validate` flag)
 3. Print confirmation or validation errors
 
-### 2.9 Cleanup: Remove/Repurpose `internal/app/zhi/`
+### 2.9 `zhi component` Command (`internal/cli/component.go`)
+
+Manage component state from the CLI.
+
+**Subcommands:**
+
+- `zhi component list` — alias for `zhi list components` (show all components with status)
+- `zhi component enable <name>` — enable a component and its transitive dependencies
+- `zhi component disable <name>` — disable a component (fails if mandatory or depended-upon)
+- `zhi component info <name>` — show detailed info about a component (description, paths, dependencies, dependents, status)
+
+**Behavior for `enable`:**
+
+1. Resolve the component by name
+2. Check transitive dependencies — auto-enable any disabled dependencies
+3. Save updated component state
+4. Print summary: `"Enabled 'redis' (also enabled dependency: 'database')"`
+
+**Behavior for `disable`:**
+
+1. Resolve the component by name
+2. Check if mandatory — reject with clear message
+3. Check if other enabled components depend on it — reject with list of dependents
+4. Save updated component state
+5. Print confirmation: `"Disabled 'monitoring'"`
+
+**Flags:**
+
+- `--json` — output component info as JSON
+- `--force` — for `disable`: also disable dependent components (cascading disable)
+
+**Error examples:**
+```
+$ zhi component disable database
+Error: cannot disable 'database': component is mandatory
+
+$ zhi component disable database --force
+Error: cannot disable 'database': component is mandatory
+
+$ zhi component disable redis
+Disabled 'redis'
+```
+
+### 2.10 Cleanup: Remove/Repurpose `internal/app/zhi/`
 
 The existing `internal/app/zhi/zhi.go` is empty. Either:
 - Remove it entirely if all logic lives in `internal/cli/` and `internal/core/`
 - Or repurpose it as the application initialization logic called by the CLI
 
-### 2.10 Tests
+### 2.11 Tests
 
-- `internal/cli/init_test.go` — test workspace scaffolding creates expected files
-- `internal/cli/list_test.go` — test output format with mock providers
-- `internal/cli/validate_test.go` — test output and exit codes for different validation scenarios
+- `internal/cli/init_test.go` — test workspace scaffolding creates expected files including component definitions and state file
+- `internal/cli/list_test.go` — test output format with mock providers, test component listing
+- `internal/cli/validate_test.go` — test output and exit codes for different validation scenarios (including component dependency violations)
 - `internal/cli/get_test.go` — test value retrieval
 - `internal/cli/set_test.go` — test value setting
-- Integration test: `zhi init` → `zhi list paths` → `zhi validate` in a temp directory
+- `internal/cli/component_test.go` — test enable/disable/list/info subcommands:
+  - Enable a component and verify dependencies are auto-enabled
+  - Disable a non-mandatory component
+  - Reject disabling a mandatory component
+  - Reject disabling a component with active dependents
+  - `--force` cascading disable
+  - `--json` output format
+- Integration test: `zhi init` → `zhi list components` → `zhi component enable/disable` → `zhi validate` in a temp directory
 
 ## Verification Criteria
 
 1. `go build ./cmd/zhi/` produces a working binary
-2. `zhi --help` shows all subcommands with descriptions
-3. `zhi init` creates a valid workspace directory structure
+2. `zhi --help` shows all subcommands with descriptions (including `component`)
+3. `zhi init` creates a valid workspace directory structure with component definitions
 4. `zhi list providers` shows `structuredfile` as a built-in config provider
-5. `zhi validate` loads config from structuredfile and prints validation results
-6. `zhi get <path>` retrieves and prints a config value
-7. `zhi set <path> <value>` sets a value successfully
-8. Exit codes: 0 for success, 1 for validation failure or errors
-9. `make build` still works (binary output to `bin/`)
-10. All tests pass with `go test -race ./internal/cli/...`
+5. `zhi list components` shows all components with their enabled/disabled status
+6. `zhi validate` loads config from structuredfile and prints validation results including component dependency checks
+7. `zhi get <path>` retrieves and prints a config value
+8. `zhi set <path> <value>` sets a value successfully
+9. `zhi component enable <name>` enables a component and its dependencies
+10. `zhi component disable <name>` disables a component (with proper guard rails)
+11. Exit codes: 0 for success, 1 for validation failure or errors
+12. `make build` still works (binary output to `bin/`)
+13. All tests pass with `go test -race ./internal/cli/...`

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Build the template-based export system that renders configuration trees into standard file formats. This is zhi's provisioning mechanism: rather than embedding Docker/K8s SDKs, zhi exports configuration to files that external tools consume.
+Build the template-based export system that renders configuration trees into standard file formats. This is zhi's provisioning mechanism: rather than embedding Docker/K8s SDKs, zhi exports configuration to files that external tools consume. The export system is **component-aware**: by default, only paths belonging to enabled components (and unmanaged paths) are included in exports. Templates can also query component state directly for conditional rendering.
 
 ## Relevant Existing Files
 
@@ -22,29 +22,59 @@ The export engine renders a Go template file with the configuration tree as data
 
 - `ExportConfig` struct — holds template path, output path, and format options (from workspace config)
 - `ExportResult` struct — rendered content, output path, any warnings
-- `Export(ctx, tree TreeReader, config ExportConfig) (*ExportResult, error)` — main export function
-- `ExportAll(ctx, tree TreeReader, configs []ExportConfig) ([]*ExportResult, error)` — export all templates defined in workspace
+- `Export(ctx, tree TreeReader, components *ComponentManager, config ExportConfig) (*ExportResult, error)` — main export function. The tree is filtered through the component manager before rendering: only paths belonging to enabled components (and unmanaged paths) are available to the template.
+- `ExportAll(ctx, tree TreeReader, components *ComponentManager, configs []ExportConfig) ([]*ExportResult, error)` — export all templates defined in workspace
 
 **Template execution:**
 
 1. Read the template file from disk
-2. Create a `text/template.Template` with custom function map
-3. Execute the template with a `TreeData` wrapper around `TreeReader`
-4. Write output to the configured path (or stdout if `-` is specified)
+2. Filter the tree through `ComponentManager.FilterTree()` to include only enabled components' paths
+3. Create a `text/template.Template` with custom function map (including component functions)
+4. Execute the template with a `TreeData` wrapper around `TreeReader` and `ComponentManager`
+5. Write output to the configured path (or stdout if `-` is specified)
 
 ### 3.2 Template Data (`internal/core/export_data.go`)
 
-A wrapper around `TreeReader` that provides template-friendly access methods.
+A wrapper around `TreeReader` and `ComponentManager` that provides template-friendly access methods.
 
-**Template functions available in `.tmpl` files:**
+**Tree access functions available in `.tmpl` files:**
 
-- `.Get "path"` — get a value as string (returns empty string if missing)
+- `.Get "path"` — get a value as string (returns empty string if missing or if path belongs to a disabled component)
 - `.GetOr "path" "default"` — get a value with a default fallback
-- `.Has "path"` — returns bool indicating whether the path exists
-- `.All` — returns all key-value pairs as a `map[string]any`
-- `.Prefix "prefix"` — returns all key-value pairs under a path prefix as a flat map
-- `.Nested "prefix"` — returns all key-value pairs under a prefix as a nested map (splitting on `/`)
+- `.Has "path"` — returns bool indicating whether the path exists and belongs to an enabled component
+- `.All` — returns all key-value pairs as a `map[string]any` (filtered to enabled components)
+- `.Prefix "prefix"` — returns all key-value pairs under a path prefix as a flat map (filtered)
+- `.Nested "prefix"` — returns all key-value pairs under a prefix as a nested map (splitting on `/`) (filtered)
 - `.Meta "path" "key"` — get a metadata value for a path
+
+**Component access functions:**
+
+- `.ComponentEnabled "name"` — returns `bool` indicating whether the named component is enabled
+- `.EnabledComponents` — returns `[]string` of all enabled component names
+- `.DisabledComponents` — returns `[]string` of all disabled component names
+- `.ComponentPaths "name"` — returns `[]string` of path prefixes belonging to the named component
+
+These functions allow templates to conditionally render sections:
+
+```yaml
+# docker-compose.override.yml.tmpl
+services:
+  db:
+    environment:
+      POSTGRES_HOST: {{ .Get "database/host" }}
+{{ if .ComponentEnabled "redis" }}
+  redis:
+    image: redis:7
+    environment:
+      REDIS_URL: {{ .Get "redis/url" }}
+{{ end }}
+{{ if .ComponentEnabled "monitoring" }}
+  prometheus:
+    image: prom/prometheus
+    environment:
+      SCRAPE_INTERVAL: {{ .Get "monitoring/scrape-interval" }}
+{{ end }}
+```
 
 **Built-in format helper functions (registered in the template FuncMap):**
 
@@ -61,12 +91,12 @@ A wrapper around `TreeReader` that provides template-friendly access methods.
 
 For common cases where users just want "export this tree as JSON", provide built-in templates that don't require a `.tmpl` file:
 
-- `ExportAsJSON(ctx, tree, output) error` — render entire tree as JSON
-- `ExportAsYAML(ctx, tree, output) error` — render entire tree as YAML
-- `ExportAsTOML(ctx, tree, output) error` — render entire tree as TOML
-- `ExportAsDotenv(ctx, tree, output) error` — render entire tree as dotenv
+- `ExportAsJSON(ctx, tree, components, output) error` — render enabled components' config as JSON
+- `ExportAsYAML(ctx, tree, components, output) error` — render enabled components' config as YAML
+- `ExportAsTOML(ctx, tree, components, output) error` — render enabled components' config as TOML
+- `ExportAsDotenv(ctx, tree, components, output) error` — render enabled components' config as dotenv
 
-These are implemented as hardcoded templates that use the `.All` or `.Nested` data functions.
+These are implemented as hardcoded templates that use the `.All` or `.Nested` data functions. Since `.All` already filters to enabled components, these shortcuts automatically respect component state.
 
 ### 3.4 CLI: `zhi export` Command (`internal/cli/export.go`)
 
@@ -92,6 +122,7 @@ zhi export [--template <path>] [--format <json|yaml|toml|dotenv>] [--output <pat
 - `--format` — built-in format (`json`, `yaml`, `toml`, `dotenv`)
 - `--output` / `-o` — output file path (default: stdout for single, workspace-defined for batch)
 - `--prefix` — only export paths under this prefix
+- `--all-components` — include all components regardless of enabled/disabled state (bypass component filtering)
 - `--dry-run` — print rendered output without writing to disk
 
 ### 3.5 Workspace Export Configuration
@@ -134,8 +165,13 @@ Create sample templates in the init scaffolding (Step 2's `zhi init` should crea
   - `.Prefix` filters correctly
   - `.Nested` builds nested maps
   - `toJSON`, `toYAML`, `toTOML`, `toDotenv` format correctly
-- `internal/core/export_formats_test.go` — test built-in format shortcuts produce valid output
-- `internal/cli/export_test.go` — test CLI flag combinations and output
+  - `.ComponentEnabled` returns correct state
+  - `.EnabledComponents` and `.DisabledComponents` return correct lists
+  - `.Get` returns empty string for paths belonging to disabled components
+  - `.All` excludes disabled components' paths
+  - `.Has` returns false for disabled components' paths
+- `internal/core/export_formats_test.go` — test built-in format shortcuts produce valid output, test that disabled components' paths are excluded
+- `internal/cli/export_test.go` — test CLI flag combinations and output, test `--all-components` flag
 - Use fixture data from `pkg/providers/config/structuredfile/testdata/` as input
 
 ## Verification Criteria
@@ -144,9 +180,13 @@ Create sample templates in the init scaffolding (Step 2's `zhi init` should crea
 2. `toJSON` produces valid, indented JSON from a tree
 3. `toYAML` produces valid YAML from a tree
 4. `toDotenv` produces `KEY=value` lines with uppercased, underscore-delimited keys
-5. `zhi export --format json` outputs the entire tree as JSON to stdout
+5. `zhi export --format json` outputs the tree as JSON to stdout (only enabled components)
 6. `zhi export --template ./templates/my.tmpl --output ./out.txt` writes rendered output to file
 7. `zhi export` (no flags) exports all templates defined in `zhi.yaml`
 8. `--dry-run` prints output without writing files
 9. Missing paths in templates produce empty strings (not errors) by default
-10. All tests pass with `go test -race ./internal/core/... ./internal/cli/...`
+10. Paths belonging to disabled components are excluded from `.All`, `.Prefix`, `.Nested`, and `.Has`
+11. `.ComponentEnabled "redis"` returns correct boolean based on component state
+12. `{{ if .ComponentEnabled "redis" }}` conditional blocks render correctly
+13. `--all-components` bypasses component filtering
+14. All tests pass with `go test -race ./internal/core/... ./internal/cli/...`

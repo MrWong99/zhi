@@ -1,4 +1,4 @@
-# Step 8: CI/CD and Release
+# Step 9: CI/CD and Release
 
 ## Overview
 
@@ -14,7 +14,7 @@ Set up the CI/CD pipeline and release automation to build, test, and distribute 
 
 ## Implementation Plan
 
-### 8.1 GitHub Actions CI Pipeline (`.github/workflows/ci.yml`)
+### 9.1 GitHub Actions CI Pipeline (`.github/workflows/ci.yml`)
 
 Automated checks on every push and pull request.
 
@@ -58,9 +58,9 @@ Automated checks on every push and pull request.
   1. Checkout code
   2. Set up Go
   3. Run `make build-all` (build main binary + example plugins)
-  4. Run integration tests from `test/`
+  4. Run integration tests from `test/` (including component enable/disable workflows and UI controller tests)
 
-### 8.2 GoReleaser Configuration (`.goreleaser.yaml`)
+### 9.2 GoReleaser Configuration (`.goreleaser.yaml`)
 
 Automate cross-compilation and release packaging.
 
@@ -121,7 +121,7 @@ release:
   prerelease: auto
 ```
 
-### 8.3 Release GitHub Action (`.github/workflows/release.yml`)
+### 9.3 Release GitHub Action (`.github/workflows/release.yml`)
 
 Triggered on tag push (`v*`).
 
@@ -132,7 +132,7 @@ Triggered on tag push (`v*`).
 3. Run GoReleaser with `goreleaser release --clean`
 4. Upload artifacts to GitHub Release
 
-### 8.4 Version Information (`cmd/zhi/version.go`)
+### 9.4 Version Information (`cmd/zhi/version.go`)
 
 Embed build version info into the binary.
 
@@ -148,7 +148,7 @@ $ zhi version
 zhi v0.1.0 (commit: abc1234, built: 2026-01-29)
 ```
 
-### 8.5 Makefile Updates
+### 9.5 Makefile Updates
 
 Extend the Makefile for release workflows:
 
@@ -168,14 +168,14 @@ release-dry-run:
     goreleaser release --skip=publish --clean
 ```
 
-### 8.6 Dependency Management
+### 9.6 Dependency Management
 
 - Pin all direct dependencies to exact versions in `go.mod`
 - Use `go mod tidy` in CI to verify no missing/extra dependencies
 - Use `go mod verify` to check module checksums
 - Consider Dependabot or Renovate for automated dependency updates
 
-### 8.7 Branch Protection
+### 9.7 Branch Protection
 
 Recommend (document, don't enforce via code):
 
@@ -184,7 +184,7 @@ Recommend (document, don't enforce via code):
 - No force-push to `main`
 - Squash merge by default
 
-### 8.8 Release Process Documentation
+### 9.8 Release Process Documentation
 
 Add to CONTRIBUTING.md or a new section in README.md:
 
@@ -203,7 +203,7 @@ Add to CONTRIBUTING.md or a new section in README.md:
 - Pre-1.0: breaking changes may occur in minor versions
 - Plugin protocol version is tracked separately (`ProtocolVersion` in handshake)
 
-### 8.9 Install Instructions
+### 9.9 Install Instructions
 
 Add to README.md:
 
@@ -223,7 +223,7 @@ sudo mv zhi /usr/local/bin/
 go install github.com/MrWong99/zhi/cmd/zhi@latest
 ```
 
-### 8.10 Tests
+### 9.10 Tests
 
 - Verify `goreleaser check` passes (validates `.goreleaser.yaml`)
 - Verify `goreleaser release --snapshot --clean` builds all targets locally

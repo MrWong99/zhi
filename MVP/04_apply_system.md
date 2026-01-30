@@ -2,7 +2,7 @@
 
 ## Overview
 
-Build the apply system that runs a user-configured external command after exporting configuration. This is how zhi triggers provisioning tools (Docker Compose, kubectl, Ansible, etc.) without embedding their SDKs.
+Build the apply system that runs a user-configured external command after exporting configuration. This is how zhi triggers provisioning tools (Docker Compose, kubectl, Ansible, etc.) without embedding their SDKs. The apply system is **component-aware**: pre-export generates files filtered to enabled components, and component state is passed to the subprocess via environment variables.
 
 ## Relevant Existing Files
 
@@ -19,7 +19,7 @@ The apply runner executes an external command as a subprocess and streams its ou
 
 **Components:**
 
-- `ApplyConfig` struct — command string, working directory, environment overrides, pre-export flag
+- `ApplyConfig` struct — command string, working directory, environment overrides, pre-export flag, component manager reference
 - `ApplyResult` struct — exit code, duration, error (if any)
 - `ApplyOutput` — channel-based output stream:
   ```go
@@ -33,11 +33,11 @@ The apply runner executes an external command as a subprocess and streams its ou
 
 **Execution flow:**
 
-1. If `config.PreExport` is true, run `ExportAll()` first to generate config files
+1. If `config.PreExport` is true, run `ExportAll()` first to generate config files (component-filtered — only enabled components' paths are included in exports)
 2. Parse the command string using `shlex` splitting (or `sh -c` for shell features)
 3. Create `exec.CommandContext` with the parsed command
 4. Set working directory from config (default: workspace root)
-5. Set environment: inherit current env + workspace-defined overrides + `ZHI_WORKSPACE` pointing to workspace root
+5. Set environment: inherit current env + workspace-defined overrides + `ZHI_WORKSPACE` pointing to workspace root + `ZHI_ENABLED_COMPONENTS` (comma-separated list of enabled component names) + `ZHI_DISABLED_COMPONENTS` (comma-separated list of disabled component names)
 6. Pipe stdout and stderr through separate scanners
 7. Send each line as an `ApplyOutput` to the output channel
 8. Wait for command completion
@@ -115,12 +115,13 @@ Apply completed (exit code 0)
 
 ### 4.4 Apply with Streaming Interface
 
-The `Apply` function uses a channel-based output interface so that both the CLI and TUI (Step 5) can consume output differently:
+The `Apply` function uses a channel-based output interface so that any UI frontend can consume output differently:
 
 - **CLI consumer** (`internal/cli/apply.go`): reads from channel, writes each line to `os.Stdout`/`os.Stderr` directly
-- **TUI consumer** (`internal/ui/apply_view.go`, Step 5): reads from channel, appends to a viewport buffer for scrollable display
+- **TUI consumer** (`internal/ui/tui/apply_view.go`, Step 6): reads from channel, appends to a viewport buffer for scrollable display
+- **Future UI consumers** (Web UI, AI Chat): consume the same channel interface — no apply runner changes needed
 
-This separation means the apply runner doesn't need to know about the presentation layer.
+This separation means the apply runner doesn't need to know about the presentation layer. It is consumed through the `UIController` (Step 5) by any UI frontend (Step 6+), which wraps the channel management.
 
 ### 4.5 Error Handling
 
@@ -137,9 +138,10 @@ This separation means the apply runner doesn't need to know about the presentati
   - Test non-zero exit code propagation
   - Test context cancellation terminates the subprocess
   - Test stdout and stderr are separated in output
-  - Test environment variable passing
+  - Test environment variable passing (including `ZHI_ENABLED_COMPONENTS` and `ZHI_DISABLED_COMPONENTS`)
   - Test working directory setting
   - Test timeout enforcement
+  - Test pre-export respects component filtering (disabled components' paths excluded from exports)
 - `internal/cli/apply_test.go`:
   - Test `--dry-run` prints command without executing
   - Test `--no-export` flag
@@ -154,6 +156,7 @@ This separation means the apply runner doesn't need to know about the presentati
 5. Timeout triggers SIGTERM → SIGKILL sequence
 6. `zhi apply` streams command output to the terminal in real-time
 7. `zhi apply --dry-run` prints the command without executing
-8. Pre-export runs before the command when configured
+8. Pre-export runs before the command when configured, respecting component state
 9. Environment variables from workspace config and `--env` flags are passed to the subprocess
-10. All tests pass with `go test -race ./internal/core/... ./internal/cli/...`
+10. `ZHI_ENABLED_COMPONENTS` and `ZHI_DISABLED_COMPONENTS` are set in the subprocess environment
+11. All tests pass with `go test -race ./internal/core/... ./internal/cli/...`

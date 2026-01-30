@@ -1,4 +1,4 @@
-# Step 7: Security and Polish
+# Step 8: Security and Polish
 
 ## Overview
 
@@ -18,13 +18,21 @@ Harden the MVP with input validation, secure defaults, error handling improvemen
 
 ## Implementation Plan
 
-### 7.1 Input Validation and Sanitization
+### 8.1 Input Validation and Sanitization
 
 **Path validation** is already handled by `config.ValidatePath()` in `pkg/zhiplugin/config/config.go`. Verify that all code paths use it:
 
 - `engine.SetValue()` must validate the path before calling the config plugin
 - CLI `zhi set` must validate the path before passing to the engine
-- TUI value editor must validate the path before committing
+- UI value editor (via `UIController.SetValue()`) must validate the path before committing
+
+**Component validation:**
+
+- Component names must be non-empty, unique, and match `[a-z][a-z0-9-]*`
+- Component path prefixes must be valid path prefixes (validated against `config.ValidatePath()`)
+- Component dependencies must reference existing component names
+- Circular dependencies must be detected and rejected at workspace load time
+- Overlapping path prefixes across components must be rejected
 
 **Value sanitization:**
 
@@ -38,7 +46,7 @@ Harden the MVP with input validation, secure defaults, error handling improvemen
 - Command strings in `apply.command`: document that these are passed to `sh -c` and users are responsible for their content — zhi does not sanitize shell commands
 - Plugin directory paths: resolve to absolute paths, reject paths containing `..` traversal
 
-### 7.2 Plugin Execution Security
+### 8.2 Plugin Execution Security
 
 **External plugin binaries:**
 
@@ -53,7 +61,7 @@ Harden the MVP with input validation, secure defaults, error handling improvemen
 - Set timeouts for plugin operations: if a plugin call doesn't return within a configurable timeout (default 30s), kill the process
 - Handle plugin panics gracefully: the gRPC connection will drop, detect this and report a clear error
 
-### 7.3 File System Security
+### 8.3 File System Security
 
 **Export file writing:**
 
@@ -69,7 +77,7 @@ Harden the MVP with input validation, secure defaults, error handling improvemen
 - Store data files with `0600` permissions
 - Add `.zhi/` to `.gitignore` recommendations in `zhi init`
 
-### 7.4 Error Handling Audit
+### 8.4 Error Handling Audit
 
 Review all error paths and ensure:
 
@@ -80,14 +88,14 @@ Review all error paths and ensure:
 - TUI errors display in a status bar, not crash the application
 - Apply command failures show the command that was run and its exit code
 
-### 7.5 Graceful Shutdown
+### 8.5 Graceful Shutdown
 
 - CLI: handle `SIGINT` and `SIGTERM` — cancel context, clean up plugin processes, exit
 - TUI: `Ctrl+C` and `q` trigger clean shutdown via Bubbletea
 - Apply: running commands are terminated with SIGTERM → SIGKILL on shutdown
 - Engine: `Close()` is always called, even on panic (use `defer`)
 
-### 7.6 Logging
+### 8.6 Logging
 
 Add structured logging for debugging (not shown to users by default):
 
@@ -97,7 +105,7 @@ Add structured logging for debugging (not shown to users by default):
 - Log key events: workspace loaded, provider resolved, plugin launched, export written, apply started/finished
 - Logs go to stderr, not stdout (so `zhi export --format json` can pipe cleanly)
 
-### 7.7 User-Facing Documentation Updates
+### 8.7 User-Facing Documentation Updates
 
 **README.md updates:**
 
@@ -111,7 +119,7 @@ Add structured logging for debugging (not shown to users by default):
 - In-binary help text: ensure all `cobra.Command` instances have useful `Long` descriptions and `Example` fields
 - `zhi init` should print a "what's next" message after scaffolding
 
-### 7.8 Configuration Defaults and Conventions
+### 8.8 Configuration Defaults and Conventions
 
 Establish sensible defaults:
 
@@ -122,29 +130,41 @@ Establish sensible defaults:
 - Default apply timeout: 300 seconds
 - Default workspace file: `zhi.yaml` (also accept `zhi.json`)
 
-### 7.9 Edge Case Handling
+### 8.9 Edge Case Handling
 
 - **Empty tree**: `zhi edit` shows an empty state message, not a crash
 - **No workspace**: `zhi edit` without `zhi.yaml` suggests running `zhi init`
-- **No store configured**: `s` (save) in TUI shows a message that no store is configured
-- **No apply configured**: `a` (apply) in TUI shows a message that no apply command is configured
+- **No store configured**: `s` (save) in UI shows a message that no store is configured
+- **No apply configured**: `a` (apply) in UI shows a message that no apply command is configured
 - **Plugin not found**: clear error message listing available providers
 - **Permission denied**: suggest checking file permissions
 - **Workspace in read-only directory**: export and apply may fail — detect and report early
+- **No components defined**: component view shows a message that no components are defined in `zhi.yaml`; all paths are treated as unmanaged and always included in exports
+- **All components disabled**: export and apply still work — they export unmanaged paths only; a warning is shown
+- **Component state file missing**: treat all non-mandatory components as enabled (default state)
+- **Component state references unknown component**: ignore the unknown entry, log a warning
+- **UI driver not found**: `--ui <unknown>` prints available drivers and exits
 
-### 7.10 Tests
+### 8.10 Tests
 
 - `internal/core/security_test.go`:
   - Test path traversal rejection in export output paths
   - Test workspace config validation rejects unknown keys
   - Test file permissions on created directories and files
+  - Test component name validation (invalid characters, duplicates)
+  - Test component path prefix overlap detection
+  - Test component circular dependency detection
 - `internal/core/engine_test.go` (extend):
   - Test error wrapping provides context
   - Test graceful handling of plugin crashes
   - Test timeout enforcement on plugin calls
+- `internal/ui/driver_test.go` (extend):
+  - Test UIController handles edge cases (no components, no store, no apply config)
+  - Test UIController with mock engine returns sensible errors
 - Integration tests in `test/`:
-  - Full workflow: `init` → `set` → `validate` → `export` → `apply`
+  - Full workflow: `init` → `component enable/disable` → `set` → `validate` → `export` → `apply`
   - Test with example plugins as external plugins
+  - Test component-aware export produces correct output
 
 ## Verification Criteria
 
@@ -156,7 +176,8 @@ Establish sensible defaults:
 6. `--verbose` enables debug logging to stderr
 7. `SIGINT` during any operation triggers clean shutdown
 8. Empty/missing workspace produces a helpful error message
-9. README.md contains working "Getting Started" instructions
-10. All cobra commands have `Long` descriptions and `Example` fields
-11. `make check` passes with no lint warnings
-12. All tests pass with `go test -race ./...`
+9. Component validation catches all invalid configurations at workspace load time
+10. README.md contains working "Getting Started" instructions (including component management)
+11. All cobra commands have `Long` descriptions and `Example` fields
+12. `make check` passes with no lint warnings
+13. All tests pass with `go test -race ./...`
