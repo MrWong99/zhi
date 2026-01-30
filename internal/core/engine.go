@@ -215,3 +215,36 @@ func (e *Engine) SetTestWorkspaceDir(dir string) {
 	}
 	e.workspace.Dir = dir
 }
+
+// BuildApplyRunConfig creates an ApplyRunConfig from the workspace apply
+// configuration and the current component state. The target parameter
+// selects a named apply target (empty = "default").
+func (e *Engine) BuildApplyRunConfig(target string) (ApplyRunConfig, error) {
+	ws := e.Workspace()
+	if ws == nil {
+		return ApplyRunConfig{}, fmt.Errorf("no workspace loaded")
+	}
+
+	t, err := ws.Apply.ResolveTarget(target)
+	if err != nil {
+		return ApplyRunConfig{}, err
+	}
+
+	cm := e.Components()
+	var enabled, disabled []string
+	for _, c := range cm.ListComponents() {
+		if c.Enabled {
+			enabled = append(enabled, c.Name)
+		} else {
+			disabled = append(disabled, c.Name)
+		}
+	}
+
+	return ApplyRunConfig{
+		Target:             t,
+		WorkspaceDir:       ws.Dir,
+		TimeoutOverride:    -1, // use target config
+		EnabledComponents:  enabled,
+		DisabledComponents: disabled,
+	}, nil
+}
