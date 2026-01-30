@@ -1,5 +1,13 @@
 package main
 
-func main() {
+import (
+	"os"
 
+	"github.com/MrWong99/zhi/internal/cli"
+)
+
+func main() {
+	if err := cli.Execute(); err != nil {
+		os.Exit(1)
+	}
 }

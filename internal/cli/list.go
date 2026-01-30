@@ -1,0 +1,267 @@
+package cli
+
+import (
+	"encoding/json"
+	"fmt"
+	"strings"
+
+	"github.com/spf13/cobra"
+)
+
+var listCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List workspace information",
+	Long:  "List available information about the workspace (providers, trees, paths, components).",
+}
+
+var listJSON bool
+
+func init() {
+	listCmd.PersistentFlags().BoolVar(&listJSON, "json", false, "output as JSON")
+	listCmd.AddCommand(listProvidersCmd)
+	listCmd.AddCommand(listTreesCmd)
+	listCmd.AddCommand(listPathsCmd)
+	listCmd.AddCommand(listComponentsCmd)
+	rootCmd.AddCommand(listCmd)
+}
+
+// --- list providers ---
+
+var listProvidersCmd = &cobra.Command{
+	Use:               "providers",
+	Short:             "List all registered providers",
+	PersistentPreRunE: withRegistry,
+	RunE:              runListProviders,
+}
+
+func runListProviders(cmd *cobra.Command, _ []string) error {
+	reg, err := registryFromCmd(cmd)
+	if err != nil {
+		return err
+	}
+
+	w := cmd.OutOrStdout()
+
+	configs := reg.ListConfig()
+	transforms := reg.ListTransform()
+	stores := reg.ListStore()
+
+	if listJSON {
+		out := map[string][]string{
+			"config":    configs,
+			"transform": transforms,
+			"store":     stores,
+		}
+		data, err := json.MarshalIndent(out, "", "  ")
+		if err != nil {
+			return err
+		}
+		fmt.Fprintln(w, string(data))
+		return nil
+	}
+
+	fmt.Fprintln(w, "Config providers:")
+	for _, name := range configs {
+		fmt.Fprintf(w, "  %s\n", name)
+	}
+	fmt.Fprintln(w, "Transform providers:")
+	if len(transforms) == 0 {
+		fmt.Fprintln(w, "  (none)")
+	}
+	for _, name := range transforms {
+		fmt.Fprintf(w, "  %s\n", name)
+	}
+	fmt.Fprintln(w, "Store providers:")
+	if len(stores) == 0 {
+		fmt.Fprintln(w, "  (none)")
+	}
+	for _, name := range stores {
+		fmt.Fprintf(w, "  %s\n", name)
+	}
+	return nil
+}
+
+// --- list trees ---
+
+var listTreesCmd = &cobra.Command{
+	Use:               "trees",
+	Short:             "List all stored tree IDs",
+	PersistentPreRunE: withEngine,
+	RunE:              runListTrees,
+}
+
+func runListTrees(cmd *cobra.Command, _ []string) error {
+	eng, err := engineFromCmd(cmd)
+	if err != nil {
+		return err
+	}
+
+	w := cmd.OutOrStdout()
+
+	ids, err := eng.ListTrees(cmd.Context())
+	if err != nil {
+		return err
+	}
+
+	if listJSON {
+		data, err := json.MarshalIndent(ids, "", "  ")
+		if err != nil {
+			return err
+		}
+		fmt.Fprintln(w, string(data))
+		return nil
+	}
+
+	if len(ids) == 0 {
+		fmt.Fprintln(w, "No stored trees.")
+		return nil
+	}
+	for _, id := range ids {
+		fmt.Fprintln(w, id)
+	}
+	return nil
+}
+
+// --- list paths ---
+
+var listPathsCmd = &cobra.Command{
+	Use:               "paths",
+	Short:             "List all config paths in the current tree",
+	PersistentPreRunE: withEngine,
+	RunE:              runListPaths,
+}
+
+func runListPaths(cmd *cobra.Command, _ []string) error {
+	eng, err := engineFromCmd(cmd)
+	if err != nil {
+		return err
+	}
+
+	w := cmd.OutOrStdout()
+
+	tree, err := eng.LoadTree(cmd.Context())
+	if err != nil {
+		return err
+	}
+
+	paths := tree.List()
+	sortStrings(paths)
+
+	if listJSON {
+		data, err := json.MarshalIndent(paths, "", "  ")
+		if err != nil {
+			return err
+		}
+		fmt.Fprintln(w, string(data))
+		return nil
+	}
+
+	if len(paths) == 0 {
+		fmt.Fprintln(w, "No config paths.")
+		return nil
+	}
+	for _, p := range paths {
+		fmt.Fprintln(w, p)
+	}
+	return nil
+}
+
+// --- list components ---
+
+var listComponentsCmd = &cobra.Command{
+	Use:               "components",
+	Short:             "List all defined components with status",
+	PersistentPreRunE: withEngine,
+	RunE:              runListComponents,
+}
+
+type componentListEntry struct {
+	Name         string   `json:"name"`
+	Status       string   `json:"status"`
+	Mandatory    bool     `json:"mandatory"`
+	Dependencies []string `json:"dependencies"`
+	Paths        []string `json:"paths,omitempty"`
+}
+
+func runListComponents(cmd *cobra.Command, _ []string) error {
+	eng, err := engineFromCmd(cmd)
+	if err != nil {
+		return err
+	}
+
+	w := cmd.OutOrStdout()
+
+	components := eng.Components().ListComponents()
+	defs := eng.Components().Definitions()
+
+	if listJSON {
+		entries := make([]componentListEntry, len(components))
+		for i, c := range components {
+			status := "disabled"
+			if c.Enabled {
+				status = "enabled"
+			}
+			var paths []string
+			for _, d := range defs {
+				if d.Name == c.Name {
+					paths = d.Paths
+					break
+				}
+			}
+			entries[i] = componentListEntry{
+				Name:         c.Name,
+				Status:       status,
+				Mandatory:    c.Mandatory,
+				Dependencies: c.Dependencies,
+				Paths:        paths,
+			}
+		}
+		data, err := json.MarshalIndent(entries, "", "  ")
+		if err != nil {
+			return err
+		}
+		fmt.Fprintln(w, string(data))
+		return nil
+	}
+
+	if len(components) == 0 {
+		fmt.Fprintln(w, "No components defined.")
+		return nil
+	}
+
+	headers := []string{"NAME", "STATUS", "MANDATORY", "DEPENDENCIES", "PATHS"}
+	var rows [][]string
+	for _, c := range components {
+		status := "disabled"
+		if c.Enabled {
+			status = "enabled"
+		}
+		mandatory := "no"
+		if c.Mandatory {
+			mandatory = "yes"
+		}
+		deps := "-"
+		if len(c.Dependencies) > 0 {
+			deps = strings.Join(c.Dependencies, ", ")
+		}
+		var paths string
+		for _, d := range defs {
+			if d.Name == c.Name {
+				paths = strings.Join(d.Paths, ", ")
+				break
+			}
+		}
+		rows = append(rows, []string{c.Name, status, mandatory, deps, paths})
+	}
+	fprintTable(w, headers, rows)
+	return nil
+}
+
+// sortStrings sorts a string slice in place.
+func sortStrings(s []string) {
+	for i := 1; i < len(s); i++ {
+		for j := i; j > 0 && s[j] < s[j-1]; j-- {
+			s[j], s[j-1] = s[j-1], s[j]
+		}
+	}
+}
