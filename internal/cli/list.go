@@ -3,9 +3,12 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/spf13/cobra"
+
+	"github.com/MrWong99/zhi/internal/core"
 )
 
 var listCmd = &cobra.Command{
@@ -34,6 +37,11 @@ var listProvidersCmd = &cobra.Command{
 	RunE:              runListProviders,
 }
 
+type providerJSONEntry struct {
+	Name   string `json:"name"`
+	Source string `json:"source"`
+}
+
 func runListProviders(cmd *cobra.Command, _ []string) error {
 	reg, err := registryFromCmd(cmd)
 	if err != nil {
@@ -42,15 +50,15 @@ func runListProviders(cmd *cobra.Command, _ []string) error {
 
 	w := cmd.OutOrStdout()
 
-	configs := reg.ListConfig()
-	transforms := reg.ListTransform()
-	stores := reg.ListStore()
+	configInfos := reg.ListConfigProviders()
+	transformInfos := reg.ListTransformProviders()
+	storeInfos := reg.ListStoreProviders()
 
 	if listJSON {
-		out := map[string][]string{
-			"config":    configs,
-			"transform": transforms,
-			"store":     stores,
+		out := map[string][]providerJSONEntry{
+			"config":    toJSONEntries(configInfos),
+			"transform": toJSONEntries(transformInfos),
+			"store":     toJSONEntries(storeInfos),
 		}
 		data, err := json.MarshalIndent(out, "", "  ")
 		if err != nil {
@@ -61,24 +69,36 @@ func runListProviders(cmd *cobra.Command, _ []string) error {
 	}
 
 	fmt.Fprintln(w, "Config providers:")
-	for _, name := range configs {
-		fmt.Fprintf(w, "  %s\n", name)
-	}
+	printProviderInfos(w, configInfos)
 	fmt.Fprintln(w, "Transform providers:")
-	if len(transforms) == 0 {
+	if len(transformInfos) == 0 {
 		fmt.Fprintln(w, "  (none)")
 	}
-	for _, name := range transforms {
-		fmt.Fprintf(w, "  %s\n", name)
-	}
+	printProviderInfos(w, transformInfos)
 	fmt.Fprintln(w, "Store providers:")
-	if len(stores) == 0 {
+	if len(storeInfos) == 0 {
 		fmt.Fprintln(w, "  (none)")
 	}
-	for _, name := range stores {
-		fmt.Fprintf(w, "  %s\n", name)
-	}
+	printProviderInfos(w, storeInfos)
 	return nil
+}
+
+func printProviderInfos(w io.Writer, infos []core.ProviderInfo) {
+	for _, info := range infos {
+		if info.Source == "built-in" {
+			fmt.Fprintf(w, "  %-20s (built-in)\n", info.Name)
+		} else {
+			fmt.Fprintf(w, "  %-20s (external: %s)\n", info.Name, info.Source)
+		}
+	}
+}
+
+func toJSONEntries(infos []core.ProviderInfo) []providerJSONEntry {
+	entries := make([]providerJSONEntry, len(infos))
+	for i, info := range infos {
+		entries[i] = providerJSONEntry{Name: info.Name, Source: info.Source}
+	}
+	return entries
 }
 
 // --- list trees ---

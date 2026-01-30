@@ -91,6 +91,11 @@ func withEngine(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("loading workspace: %w", err)
 	}
 
+	// Discover external plugins from workspace-configured directories.
+	_ = reg.RefreshExternal(core.DiscoveryConfig{
+		Directories: ws.PluginDirectories(),
+	})
+
 	eng, err := core.NewEngine(reg, ws)
 	if err != nil {
 		return fmt.Errorf("initializing engine: %w", err)
@@ -112,9 +117,14 @@ func withEngine(cmd *cobra.Command, _ []string) error {
 }
 
 // withRegistry is a PersistentPreRunE that only initializes the registry
-// (no workspace needed).
+// (no workspace needed). It still discovers external plugins from the
+// default plugin directory.
 func withRegistry(cmd *cobra.Command, _ []string) error {
 	reg := core.DefaultRegistry()
+
+	// Discover external plugins from default directories.
+	_ = reg.RefreshExternal(core.DiscoveryConfig{})
+
 	ctx := context.WithValue(cmd.Context(), registryKey, reg)
 	cmd.SetContext(ctx)
 	return nil
