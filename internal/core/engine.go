@@ -168,6 +168,13 @@ func (e *Engine) ListTrees(ctx context.Context) ([]string, error) {
 	return e.storePlugin.ListTrees(ctx)
 }
 
+// Close shuts down the engine, killing all external plugin processes.
+func (e *Engine) Close() {
+	if e.registry != nil {
+		e.registry.Close()
+	}
+}
+
 // Components returns the component manager for UI and CLI access.
 func (e *Engine) Components() *ComponentManager {
 	return e.components

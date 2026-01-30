@@ -106,6 +106,11 @@ func (ac *ApplyConfig) ResolveTarget(name string) (ApplyTargetConfig, error) {
 	}, nil
 }
 
+// PluginsConfig holds the optional plugin discovery configuration.
+type PluginsConfig struct {
+	Directories []string `yaml:"directories,omitempty" json:"directories,omitempty"`
+}
+
 // WorkspaceConfig is the parsed representation of a zhi.yaml (or zhi.json)
 // workspace configuration file.
 type WorkspaceConfig struct {
@@ -116,10 +121,23 @@ type WorkspaceConfig struct {
 	Components []ComponentDef `yaml:"components,omitempty" json:"components,omitempty"`
 	Export     ExportConfig   `yaml:"export,omitempty" json:"export,omitempty"`
 	Apply      ApplyConfig    `yaml:"apply,omitempty" json:"apply,omitempty"`
+	Plugins    PluginsConfig  `yaml:"plugins,omitempty" json:"plugins,omitempty"`
 
 	// Dir is the absolute directory containing the workspace config file.
 	// It is set during loading and not part of the config file itself.
 	Dir string `yaml:"-" json:"-"`
+}
+
+// PluginDirectories returns the configured plugin directories, falling
+// back to the default (~/.zhi/plugins/) if none are specified.
+func (ws *WorkspaceConfig) PluginDirectories() []string {
+	if len(ws.Plugins.Directories) > 0 {
+		return ws.Plugins.Directories
+	}
+	if d := DefaultPluginDir(); d != "" {
+		return []string{d}
+	}
+	return nil
 }
 
 // LoadWorkspace finds and parses a zhi.yaml (or zhi.json) in dir or any

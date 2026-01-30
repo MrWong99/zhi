@@ -179,3 +179,201 @@ func TestDefaultRegistryHasStructuredfile(t *testing.T) {
 		t.Errorf("DefaultRegistry ListConfig() = %v, want %v", got, want)
 	}
 }
+
+func TestRegistryListIncludesExternal(t *testing.T) {
+	r := NewRegistry()
+	_ = r.RegisterConfig("builtin", func(map[string]any) (config.Plugin, error) {
+		return &stubConfig{}, nil
+	})
+
+	r.SetExternalPlugins([]PluginInfo{
+		{Name: "ext-config", Type: PluginTypeConfig, Path: "/fake/zhi-config-ext"},
+		{Name: "ext-transform", Type: PluginTypeTransform, Path: "/fake/zhi-transform-ext"},
+		{Name: "ext-store", Type: PluginTypeStore, Path: "/fake/zhi-store-ext"},
+	})
+
+	configs := r.ListConfig()
+	if !slices.Contains(configs, "builtin") {
+		t.Error("ListConfig missing built-in provider")
+	}
+	if !slices.Contains(configs, "ext-config") {
+		t.Error("ListConfig missing external provider")
+	}
+
+	transforms := r.ListTransform()
+	if !slices.Contains(transforms, "ext-transform") {
+		t.Error("ListTransform missing external provider")
+	}
+
+	stores := r.ListStore()
+	if !slices.Contains(stores, "ext-store") {
+		t.Error("ListStore missing external provider")
+	}
+}
+
+func TestRegistryListExternalDoesNotDuplicate(t *testing.T) {
+	r := NewRegistry()
+	_ = r.RegisterConfig("shared", func(map[string]any) (config.Plugin, error) {
+		return &stubConfig{}, nil
+	})
+
+	// External plugin with same name as built-in.
+	r.SetExternalPlugins([]PluginInfo{
+		{Name: "shared", Type: PluginTypeConfig, Path: "/fake/zhi-config-shared"},
+	})
+
+	configs := r.ListConfig()
+	count := 0
+	for _, name := range configs {
+		if name == "shared" {
+			count++
+		}
+	}
+	if count != 1 {
+		t.Errorf("expected 1 'shared' in ListConfig, got %d", count)
+	}
+}
+
+func TestRegistryListProviderInfos(t *testing.T) {
+	r := NewRegistry()
+	_ = r.RegisterConfig("builtin", func(map[string]any) (config.Plugin, error) {
+		return &stubConfig{}, nil
+	})
+
+	r.SetExternalPlugins([]PluginInfo{
+		{Name: "ext", Type: PluginTypeConfig, Path: "/plugins/zhi-config-ext"},
+	})
+
+	infos := r.ListConfigProviders()
+	if len(infos) != 2 {
+		t.Fatalf("got %d infos, want 2", len(infos))
+	}
+
+	// First should be built-in (sorted).
+	if infos[0].Name != "builtin" || infos[0].Source != "built-in" {
+		t.Errorf("infos[0] = %+v, want builtin/built-in", infos[0])
+	}
+	if infos[1].Name != "ext" || infos[1].Source != "/plugins/zhi-config-ext" {
+		t.Errorf("infos[1] = %+v, want ext/external-path", infos[1])
+	}
+}
+
+func TestRegistryListProviderInfosExternalSameNameAsBuiltin(t *testing.T) {
+	r := NewRegistry()
+	_ = r.RegisterConfig("shared", func(map[string]any) (config.Plugin, error) {
+		return &stubConfig{}, nil
+	})
+
+	r.SetExternalPlugins([]PluginInfo{
+		{Name: "shared", Type: PluginTypeConfig, Path: "/plugins/zhi-config-shared"},
+	})
+
+	// Built-in takes precedence; external with same name should not appear.
+	infos := r.ListConfigProviders()
+	if len(infos) != 1 {
+		t.Fatalf("got %d infos, want 1 (external duplicate should be filtered)", len(infos))
+	}
+	if infos[0].Source != "built-in" {
+		t.Errorf("expected built-in source, got %q", infos[0].Source)
+	}
+}
+
+func TestRegistryBuiltinTakesPrecedenceOverExternal(t *testing.T) {
+	r := NewRegistry()
+	_ = r.RegisterConfig("test", func(map[string]any) (config.Plugin, error) {
+		return &stubConfig{}, nil
+	})
+
+	r.SetExternalPlugins([]PluginInfo{
+		{Name: "test", Type: PluginTypeConfig, Path: "/fake/zhi-config-test"},
+	})
+
+	// Should resolve the built-in, not the external.
+	p, err := r.ConfigProvider("test", nil)
+	if err != nil {
+		t.Fatalf("ConfigProvider: %v", err)
+	}
+	if p == nil {
+		t.Fatal("ConfigProvider returned nil")
+	}
+}
+
+func TestRegistryExternalFallbackUnknown(t *testing.T) {
+	r := NewRegistry()
+
+	// No external plugins set, should fail.
+	_, err := r.ConfigProvider("nonexistent", nil)
+	if err == nil {
+		t.Error("expected error for unknown config provider without externals")
+	}
+}
+
+func TestRegistryClose(t *testing.T) {
+	r := NewRegistry()
+
+	cleanupCalled := 0
+	r.mu.Lock()
+	r.cleanups = append(r.cleanups, func() { cleanupCalled++ })
+	r.cleanups = append(r.cleanups, func() { cleanupCalled++ })
+	r.cachedConfig["test"] = &stubConfig{}
+	r.mu.Unlock()
+
+	r.Close()
+
+	if cleanupCalled != 2 {
+		t.Errorf("cleanup called %d times, want 2", cleanupCalled)
+	}
+
+	r.mu.Lock()
+	if len(r.cachedConfig) != 0 {
+		t.Error("cachedConfig not cleared after Close")
+	}
+	if len(r.cleanups) != 0 {
+		t.Error("cleanups not cleared after Close")
+	}
+	r.mu.Unlock()
+}
+
+func TestRegistryCloseIdempotent(t *testing.T) {
+	r := NewRegistry()
+
+	cleanupCalled := 0
+	r.mu.Lock()
+	r.cleanups = append(r.cleanups, func() { cleanupCalled++ })
+	r.mu.Unlock()
+
+	r.Close()
+	r.Close() // should not panic or call cleanup again
+
+	if cleanupCalled != 1 {
+		t.Errorf("cleanup called %d times, want 1", cleanupCalled)
+	}
+}
+
+func TestRegistryRefreshExternal(t *testing.T) {
+	r := NewRegistry()
+
+	// RefreshExternal with a non-existent dir should succeed (empty result).
+	err := r.RefreshExternal(DiscoveryConfig{Directories: []string{"/nonexistent"}})
+	if err != nil {
+		t.Fatalf("RefreshExternal: %v", err)
+	}
+
+	if len(r.externalPlugins) != 0 {
+		t.Errorf("expected 0 external plugins, got %d", len(r.externalPlugins))
+	}
+}
+
+func TestRegistrySetExternalPlugins(t *testing.T) {
+	r := NewRegistry()
+
+	plugins := []PluginInfo{
+		{Name: "a", Type: PluginTypeConfig, Path: "/a"},
+		{Name: "b", Type: PluginTypeStore, Path: "/b"},
+	}
+	r.SetExternalPlugins(plugins)
+
+	if len(r.externalPlugins) != 2 {
+		t.Errorf("expected 2 external plugins, got %d", len(r.externalPlugins))
+	}
+}
