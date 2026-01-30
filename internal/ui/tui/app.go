@@ -1,0 +1,511 @@
+package tui
+
+import (
+	"context"
+	"fmt"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+
+	"github.com/MrWong99/zhi/internal/ui"
+	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
+)
+
+// viewType identifies which sub-view is currently active.
+type viewType int
+
+const (
+	viewTree viewType = iota
+	viewEditor
+	viewComponent
+	viewValidation
+	viewApply
+	viewExport
+)
+
+// TUIDriver implements ui.UIDriver using Bubbletea.
+type TUIDriver struct{}
+
+// Run starts the Bubbletea TUI and blocks until exit.
+func (d *TUIDriver) Run(ctx context.Context, controller *ui.UIController) error {
+	app, err := NewApp(ctx, controller)
+	if err != nil {
+		return fmt.Errorf("initializing TUI: %w", err)
+	}
+
+	p := tea.NewProgram(app, tea.WithAltScreen(), tea.WithContext(ctx))
+	_, err = p.Run()
+	return err
+}
+
+// treeLoadedMsg is sent when the tree has been loaded.
+type treeLoadedMsg struct {
+	tree *config.Tree
+	err  error
+}
+
+// statusMsg is sent to display a status bar message.
+type statusMsg string
+
+// errMsg is sent when an error occurs.
+type errMsg struct{ err error }
+
+func (e errMsg) Error() string { return e.err.Error() }
+
+// App is the root Bubbletea model managing the TUI state and view routing.
+type App struct {
+	controller     *ui.UIController
+	ctx            context.Context
+	tree           *config.Tree
+	activeView     viewType
+	treeView       TreeView
+	editorView     ValueEditor
+	componentView  ComponentView
+	validationView ValidationView
+	applyView      ApplyView
+	exportView     ExportView
+	statusMsg      string
+	err            error
+	width          int
+	height         int
+	showHelp       bool
+}
+
+// NewApp creates a new App and performs the initial tree load.
+func NewApp(ctx context.Context, controller *ui.UIController) (*App, error) {
+	tree, err := controller.LoadTree(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("loading initial tree: %w", err)
+	}
+
+	app := &App{
+		controller: controller,
+		ctx:        ctx,
+		tree:       tree,
+		activeView: viewTree,
+		width:      80,
+		height:     24,
+	}
+
+	app.treeView = NewTreeView(controller, tree)
+	app.editorView = NewValueEditor()
+	app.componentView = NewComponentView(controller)
+	app.validationView = NewValidationView()
+	app.applyView = NewApplyView()
+	app.exportView = NewExportView(controller)
+
+	return app, nil
+}
+
+// Init returns the initial command.
+func (a *App) Init() tea.Cmd {
+	return tea.Batch(
+		tea.WindowSize(),
+		a.applyView.Init(),
+	)
+}
+
+// Update handles messages and routes them to the active view.
+func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		a.width = msg.Width
+		a.height = msg.Height
+		a.treeView.SetSize(a.width, a.contentHeight())
+		a.validationView.SetSize(a.width, a.contentHeight())
+		a.applyView.SetSize(a.width, a.contentHeight())
+		a.exportView.SetSize(a.width, a.contentHeight())
+		a.componentView.SetSize(a.width, a.contentHeight())
+		return a, nil
+
+	case tea.KeyMsg:
+		// Global key bindings.
+		switch msg.String() {
+		case "ctrl+c":
+			if a.activeView == viewApply && a.applyView.running {
+				// Cancel apply command.
+				var cmd tea.Cmd
+				a.applyView, cmd = a.applyView.UpdateApply(msg)
+				return a, cmd
+			}
+			return a, tea.Quit
+		case "q":
+			if a.activeView == viewTree && !a.treeView.filtering {
+				return a, tea.Quit
+			}
+			if a.activeView == viewApply && !a.applyView.running {
+				a.activeView = viewTree
+				a.statusMsg = ""
+				return a, nil
+			}
+		case "?":
+			if a.activeView == viewTree || a.activeView == viewComponent {
+				a.showHelp = !a.showHelp
+				return a, nil
+			}
+		case "esc":
+			if a.showHelp {
+				a.showHelp = false
+				return a, nil
+			}
+			if a.activeView == viewTree {
+				if a.treeView.filtering {
+					a.treeView.ClearFilter()
+					return a, nil
+				}
+			}
+			if a.activeView != viewTree {
+				if a.activeView == viewApply && a.applyView.running {
+					return a, nil // Can't leave apply while running
+				}
+				a.activeView = viewTree
+				a.statusMsg = ""
+				a.refreshTreeView()
+				return a, nil
+			}
+		}
+
+	case treeLoadedMsg:
+		if msg.err != nil {
+			a.err = msg.err
+			a.statusMsg = "Error loading tree: " + msg.err.Error()
+			return a, nil
+		}
+		a.tree = msg.tree
+		a.treeView = NewTreeView(a.controller, a.tree)
+		a.treeView.SetSize(a.width, a.contentHeight())
+		a.statusMsg = "Tree reloaded"
+		return a, nil
+
+	case statusMsg:
+		a.statusMsg = string(msg)
+		return a, nil
+
+	case errMsg:
+		a.err = msg.err
+		a.statusMsg = "Error: " + msg.err.Error()
+		return a, nil
+	}
+
+	// Route to active view.
+	switch a.activeView {
+	case viewTree:
+		return a.updateTreeView(msg)
+	case viewEditor:
+		return a.updateEditorView(msg)
+	case viewComponent:
+		return a.updateComponentView(msg)
+	case viewValidation:
+		return a.updateValidationView(msg)
+	case viewApply:
+		return a.updateApplyView(msg)
+	case viewExport:
+		return a.updateExportView(msg)
+	}
+
+	return a, nil
+}
+
+func (a *App) updateTreeView(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if keyMsg, ok := msg.(tea.KeyMsg); ok && !a.treeView.filtering {
+		switch keyMsg.String() {
+		case "enter":
+			path := a.treeView.SelectedPath()
+			if path != "" {
+				val, ok := a.controller.GetValue(path)
+				if ok {
+					comp, _ := a.controller.PathBelongsToComponent(path)
+					isDisabled := comp != "" && !a.controller.IsComponentEnabled(comp)
+					a.editorView = NewValueEditorFor(path, &val, comp, isDisabled)
+					a.activeView = viewEditor
+					return a, a.editorView.Init()
+				}
+			}
+			return a, nil
+
+		case "s":
+			err := a.controller.SaveTree(a.ctx, "default")
+			if err != nil {
+				a.statusMsg = "Save failed: " + err.Error()
+			} else {
+				a.statusMsg = "Tree saved"
+			}
+			return a, nil
+
+		case "v":
+			results, err := a.controller.Validate(a.ctx)
+			if err != nil {
+				a.statusMsg = "Validation error: " + err.Error()
+				return a, nil
+			}
+			a.validationView = NewValidationViewWith(results)
+			a.validationView.SetSize(a.width, a.contentHeight())
+			a.activeView = viewValidation
+			return a, nil
+
+		case "a":
+			a.applyView = NewApplyView()
+			a.applyView.SetSize(a.width, a.contentHeight())
+			a.activeView = viewApply
+			cmd := a.applyView.StartApply(a.ctx, a.controller)
+			return a, cmd
+
+		case "e":
+			a.exportView = NewExportView(a.controller)
+			a.exportView.SetSize(a.width, a.contentHeight())
+			a.activeView = viewExport
+			return a, nil
+
+		case "c":
+			a.componentView = NewComponentView(a.controller)
+			a.componentView.SetSize(a.width, a.contentHeight())
+			a.activeView = viewComponent
+			return a, nil
+
+		case "r":
+			a.statusMsg = "Reloading..."
+			return a, func() tea.Msg {
+				tree, err := a.controller.LoadTree(a.ctx)
+				return treeLoadedMsg{tree: tree, err: err}
+			}
+		}
+	}
+
+	var cmd tea.Cmd
+	a.treeView, cmd = a.treeView.UpdateTree(msg)
+	return a, cmd
+}
+
+func (a *App) updateEditorView(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if keyMsg, ok := msg.(tea.KeyMsg); ok {
+		switch keyMsg.String() {
+		case "esc":
+			a.activeView = viewTree
+			a.statusMsg = ""
+			return a, nil
+		case "enter":
+			if a.editorView.dirty {
+				val := a.editorView.CommitValue()
+				err := a.controller.SetValue(a.ctx, a.editorView.path, val)
+				if err != nil {
+					a.statusMsg = "Set failed: " + err.Error()
+				} else {
+					a.statusMsg = fmt.Sprintf("Updated %s", a.editorView.path)
+					a.refreshTreeView()
+				}
+				a.activeView = viewTree
+				return a, nil
+			}
+			a.activeView = viewTree
+			return a, nil
+		}
+	}
+
+	var cmd tea.Cmd
+	a.editorView, cmd = a.editorView.UpdateEditor(msg)
+	return a, cmd
+}
+
+func (a *App) updateComponentView(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if keyMsg, ok := msg.(tea.KeyMsg); ok {
+		switch keyMsg.String() {
+		case "esc":
+			a.activeView = viewTree
+			a.statusMsg = ""
+			a.refreshTreeView()
+			return a, nil
+		}
+	}
+
+	var cmd tea.Cmd
+	a.componentView, cmd = a.componentView.UpdateComponent(msg)
+	if a.componentView.message != "" {
+		a.statusMsg = a.componentView.message
+	}
+	return a, cmd
+}
+
+func (a *App) updateValidationView(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if keyMsg, ok := msg.(tea.KeyMsg); ok {
+		switch keyMsg.String() {
+		case "esc":
+			a.activeView = viewTree
+			a.statusMsg = ""
+			return a, nil
+		}
+	}
+
+	var cmd tea.Cmd
+	a.validationView, cmd = a.validationView.UpdateValidation(msg)
+	return a, cmd
+}
+
+func (a *App) updateApplyView(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	a.applyView, cmd = a.applyView.UpdateApply(msg)
+	return a, cmd
+}
+
+func (a *App) updateExportView(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if keyMsg, ok := msg.(tea.KeyMsg); ok {
+		switch keyMsg.String() {
+		case "esc":
+			a.activeView = viewTree
+			a.statusMsg = ""
+			return a, nil
+		}
+	}
+
+	var cmd tea.Cmd
+	a.exportView, cmd = a.exportView.UpdateExport(msg, a.ctx)
+	return a, cmd
+}
+
+// View renders the current view.
+func (a *App) View() string {
+	header := a.renderHeader()
+	content := a.renderContent()
+	status := a.renderStatusBar()
+
+	if a.showHelp {
+		content = a.renderHelp()
+	}
+
+	return lipgloss.JoinVertical(lipgloss.Left, header, content, status)
+}
+
+func (a *App) renderHeader() string {
+	title := fmt.Sprintf(" zhi - %s ", a.controller.WorkspaceName())
+	viewName := ""
+	switch a.activeView {
+	case viewTree:
+		viewName = "Tree"
+	case viewEditor:
+		viewName = "Editor"
+	case viewComponent:
+		viewName = "Components"
+	case viewValidation:
+		viewName = "Validation"
+	case viewApply:
+		viewName = "Apply"
+	case viewExport:
+		viewName = "Export"
+	}
+
+	left := HeaderStyle.Render(title)
+	right := HeaderStyle.Render(fmt.Sprintf(" %s ", viewName))
+	gap := a.width - lipgloss.Width(left) - lipgloss.Width(right)
+	if gap < 0 {
+		gap = 0
+	}
+	mid := HeaderStyle.Render(fmt.Sprintf("%*s", gap, ""))
+	return left + mid + right
+}
+
+func (a *App) renderContent() string {
+	switch a.activeView {
+	case viewTree:
+		return a.treeView.View()
+	case viewEditor:
+		return a.editorView.View()
+	case viewComponent:
+		return a.componentView.View()
+	case viewValidation:
+		return a.validationView.View()
+	case viewApply:
+		return a.applyView.View()
+	case viewExport:
+		return a.exportView.View()
+	default:
+		return ""
+	}
+}
+
+func (a *App) renderStatusBar() string {
+	var hints string
+	switch a.activeView {
+	case viewTree:
+		hints = "j/k:navigate  enter:edit  s:save  v:validate  a:apply  e:export  c:components  r:reload  ?:help  q:quit"
+	case viewEditor:
+		hints = "enter:save  esc:cancel"
+	case viewComponent:
+		hints = "j/k:navigate  enter/space:toggle  i:info  esc:back  ?:help"
+	case viewValidation:
+		hints = "j/k:scroll  esc:back"
+	case viewApply:
+		if a.applyView.running {
+			hints = "j/k:scroll  G:bottom  g:top  ctrl+c:cancel"
+		} else {
+			hints = "j/k:scroll  G:bottom  g:top  esc/q:back"
+		}
+	case viewExport:
+		hints = "j/k:navigate  enter:export  p:preview  esc:back"
+	}
+
+	left := StatusBarStyle.Render(a.statusMsg)
+	right := StatusBarStyle.Render(hints)
+	gap := a.width - lipgloss.Width(left) - lipgloss.Width(right)
+	if gap < 0 {
+		gap = 0
+	}
+	mid := StatusBarStyle.Render(fmt.Sprintf("%*s", gap, ""))
+	return left + mid + right
+}
+
+func (a *App) renderHelp() string {
+	help := ""
+	switch a.activeView {
+	case viewTree:
+		help = lipgloss.JoinVertical(lipgloss.Left,
+			HeaderStyle.Render(" Key Bindings - Tree View "),
+			"",
+			helpLine("j / ↓", "Move cursor down"),
+			helpLine("k / ↑", "Move cursor up"),
+			helpLine("Enter", "Open value editor"),
+			helpLine("/", "Filter paths"),
+			helpLine("s", "Save tree to store"),
+			helpLine("v", "Validate and show results"),
+			helpLine("a", "Run apply command"),
+			helpLine("e", "Open export view"),
+			helpLine("c", "Open component view"),
+			helpLine("r", "Reload tree from provider"),
+			helpLine("?", "Toggle this help"),
+			helpLine("q", "Quit"),
+			helpLine("Esc", "Clear filter / close help"),
+		)
+	case viewComponent:
+		help = lipgloss.JoinVertical(lipgloss.Left,
+			HeaderStyle.Render(" Key Bindings - Component View "),
+			"",
+			helpLine("j / ↓", "Move cursor down"),
+			helpLine("k / ↑", "Move cursor up"),
+			helpLine("Enter / Space", "Toggle component"),
+			helpLine("i", "Show component info"),
+			helpLine("?", "Toggle this help"),
+			helpLine("Esc", "Return to tree view"),
+		)
+	}
+	return help
+}
+
+func helpLine(key, desc string) string {
+	return fmt.Sprintf("  %s  %s",
+		HelpKeyStyle.Render(fmt.Sprintf("%-15s", key)),
+		HelpDescStyle.Render(desc))
+}
+
+func (a *App) contentHeight() int {
+	// Header (1) + status bar (1) = 2 lines of chrome
+	h := a.height - 2
+	if h < 1 {
+		h = 1
+	}
+	return h
+}
+
+func (a *App) refreshTreeView() {
+	if a.tree != nil {
+		a.treeView = NewTreeView(a.controller, a.tree)
+		a.treeView.SetSize(a.width, a.contentHeight())
+	}
+}
