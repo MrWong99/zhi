@@ -11,6 +11,7 @@ import (
 	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
 	"github.com/MrWong99/zhi/pkg/zhiplugin/store"
 	"github.com/MrWong99/zhi/pkg/zhiplugin/transform"
+	zhiui "github.com/MrWong99/zhi/pkg/zhiplugin/ui"
 )
 
 // ConfigFactory constructs a config provider. The workspace is the path to the
@@ -24,6 +25,10 @@ type TransformFactory func(workspace string, options map[string]any) (transform.
 // StoreFactory constructs a store provider. The workspace is the path to the
 // workspace directory. The options map comes from the workspace configuration file.
 type StoreFactory func(workspace string, options map[string]any) (store.Plugin, error)
+
+// UIFactory constructs a UI provider. The workspace is the path to the
+// workspace directory. The options map comes from the workspace configuration file.
+type UIFactory func(workspace string, options map[string]any) (zhiui.Plugin, error)
 
 // ProviderInfo describes a registered provider for display purposes.
 type ProviderInfo struct {
@@ -39,6 +44,7 @@ type Registry struct {
 	config    map[string]ConfigFactory
 	transform map[string]TransformFactory
 	store     map[string]StoreFactory
+	ui        map[string]UIFactory
 
 	// External plugin discovery.
 	externalPlugins []PluginInfo
@@ -48,6 +54,7 @@ type Registry struct {
 	cachedConfig    map[string]config.Plugin
 	cachedTransform map[string]transform.Plugin
 	cachedStore     map[string]store.Plugin
+	cachedUI        map[string]zhiui.Plugin
 	cleanups        []func()
 }
 
@@ -57,9 +64,11 @@ func NewRegistry() *Registry {
 		config:          make(map[string]ConfigFactory),
 		transform:       make(map[string]TransformFactory),
 		store:           make(map[string]StoreFactory),
+		ui:              make(map[string]UIFactory),
 		cachedConfig:    make(map[string]config.Plugin),
 		cachedTransform: make(map[string]transform.Plugin),
 		cachedStore:     make(map[string]store.Plugin),
+		cachedUI:        make(map[string]zhiui.Plugin),
 	}
 }
 
@@ -93,6 +102,16 @@ func (r *Registry) RegisterStore(name string, factory StoreFactory) error {
 	return nil
 }
 
+// RegisterUI registers a built-in UI provider factory under the given
+// name. It returns an error if the name is already taken.
+func (r *Registry) RegisterUI(name string, factory UIFactory) error {
+	if _, exists := r.ui[name]; exists {
+		return fmt.Errorf("UI provider %q already registered", name)
+	}
+	r.ui[name] = factory
+	return nil
+}
+
 // ConfigProvider resolves and instantiates a config provider by name.
 // Built-in providers take precedence. If no built-in is found, discovered
 // external plugins are checked and launched lazily.
@@ -117,6 +136,16 @@ func (r *Registry) StoreProvider(workspace, name string, options map[string]any)
 		return factory(workspace, options)
 	}
 	return r.launchExternalStore(name)
+}
+
+// UIProvider resolves and instantiates a UI provider by name.
+// Built-in providers take precedence. If no built-in is found, discovered
+// external plugins are checked and launched lazily.
+func (r *Registry) UIProvider(workspace, name string, options map[string]any) (zhiui.Plugin, error) {
+	if factory, ok := r.ui[name]; ok {
+		return factory(workspace, options)
+	}
+	return r.launchExternalUI(name)
 }
 
 // ListConfig returns the sorted names of all registered config providers
@@ -200,6 +229,33 @@ func (r *Registry) ListStoreProviders() []ProviderInfo {
 	return infos
 }
 
+// ListUI returns the sorted names of all registered UI providers
+// (built-in and external).
+func (r *Registry) ListUI() []string {
+	names := sortedKeys(r.ui)
+	for _, p := range r.externalPlugins {
+		if p.Type == PluginTypeUI && !contains(names, p.Name) {
+			names = append(names, p.Name)
+		}
+	}
+	sort.Strings(names)
+	return names
+}
+
+// ListUIProviders returns detailed provider info including source.
+func (r *Registry) ListUIProviders() []ProviderInfo {
+	var infos []ProviderInfo
+	for _, name := range sortedKeys(r.ui) {
+		infos = append(infos, ProviderInfo{Name: name, Source: "built-in"})
+	}
+	for _, p := range r.externalPlugins {
+		if p.Type == PluginTypeUI && !r.isBuiltinUI(p.Name) {
+			infos = append(infos, ProviderInfo{Name: p.Name, Source: p.Path})
+		}
+	}
+	return infos
+}
+
 // RefreshExternal re-scans plugin directories and updates the list of
 // discovered external plugins.
 func (r *Registry) RefreshExternal(cfg DiscoveryConfig) error {
@@ -232,6 +288,7 @@ func (r *Registry) Close() {
 	r.cachedConfig = make(map[string]config.Plugin)
 	r.cachedTransform = make(map[string]transform.Plugin)
 	r.cachedStore = make(map[string]store.Plugin)
+	r.cachedUI = make(map[string]zhiui.Plugin)
 }
 
 // launchExternalConfig finds and launches an external config plugin.
@@ -308,6 +365,30 @@ func (r *Registry) launchExternalStore(name string) (store.Plugin, error) {
 	return p, nil
 }
 
+// launchExternalUI finds and launches an external UI plugin.
+func (r *Registry) launchExternalUI(name string) (zhiui.Plugin, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if p, ok := r.cachedUI[name]; ok {
+		return p, nil
+	}
+
+	info, ok := r.findExternal(name, PluginTypeUI)
+	if !ok {
+		return nil, fmt.Errorf("unknown UI provider: %q", name)
+	}
+
+	p, cleanup, err := LaunchUI(info.Path)
+	if err != nil {
+		return nil, fmt.Errorf("launching external UI plugin %q: %w", name, err)
+	}
+
+	r.cachedUI[name] = p
+	r.cleanups = append(r.cleanups, cleanup)
+	return p, nil
+}
+
 // findExternal searches the discovered plugins for a match. Must be called
 // with r.mu held.
 func (r *Registry) findExternal(name string, pt PluginType) (PluginInfo, bool) {
@@ -331,6 +412,11 @@ func (r *Registry) isBuiltinTransform(name string) bool {
 
 func (r *Registry) isBuiltinStore(name string) bool {
 	_, ok := r.store[name]
+	return ok
+}
+
+func (r *Registry) isBuiltinUI(name string) bool {
+	_, ok := r.ui[name]
 	return ok
 }
 
