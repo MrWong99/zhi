@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -225,7 +226,10 @@ func TestApplyEnvOverrides(t *testing.T) {
 }
 
 func TestApplyWorkingDirectory(t *testing.T) {
-	dir := t.TempDir()
+	dir, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatalf("EvalSymlinks: %v", err)
+	}
 
 	cfg := ApplyRunConfig{
 		Target:          ApplyTargetConfig{Command: "pwd"},
@@ -254,7 +258,10 @@ func TestApplyWorkingDirectory(t *testing.T) {
 }
 
 func TestApplyCustomWorkdir(t *testing.T) {
-	dir := t.TempDir()
+	dir, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatalf("EvalSymlinks: %v", err)
+	}
 
 	cfg := ApplyRunConfig{
 		Target:          ApplyTargetConfig{Command: "pwd", Workdir: "."},

@@ -112,7 +112,7 @@ jobs:
       - name: Install protoc
         uses: arduino/setup-protoc@v3
         with:
-          version: "33.x"
+          version: "33.5"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install protoc Go plugins
@@ -140,4 +140,9 @@ jobs:
         run: make build-all
 
       - name: Run integration tests
-        run: go test -race -count=1 -v ./test/...
+        run: |
+          if find test/ -name '*_test.go' -print -quit 2>/dev/null | grep -q .; then
+            go test -race -count=1 -v ./test/...
+          else
+            echo "No integration test files found in test/; skipping."
+          fi
