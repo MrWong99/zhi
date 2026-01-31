@@ -90,14 +90,19 @@ below.
 ## Project layout
 
 ```
-api/proto/          Proto definitions for plugin gRPC services
-cmd/zhi/            Main CLI entry point
-docs/               Architecture and API documentation
-examples/           Example plugin implementations
-internal/app/zhi/   Internal application logic
-pkg/zhiplugin/      Public plugin framework (config, transform)
-pkg/providers/      Built-in provider implementations
-test/               Integration / end-to-end tests
+api/proto/              Proto definitions for plugin gRPC services
+cmd/zhi/                Main CLI entry point
+docs/
+  user-guide/           End-user documentation (CLI usage, workspace config, etc.)
+  plugin-development/   Plugin developer documentation (APIs, examples, testing)
+examples/               Example plugin implementations
+internal/
+  cli/                  CLI subcommands (Cobra)
+  core/                 Engine, registry, components, export, apply, discovery
+  ui/                   UI abstraction layer and TUI implementation
+pkg/zhiplugin/          Public plugin framework (config, transform, store, ui)
+pkg/providers/          Built-in provider implementations
+test/                   Integration / end-to-end tests
 ```
 
 ## Working with Protocol Buffers
@@ -114,6 +119,8 @@ files alongside the Go packages that consume them:
 
 - `api/proto/zhiplugin/v1/config.proto` -> `pkg/zhiplugin/config/proto/`
 - `api/proto/zhiplugin/v1/transform.proto` -> `pkg/zhiplugin/transform/proto/`
+- `api/proto/zhiplugin/v1/store.proto` -> `pkg/zhiplugin/store/proto/`
+- `api/proto/zhiplugin/v1/ui.proto` -> `pkg/zhiplugin/ui/proto/`
 
 Before committing, verify the generated code is up-to-date:
 
@@ -124,18 +131,26 @@ make proto-check
 ## Writing a plugin
 
 zhi uses [hashicorp/go-plugin](https://github.com/hashicorp/go-plugin) with gRPC
-transport. There are two plugin types:
+transport. There are four plugin types:
 
 - **Config plugin** -- implements `config.Plugin` (List, Get, Set, Validate)
 - **Transform plugin** -- implements `transform.Plugin` (BeforeDisplay, AfterSave, ValidatePolicy)
+- **Store plugin** -- implements `store.Plugin` (Save, Load, Delete, ListTrees, versioning, encryption)
+- **UI plugin** -- implements `ui.Plugin` (Run, Capabilities) with bidirectional gRPC
 
 Look at the `examples/` directory for working reference implementations:
 
 - `examples/zhi-config-pokedex/` -- a config plugin that manages Pokedex settings
 - `examples/zhi-transform-pokedex/` -- a transform plugin that evolves starter Pokemon
+- `examples/zhi-store-json/` -- a store plugin persisting trees as JSON files
+- `examples/zhi-store-memory/` -- a minimal in-memory store plugin
+- `examples/zhi-ui-httpapi/` -- a UI plugin exposing an HTTP/JSON API
 
 Each example includes tests that use `goplugin.TestPluginGRPCConn()` for
 in-process gRPC testing without starting a subprocess.
+
+See the [Plugin Development docs](docs/plugin-development/overview.md) for the
+full API reference.
 
 ## Submitting changes
 

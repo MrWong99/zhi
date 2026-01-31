@@ -147,7 +147,7 @@ func(v config.Value, tree config.TreeReader) ([]config.ValidationResult, error)
 
 Inside the body the two parameters are available as `v` and `tree`. The code
 can use all exported types from the
-[config](../pkg/zhiplugin/config/) package (`Value`,
+[config](../../pkg/zhiplugin/config/) package (`Value`,
 `TreeReader`, `ValidationResult`, `Severity`, `Info`, `Warning`, `Blocking`).
 
 The body is compiled once at load time using the

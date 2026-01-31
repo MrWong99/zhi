@@ -11,7 +11,7 @@ A configuration plugin that manages a small Pokedex. Demonstrates:
 - Wiring a plugin binary with `plugin.Serve`
 
 See [zhi-config-pokedex/main.go](zhi-config-pokedex/main.go) and the
-[Configuration Plugin docs](../docs/config-plugin.md) for details.
+[Configuration Plugin docs](../docs/plugin-development/config-plugin.md) for details.
 
 ## zhi-transform-pokedex
 
@@ -22,7 +22,7 @@ A transform plugin that evolves starter Pokemon before display. Demonstrates:
 - Mapping transformed values back to their original form on save
 
 See [zhi-transform-pokedex/main.go](zhi-transform-pokedex/main.go) and the
-[Transform Plugin docs](../docs/transform-plugin.md) for details.
+[Transform Plugin docs](../docs/plugin-development/transform-plugin.md) for details.
 
 ## zhi-store-json
 
@@ -35,7 +35,7 @@ A store plugin that persists configuration trees as JSON files on disk. Demonstr
 This example does not support versioning or encryption.
 
 See [zhi-store-json/main.go](zhi-store-json/main.go) and the
-[Store Plugin docs](../docs/store-plugin.md) for details.
+[Store Plugin docs](../docs/plugin-development/store-plugin.md) for details.
 
 ## zhi-store-memory
 
@@ -47,7 +47,7 @@ A store plugin that persists configuration trees in memory. Demonstrates:
 This example does not support versioning or encryption.
 
 See [zhi-store-memory/main.go](zhi-store-memory/main.go) and the
-[Store Plugin docs](../docs/store-plugin.md) for details.
+[Store Plugin docs](../docs/plugin-development/store-plugin.md) for details.
 
 ## zhi-ui-httpapi
 
@@ -60,4 +60,4 @@ A UI plugin that exposes the zhi configuration engine as an HTTP/JSON API. Demon
 - Configurable listen address via `ZHI_HTTP_ADDR` environment variable
 
 See [zhi-ui-httpapi/main.go](zhi-ui-httpapi/main.go) and the
-[UI Plugin docs](../docs/ui-plugin.md) for details.
+[UI Plugin docs](../docs/plugin-development/ui-plugin.md) for details.

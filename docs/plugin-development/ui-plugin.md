@@ -202,7 +202,7 @@ func main() {
 }
 ```
 
-See the [zhi-ui-httpapi example](../examples/zhi-ui-httpapi/) for a
+See the [zhi-ui-httpapi example](../../examples/zhi-ui-httpapi/) for a
 complete, runnable plugin that exposes an HTTP/JSON API with SSE
 streaming.
 
