@@ -1,0 +1,210 @@
+// Copyright 2025 Lukas Schmidt
+// SPDX-License-Identifier: MIT
+
+syntax = "proto3";
+
+package zhiplugin.v1;
+
+import "zhiplugin/v1/config.proto";
+
+option go_package = "github.com/MrWong99/zhi/pkg/zhiplugin/ui/proto";
+
+// UIService is the gRPC interface every zhi UI plugin must implement.
+// The host calls Run to start the UI, passing a broker ID that the plugin
+// uses to connect back to the UIControllerService for core operations.
+service UIService {
+  // Run starts the UI and blocks until the user exits or the context is
+  // cancelled. The request carries a broker ID for the UIControllerService
+  // that the plugin must dial to perform operations on the zhi core.
+  rpc Run(RunRequest) returns (RunResponse);
+  // Capabilities reports what this UI plugin supports.
+  rpc Capabilities(CapabilitiesRequest) returns (CapabilitiesResponse);
+}
+
+// UIControllerService is served by the zhi host via the GRPCBroker.
+// UI plugins call these methods to perform operations on the core engine.
+service UIControllerService {
+  // LoadTree loads or reloads the full configuration tree.
+  rpc LoadTree(CtrlLoadTreeRequest) returns (CtrlLoadTreeResponse);
+  // SetValue stores a configuration value at the given path.
+  rpc SetValue(CtrlSetValueRequest) returns (CtrlSetValueResponse);
+  // Validate runs validation on the current configuration tree.
+  rpc Validate(CtrlValidateRequest) returns (CtrlValidateResponse);
+  // SaveTree persists the current tree to the store.
+  rpc SaveTree(CtrlSaveTreeRequest) returns (CtrlSaveTreeResponse);
+  // ExportTemplates returns the configured export templates.
+  rpc ExportTemplates(CtrlExportTemplatesRequest) returns (CtrlExportTemplatesResponse);
+  // Export runs a single export operation.
+  rpc Export(CtrlExportRequest) returns (CtrlExportResponse);
+  // Apply runs the apply command and streams output events back.
+  rpc Apply(CtrlApplyRequest) returns (stream CtrlApplyResponse);
+  // ListComponents returns all components with their current state.
+  rpc ListComponents(CtrlListComponentsRequest) returns (CtrlListComponentsResponse);
+  // EnableComponent enables a component and its dependencies.
+  rpc EnableComponent(CtrlEnableComponentRequest) returns (CtrlEnableComponentResponse);
+  // DisableComponent disables a component.
+  rpc DisableComponent(CtrlDisableComponentRequest) returns (CtrlDisableComponentResponse);
+  // WorkspaceName returns the workspace display name.
+  rpc WorkspaceName(CtrlWorkspaceNameRequest) returns (CtrlWorkspaceNameResponse);
+}
+
+// ---------------------------------------------------------------------------
+// UIService messages
+// ---------------------------------------------------------------------------
+
+message RunRequest {
+  // The GRPCBroker server ID hosting the UIControllerService.
+  uint32 controller_broker_id = 1;
+}
+
+// RunResponse is intentionally empty; Run blocks until the UI exits.
+message RunResponse {}
+
+// CapabilitiesRequest is intentionally empty.
+message CapabilitiesRequest {}
+
+message CapabilitiesResponse {
+  // Whether this UI requires direct TTY access (must run as a builtin plugin).
+  bool requires_tty = 1;
+}
+
+// ---------------------------------------------------------------------------
+// UIControllerService messages
+// ---------------------------------------------------------------------------
+
+// -- LoadTree ---------------------------------------------------------------
+
+// CtrlLoadTreeRequest is intentionally empty.
+message CtrlLoadTreeRequest {}
+
+message CtrlLoadTreeResponse {
+  repeated TreeEntry tree = 1;
+}
+
+// -- SetValue ---------------------------------------------------------------
+
+message CtrlSetValueRequest {
+  string path = 1;
+  bytes value_json = 2;
+  bytes metadata_json = 3;
+}
+
+// CtrlSetValueResponse is intentionally empty.
+message CtrlSetValueResponse {}
+
+// -- Validate ---------------------------------------------------------------
+
+// CtrlValidateRequest is intentionally empty.
+message CtrlValidateRequest {}
+
+message CtrlValidateResponse {
+  repeated ValidationResultMsg results = 1;
+}
+
+// -- SaveTree ---------------------------------------------------------------
+
+message CtrlSaveTreeRequest {
+  string id = 1;
+}
+
+// CtrlSaveTreeResponse is intentionally empty.
+message CtrlSaveTreeResponse {}
+
+// -- ExportTemplates --------------------------------------------------------
+
+// CtrlExportTemplatesRequest is intentionally empty.
+message CtrlExportTemplatesRequest {}
+
+message CtrlExportTemplateMsg {
+  string name = 1;
+  string template = 2;
+  string format = 3;
+  string output = 4;
+  string prefix = 5;
+}
+
+message CtrlExportTemplatesResponse {
+  repeated CtrlExportTemplateMsg templates = 1;
+}
+
+// -- Export ------------------------------------------------------------------
+
+message CtrlExportRequest {
+  string template_path = 1;
+  string format = 2;
+  string output_path = 3;
+  string prefix = 4;
+  bool dry_run = 5;
+}
+
+message CtrlExportResponse {
+  string name = 1;
+  string content = 2;
+  string output_path = 3;
+}
+
+// -- Apply ------------------------------------------------------------------
+
+message CtrlApplyRequest {
+  string target = 1;
+}
+
+// CtrlApplyResponse carries either an output event or the final result.
+// When done is false, line and stream contain an output event.
+// When done is true, exit_code and error contain the final result.
+message CtrlApplyResponse {
+  bool done = 1;
+  // Output event fields (when done == false).
+  string line = 2;
+  string stream = 3; // "stdout" or "stderr"
+  // Result fields (when done == true).
+  int32 exit_code = 4;
+  string error = 5;
+}
+
+// -- ListComponents ---------------------------------------------------------
+
+// CtrlListComponentsRequest is intentionally empty.
+message CtrlListComponentsRequest {}
+
+message CtrlComponentInfoMsg {
+  string name = 1;
+  string description = 2;
+  bool enabled = 3;
+  bool mandatory = 4;
+  repeated string paths = 5;
+  repeated string dependencies = 6;
+}
+
+message CtrlListComponentsResponse {
+  repeated CtrlComponentInfoMsg components = 1;
+}
+
+// -- EnableComponent --------------------------------------------------------
+
+message CtrlEnableComponentRequest {
+  string name = 1;
+}
+
+message CtrlEnableComponentResponse {
+  // All components that were enabled (including auto-enabled dependencies).
+  repeated string enabled = 1;
+}
+
+// -- DisableComponent -------------------------------------------------------
+
+message CtrlDisableComponentRequest {
+  string name = 1;
+}
+
+// CtrlDisableComponentResponse is intentionally empty.
+message CtrlDisableComponentResponse {}
+
+// -- WorkspaceName ----------------------------------------------------------
+
+// CtrlWorkspaceNameRequest is intentionally empty.
+message CtrlWorkspaceNameRequest {}
+
+message CtrlWorkspaceNameResponse {
+  string name = 1;
+}

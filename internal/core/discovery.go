@@ -15,6 +15,7 @@ const (
 	PluginTypeConfig    PluginType = "config"
 	PluginTypeTransform PluginType = "transform"
 	PluginTypeStore     PluginType = "store"
+	PluginTypeUI        PluginType = "ui"
 )
 
 // PluginInfo describes a discovered external plugin binary.
@@ -129,9 +130,10 @@ func discoverFlat(dir string) ([]PluginInfo, error) {
 }
 
 // discoverSubdirectory scans for type-based subdirectory layouts:
-// <dir>/config/<name>, <dir>/transform/<name>, <dir>/store/<name>.
+// <dir>/config/<name>, <dir>/transform/<name>, <dir>/store/<name>,
+// <dir>/ui/<name>.
 func discoverSubdirectory(dir string) ([]PluginInfo, error) {
-	typeNames := []PluginType{PluginTypeConfig, PluginTypeTransform, PluginTypeStore}
+	typeNames := []PluginType{PluginTypeConfig, PluginTypeTransform, PluginTypeStore, PluginTypeUI}
 	var plugins []PluginInfo
 
 	for _, pt := range typeNames {
@@ -167,7 +169,7 @@ func parseFlatName(name string) (PluginType, string, bool) {
 	rest := name[len("zhi-"):]
 
 	// Try each known type prefix.
-	for _, pt := range []PluginType{PluginTypeConfig, PluginTypeTransform, PluginTypeStore} {
+	for _, pt := range []PluginType{PluginTypeConfig, PluginTypeTransform, PluginTypeStore, PluginTypeUI} {
 		prefix := string(pt) + "-"
 		if strings.HasPrefix(rest, prefix) {
 			pluginName := rest[len(prefix):]

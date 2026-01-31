@@ -125,6 +125,7 @@ type WorkspaceConfig struct {
 	Config     ProviderRef    `yaml:"config" json:"config"`
 	Transform  []ProviderRef  `yaml:"transform,omitempty" json:"transform,omitempty"`
 	Store      ProviderRef    `yaml:"store,omitempty" json:"store"`
+	UI         ProviderRef    `yaml:"ui,omitempty" json:"ui,omitempty"`
 	Components []ComponentDef `yaml:"components,omitempty" json:"components,omitempty"`
 	Export     ExportConfig   `yaml:"export,omitempty" json:"export"`
 	Apply      ApplyConfig    `yaml:"apply,omitempty" json:"apply"`
@@ -243,6 +244,13 @@ func ValidateWorkspace(ws *WorkspaceConfig, reg *Registry) error {
 	if ws.Store.Provider != "" {
 		if _, err := reg.StoreProvider(ws.Dir, ws.Store.Provider, nil); err != nil {
 			errs = append(errs, fmt.Errorf("store provider: %w", err))
+		}
+	}
+
+	// Check UI provider exists (if specified).
+	if ws.UI.Provider != "" {
+		if _, err := reg.UIProvider(ws.Dir, ws.UI.Provider, nil); err != nil {
+			errs = append(errs, fmt.Errorf("ui provider: %w", err))
 		}
 	}
 

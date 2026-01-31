@@ -13,6 +13,7 @@ import (
 	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
 	"github.com/MrWong99/zhi/pkg/zhiplugin/store"
 	"github.com/MrWong99/zhi/pkg/zhiplugin/transform"
+	zhiui "github.com/MrWong99/zhi/pkg/zhiplugin/ui"
 )
 
 // auditPluginBinary logs the SHA-256 hash of the plugin binary and warns
@@ -144,6 +145,39 @@ func LaunchStore(path string) (store.Plugin, func(), error) {
 	if !ok {
 		client.Kill()
 		return nil, nil, fmt.Errorf("store plugin %s: dispensed value does not implement store.Plugin", path)
+	}
+
+	return p, client.Kill, nil
+}
+
+// LaunchUI launches an external UI plugin binary and returns the
+// ui.Plugin interface along with a cleanup function.
+func LaunchUI(path string) (zhiui.Plugin, func(), error) {
+	auditPluginBinary(path)
+
+	client := goplugin.NewClient(&goplugin.ClientConfig{
+		HandshakeConfig:  zhiplugin.Handshake,
+		Plugins:          zhiui.PluginMap,
+		Cmd:              exec.Command(path),
+		AllowedProtocols: []goplugin.Protocol{goplugin.ProtocolGRPC},
+	})
+
+	rpcClient, err := client.Client()
+	if err != nil {
+		client.Kill()
+		return nil, nil, fmt.Errorf("connecting to UI plugin %s: %w", path, err)
+	}
+
+	raw, err := rpcClient.Dispense("ui")
+	if err != nil {
+		client.Kill()
+		return nil, nil, fmt.Errorf("dispensing UI plugin %s: %w", path, err)
+	}
+
+	p, ok := raw.(zhiui.Plugin)
+	if !ok {
+		client.Kill()
+		return nil, nil, fmt.Errorf("UI plugin %s: dispensed value does not implement ui.Plugin", path)
 	}
 
 	return p, client.Kill, nil
