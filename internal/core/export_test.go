@@ -245,29 +245,6 @@ func TestTreeDataComponentPaths(t *testing.T) {
 	}
 }
 
-func TestFormatToJSON(t *testing.T) {
-	result, err := toJSON(map[string]any{"host": "localhost", "port": 5432})
-	if err != nil {
-		t.Fatalf("toJSON: %v", err)
-	}
-	if !strings.Contains(result, "\"host\": \"localhost\"") {
-		t.Errorf("toJSON output missing host: %s", result)
-	}
-	if !strings.Contains(result, "\"port\": 5432") {
-		t.Errorf("toJSON output missing port: %s", result)
-	}
-}
-
-func TestFormatToJSONCompact(t *testing.T) {
-	result, err := toJSONCompact(map[string]any{"host": "localhost"})
-	if err != nil {
-		t.Fatalf("toJSONCompact: %v", err)
-	}
-	if strings.Contains(result, "\n") {
-		t.Errorf("toJSONCompact should not contain newlines: %s", result)
-	}
-}
-
 func TestFormatToYAML(t *testing.T) {
 	result, err := toYAML(map[string]any{"host": "localhost", "port": 5432})
 	if err != nil {
@@ -317,16 +294,6 @@ func TestShellQuote(t *testing.T) {
 	}
 	if got := shellQuote("it's"); got != "'it'\\''s'" {
 		t.Errorf("shellQuote = %q, want %q", got, "'it'\\''s'")
-	}
-}
-
-func TestIndent(t *testing.T) {
-	result := indentStr(4, "line1\nline2\nline3")
-	if !strings.HasPrefix(result, "    line1") {
-		t.Errorf("indent missing prefix: %q", result)
-	}
-	if !strings.Contains(result, "\n    line2") {
-		t.Errorf("indent missing second line: %q", result)
 	}
 }
 
@@ -491,5 +458,116 @@ func TestExportAll(t *testing.T) {
 	}
 	if results[1].Content != "b=localhost" {
 		t.Errorf("result[1] = %q, want b=localhost", results[1].Content)
+	}
+}
+
+func TestTemplateFuncMapContainsSprigFunctions(t *testing.T) {
+	fm := templateFuncMap()
+
+	// Verify a selection of Sprig-specific functions are present.
+	sprigFuncs := []string{
+		"trim", "trimAll", "trimSuffix", "trimPrefix",
+		"nospace", "title", "snakecase", "camelcase", "kebabcase",
+		"contains", "hasPrefix", "hasSuffix",
+		"repeat", "substr", "trunc",
+		"add", "sub", "mul", "div", "mod", "max", "min",
+		"list", "dict", "hasKey", "pluck", "keys", "values",
+		"default", "empty", "coalesce", "ternary",
+		"toDate", "now", "date",
+		"b64enc", "b64dec",
+		"join", "sortAlpha",
+		"regexMatch", "regexReplaceAll",
+		"env", "expandenv",
+		"sha256sum",
+		"semver", "semverCompare",
+	}
+	for _, name := range sprigFuncs {
+		if _, ok := fm[name]; !ok {
+			t.Errorf("templateFuncMap() missing Sprig function %q", name)
+		}
+	}
+}
+
+func TestTemplateFuncMapZhiFunctionsPresent(t *testing.T) {
+	fm := templateFuncMap()
+
+	// Verify zhi-specific functions that have no Sprig equivalent are present.
+	zhiFuncs := []string{
+		"toYAML", "toTOML", "toDotenv", "shellQuote",
+	}
+	for _, name := range zhiFuncs {
+		if _, ok := fm[name]; !ok {
+			t.Errorf("templateFuncMap() missing zhi function %q", name)
+		}
+	}
+}
+
+func TestSprigFunctionsInTemplate(t *testing.T) {
+	dir := t.TempDir()
+
+	// Use several Sprig functions in a template: trim, upper (zhi override),
+	// default, repeat, and snakecase.
+	tmplContent := `name={{ .Get "app/name" | trim }}
+default={{ .GetOr "missing/key" "" | default "fallback" }}
+repeated={{ "ab" | repeat 3 }}
+snake={{ "myApp" | snakecase }}`
+
+	tmplPath := filepath.Join(dir, "sprig.tmpl")
+	if err := os.WriteFile(tmplPath, []byte(tmplContent), 0o644); err != nil {
+		t.Fatalf("writing template: %v", err)
+	}
+
+	tree := newTestTree()
+	td := NewTreeData(tree, nil)
+
+	result, err := Export(context.Background(), td, ExportRunConfig{
+		TemplatePath: tmplPath,
+		DryRun:       true,
+	})
+	if err != nil {
+		t.Fatalf("Export: %v", err)
+	}
+
+	if !strings.Contains(result.Content, "name=myapp") {
+		t.Errorf("expected name=myapp, got: %s", result.Content)
+	}
+	if !strings.Contains(result.Content, "default=fallback") {
+		t.Errorf("expected default=fallback, got: %s", result.Content)
+	}
+	if !strings.Contains(result.Content, "repeated=ababab") {
+		t.Errorf("expected repeated=ababab, got: %s", result.Content)
+	}
+	if !strings.Contains(result.Content, "snake=my_app") {
+		t.Errorf("expected snake=my_app, got: %s", result.Content)
+	}
+}
+
+func TestShellQuoteInTemplate(t *testing.T) {
+	dir := t.TempDir()
+
+	// shellQuote is zhi's shell-safe single-quoting function.
+	// Sprig's quote (double-quoting) and squote (simple single-quoting)
+	// remain available under their own names.
+	tmplContent := `shell={{ .Get "app/name" | shellQuote }}`
+
+	tmplPath := filepath.Join(dir, "quote.tmpl")
+	if err := os.WriteFile(tmplPath, []byte(tmplContent), 0o644); err != nil {
+		t.Fatalf("writing template: %v", err)
+	}
+
+	tree := newTestTree()
+	td := NewTreeData(tree, nil)
+
+	result, err := Export(context.Background(), td, ExportRunConfig{
+		TemplatePath: tmplPath,
+		DryRun:       true,
+	})
+	if err != nil {
+		t.Fatalf("Export: %v", err)
+	}
+
+	// shellQuote wraps in single quotes with proper escaping.
+	if result.Content != "shell='myapp'" {
+		t.Errorf("shellQuote got: %q, want: %q", result.Content, "shell='myapp'")
 	}
 }
