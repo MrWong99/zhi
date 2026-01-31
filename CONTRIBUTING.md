@@ -152,6 +152,40 @@ in-process gRPC testing without starting a subprocess.
 5. Open a **Pull Request** against `main`. Describe what your change does and
    why.
 
+## Release process
+
+zhi uses [GoReleaser](https://goreleaser.com/) to automate cross-compilation and
+release packaging. Pushing a version tag triggers the release workflow
+automatically.
+
+**Release checklist:**
+
+1. Ensure `main` is green (all CI checks pass).
+2. Create and push a version tag:
+   ```sh
+   git tag v0.1.0
+   git push origin v0.1.0
+   ```
+3. GoReleaser automatically builds and creates a **draft** GitHub Release.
+4. Review the draft release and edit release notes if needed.
+5. Publish the release.
+
+**Local testing:**
+
+```sh
+# Build a snapshot release locally (no publish)
+make snapshot
+
+# Dry-run release (builds everything, skips publish)
+make release-dry-run
+```
+
+**Versioning policy:**
+
+- Follow [Semantic Versioning](https://semver.org/) (SemVer).
+- Pre-1.0: breaking changes may occur in minor versions.
+- Plugin protocol version is tracked separately (`ProtocolVersion` in handshake).
+
 ## Code style
 
 - Follow standard Go conventions (`gofmt`, `go vet`).

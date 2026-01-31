@@ -9,6 +9,12 @@ BIN_NAME := zhi
 BIN_DIR  := bin
 CMD_DIR  := ./cmd/zhi
 
+# Version info (injected via ldflags)
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
+COMMIT  ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo none)
+DATE    ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+LDFLAGS := -s -w -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.date=$(DATE)
+
 # Go tool flags
 GOFLAGS  ?=
 GOTESTFLAGS ?= -race -count=1
@@ -29,7 +35,7 @@ PROTO_FILES   := $(shell find $(PROTO_DIR) -name '*.proto' 2>/dev/null)
 .PHONY: build
 build: ## Build the zhi binary
 	@mkdir -p $(BIN_DIR)
-	go build $(GOFLAGS) -o $(BIN_DIR)/$(BIN_NAME) $(CMD_DIR)
+	go build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/$(BIN_NAME) $(CMD_DIR)
 
 .PHONY: build-examples
 build-examples: ## Build all example plugins
@@ -45,7 +51,7 @@ build-all: build build-examples ## Build the main binary and all examples
 
 .PHONY: install
 install: ## Install the zhi binary into GOPATH/bin
-	go install $(GOFLAGS) $(CMD_DIR)
+	go install $(GOFLAGS) -ldflags "$(LDFLAGS)" $(CMD_DIR)
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Test
@@ -144,6 +150,18 @@ tools: ## Install required development tools
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Release
+# ──────────────────────────────────────────────────────────────────────────────
+
+.PHONY: snapshot
+snapshot: ## Build a snapshot release locally (no publish)
+	goreleaser release --snapshot --clean
+
+.PHONY: release-dry-run
+release-dry-run: ## Run GoReleaser without publishing
+	goreleaser release --skip=publish --clean
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Clean

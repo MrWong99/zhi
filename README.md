@@ -51,6 +51,26 @@ past the tall grass into production.
 
 ### Installation
 
+**From a release (recommended):**
+
+```sh
+# Linux amd64
+curl -sSL https://github.com/MrWong99/zhi/releases/latest/download/zhi_linux_amd64.tar.gz | tar xz
+sudo mv zhi /usr/local/bin/
+
+# macOS arm64 (Apple Silicon)
+curl -sSL https://github.com/MrWong99/zhi/releases/latest/download/zhi_darwin_arm64.tar.gz | tar xz
+sudo mv zhi /usr/local/bin/
+```
+
+**From source:**
+
+```sh
+go install github.com/MrWong99/zhi/cmd/zhi@latest
+```
+
+**Build from repository:**
+
 ```sh
 git clone https://github.com/MrWong99/zhi.git
 cd zhi
