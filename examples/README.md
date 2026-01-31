@@ -48,3 +48,16 @@ This example does not support versioning or encryption.
 
 See [zhi-store-memory/main.go](zhi-store-memory/main.go) and the
 [Store Plugin docs](../docs/store-plugin.md) for details.
+
+## zhi-ui-httpapi
+
+A UI plugin that exposes the zhi configuration engine as an HTTP/JSON API. Demonstrates:
+
+- Implementing `ui.Plugin` (Run, Capabilities) with `RequiresTTY: false`
+- Using the `Controller` interface for all core operations (tree, export, apply, components)
+- SSE (Server-Sent Events) for streaming `Apply` output to HTTP clients
+- Graceful HTTP server lifecycle tied to the plugin context
+- Configurable listen address via `ZHI_HTTP_ADDR` environment variable
+
+See [zhi-ui-httpapi/main.go](zhi-ui-httpapi/main.go) and the
+[UI Plugin docs](../docs/ui-plugin.md) for details.
