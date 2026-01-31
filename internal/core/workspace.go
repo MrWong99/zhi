@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -123,11 +124,11 @@ type WorkspaceConfig struct {
 	Version    string         `yaml:"version" json:"version"`
 	Config     ProviderRef    `yaml:"config" json:"config"`
 	Transform  []ProviderRef  `yaml:"transform,omitempty" json:"transform,omitempty"`
-	Store      ProviderRef    `yaml:"store,omitempty" json:"store,omitempty"`
+	Store      ProviderRef    `yaml:"store,omitempty" json:"store"`
 	Components []ComponentDef `yaml:"components,omitempty" json:"components,omitempty"`
-	Export     ExportConfig   `yaml:"export,omitempty" json:"export,omitempty"`
-	Apply      ApplyConfig    `yaml:"apply,omitempty" json:"apply,omitempty"`
-	Plugins    PluginsConfig  `yaml:"plugins,omitempty" json:"plugins,omitempty"`
+	Export     ExportConfig   `yaml:"export,omitempty" json:"export"`
+	Apply      ApplyConfig    `yaml:"apply,omitempty" json:"apply"`
+	Plugins    PluginsConfig  `yaml:"plugins,omitempty" json:"plugins"`
 
 	// Dir is the absolute directory containing the workspace config file.
 	// It is set during loading and not part of the config file itself.
@@ -284,10 +285,5 @@ func ValidateWorkspace(ws *WorkspaceConfig, reg *Registry) error {
 
 // containsPathTraversal reports whether a path contains ".." segments.
 func containsPathTraversal(path string) bool {
-	for _, seg := range strings.Split(filepath.ToSlash(path), "/") {
-		if seg == ".." {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(strings.Split(filepath.ToSlash(path), "/"), "..")
 }

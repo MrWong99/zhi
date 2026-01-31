@@ -2,6 +2,8 @@ package core
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
@@ -185,10 +187,8 @@ func (cm *ComponentManager) Disable(name string) error {
 		if !cm.state[d.Name] {
 			continue
 		}
-		for _, dep := range d.Dependencies {
-			if dep == name {
-				return fmt.Errorf("cannot disable %q: required by enabled component %q", name, d.Name)
-			}
+		if slices.Contains(d.Dependencies, name) {
+			return fmt.Errorf("cannot disable %q: required by enabled component %q", name, d.Name)
 		}
 	}
 	cm.state[name] = false
@@ -293,9 +293,7 @@ func (cm *ComponentManager) LoadState(state map[string]bool) {
 // persistence.
 func (cm *ComponentManager) SaveState() map[string]bool {
 	out := make(map[string]bool, len(cm.state))
-	for k, v := range cm.state {
-		out[k] = v
-	}
+	maps.Copy(out, cm.state)
 	return out
 }
 
@@ -319,11 +317,8 @@ func (cm *ComponentManager) Definition(name string) (ComponentDef, bool) {
 func (cm *ComponentManager) Dependents(name string) []string {
 	var deps []string
 	for _, d := range cm.definitions {
-		for _, dep := range d.Dependencies {
-			if dep == name {
-				deps = append(deps, d.Name)
-				break
-			}
+		if slices.Contains(d.Dependencies, name) {
+			deps = append(deps, d.Name)
 		}
 	}
 	return deps

@@ -229,15 +229,11 @@ func (v ApplyView) View() string {
 		return v.padHeight(sb.String())
 	}
 
-	visibleLines := v.height - 2 // Account for header
-	if visibleLines < 1 {
-		visibleLines = 1
-	}
+	visibleLines := max(
+		// Account for header
+		v.height-2, 1)
 
-	end := v.offset + visibleLines
-	if end > len(v.lines) {
-		end = len(v.lines)
-	}
+	end := min(v.offset+visibleLines, len(v.lines))
 
 	for i := v.offset; i < end; i++ {
 		line := v.lines[i]

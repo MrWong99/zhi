@@ -177,10 +177,7 @@ func (v TreeView) View() string {
 		visibleLines = 1
 	}
 
-	end := v.offset + visibleLines
-	if end > len(v.filteredPaths) {
-		end = len(v.filteredPaths)
-	}
+	end := min(v.offset+visibleLines, len(v.filteredPaths))
 
 	for i := v.offset; i < end; i++ {
 		path := v.filteredPaths[i]

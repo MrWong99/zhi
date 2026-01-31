@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"strings"
@@ -146,9 +147,7 @@ func loadDir(dir string) (map[string]*entry, error) {
 		if err != nil {
 			return nil, err
 		}
-		for path, e := range entries {
-			merged[path] = e
-		}
+		maps.Copy(merged, entries)
 	}
 	return merged, nil
 }

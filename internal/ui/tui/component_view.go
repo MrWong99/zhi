@@ -166,10 +166,7 @@ func (v ComponentView) View() string {
 		visibleLines = 1
 	}
 
-	end := v.offset + visibleLines
-	if end > len(v.components) {
-		end = len(v.components)
-	}
+	end := min(v.offset+visibleLines, len(v.components))
 
 	for i := v.offset; i < end; i++ {
 		comp := v.components[i]

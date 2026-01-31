@@ -394,10 +394,7 @@ func (a *App) renderHeader() string {
 
 	left := HeaderStyle.Render(title)
 	right := HeaderStyle.Render(fmt.Sprintf(" %s ", viewName))
-	gap := a.width - lipgloss.Width(left) - lipgloss.Width(right)
-	if gap < 0 {
-		gap = 0
-	}
+	gap := max(a.width-lipgloss.Width(left)-lipgloss.Width(right), 0)
 	mid := HeaderStyle.Render(fmt.Sprintf("%*s", gap, ""))
 	return left + mid + right
 }
@@ -444,10 +441,7 @@ func (a *App) renderStatusBar() string {
 
 	left := StatusBarStyle.Render(a.statusMsg)
 	right := StatusBarStyle.Render(hints)
-	gap := a.width - lipgloss.Width(left) - lipgloss.Width(right)
-	if gap < 0 {
-		gap = 0
-	}
+	gap := max(a.width-lipgloss.Width(left)-lipgloss.Width(right), 0)
 	mid := StatusBarStyle.Render(fmt.Sprintf("%*s", gap, ""))
 	return left + mid + right
 }
@@ -496,10 +490,7 @@ func helpLine(key, desc string) string {
 
 func (a *App) contentHeight() int {
 	// Header (1) + status bar (1) = 2 lines of chrome
-	h := a.height - 2
-	if h < 1 {
-		h = 1
-	}
+	h := max(a.height-2, 1)
 	return h
 }
 

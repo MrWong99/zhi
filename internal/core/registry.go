@@ -4,6 +4,7 @@ package core
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"sync"
 
@@ -343,10 +344,5 @@ func sortedKeys[V any](m map[string]V) []string {
 }
 
 func contains(slice []string, s string) bool {
-	for _, v := range slice {
-		if v == s {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(slice, s)
 }

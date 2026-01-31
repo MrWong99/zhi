@@ -229,15 +229,9 @@ func (v ExportView) View() string {
 
 	// List panel.
 	sb.WriteString("  Export Templates & Formats:\n")
-	listHeight := v.height / 2
-	if listHeight < 3 {
-		listHeight = 3
-	}
+	listHeight := max(v.height/2, 3)
 
-	end := v.offset + listHeight
-	if end > len(v.items) {
-		end = len(v.items)
-	}
+	end := min(v.offset+listHeight, len(v.items))
 
 	for i := v.offset; i < end; i++ {
 		item := v.items[i]
@@ -267,10 +261,7 @@ func (v ExportView) View() string {
 		sb.WriteString(HeaderStyle.Render(" Preview "))
 		sb.WriteString("\n")
 		previewLines := strings.Split(v.preview, "\n")
-		maxPreviewLines := v.height - listHeight - 6
-		if maxPreviewLines < 3 {
-			maxPreviewLines = 3
-		}
+		maxPreviewLines := max(v.height-listHeight-6, 3)
 		for i, line := range previewLines {
 			if i >= maxPreviewLines {
 				sb.WriteString(DimStyle.Render(fmt.Sprintf("  ... (%d more lines)", len(previewLines)-maxPreviewLines)))
