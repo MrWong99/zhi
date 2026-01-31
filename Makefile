@@ -22,6 +22,33 @@ GOTESTFLAGS ?= -race -count=1
 # Proto
 PROTO_DIR     := api/proto
 PROTO_FILES   := $(shell find $(PROTO_DIR) -name '*.proto' 2>/dev/null)
+PROTO_VERSION := 33.5
+PROTO_INSTALL_DIR := $(BIN_DIR)/protoc
+PROTOC        := $(PROTO_INSTALL_DIR)/bin/protoc
+
+# Detect OS and architecture for protoc download
+UNAME_S := $(shell uname -s)
+UNAME_M := $(shell uname -m)
+
+ifeq ($(UNAME_S),Linux)
+    PROTOC_OS := linux
+endif
+ifeq ($(UNAME_S),Darwin)
+    PROTOC_OS := osx
+endif
+
+ifeq ($(UNAME_M),x86_64)
+    PROTOC_ARCH := x86_64
+endif
+ifeq ($(UNAME_M),aarch64)
+    PROTOC_ARCH := aarch_64
+endif
+ifeq ($(UNAME_M),arm64)
+    PROTOC_ARCH := aarch_64
+endif
+
+PROTOC_ZIP := protoc-$(PROTO_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip
+PROTOC_URL := https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTO_VERSION)/$(PROTOC_ZIP)
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Default target
@@ -94,9 +121,26 @@ bench: ## Run benchmarks
 generate: proto ## Run all code generation (proto + go generate)
 	go generate ./...
 
+.PHONY: install-protoc
+install-protoc: ## Download and install the required protoc version locally
+	@if [ -f "$(PROTOC)" ]; then \
+		INSTALLED_VERSION=$$($(PROTOC) --version | grep -oE '[0-9]+\.[0-9]+' | head -1); \
+		if [ "$$INSTALLED_VERSION" = "$(PROTO_VERSION)" ]; then \
+			echo "protoc $(PROTO_VERSION) already installed in $(PROTO_INSTALL_DIR)"; \
+			exit 0; \
+		fi; \
+	fi; \
+	echo "Installing protoc $(PROTO_VERSION)..."; \
+	mkdir -p $(PROTO_INSTALL_DIR); \
+	curl -fsSL -o /tmp/$(PROTOC_ZIP) $(PROTOC_URL); \
+	unzip -q -o /tmp/$(PROTOC_ZIP) -d $(PROTO_INSTALL_DIR); \
+	rm /tmp/$(PROTOC_ZIP); \
+	chmod +x $(PROTOC); \
+	echo "protoc $(PROTO_VERSION) installed successfully"
+
 .PHONY: proto
-proto: ## Generate Go code from Protocol Buffer definitions
-	protoc \
+proto: install-protoc ## Generate Go code from Protocol Buffer definitions
+	$(PROTOC) \
 		--proto_path=$(PROTO_DIR) \
 		--go_out=. --go_opt=module=$(MODULE) \
 		--go-grpc_out=. --go-grpc_opt=module=$(MODULE) \
@@ -171,6 +215,10 @@ release-dry-run: ## Run GoReleaser without publishing
 clean: ## Remove build artifacts
 	rm -rf $(BIN_DIR)
 	go clean -cache -testcache
+
+.PHONY: clean-protoc
+clean-protoc: ## Remove locally installed protoc
+	rm -rf $(PROTO_INSTALL_DIR)
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Help
