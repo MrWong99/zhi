@@ -153,7 +153,9 @@ func getJSON(t *testing.T, url string, dst any) *http.Response {
 	if err != nil {
 		t.Fatalf("GET %s: %v", url, err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 	if dst != nil {
 		if err := json.NewDecoder(resp.Body).Decode(dst); err != nil {
 			t.Fatalf("decode response from %s: %v", url, err)
@@ -172,7 +174,9 @@ func postJSON(t *testing.T, url string, body any, dst any) *http.Response {
 	if err != nil {
 		t.Fatalf("POST %s: %v", url, err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 	if dst != nil {
 		if err := json.NewDecoder(resp.Body).Decode(dst); err != nil {
 			t.Fatalf("decode response from %s: %v", url, err)
@@ -196,7 +200,7 @@ func putJSON(t *testing.T, url string, body any) *http.Response {
 	if err != nil {
 		t.Fatalf("PUT %s: %v", url, err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	return resp
 }
 
@@ -328,7 +332,9 @@ func TestApplySSE(t *testing.T) {
 	if err != nil {
 		t.Fatalf("POST /api/apply: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if ct := resp.Header.Get("Content-Type"); ct != "text/event-stream" {
 		t.Fatalf("Content-Type = %q, want text/event-stream", ct)
@@ -460,7 +466,9 @@ func TestGRPCRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GET /api/workspace: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 	json.NewDecoder(resp.Body).Decode(&result) //nolint:errcheck
 
 	if result["name"] != "test-workspace" {

@@ -305,7 +305,7 @@ func (s *server) handleApply(w http.ResponseWriter, r *http.Request) {
 			"line":   event.Line,
 			"stream": event.Stream,
 		})
-		fmt.Fprintf(w, "event: output\ndata: %s\n\n", data)
+		_, _ = fmt.Fprintf(w, "event: output\ndata: %s\n\n", data)
 		flusher.Flush()
 	}
 
@@ -323,7 +323,7 @@ func (s *server) handleApply(w http.ResponseWriter, r *http.Request) {
 		doneData["error"] = err.Error()
 	}
 	data, _ := json.Marshal(doneData)
-	fmt.Fprintf(w, "event: done\ndata: %s\n\n", data)
+	_, _ = fmt.Fprintf(w, "event: done\ndata: %s\n\n", data)
 	flusher.Flush()
 }
 

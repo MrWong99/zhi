@@ -193,7 +193,7 @@ deps: ## Download module dependencies
 tools: ## Install required development tools
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.8.0
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Release

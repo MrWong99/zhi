@@ -73,7 +73,7 @@ func (p *evolvePlugin) BeforeDisplay(_ context.Context, tree *config.Tree) error
 	stagesGained := len(evo.stages) - 1
 
 	// Preserve the original starter name in a new path.
-	tree.Set("pokedex/starter.original", &config.Value{
+	_ = tree.Set("pokedex/starter.original", &config.Value{
 		Val:      starter,
 		Metadata: map[string]any{"description": "Original starter before evolution"},
 	})

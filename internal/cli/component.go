@@ -73,7 +73,7 @@ func runComponentEnable(cmd *cobra.Command, args []string) error {
 
 	enabled, err := cm.EnableWithReport(name)
 	if err != nil {
-		return fmt.Errorf("Error: %s", err)
+		return fmt.Errorf("error: %s", err)
 	}
 
 	// Save state.
@@ -134,7 +134,7 @@ func runComponentDisable(cmd *cobra.Command, args []string) error {
 	if componentForce {
 		disabled, err := cm.DisableCascade(name)
 		if err != nil {
-			return fmt.Errorf("Error: %s", err)
+			return fmt.Errorf("error: %s", err)
 		}
 
 		ws := eng.WorkspaceDir()
@@ -163,7 +163,7 @@ func runComponentDisable(cmd *cobra.Command, args []string) error {
 	}
 
 	if err := cm.Disable(name); err != nil {
-		return fmt.Errorf("Error: %s", err)
+		return fmt.Errorf("error: %s", err)
 	}
 
 	ws := eng.WorkspaceDir()

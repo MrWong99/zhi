@@ -131,7 +131,7 @@ func TestValidateDefaults(t *testing.T) {
 	for _, path := range paths {
 		v, ok, _ := p.Get(ctx, path)
 		if ok {
-			tree.Set(path, &config.Value{Val: v.Val, Metadata: v.Metadata})
+			_ = tree.Set(path, &config.Value{Val: v.Val, Metadata: v.Metadata})
 		}
 	}
 
@@ -189,7 +189,7 @@ func TestValidateEmptyTrainerName(t *testing.T) {
 	ctx := context.Background()
 
 	tree := config.NewTree()
-	tree.Set("pokedex/trainer.name", &config.Value{Val: ""})
+	_ = tree.Set("pokedex/trainer.name", &config.Value{Val: ""})
 
 	results, err := p.Validate(ctx, "pokedex/trainer.name", tree)
 	if err != nil {
@@ -208,7 +208,7 @@ func TestValidateUnknownRegion(t *testing.T) {
 	ctx := context.Background()
 
 	tree := config.NewTree()
-	tree.Set("pokedex/region", &config.Value{Val: "unown-dimension"})
+	_ = tree.Set("pokedex/region", &config.Value{Val: "unown-dimension"})
 
 	results, err := p.Validate(ctx, "pokedex/region", tree)
 	if err != nil {
@@ -227,8 +227,8 @@ func TestValidateClassicStarter(t *testing.T) {
 	ctx := context.Background()
 
 	tree := config.NewTree()
-	tree.Set("pokedex/starter", &config.Value{Val: "charmander"})
-	tree.Set("pokedex/region", &config.Value{Val: "kanto"})
+	_ = tree.Set("pokedex/starter", &config.Value{Val: "charmander"})
+	_ = tree.Set("pokedex/region", &config.Value{Val: "kanto"})
 
 	results, err := p.Validate(ctx, "pokedex/starter", tree)
 	if err != nil {
@@ -247,8 +247,8 @@ func TestValidateCrossRegionStarter(t *testing.T) {
 	// johto. Since regionStarters only has kanto mapped, no cross-value
 	// info result should fire.
 	tree := config.NewTree()
-	tree.Set("pokedex/starter", &config.Value{Val: "charmander"})
-	tree.Set("pokedex/region", &config.Value{Val: "johto"})
+	_ = tree.Set("pokedex/starter", &config.Value{Val: "charmander"})
+	_ = tree.Set("pokedex/region", &config.Value{Val: "johto"})
 
 	results, err := p.Validate(ctx, "pokedex/starter", tree)
 	if err != nil {
@@ -278,7 +278,7 @@ func TestValidateGoalBounds(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tree := config.NewTree()
-			tree.Set("pokedex/pokedex.goal", &config.Value{Val: tt.goal})
+			_ = tree.Set("pokedex/pokedex.goal", &config.Value{Val: tt.goal})
 
 			results, err := p.Validate(ctx, "pokedex/pokedex.goal", tree)
 			if err != nil {

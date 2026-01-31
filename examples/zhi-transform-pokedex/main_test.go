@@ -27,10 +27,10 @@ func dispense(t *testing.T) transform.Plugin {
 // pokedexTree builds a config tree resembling the zhi-config-pokedex defaults.
 func pokedexTree(starter string, goal float64) *config.Tree {
 	tree := config.NewTree()
-	tree.Set("pokedex/trainer.name", &config.Value{Val: "Ash"})
-	tree.Set("pokedex/starter", &config.Value{Val: starter})
-	tree.Set("pokedex/region", &config.Value{Val: "kanto"})
-	tree.Set("pokedex/pokedex.goal", &config.Value{Val: goal})
+	_ = tree.Set("pokedex/trainer.name", &config.Value{Val: "Ash"})
+	_ = tree.Set("pokedex/starter", &config.Value{Val: starter})
+	_ = tree.Set("pokedex/region", &config.Value{Val: "kanto"})
+	_ = tree.Set("pokedex/pokedex.goal", &config.Value{Val: goal})
 	return tree
 }
 
@@ -112,7 +112,7 @@ func TestBeforeDisplayUnknownStarterNoOp(t *testing.T) {
 func TestBeforeDisplayNoStarterPath(t *testing.T) {
 	p := dispense(t)
 	tree := config.NewTree()
-	tree.Set("pokedex/region", &config.Value{Val: "kanto"})
+	_ = tree.Set("pokedex/region", &config.Value{Val: "kanto"})
 
 	if err := p.BeforeDisplay(context.Background(), tree); err != nil {
 		t.Fatalf("BeforeDisplay: %v", err)
@@ -146,7 +146,7 @@ func TestAfterSaveDevolvesStarter(t *testing.T) {
 		t.Run(tt.evolved, func(t *testing.T) {
 			tree := pokedexTree(tt.evolved, 150)
 			// Add the display-only path that BeforeDisplay would have created.
-			tree.Set("pokedex/starter.original", &config.Value{Val: "original"})
+			_ = tree.Set("pokedex/starter.original", &config.Value{Val: "original"})
 
 			if err := p.AfterSave(ctx, tree); err != nil {
 				t.Fatalf("AfterSave: %v", err)
