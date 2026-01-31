@@ -3,7 +3,6 @@ package core
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,6 +10,7 @@ import (
 	"strings"
 	"text/template"
 
+	sprig "github.com/Masterminds/sprig/v3"
 	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
 	"github.com/pelletier/go-toml/v2"
 	"gopkg.in/yaml.v3"
@@ -184,9 +184,9 @@ func renderBuiltinFormat(td *TreeData, format, prefix string) (string, error) {
 	var tmplText string
 	switch format {
 	case "json":
-		tmplText = `{{ .Nested "" | toJSON }}`
+		tmplText = `{{ .Nested "" | mustToPrettyJson }}`
 		if prefix != "" {
-			tmplText = fmt.Sprintf(`{{ .Nested %q | toJSON }}`, prefix)
+			tmplText = fmt.Sprintf(`{{ .Nested %q | mustToPrettyJson }}`, prefix)
 		}
 	case "yaml":
 		tmplText = `{{ .Nested "" | toYAML }}`
@@ -217,35 +217,22 @@ func renderBuiltinFormat(td *TreeData, format, prefix string) (string, error) {
 }
 
 // templateFuncMap returns the function map available in all export templates.
+// It starts with all Sprig template functions and adds zhi-specific functions
+// for formats that Sprig does not provide (YAML, TOML, dotenv, shell quoting).
 func templateFuncMap() template.FuncMap {
-	return template.FuncMap{
-		"toJSON":        toJSON,
-		"toJSONCompact": toJSONCompact,
-		"toYAML":        toYAML,
-		"toTOML":        toTOML,
-		"toDotenv":      toDotenv,
-		"quote":         shellQuote,
-		"indent":        indentStr,
-		"upper":         strings.ToUpper,
-		"lower":         strings.ToLower,
-		"replace":       strings.ReplaceAll,
-	}
-}
+	// Start with Sprig's text/template function map as the base.
+	// This provides 100+ functions including string manipulation, math,
+	// date/time, crypto, regex, list/dict operations, and more.
+	// See https://masterminds.github.io/sprig/ for the full list.
+	fm := sprig.TxtFuncMap()
 
-func toJSON(v any) (string, error) {
-	b, err := json.MarshalIndent(v, "", "  ")
-	if err != nil {
-		return "", err
-	}
-	return string(b), nil
-}
+	// Add zhi-specific functions that have no Sprig equivalent.
+	fm["toYAML"] = toYAML
+	fm["toTOML"] = toTOML
+	fm["toDotenv"] = toDotenv
+	fm["shellQuote"] = shellQuote
 
-func toJSONCompact(v any) (string, error) {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return "", err
-	}
-	return string(b), nil
+	return fm
 }
 
 func toYAML(v any) (string, error) {
@@ -290,18 +277,6 @@ func toDotenv(v any) (string, error) {
 // shellQuote returns a shell-safe single-quoted string.
 func shellQuote(s string) string {
 	return "'" + strings.ReplaceAll(s, "'", "'\\''") + "'"
-}
-
-// indentStr indents every line of s by n spaces.
-func indentStr(n int, s string) string {
-	pad := strings.Repeat(" ", n)
-	lines := strings.Split(s, "\n")
-	for i, line := range lines {
-		if line != "" {
-			lines[i] = pad + line
-		}
-	}
-	return strings.Join(lines, "\n")
 }
 
 // writeExportFile writes data to outputPath with security hardening:
