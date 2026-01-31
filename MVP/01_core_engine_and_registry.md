@@ -41,7 +41,7 @@ The registry does **not** handle external plugins at this stage (that's Step 7).
 
 - Config: `"structuredfile"` → `structuredfile.New()` (wrap existing `pkg/providers/config/structuredfile`)
 - Transform: (none in MVP initially)
-- Store: (none built-in initially; json-store is an example external plugin)
+- Store: (none built-in initially; zhi-store-json is an example external plugin)
 
 ### 1.2 Workspace Configuration (`internal/core/workspace.go`)
 
@@ -62,7 +62,7 @@ transform: []
   #   options: {}
 
 store:
-  provider: json-store
+  provider: zhi-store-json
   options:
     directory: ./.zhi/store
 

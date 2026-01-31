@@ -24,7 +24,7 @@ func TestInitCreatesWorkspace(t *testing.T) {
 	workspace = dir
 	initForce = false
 	initConfigProvider = "structuredfile"
-	initStoreProvider = "json-store"
+	initStoreProvider = "zhi-store-json"
 
 	cmd := newInitCmd()
 	cmd.SetOut(new(strings.Builder))
@@ -112,7 +112,7 @@ func TestInitForceOverwrite(t *testing.T) {
 	workspace = dir
 	initForce = true
 	initConfigProvider = "structuredfile"
-	initStoreProvider = "json-store"
+	initStoreProvider = "zhi-store-json"
 
 	cmd := newInitCmd()
 	cmd.SetOut(new(strings.Builder))
@@ -136,7 +136,7 @@ func TestInitComponentDefinitions(t *testing.T) {
 	workspace = dir
 	initForce = false
 	initConfigProvider = "structuredfile"
-	initStoreProvider = "json-store"
+	initStoreProvider = "zhi-store-json"
 
 	cmd := newInitCmd()
 	cmd.SetOut(new(strings.Builder))

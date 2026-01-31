@@ -152,7 +152,7 @@ func main() {
 }
 ```
 
-See the [Pokedex example](../examples/pokedex-config/) for a complete,
+See the [Pokedex example](../examples/zhi-config-pokedex/) for a complete,
 runnable plugin.
 
 ## How validation works over gRPC

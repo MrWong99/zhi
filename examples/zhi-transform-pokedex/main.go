@@ -1,8 +1,8 @@
-// Pokedex-transform is an example zhi transform plugin that evolves starter
+// zhi-transform-pokedex is an example zhi transform plugin that evolves starter
 // Pokemon before their values are displayed in the UI.
 //
 // It demonstrates how to implement transform.Plugin by reading and mutating
-// the shared configuration tree that the pokedex-config plugin manages.
+// the shared configuration tree that the zhi-config-pokedex plugin manages.
 //
 // Transformations applied by BeforeDisplay:
 //

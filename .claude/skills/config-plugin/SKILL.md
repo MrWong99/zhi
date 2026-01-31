@@ -75,4 +75,4 @@ func main() {
 - gRPC layer: `pkg/zhiplugin/config/grpc_client.go`, `pkg/zhiplugin/config/grpc_server.go`
 - Proto: `api/proto/zhiplugin/v1/config.proto`
 - Existing provider: `pkg/providers/config/structuredfile/structuredfile.go`
-- Example: `examples/pokedex-config/main.go`
+- Example: `examples/zhi-config-pokedex/main.go`

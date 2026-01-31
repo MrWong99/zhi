@@ -154,7 +154,7 @@ pkg/zhiplugin/                    # EXISTS: public plugin framework (unchanged)
 pkg/providers/                    # EXISTS: built-in providers
   config/structuredfile/          #   EXISTS: structured file config provider
   transform/                      #   FUTURE: built-in transform providers
-  store/                          #   FUTURE: built-in store providers (json-store promoted)
+  store/                          #   FUTURE: built-in store providers (zhi-store-json promoted)
 pkg/ui/                           # EXISTS: placeholder (may merge with internal/ui/)
 api/proto/zhiplugin/v1/           # EXISTS: protobuf definitions
 examples/                         # EXISTS: example plugins
@@ -179,7 +179,7 @@ A typed map of provider names to factory functions. At startup, the binary regis
 Registry
   ├── config providers:    {"structuredfile": factory}
   ├── transform providers: {}
-  └── store providers:     {"json-store": factory}
+  └── store providers:     {"zhi-store-json": factory}
 ```
 
 External plugins are resolved lazily: when the registry can't find a built-in match, it calls the discovery module to scan plugin directories.
@@ -311,7 +311,7 @@ The following are explicitly out of scope for the MVP:
 
 - **AuthN/AuthZ**: No Casbin, no OIDC, no RBAC. Authentication and authorization will be added in a future release.
 - **CUE transformation**: Transform plugins exist but no CUE-based implementation in MVP. Transforms are written in Go.
-- **Vault storage**: The store plugin API supports encryption, but no Vault backend in MVP. The json-store example is the reference implementation.
+- **Vault storage**: The store plugin API supports encryption, but no Vault backend in MVP. The zhi-store-json example is the reference implementation.
 - **Kubernetes/Helm provisioning**: The apply system supports `kubectl apply` as an external command, but there's no embedded K8s client.
 - **Docker Compose SDK**: Same as K8s — use `docker compose` via the new Compose Go SDK.
 - **Bidirectional gRPC streaming**: Not needed. TUI is in-process.

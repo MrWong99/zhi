@@ -79,4 +79,4 @@ func main() {
 - Interface & types: `pkg/zhiplugin/transform/plugin.go`, `pkg/zhiplugin/transform/transform.go`
 - gRPC layer: `pkg/zhiplugin/transform/grpc_client.go`, `pkg/zhiplugin/transform/grpc_server.go`
 - Proto: `api/proto/zhiplugin/v1/transform.proto`
-- Example: `examples/pokedex-transform/main.go`
+- Example: `examples/zhi-transform-pokedex/main.go`

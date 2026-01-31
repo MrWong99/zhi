@@ -19,7 +19,7 @@ config:
     directory: ./config
 transform: []
 store:
-  provider: json-store
+  provider: zhi-store-json
   options:
     directory: ./.zhi/store
 components:
@@ -62,8 +62,8 @@ apply:
 	if ws.Config.Options["directory"] != "./config" {
 		t.Errorf("Config.Options[directory] = %v, want %q", ws.Config.Options["directory"], "./config")
 	}
-	if ws.Store.Provider != "json-store" {
-		t.Errorf("Store.Provider = %q, want %q", ws.Store.Provider, "json-store")
+	if ws.Store.Provider != "zhi-store-json" {
+		t.Errorf("Store.Provider = %q, want %q", ws.Store.Provider, "zhi-store-json")
 	}
 	if len(ws.Components) != 3 {
 		t.Fatalf("len(Components) = %d, want 3", len(ws.Components))
@@ -152,10 +152,10 @@ func TestLoadWorkspaceInvalidYAML(t *testing.T) {
 func TestValidateWorkspaceValid(t *testing.T) {
 	dir := t.TempDir()
 	reg := NewRegistry()
-	_ = reg.RegisterConfig("test-config", func(map[string]any) (config.Plugin, error) {
+	_ = reg.RegisterConfig("test-config", func(string, map[string]any) (config.Plugin, error) {
 		return &stubConfig{}, nil
 	})
-	_ = reg.RegisterStore("test-store", func(map[string]any) (store.Plugin, error) {
+	_ = reg.RegisterStore("test-store", func(string, map[string]any) (store.Plugin, error) {
 		return &stubStore{}, nil
 	})
 
@@ -176,7 +176,7 @@ func TestValidateWorkspaceValid(t *testing.T) {
 
 func TestValidateWorkspaceInvalidVersion(t *testing.T) {
 	reg := NewRegistry()
-	_ = reg.RegisterConfig("test", func(map[string]any) (config.Plugin, error) {
+	_ = reg.RegisterConfig("test", func(string, map[string]any) (config.Plugin, error) {
 		return &stubConfig{}, nil
 	})
 
@@ -219,7 +219,7 @@ func TestValidateWorkspaceEmptyConfigProvider(t *testing.T) {
 
 func TestValidateWorkspaceBadComponents(t *testing.T) {
 	reg := NewRegistry()
-	_ = reg.RegisterConfig("test", func(map[string]any) (config.Plugin, error) {
+	_ = reg.RegisterConfig("test", func(string, map[string]any) (config.Plugin, error) {
 		return &stubConfig{}, nil
 	})
 
@@ -240,7 +240,7 @@ func TestValidateWorkspaceBadComponents(t *testing.T) {
 
 func TestValidateWorkspaceMissingTemplate(t *testing.T) {
 	reg := NewRegistry()
-	_ = reg.RegisterConfig("test", func(map[string]any) (config.Plugin, error) {
+	_ = reg.RegisterConfig("test", func(string, map[string]any) (config.Plugin, error) {
 		return &stubConfig{}, nil
 	})
 

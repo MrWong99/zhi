@@ -82,7 +82,7 @@ func TestValidateWorkspaceRejectsInvalidComponentNames(t *testing.T) {
 	}
 
 	reg := NewRegistry()
-	_ = reg.RegisterConfig("structuredfile", func(opts map[string]any) (config.Plugin, error) {
+	_ = reg.RegisterConfig("structuredfile", func(string, map[string]any) (config.Plugin, error) {
 		return newMockConfig(), nil
 	})
 
@@ -107,7 +107,7 @@ func TestValidateWorkspaceAcceptsValidComponentNames(t *testing.T) {
 	}
 
 	reg := NewRegistry()
-	_ = reg.RegisterConfig("structuredfile", func(opts map[string]any) (config.Plugin, error) {
+	_ = reg.RegisterConfig("structuredfile", func(string, map[string]any) (config.Plugin, error) {
 		return newMockConfig(), nil
 	})
 
@@ -127,7 +127,7 @@ func TestValidateWorkspaceRejectsPluginDirTraversal(t *testing.T) {
 	}
 
 	reg := NewRegistry()
-	_ = reg.RegisterConfig("structuredfile", func(opts map[string]any) (config.Plugin, error) {
+	_ = reg.RegisterConfig("structuredfile", func(string, map[string]any) (config.Plugin, error) {
 		return newMockConfig(), nil
 	})
 
@@ -150,7 +150,7 @@ func TestValidateWorkspaceAcceptsNormalPluginDirs(t *testing.T) {
 	}
 
 	reg := NewRegistry()
-	_ = reg.RegisterConfig("structuredfile", func(opts map[string]any) (config.Plugin, error) {
+	_ = reg.RegisterConfig("structuredfile", func(string, map[string]any) (config.Plugin, error) {
 		return newMockConfig(), nil
 	})
 

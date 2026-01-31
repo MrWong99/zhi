@@ -75,4 +75,4 @@ func main() {
 - Interface & types: `pkg/zhiplugin/store/plugin.go`, `pkg/zhiplugin/store/store.go`
 - gRPC layer: `pkg/zhiplugin/store/grpc_client.go`, `pkg/zhiplugin/store/grpc_server.go`
 - Proto: `api/proto/zhiplugin/v1/store.proto`
-- Example: `examples/memory-store/main.go`
+- Example: `examples/zhi-store-memory/main.go`

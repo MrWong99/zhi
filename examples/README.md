@@ -1,6 +1,6 @@
 # Examples for Plugins in zhi
 
-## pokedex-config
+## zhi-config-pokedex
 
 A configuration plugin that manages a small Pokedex. Demonstrates:
 
@@ -10,10 +10,10 @@ A configuration plugin that manages a small Pokedex. Demonstrates:
 - Cross-value validation (starter must match region)
 - Wiring a plugin binary with `plugin.Serve`
 
-See [pokedex-config/main.go](pokedex-config/main.go) and the
+See [zhi-config-pokedex/main.go](zhi-config-pokedex/main.go) and the
 [Configuration Plugin docs](../docs/config-plugin.md) for details.
 
-## pokedex-transform
+## zhi-transform-pokedex
 
 A transform plugin that evolves starter Pokemon before display. Demonstrates:
 
@@ -21,10 +21,10 @@ A transform plugin that evolves starter Pokemon before display. Demonstrates:
 - Reading and mutating the shared configuration tree
 - Mapping transformed values back to their original form on save
 
-See [pokedex-transform/main.go](pokedex-transform/main.go) and the
+See [zhi-transform-pokedex/main.go](zhi-transform-pokedex/main.go) and the
 [Transform Plugin docs](../docs/transform-plugin.md) for details.
 
-## json-store
+## zhi-store-json
 
 A store plugin that persists configuration trees as JSON files on disk. Demonstrates:
 
@@ -34,10 +34,10 @@ A store plugin that persists configuration trees as JSON files on disk. Demonstr
 
 This example does not support versioning or encryption.
 
-See [json-store/main.go](json-store/main.go) and the
+See [zhi-store-json/main.go](zhi-store-json/main.go) and the
 [Store Plugin docs](../docs/store-plugin.md) for details.
 
-## memory-store
+## zhi-store-memory
 
 A store plugin that persists configuration trees in memory. Demonstrates:
 
@@ -46,5 +46,5 @@ A store plugin that persists configuration trees in memory. Demonstrates:
 
 This example does not support versioning or encryption.
 
-See [memory-store/main.go](memory-store/main.go) and the
+See [zhi-store-memory/main.go](zhi-store-memory/main.go) and the
 [Store Plugin docs](../docs/store-plugin.md) for details.

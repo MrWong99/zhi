@@ -112,17 +112,17 @@ func setupTestController(t *testing.T) *ui.UIController {
 	mc := newMockConfig()
 	ms := newMockStore()
 
-	if err := reg.RegisterConfig("mock", func(_ map[string]any) (config.Plugin, error) {
+	if err := reg.RegisterConfig("mock", func(string, map[string]any) (config.Plugin, error) {
 		return mc, nil
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if err := reg.RegisterTransform("mock", func(_ map[string]any) (transform.Plugin, error) {
+	if err := reg.RegisterTransform("mock", func(string, map[string]any) (transform.Plugin, error) {
 		return &mockTransform{}, nil
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if err := reg.RegisterStore("mock", func(_ map[string]any) (store.Plugin, error) {
+	if err := reg.RegisterStore("mock", func(string, map[string]any) (store.Plugin, error) {
 		return ms, nil
 	}); err != nil {
 		t.Fatal(err)

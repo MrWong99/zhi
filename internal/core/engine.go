@@ -29,7 +29,7 @@ func NewEngine(registry *Registry, workspace *WorkspaceConfig) (*Engine, error) 
 	}
 
 	// Resolve config provider.
-	cp, err := registry.ConfigProvider(workspace.Config.Provider, workspace.Config.Options)
+	cp, err := registry.ConfigProvider(workspace.Dir, workspace.Config.Provider, workspace.Config.Options)
 	if err != nil {
 		return nil, fmt.Errorf("resolving config provider: %w", err)
 	}
@@ -37,7 +37,7 @@ func NewEngine(registry *Registry, workspace *WorkspaceConfig) (*Engine, error) 
 
 	// Resolve transform providers.
 	for _, t := range workspace.Transform {
-		tp, err := registry.TransformProvider(t.Provider, t.Options)
+		tp, err := registry.TransformProvider(workspace.Dir, t.Provider, t.Options)
 		if err != nil {
 			return nil, fmt.Errorf("resolving transform provider %q: %w", t.Provider, err)
 		}
@@ -46,7 +46,7 @@ func NewEngine(registry *Registry, workspace *WorkspaceConfig) (*Engine, error) 
 
 	// Resolve store provider (optional).
 	if workspace.Store.Provider != "" {
-		sp, err := registry.StoreProvider(workspace.Store.Provider, workspace.Store.Options)
+		sp, err := registry.StoreProvider(workspace.Dir, workspace.Store.Provider, workspace.Store.Options)
 		if err != nil {
 			return nil, fmt.Errorf("resolving store provider: %w", err)
 		}

@@ -52,7 +52,7 @@ func TestLaunchConfigPlugin(t *testing.T) {
 	}
 
 	root := findProjectRoot(t)
-	bin := buildPlugin(t, filepath.Join(root, "examples", "pokedex-config"), "zhi-config-pokedex")
+	bin := buildPlugin(t, filepath.Join(root, "examples", "zhi-config-pokedex"), "zhi-config-pokedex")
 
 	p, cleanup, err := LaunchConfig(bin)
 	if err != nil {
@@ -91,7 +91,7 @@ func TestLaunchTransformPlugin(t *testing.T) {
 	}
 
 	root := findProjectRoot(t)
-	bin := buildPlugin(t, filepath.Join(root, "examples", "pokedex-transform"), "zhi-transform-pokedex")
+	bin := buildPlugin(t, filepath.Join(root, "examples", "zhi-transform-pokedex"), "zhi-transform-pokedex")
 
 	p, cleanup, err := LaunchTransform(bin)
 	if err != nil {
@@ -104,7 +104,7 @@ func TestLaunchTransformPlugin(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ValidatePolicy: %v", err)
 	}
-	// The pokedex-transform plugin returns ValidateBeforeTransform.
+	// The zhi-transform-pokedex plugin returns ValidateBeforeTransform.
 	if policy != 0 { // ValidateBeforeTransform = 0
 		t.Errorf("ValidatePolicy = %v, want 0 (ValidateBeforeTransform)", policy)
 	}
@@ -119,7 +119,7 @@ func TestLaunchStorePlugin(t *testing.T) {
 	}
 
 	root := findProjectRoot(t)
-	bin := buildPlugin(t, filepath.Join(root, "examples", "memory-store"), "zhi-store-memory")
+	bin := buildPlugin(t, filepath.Join(root, "examples", "zhi-store-memory"), "zhi-store-memory")
 
 	p, cleanup, err := LaunchStore(bin)
 	if err != nil {
@@ -142,7 +142,7 @@ func TestLaunchStorePlugin(t *testing.T) {
 		t.Fatalf("SupportsVersioning: %v", err)
 	}
 	if versioning {
-		t.Error("memory-store should not support versioning")
+		t.Error("zhi-store-memory should not support versioning")
 	}
 }
 
@@ -176,7 +176,7 @@ func TestCleanupKillsProcess(t *testing.T) {
 	}
 
 	root := findProjectRoot(t)
-	bin := buildPlugin(t, filepath.Join(root, "examples", "memory-store"), "zhi-store-memory")
+	bin := buildPlugin(t, filepath.Join(root, "examples", "zhi-store-memory"), "zhi-store-memory")
 
 	_, cleanup, err := LaunchStore(bin)
 	if err != nil {

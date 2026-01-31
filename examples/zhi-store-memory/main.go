@@ -1,4 +1,4 @@
-// Memory-store is an example zhi store plugin that persists configuration
+// zhi-store-memory is an example zhi store plugin that persists configuration
 // trees in memory. It demonstrates how to implement store.Plugin with the
 // simplest possible storage backend: a Go map.
 //

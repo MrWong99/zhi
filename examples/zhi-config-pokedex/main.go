@@ -1,4 +1,4 @@
-// Pokedex-config is an example zhi configuration plugin that manages a small
+// zhi-config-pokedex is an example zhi configuration plugin that manages a small
 // Pokedex. It demonstrates how to implement config.Plugin with typed values,
 // metadata, and cross-value validation.
 //

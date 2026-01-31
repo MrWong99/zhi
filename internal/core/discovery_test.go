@@ -19,7 +19,7 @@ func TestParseFlatName(t *testing.T) {
 		{"config plugin", "zhi-config-pokedex", PluginTypeConfig, "pokedex", true},
 		{"transform plugin", "zhi-transform-evolve", PluginTypeTransform, "evolve", true},
 		{"store plugin", "zhi-store-vault", PluginTypeStore, "vault", true},
-		{"store with dash", "zhi-store-json-store", PluginTypeStore, "json-store", true},
+		{"store with dash", "zhi-store-zhi-store-json", PluginTypeStore, "zhi-store-json", true},
 		{"no prefix", "pokedex", "", "", false},
 		{"zhi only", "zhi-", "", "", false},
 		{"unknown type", "zhi-unknown-foo", "", "", false},

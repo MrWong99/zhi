@@ -24,7 +24,7 @@ func dispense(t *testing.T) transform.Plugin {
 	return raw.(transform.Plugin)
 }
 
-// pokedexTree builds a config tree resembling the pokedex-config defaults.
+// pokedexTree builds a config tree resembling the zhi-config-pokedex defaults.
 func pokedexTree(starter string, goal float64) *config.Tree {
 	tree := config.NewTree()
 	tree.Set("pokedex/trainer.name", &config.Value{Val: "Ash"})

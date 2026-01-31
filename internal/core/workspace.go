@@ -225,7 +225,7 @@ func ValidateWorkspace(ws *WorkspaceConfig, reg *Registry) error {
 	// Check config provider exists.
 	if ws.Config.Provider == "" {
 		errs = append(errs, errors.New("config provider is required"))
-	} else if _, err := reg.ConfigProvider(ws.Config.Provider, nil); err != nil {
+	} else if _, err := reg.ConfigProvider(ws.Dir, ws.Config.Provider, nil); err != nil {
 		errs = append(errs, fmt.Errorf("config provider: %w", err))
 	}
 
@@ -233,14 +233,14 @@ func ValidateWorkspace(ws *WorkspaceConfig, reg *Registry) error {
 	for i, t := range ws.Transform {
 		if t.Provider == "" {
 			errs = append(errs, fmt.Errorf("transform[%d]: provider name is required", i))
-		} else if _, err := reg.TransformProvider(t.Provider, nil); err != nil {
+		} else if _, err := reg.TransformProvider(ws.Dir, t.Provider, nil); err != nil {
 			errs = append(errs, fmt.Errorf("transform[%d]: %w", i, err))
 		}
 	}
 
 	// Check store provider exists (if specified).
 	if ws.Store.Provider != "" {
-		if _, err := reg.StoreProvider(ws.Store.Provider, nil); err != nil {
+		if _, err := reg.StoreProvider(ws.Dir, ws.Store.Provider, nil); err != nil {
 			errs = append(errs, fmt.Errorf("store provider: %w", err))
 		}
 	}

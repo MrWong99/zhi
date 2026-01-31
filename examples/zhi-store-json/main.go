@@ -1,4 +1,4 @@
-// Json-store is an example zhi store plugin that persists configuration
+// zhi-store-json is an example zhi store plugin that persists configuration
 // trees as JSON files on disk. Each tree ID maps to a single
 // <dir>/<id>.json file, making it easy to inspect stored data.
 //

@@ -12,15 +12,17 @@ import (
 	"github.com/MrWong99/zhi/pkg/zhiplugin/transform"
 )
 
-// ConfigFactory constructs a config provider. The options map comes from
-// the workspace configuration file.
-type ConfigFactory func(options map[string]any) (config.Plugin, error)
+// ConfigFactory constructs a config provider. The workspace is the path to the
+// workspace directory. The options map comes from the workspace configuration file.
+type ConfigFactory func(workspace string, options map[string]any) (config.Plugin, error)
 
-// TransformFactory constructs a transform provider.
-type TransformFactory func(options map[string]any) (transform.Plugin, error)
+// TransformFactory constructs a transform provider. The workspace is the path to the
+// workspace directory. The options map comes from the workspace configuration file.
+type TransformFactory func(workspace string, options map[string]any) (transform.Plugin, error)
 
-// StoreFactory constructs a store provider.
-type StoreFactory func(options map[string]any) (store.Plugin, error)
+// StoreFactory constructs a store provider. The workspace is the path to the
+// workspace directory. The options map comes from the workspace configuration file.
+type StoreFactory func(workspace string, options map[string]any) (store.Plugin, error)
 
 // ProviderInfo describes a registered provider for display purposes.
 type ProviderInfo struct {
@@ -93,25 +95,25 @@ func (r *Registry) RegisterStore(name string, factory StoreFactory) error {
 // ConfigProvider resolves and instantiates a config provider by name.
 // Built-in providers take precedence. If no built-in is found, discovered
 // external plugins are checked and launched lazily.
-func (r *Registry) ConfigProvider(name string, options map[string]any) (config.Plugin, error) {
+func (r *Registry) ConfigProvider(workspace, name string, options map[string]any) (config.Plugin, error) {
 	if factory, ok := r.config[name]; ok {
-		return factory(options)
+		return factory(workspace, options)
 	}
 	return r.launchExternalConfig(name)
 }
 
 // TransformProvider resolves and instantiates a transform provider by name.
-func (r *Registry) TransformProvider(name string, options map[string]any) (transform.Plugin, error) {
+func (r *Registry) TransformProvider(workspace, name string, options map[string]any) (transform.Plugin, error) {
 	if factory, ok := r.transform[name]; ok {
-		return factory(options)
+		return factory(workspace, options)
 	}
 	return r.launchExternalTransform(name)
 }
 
 // StoreProvider resolves and instantiates a store provider by name.
-func (r *Registry) StoreProvider(name string, options map[string]any) (store.Plugin, error) {
+func (r *Registry) StoreProvider(workspace, name string, options map[string]any) (store.Plugin, error) {
 	if factory, ok := r.store[name]; ok {
-		return factory(options)
+		return factory(workspace, options)
 	}
 	return r.launchExternalStore(name)
 }

@@ -141,13 +141,13 @@ func setupTestEngine(t *testing.T) (*Engine, *mockConfig, *mockTransform, *mockS
 	ms := newMockStore()
 
 	reg := NewRegistry()
-	_ = reg.RegisterConfig("mock", func(map[string]any) (config.Plugin, error) {
+	_ = reg.RegisterConfig("mock", func(string, map[string]any) (config.Plugin, error) {
 		return mc, nil
 	})
-	_ = reg.RegisterTransform("mock", func(map[string]any) (transform.Plugin, error) {
+	_ = reg.RegisterTransform("mock", func(string, map[string]any) (transform.Plugin, error) {
 		return mt, nil
 	})
-	_ = reg.RegisterStore("mock", func(map[string]any) (store.Plugin, error) {
+	_ = reg.RegisterStore("mock", func(string, map[string]any) (store.Plugin, error) {
 		return ms, nil
 	})
 
@@ -367,7 +367,7 @@ func TestEngineFilteredTree(t *testing.T) {
 
 func TestEngineNoStore(t *testing.T) {
 	reg := NewRegistry()
-	_ = reg.RegisterConfig("mock", func(map[string]any) (config.Plugin, error) {
+	_ = reg.RegisterConfig("mock", func(string, map[string]any) (config.Plugin, error) {
 		return newMockConfig(), nil
 	})
 
@@ -479,7 +479,7 @@ func TestNewEngineUnknownConfigProvider(t *testing.T) {
 
 func TestNewEngineUnknownTransformProvider(t *testing.T) {
 	reg := NewRegistry()
-	_ = reg.RegisterConfig("mock", func(map[string]any) (config.Plugin, error) {
+	_ = reg.RegisterConfig("mock", func(string, map[string]any) (config.Plugin, error) {
 		return newMockConfig(), nil
 	})
 
@@ -496,7 +496,7 @@ func TestNewEngineUnknownTransformProvider(t *testing.T) {
 
 func TestNewEngineUnknownStoreProvider(t *testing.T) {
 	reg := NewRegistry()
-	_ = reg.RegisterConfig("mock", func(map[string]any) (config.Plugin, error) {
+	_ = reg.RegisterConfig("mock", func(string, map[string]any) (config.Plugin, error) {
 		return newMockConfig(), nil
 	})
 

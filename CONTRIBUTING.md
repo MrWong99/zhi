@@ -131,8 +131,8 @@ transport. There are two plugin types:
 
 Look at the `examples/` directory for working reference implementations:
 
-- `examples/pokedex-config/` -- a config plugin that manages Pokedex settings
-- `examples/pokedex-transform/` -- a transform plugin that evolves starter Pokemon
+- `examples/zhi-config-pokedex/` -- a config plugin that manages Pokedex settings
+- `examples/zhi-transform-pokedex/` -- a transform plugin that evolves starter Pokemon
 
 Each example includes tests that use `goplugin.TestPluginGRPCConn()` for
 in-process gRPC testing without starting a subprocess.

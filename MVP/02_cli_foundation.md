@@ -62,7 +62,7 @@ Scaffold a new zhi workspace in the current (or specified) directory.
 
 **Behavior:**
 
-1. Create `zhi.yaml` with default config (structuredfile provider, json-store, empty transforms, **sample component definitions**)
+1. Create `zhi.yaml` with default config (structuredfile provider, zhi-store-json, empty transforms, **sample component definitions**)
 2. Create `./config/` directory with a starter configuration file (e.g., `app.yaml`) organized by component path prefixes
 3. Create `./templates/` directory with a sample export template (demonstrating component-aware rendering with `{{ if .ComponentEnabled "..." }}`)
 4. Create `./.zhi/store/` directory for local store data
@@ -72,7 +72,7 @@ Scaffold a new zhi workspace in the current (or specified) directory.
 **Flags:**
 
 - `--config-provider` (default: `structuredfile`) — which config provider to use
-- `--store-provider` (default: `json-store`) — which store provider to use
+- `--store-provider` (default: `zhi-store-json`) — which store provider to use
 - `--force` — overwrite existing `zhi.yaml` if present
 
 ### 2.5 `zhi list` Command (`internal/cli/list.go`)

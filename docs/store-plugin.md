@@ -157,7 +157,7 @@ func main() {
 }
 ```
 
-See the [memory-store example](../examples/memory-store/) for a
+See the [zhi-store-memory example](../examples/zhi-store-memory/) for a
 complete, runnable plugin.
 
 ## How storage works over gRPC

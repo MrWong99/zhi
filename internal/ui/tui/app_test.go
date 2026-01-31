@@ -11,7 +11,6 @@ import (
 	"github.com/MrWong99/zhi/internal/ui/tui"
 	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
 	"github.com/MrWong99/zhi/pkg/zhiplugin/store"
-	"github.com/MrWong99/zhi/pkg/zhiplugin/transform"
 )
 
 // --- mock implementations for TUI tests ---
@@ -49,14 +48,6 @@ func (m *mockConfig) Validate(_ context.Context, path string, _ config.TreeReade
 		}, nil
 	}
 	return nil, nil
-}
-
-type mockTransform struct{}
-
-func (m *mockTransform) BeforeDisplay(_ context.Context, _ *config.Tree) error { return nil }
-func (m *mockTransform) AfterSave(_ context.Context, _ *config.Tree) error     { return nil }
-func (m *mockTransform) ValidatePolicy(_ context.Context) (transform.ValidatePolicy, error) {
-	return 0, nil
 }
 
 type mockStore struct {
@@ -116,12 +107,12 @@ func setupTestController(t *testing.T) *ui.UIController {
 	mc := newMockConfig()
 	ms := newMockStore()
 
-	if err := reg.RegisterConfig("mock", func(_ map[string]any) (config.Plugin, error) {
+	if err := reg.RegisterConfig("mock", func(string, map[string]any) (config.Plugin, error) {
 		return mc, nil
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if err := reg.RegisterStore("mock", func(_ map[string]any) (store.Plugin, error) {
+	if err := reg.RegisterStore("mock", func(string, map[string]any) (store.Plugin, error) {
 		return ms, nil
 	}); err != nil {
 		t.Fatal(err)

@@ -14,10 +14,10 @@ Extend the provider registry to discover and launch external plugins from `~/.zh
 - `pkg/zhiplugin/store/plugin.go` — same pattern for store
 - `internal/core/registry.go` — provider registry from Step 1 (will be extended)
 - `internal/core/workspace.go` — workspace config
-- `examples/pokedex-config/main.go` — example external config plugin
-- `examples/pokedex-transform/main.go` — example external transform plugin
-- `examples/json-store/main.go` — example external store plugin
-- `examples/memory-store/main.go` — example external store plugin
+- `examples/zhi-config-pokedex/main.go` — example external config plugin
+- `examples/zhi-transform-pokedex/main.go` — example external transform plugin
+- `examples/zhi-store-json/main.go` — example external store plugin
+- `examples/zhi-store-memory/main.go` — example external store plugin
 
 ## Implementation Plan
 
@@ -31,7 +31,7 @@ Scan directories for external plugin binaries and make them available to the reg
   - `Directories []string` — list of directories to scan (default: `~/.zhi/plugins/`)
   - `NamingConvention string` — how plugin names map to binary names
 - `PluginInfo` struct:
-  - `Name string` — provider name (e.g., `pokedex-config`)
+  - `Name string` — provider name (e.g., `zhi-config-pokedex`)
   - `Type string` — plugin type: `config`, `transform`, or `store`
   - `Path string` — absolute path to the binary
 - `Discover(config DiscoveryConfig) ([]PluginInfo, error)` — scan directories and return found plugins
@@ -106,7 +106,7 @@ func LaunchConfig(path string) (config.Plugin, func(), error) {
 }
 ```
 
-This matches the pattern used in the example plugin tests (e.g., `examples/pokedex-config/main_test.go`).
+This matches the pattern used in the example plugin tests (e.g., `examples/zhi-config-pokedex/main_test.go`).
 
 ### 7.3 Registry Extension (`internal/core/registry.go` update)
 
@@ -153,7 +153,7 @@ TRANSFORM PROVIDERS:
   evolve            (external: ~/.zhi/plugins/zhi-transform-evolve)
 
 STORE PROVIDERS:
-  json-store        (external: ~/.zhi/plugins/zhi-store-json)
+  zhi-store-json        (external: ~/.zhi/plugins/zhi-store-json)
 ```
 
 ### 7.6 Plugin Health and Error Handling
@@ -205,7 +205,7 @@ The CLI root command should defer `engine.Close()` to ensure cleanup on exit.
 4. Launched plugin processes are cached — second request reuses the same process
 5. `engine.Close()` kills all external plugin processes
 6. Plugin crashes are detected and reported with clear error messages
-7. The existing example plugins (`pokedex-config`, `pokedex-transform`, `json-store`, `memory-store`) work as external plugins
+7. The existing example plugins (`zhi-config-pokedex`, `zhi-transform-pokedex`, `zhi-store-json`, `zhi-store-memory`) work as external plugins
 8. The workspace `zhi.yaml` can reference external plugins by name (e.g., `provider: pokedex`)
 9. `zhi validate` works end-to-end with an external config plugin
 10. No changes to any files in `pkg/zhiplugin/` — the existing plugin API is sufficient

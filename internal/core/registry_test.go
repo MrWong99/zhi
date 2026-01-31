@@ -53,21 +53,21 @@ func (s *stubStore) RotateEncryption(context.Context, []byte, []byte) error { re
 func TestRegistryRegisterAndResolve(t *testing.T) {
 	r := NewRegistry()
 
-	err := r.RegisterConfig("test-config", func(map[string]any) (config.Plugin, error) {
+	err := r.RegisterConfig("test-config", func(string, map[string]any) (config.Plugin, error) {
 		return &stubConfig{}, nil
 	})
 	if err != nil {
 		t.Fatalf("RegisterConfig: %v", err)
 	}
 
-	err = r.RegisterTransform("test-transform", func(map[string]any) (transform.Plugin, error) {
+	err = r.RegisterTransform("test-transform", func(string, map[string]any) (transform.Plugin, error) {
 		return &stubTransform{}, nil
 	})
 	if err != nil {
 		t.Fatalf("RegisterTransform: %v", err)
 	}
 
-	err = r.RegisterStore("test-store", func(map[string]any) (store.Plugin, error) {
+	err = r.RegisterStore("test-store", func(string, map[string]any) (store.Plugin, error) {
 		return &stubStore{}, nil
 	})
 	if err != nil {
@@ -75,7 +75,7 @@ func TestRegistryRegisterAndResolve(t *testing.T) {
 	}
 
 	t.Run("resolve config", func(t *testing.T) {
-		p, err := r.ConfigProvider("test-config", nil)
+		p, err := r.ConfigProvider(".", "test-config", nil)
 		if err != nil {
 			t.Fatalf("ConfigProvider: %v", err)
 		}
@@ -85,7 +85,7 @@ func TestRegistryRegisterAndResolve(t *testing.T) {
 	})
 
 	t.Run("resolve transform", func(t *testing.T) {
-		p, err := r.TransformProvider("test-transform", nil)
+		p, err := r.TransformProvider(".", "test-transform", nil)
 		if err != nil {
 			t.Fatalf("TransformProvider: %v", err)
 		}
@@ -95,7 +95,7 @@ func TestRegistryRegisterAndResolve(t *testing.T) {
 	})
 
 	t.Run("resolve store", func(t *testing.T) {
-		p, err := r.StoreProvider("test-store", nil)
+		p, err := r.StoreProvider(".", "test-store", nil)
 		if err != nil {
 			t.Fatalf("StoreProvider: %v", err)
 		}
@@ -108,17 +108,17 @@ func TestRegistryRegisterAndResolve(t *testing.T) {
 func TestRegistryUnknownProvider(t *testing.T) {
 	r := NewRegistry()
 
-	_, err := r.ConfigProvider("nonexistent", nil)
+	_, err := r.ConfigProvider(".", "nonexistent", nil)
 	if err == nil {
 		t.Error("expected error for unknown config provider")
 	}
 
-	_, err = r.TransformProvider("nonexistent", nil)
+	_, err = r.TransformProvider(".", "nonexistent", nil)
 	if err == nil {
 		t.Error("expected error for unknown transform provider")
 	}
 
-	_, err = r.StoreProvider("nonexistent", nil)
+	_, err = r.StoreProvider(".", "nonexistent", nil)
 	if err == nil {
 		t.Error("expected error for unknown store provider")
 	}
@@ -126,7 +126,7 @@ func TestRegistryUnknownProvider(t *testing.T) {
 
 func TestRegistryDuplicateRegistration(t *testing.T) {
 	r := NewRegistry()
-	factory := func(map[string]any) (config.Plugin, error) { return &stubConfig{}, nil }
+	factory := func(string, map[string]any) (config.Plugin, error) { return &stubConfig{}, nil }
 
 	if err := r.RegisterConfig("dup", factory); err != nil {
 		t.Fatalf("first RegisterConfig: %v", err)
@@ -135,7 +135,7 @@ func TestRegistryDuplicateRegistration(t *testing.T) {
 		t.Error("expected error for duplicate config registration")
 	}
 
-	tfactory := func(map[string]any) (transform.Plugin, error) { return &stubTransform{}, nil }
+	tfactory := func(string, map[string]any) (transform.Plugin, error) { return &stubTransform{}, nil }
 	if err := r.RegisterTransform("dup", tfactory); err != nil {
 		t.Fatalf("first RegisterTransform: %v", err)
 	}
@@ -143,7 +143,7 @@ func TestRegistryDuplicateRegistration(t *testing.T) {
 		t.Error("expected error for duplicate transform registration")
 	}
 
-	sfactory := func(map[string]any) (store.Plugin, error) { return &stubStore{}, nil }
+	sfactory := func(string, map[string]any) (store.Plugin, error) { return &stubStore{}, nil }
 	if err := r.RegisterStore("dup", sfactory); err != nil {
 		t.Fatalf("first RegisterStore: %v", err)
 	}
@@ -154,8 +154,8 @@ func TestRegistryDuplicateRegistration(t *testing.T) {
 
 func TestRegistryList(t *testing.T) {
 	r := NewRegistry()
-	_ = r.RegisterConfig("beta", func(map[string]any) (config.Plugin, error) { return &stubConfig{}, nil })
-	_ = r.RegisterConfig("alpha", func(map[string]any) (config.Plugin, error) { return &stubConfig{}, nil })
+	_ = r.RegisterConfig("beta", func(string, map[string]any) (config.Plugin, error) { return &stubConfig{}, nil })
+	_ = r.RegisterConfig("alpha", func(string, map[string]any) (config.Plugin, error) { return &stubConfig{}, nil })
 
 	got := r.ListConfig()
 	want := []string{"alpha", "beta"}
@@ -182,7 +182,7 @@ func TestDefaultRegistryHasStructuredfile(t *testing.T) {
 
 func TestRegistryListIncludesExternal(t *testing.T) {
 	r := NewRegistry()
-	_ = r.RegisterConfig("builtin", func(map[string]any) (config.Plugin, error) {
+	_ = r.RegisterConfig("builtin", func(string, map[string]any) (config.Plugin, error) {
 		return &stubConfig{}, nil
 	})
 
@@ -213,7 +213,7 @@ func TestRegistryListIncludesExternal(t *testing.T) {
 
 func TestRegistryListExternalDoesNotDuplicate(t *testing.T) {
 	r := NewRegistry()
-	_ = r.RegisterConfig("shared", func(map[string]any) (config.Plugin, error) {
+	_ = r.RegisterConfig("shared", func(string, map[string]any) (config.Plugin, error) {
 		return &stubConfig{}, nil
 	})
 
@@ -236,7 +236,7 @@ func TestRegistryListExternalDoesNotDuplicate(t *testing.T) {
 
 func TestRegistryListProviderInfos(t *testing.T) {
 	r := NewRegistry()
-	_ = r.RegisterConfig("builtin", func(map[string]any) (config.Plugin, error) {
+	_ = r.RegisterConfig("builtin", func(string, map[string]any) (config.Plugin, error) {
 		return &stubConfig{}, nil
 	})
 
@@ -260,7 +260,7 @@ func TestRegistryListProviderInfos(t *testing.T) {
 
 func TestRegistryListProviderInfosExternalSameNameAsBuiltin(t *testing.T) {
 	r := NewRegistry()
-	_ = r.RegisterConfig("shared", func(map[string]any) (config.Plugin, error) {
+	_ = r.RegisterConfig("shared", func(string, map[string]any) (config.Plugin, error) {
 		return &stubConfig{}, nil
 	})
 
@@ -280,7 +280,7 @@ func TestRegistryListProviderInfosExternalSameNameAsBuiltin(t *testing.T) {
 
 func TestRegistryBuiltinTakesPrecedenceOverExternal(t *testing.T) {
 	r := NewRegistry()
-	_ = r.RegisterConfig("test", func(map[string]any) (config.Plugin, error) {
+	_ = r.RegisterConfig("test", func(string, map[string]any) (config.Plugin, error) {
 		return &stubConfig{}, nil
 	})
 
@@ -289,7 +289,7 @@ func TestRegistryBuiltinTakesPrecedenceOverExternal(t *testing.T) {
 	})
 
 	// Should resolve the built-in, not the external.
-	p, err := r.ConfigProvider("test", nil)
+	p, err := r.ConfigProvider(".", "test", nil)
 	if err != nil {
 		t.Fatalf("ConfigProvider: %v", err)
 	}
@@ -302,7 +302,7 @@ func TestRegistryExternalFallbackUnknown(t *testing.T) {
 	r := NewRegistry()
 
 	// No external plugins set, should fail.
-	_, err := r.ConfigProvider("nonexistent", nil)
+	_, err := r.ConfigProvider(".", "nonexistent", nil)
 	if err == nil {
 		t.Error("expected error for unknown config provider without externals")
 	}

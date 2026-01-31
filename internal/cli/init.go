@@ -25,7 +25,7 @@ Examples:
   zhi init --workspace ./myapp    # initialize in ./myapp
   zhi init --force                # overwrite existing zhi.yaml`,
 	Example: `  zhi init
-  zhi init --config-provider structuredfile --store-provider json-store
+  zhi init --config-provider structuredfile --store-provider zhi-store-json
   zhi init --force`,
 	RunE: runInit,
 }
@@ -38,7 +38,7 @@ var (
 
 func init() {
 	initCmd.Flags().StringVar(&initConfigProvider, "config-provider", "structuredfile", "config provider to use")
-	initCmd.Flags().StringVar(&initStoreProvider, "store-provider", "json-store", "store provider to use")
+	initCmd.Flags().StringVar(&initStoreProvider, "store-provider", "zhi-store-json", "store provider to use")
 	initCmd.Flags().BoolVar(&initForce, "force", false, "overwrite existing zhi.yaml if present")
 	rootCmd.AddCommand(initCmd)
 }
