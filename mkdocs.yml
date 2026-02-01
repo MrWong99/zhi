@@ -1,0 +1,22 @@
+site_name: zhi Documentation
+repo_url: https://github.com/MrWong99/zhi
+repo_name: MrWong99/zhi
+theme:
+  name: material
+nav:
+  - User Guide:
+    - 'Getting Started': 'user-guide/getting-started.md'
+    - 'Workspace Configuration': 'user-guide/workspace-configuration.md'
+    - 'CLI Reference': 'user-guide/cli-reference.md'
+    - 'Components': 'user-guide/components.md'
+    - 'Export and Templates': 'user-guide/export-and-templates.md'
+    - 'Apply': 'user-guide/apply.md'
+    - 'Plugin Discovery': 'user-guide/plugin-discovery.md'
+  - Plugin Development:
+    - 'Overview': 'plugin-development/overview.md'
+    - 'Config Plugin': 'plugin-development/config-plugin.md'
+    - 'Store Plugin': 'plugin-development/store-plugin.md'
+    - 'Transform Plugin': 'plugin-development/transform-plugin.md'
+    - 'UI Plugin': 'plugin-development/ui-plugin.md'
+    - 'Structured File Provider': 'plugin-development/structuredfile-provider.md'
+docs_dir: docs
