@@ -16,7 +16,6 @@ import (
 	"context"
 	"os"
 	"slices"
-	"strconv"
 	"testing"
 
 	vaultapi "github.com/hashicorp/vault/api"
@@ -181,115 +180,75 @@ func TestVaultListTrees(t *testing.T) {
 	}
 }
 
-func TestVaultSupportsVersioning(t *testing.T) {
+func TestVaultSupportsVersioningFalse(t *testing.T) {
 	s := newTestStore(t, "zhi-test-ver/")
 	supported, err := s.SupportsVersioning(context.Background())
 	if err != nil {
 		t.Fatalf("SupportsVersioning: %v", err)
 	}
-	if !supported {
-		t.Error("SupportsVersioning() = false, want true")
+	if supported {
+		t.Error("SupportsVersioning() = true, want false")
 	}
 }
 
-func TestVaultVersioning(t *testing.T) {
-	s := newTestStore(t, "zhi-test-versioning/")
+func TestVaultVersioningMethodsReturnErrors(t *testing.T) {
+	s := newTestStore(t, "zhi-test-verops/")
 	ctx := context.Background()
-	t.Cleanup(func() { _ = s.Delete(ctx, "myapp") })
 
-	// Save two versions.
+	_, err := s.ListVersions(ctx, "myapp")
+	if err == nil {
+		t.Error("ListVersions should return error")
+	}
+
+	_, _, err = s.LoadVersion(ctx, "myapp", "1")
+	if err == nil {
+		t.Error("LoadVersion should return error")
+	}
+
+	err = s.DeleteVersion(ctx, "myapp", "1")
+	if err == nil {
+		t.Error("DeleteVersion should return error")
+	}
+}
+
+func TestVaultSaveOverwriteRemovesOldEntries(t *testing.T) {
+	s := newTestStore(t, "zhi-test-overwrite/")
+	ctx := context.Background()
+	t.Cleanup(func() { _ = s.Delete(ctx, "overwrite") })
+
+	// Save with two entries.
 	tree1 := config.NewTree()
-	_ = tree1.Set("app/version", &config.Value{Val: "1.0"})
-	if err := s.Save(ctx, "myapp", tree1); err != nil {
-		t.Fatalf("Save v1: %v", err)
-	}
+	_ = tree1.Set("db/host", &config.Value{Val: "localhost"})
+	_ = tree1.Set("db/port", &config.Value{Val: float64(5432)})
+	_ = s.Save(ctx, "overwrite", tree1)
 
+	// Save again with only one entry.
 	tree2 := config.NewTree()
-	_ = tree2.Set("app/version", &config.Value{Val: "2.0"})
-	if err := s.Save(ctx, "myapp", tree2); err != nil {
-		t.Fatalf("Save v2: %v", err)
-	}
+	_ = tree2.Set("db/host", &config.Value{Val: "remotehost"})
+	_ = s.Save(ctx, "overwrite", tree2)
 
-	// Latest should be v2.
-	latest, found, err := s.Load(ctx, "myapp")
+	// Load should only have the remaining entry.
+	loaded, found, err := s.Load(ctx, "overwrite")
 	if err != nil || !found {
-		t.Fatalf("Load latest: err=%v, found=%v", err, found)
-	}
-	v, _ := latest.Get("app/version")
-	if v.Val != "2.0" {
-		t.Errorf("latest = %v, want %q", v.Val, "2.0")
+		t.Fatalf("Load: err=%v, found=%v", err, found)
 	}
 
-	// List versions.
-	versions, err := s.ListVersions(ctx, "myapp")
-	if err != nil {
-		t.Fatalf("ListVersions: %v", err)
-	}
-	if len(versions) != 2 {
-		t.Fatalf("got %d versions, want 2", len(versions))
-	}
-	// Newest first: version 2 before version 1.
-	v2, _ := strconv.Atoi(versions[0])
-	v1, _ := strconv.Atoi(versions[1])
-	if v2 <= v1 {
-		t.Errorf("versions not newest first: %v", versions)
+	paths := loaded.List()
+	if len(paths) != 1 {
+		t.Fatalf("got %d paths, want 1: %v", len(paths), paths)
 	}
 
-	// Load older version.
-	old, found, err := s.LoadVersion(ctx, "myapp", versions[1])
-	if err != nil || !found {
-		t.Fatalf("LoadVersion v1: err=%v, found=%v", err, found)
+	v, ok := loaded.Get("db/host")
+	if !ok {
+		t.Fatal("db/host missing")
 	}
-	v, _ = old.Get("app/version")
-	if v.Val != "1.0" {
-		t.Errorf("v1 = %v, want %q", v.Val, "1.0")
-	}
-}
-
-func TestVaultDeleteVersion(t *testing.T) {
-	s := newTestStore(t, "zhi-test-delver/")
-	ctx := context.Background()
-	t.Cleanup(func() { _ = s.Delete(ctx, "myapp") })
-
-	// Save three versions.
-	for i := 1; i <= 3; i++ {
-		tree := config.NewTree()
-		_ = tree.Set("app/version", &config.Value{Val: strconv.Itoa(i) + ".0"})
-		_ = s.Save(ctx, "myapp", tree)
+	if v.Val != "remotehost" {
+		t.Errorf("db/host = %v, want %q", v.Val, "remotehost")
 	}
 
-	// List versions, delete the middle one.
-	versions, err := s.ListVersions(ctx, "myapp")
-	if err != nil {
-		t.Fatalf("ListVersions: %v", err)
-	}
-	if len(versions) != 3 {
-		t.Fatalf("got %d versions, want 3", len(versions))
-	}
-
-	// Delete the middle version (second in the newest-first list).
-	midVersion := versions[1]
-	if err := s.DeleteVersion(ctx, "myapp", midVersion); err != nil {
-		t.Fatalf("DeleteVersion: %v", err)
-	}
-
-	// Should have 2 versions remaining.
-	remaining, err := s.ListVersions(ctx, "myapp")
-	if err != nil {
-		t.Fatalf("ListVersions after delete: %v", err)
-	}
-	if len(remaining) != 2 {
-		t.Fatalf("got %d versions after delete, want 2", len(remaining))
-	}
-
-	// Latest should still be the last saved version.
-	latest, found, _ := s.Load(ctx, "myapp")
-	if !found {
-		t.Fatal("tree not found after DeleteVersion")
-	}
-	v, _ := latest.Get("app/version")
-	if v.Val != "3.0" {
-		t.Errorf("latest = %v, want %q", v.Val, "3.0")
+	_, ok = loaded.Get("db/port")
+	if ok {
+		t.Error("db/port should have been removed")
 	}
 }
 
@@ -381,5 +340,47 @@ func TestVaultValidatorsNotStored(t *testing.T) {
 	}
 	if len(v.Validators) != 0 {
 		t.Errorf("got %d validators, want 0", len(v.Validators))
+	}
+}
+
+func TestVaultDeepNestedPaths(t *testing.T) {
+	s := newTestStore(t, "zhi-test-deep/")
+	ctx := context.Background()
+	t.Cleanup(func() { _ = s.Delete(ctx, "deep") })
+
+	tree := config.NewTree()
+	_ = tree.Set("pokedex/trainer.name", &config.Value{Val: "Ash"})
+	_ = tree.Set("pokedex/starter", &config.Value{Val: "pikachu"})
+	_ = tree.Set("pokedex/region", &config.Value{Val: "kanto"})
+	_ = tree.Set("games/pokemon_golden/hours.played", &config.Value{Val: float64(120)})
+
+	if err := s.Save(ctx, "deep", tree); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	loaded, found, err := s.Load(ctx, "deep")
+	if err != nil || !found {
+		t.Fatalf("Load: err=%v, found=%v", err, found)
+	}
+
+	paths := loaded.List()
+	slices.Sort(paths)
+	want := []string{
+		"games/pokemon_golden/hours.played",
+		"pokedex/region",
+		"pokedex/starter",
+		"pokedex/trainer.name",
+	}
+	if !slices.Equal(paths, want) {
+		t.Errorf("paths = %v, want %v", paths, want)
+	}
+
+	v, _ := loaded.Get("pokedex/trainer.name")
+	if v.Val != "Ash" {
+		t.Errorf("trainer.name = %v, want %q", v.Val, "Ash")
+	}
+	v, _ = loaded.Get("games/pokemon_golden/hours.played")
+	if v.Val != float64(120) {
+		t.Errorf("hours.played = %v, want 120", v.Val)
 	}
 }

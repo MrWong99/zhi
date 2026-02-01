@@ -1,11 +1,12 @@
 // Package vault implements a zhi store plugin backed by HashiCorp Vault's
-// KV v2 secret engine. Each configuration tree is stored as a single secret
-// under a configurable mount and path prefix. The flat key-value entries of
-// the tree are JSON-encoded and stored as the secret's data map.
+// KV v2 secret engine. Each tree entry is stored as its own Vault secret
+// at <mount>/data/<prefix>/<tree-id>/<config-path>. This enables
+// fine-grained Vault policies per configuration value.
 //
-// Because Vault KV v2 natively versions secrets, this store supports
-// versioning out of the box. Vault also encrypts data at rest, so
-// EncryptionStatus always reports EncryptionActive.
+// Because each value is a separate secret with independent version
+// histories, tree-level versioning is not supported (SupportsVersioning
+// returns false). Vault encrypts data at rest, so EncryptionStatus always
+// reports EncryptionActive.
 package vault
 
 import (
@@ -14,7 +15,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
-	"strconv"
+	"strings"
 
 	vaultapi "github.com/hashicorp/vault/api"
 
@@ -86,9 +87,15 @@ func New(opts Options) (*Store, error) {
 	}, nil
 }
 
-// secretPath returns the full Vault path for a tree ID.
-func (s *Store) secretPath(id string) string {
-	return s.prefix + id
+// valuePath returns the Vault secret path for a single tree entry.
+// For example: "zhi/production/db/host".
+func (s *Store) valuePath(id, configPath string) string {
+	return s.prefix + id + "/" + configPath
+}
+
+// treePrefixPath returns the metadata listing path for a tree.
+func (s *Store) treePrefixPath(id string) string {
+	return s.mount + "/metadata/" + s.prefix + id + "/"
 }
 
 // entryValue is the JSON structure persisted per tree entry inside a
@@ -98,11 +105,16 @@ type entryValue struct {
 	Metadata map[string]any `json:"metadata,omitempty"`
 }
 
-// Save persists a configuration tree as a Vault KV v2 secret. Each call
-// creates a new secret version.
+// Save persists each tree entry as a separate Vault KV v2 secret at
+// <prefix>/<id>/<config-path>. Entries that existed in a previous save
+// but are no longer present in the tree are deleted.
 func (s *Store) Save(ctx context.Context, id string, tree config.TreeReader) error {
-	data := make(map[string]any, len(tree.List()))
-	for _, path := range tree.List() {
+	paths := tree.List()
+	currentPaths := make(map[string]bool, len(paths))
+
+	// Write each entry as its own secret.
+	for _, path := range paths {
+		currentPaths[path] = true
 		v, ok := tree.Get(path)
 		if !ok {
 			continue
@@ -111,53 +123,97 @@ func (s *Store) Save(ctx context.Context, id string, tree config.TreeReader) err
 		if err != nil {
 			return fmt.Errorf("vault: encoding %q: %w", path, err)
 		}
-		data[path] = string(encoded)
+		data := map[string]any{path: string(encoded)}
+		_, err = s.client.KVv2(s.mount).Put(ctx, s.valuePath(id, path), data)
+		if err != nil {
+			return fmt.Errorf("vault: saving %q in tree %q: %w", path, id, err)
+		}
 	}
 
-	_, err := s.client.KVv2(s.mount).Put(ctx, s.secretPath(id), data)
+	// Remove entries that are no longer in the tree.
+	existing, err := s.listRecursive(ctx, s.treePrefixPath(id))
 	if err != nil {
-		return fmt.Errorf("vault: saving tree %q: %w", id, err)
+		return fmt.Errorf("vault: listing existing entries for cleanup: %w", err)
 	}
+	for _, path := range existing {
+		if !currentPaths[path] {
+			_ = s.client.KVv2(s.mount).DeleteMetadata(ctx, s.valuePath(id, path))
+		}
+	}
+
 	return nil
 }
 
-// Load retrieves the latest version of a configuration tree from Vault.
+// Load retrieves all entries for a tree by recursively listing secrets
+// under <prefix>/<id>/ and reading each one.
 func (s *Store) Load(ctx context.Context, id string) (*config.Tree, bool, error) {
-	secret, err := s.client.KVv2(s.mount).Get(ctx, s.secretPath(id))
+	paths, err := s.listRecursive(ctx, s.treePrefixPath(id))
 	if err != nil {
-		if isNotFound(err) {
-			return nil, false, nil
-		}
-		return nil, false, fmt.Errorf("vault: loading tree %q: %w", id, err)
+		return nil, false, fmt.Errorf("vault: listing tree %q: %w", id, err)
 	}
-	if secret == nil || secret.Data == nil {
+	if len(paths) == 0 {
 		return nil, false, nil
 	}
-	tree, err := dataToTree(secret.Data)
-	if err != nil {
-		return nil, false, err
+
+	tree := config.NewTree()
+	for _, path := range paths {
+		secret, err := s.client.KVv2(s.mount).Get(ctx, s.valuePath(id, path))
+		if err != nil {
+			if isNotFound(err) {
+				continue
+			}
+			return nil, false, fmt.Errorf("vault: loading %q from tree %q: %w", path, id, err)
+		}
+		if secret == nil || secret.Data == nil {
+			continue
+		}
+
+		raw, ok := secret.Data[path]
+		if !ok {
+			continue
+		}
+		str, ok := raw.(string)
+		if !ok {
+			return nil, false, fmt.Errorf("vault: unexpected type %T for %q", raw, path)
+		}
+		var ev entryValue
+		if err := json.Unmarshal([]byte(str), &ev); err != nil {
+			return nil, false, fmt.Errorf("vault: decoding %q: %w", path, err)
+		}
+		if err := tree.Set(path, &config.Value{Val: ev.Val, Metadata: ev.Metadata}); err != nil {
+			return nil, false, fmt.Errorf("vault: setting %q: %w", path, err)
+		}
 	}
+
 	return tree, true, nil
 }
 
-// Delete removes the configuration tree and all its versions from Vault.
+// Delete removes all secrets belonging to the tree.
 func (s *Store) Delete(ctx context.Context, id string) error {
-	err := s.client.KVv2(s.mount).DeleteMetadata(ctx, s.secretPath(id))
+	paths, err := s.listRecursive(ctx, s.treePrefixPath(id))
 	if err != nil {
-		if isNotFound(err) {
-			return nil
+		// If the tree prefix doesn't exist, nothing to delete.
+		return nil
+	}
+
+	for _, path := range paths {
+		err := s.client.KVv2(s.mount).DeleteMetadata(ctx, s.valuePath(id, path))
+		if err != nil && !isNotFound(err) {
+			return fmt.Errorf("vault: deleting %q from tree %q: %w", path, id, err)
 		}
-		return fmt.Errorf("vault: deleting tree %q: %w", id, err)
 	}
 	return nil
 }
 
 // ListTrees returns all stored tree IDs under the configured prefix.
+// Tree IDs appear as directory entries (trailing /) at the prefix level.
 func (s *Store) ListTrees(ctx context.Context) ([]string, error) {
-	// KV v2 list goes through the metadata/ prefix.
 	secret, err := s.client.Logical().ListWithContext(ctx,
 		s.mount+"/metadata/"+s.prefix)
 	if err != nil {
+		if isNotFound(err) {
+			return nil, nil
+		}
 		return nil, fmt.Errorf("vault: listing trees: %w", err)
 	}
 	if secret == nil || secret.Data == nil {
@@ -176,9 +232,9 @@ func (s *Store) ListTrees(ctx context.Context) ([]string, error) {
 	var ids []string
 	for _, k := range keysSlice {
 		if str, ok := k.(string); ok {
-			// Skip sub-directories (they end with /).
-			if str != "" && str[len(str)-1] != '/' {
-				ids = append(ids, str)
+			// Tree IDs are directories (ending with /).
+			if strings.HasSuffix(str, "/") {
+				ids = append(ids, strings.TrimSuffix(str, "/"))
 			}
 		}
 	}
@@ -186,77 +242,29 @@ func (s *Store) ListTrees(ctx context.Context) ([]string, error) {
 	return ids, nil
 }
 
-// SupportsVersioning returns true because Vault KV v2 natively versions
-// secrets.
+// SupportsVersioning returns false. Each tree entry is stored as a
+// separate Vault secret with its own independent version history, so
+// coherent tree-level versioning is not possible.
 func (s *Store) SupportsVersioning(_ context.Context) (bool, error) {
-	return true, nil
+	return false, nil
 }
 
-// ListVersions returns version identifiers for the given tree, newest
-// first.
-func (s *Store) ListVersions(ctx context.Context, id string) ([]string, error) {
-	meta, err := s.client.KVv2(s.mount).GetMetadata(ctx, s.secretPath(id))
-	if err != nil {
-		if isNotFound(err) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("vault: listing versions for %q: %w", id, err)
-	}
-	if meta == nil {
-		return nil, nil
-	}
-
-	var versions []string
-	for v, vm := range meta.Versions {
-		if vm.DeletionTime.IsZero() && !vm.Destroyed {
-			versions = append(versions, v)
-		}
-	}
-
-	// Sort descending (newest first).
-	sort.Slice(versions, func(i, j int) bool {
-		vi, _ := strconv.Atoi(versions[i])
-		vj, _ := strconv.Atoi(versions[j])
-		return vi > vj
-	})
-
-	return versions, nil
+// ListVersions is not supported because tree entries have independent
+// version histories.
+func (s *Store) ListVersions(_ context.Context, _ string) ([]string, error) {
+	return nil, errors.New("vault: tree-level versioning not supported (each value is a separate secret)")
 }
 
-// LoadVersion retrieves a specific version of a configuration tree.
-func (s *Store) LoadVersion(ctx context.Context, id string, version string) (*config.Tree, bool, error) {
-	ver, err := strconv.Atoi(version)
-	if err != nil {
-		return nil, false, fmt.Errorf("vault: invalid version %q: %w", version, err)
-	}
-	secret, err := s.client.KVv2(s.mount).GetVersion(ctx, s.secretPath(id), ver)
-	if err != nil {
-		if isNotFound(err) {
-			return nil, false, nil
-		}
-		return nil, false, fmt.Errorf("vault: loading version %q of %q: %w", version, id, err)
-	}
-	if secret == nil || secret.Data == nil {
-		return nil, false, nil
-	}
-	tree, err := dataToTree(secret.Data)
-	if err != nil {
-		return nil, false, err
-	}
-	return tree, true, nil
+// LoadVersion is not supported because tree entries have independent
+// version histories.
+func (s *Store) LoadVersion(_ context.Context, _ string, _ string) (*config.Tree, bool, error) {
+	return nil, false, errors.New("vault: tree-level versioning not supported (each value is a separate secret)")
 }
 
-// DeleteVersion soft-deletes a single version of a configuration tree.
-func (s *Store) DeleteVersion(ctx context.Context, id string, version string) error {
-	ver, err := strconv.Atoi(version)
-	if err != nil {
-		return fmt.Errorf("vault: invalid version %q: %w", version, err)
-	}
-	err = s.client.KVv2(s.mount).DeleteVersions(ctx, s.secretPath(id), []int{ver})
-	if err != nil {
-		return fmt.Errorf("vault: deleting version %q of %q: %w", version, id, err)
-	}
-	return nil
+// DeleteVersion is not supported because tree entries have independent
+// version histories.
+func (s *Store) DeleteVersion(_ context.Context, _ string, _ string) error {
+	return errors.New("vault: tree-level versioning not supported (each value is a separate secret)")
 }
 
 // EncryptionStatus reports EncryptionActive because Vault encrypts all
@@ -276,23 +284,46 @@ func (s *Store) RotateEncryption(_ context.Context, _, _ []byte) error {
 	return errors.New("vault: key rotation is managed by Vault itself (use 'vault operator rotate')")
 }
 
-// dataToTree converts a Vault KV v2 data map back into a config.Tree.
-func dataToTree(data map[string]any) (*config.Tree, error) {
-	tree := config.NewTree()
-	for path, raw := range data {
-		str, ok := raw.(string)
+// listRecursive returns all leaf secret paths under the given Vault
+// metadata listing path. Returned paths are relative to root (e.g.
+// "pokedex/trainer.name", not the full Vault path).
+func (s *Store) listRecursive(ctx context.Context, root string) ([]string, error) {
+	secret, err := s.client.Logical().ListWithContext(ctx, root)
+	if err != nil {
+		if isNotFound(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("vault: listing %q: %w", root, err)
+	}
+	if secret == nil || secret.Data == nil {
+		return nil, nil
+	}
+
+	keysRaw, ok := secret.Data["keys"].([]any)
+	if !ok {
+		return nil, nil
+	}
+
+	var paths []string
+	for _, k := range keysRaw {
+		key, ok := k.(string)
 		if !ok {
-			return nil, fmt.Errorf("vault: unexpected type %T for path %q", raw, path)
+			continue
 		}
-		var ev entryValue
-		if err := json.Unmarshal([]byte(str), &ev); err != nil {
-			return nil, fmt.Errorf("vault: decoding %q: %w", path, err)
-		}
-		if err := tree.Set(path, &config.Value{Val: ev.Val, Metadata: ev.Metadata}); err != nil {
-			return nil, fmt.Errorf("vault: setting %q: %w", path, err)
+		if strings.HasSuffix(key, "/") {
+			// Directory — recurse deeper.
+			sub, err := s.listRecursive(ctx, root+key)
+			if err != nil {
+				return nil, err
+			}
+			for _, s := range sub {
+				paths = append(paths, key+s)
+			}
+		} else {
+			paths = append(paths, key)
 		}
 	}
-	return tree, nil
+	return paths, nil
 }
 
 // isNotFound checks whether a Vault API error indicates a 404 response.

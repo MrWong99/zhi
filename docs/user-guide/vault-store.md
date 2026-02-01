@@ -2,14 +2,14 @@
 
 The built-in `vault` store provider persists configuration trees in
 [HashiCorp Vault](https://www.vaultproject.io/) using the KV v2 secret
-engine. Each configuration tree maps to a single Vault secret, with tree
-entries stored as key-value pairs in the secret's data.
+engine. Each tree entry is stored as its own Vault secret, enabling
+fine-grained Vault policies per configuration value.
 
 ## Features
 
-- **Versioning** -- Vault KV v2 natively versions secrets, so every
-  `Save` creates a new version. You can list, load, and delete individual
-  versions through the store plugin interface.
+- **Per-value secrets** -- Each configuration key is stored at its own
+  Vault path. This lets you write Vault policies that grant or restrict
+  access to individual configuration values.
 - **Encryption at rest** -- Vault encrypts all data at rest using its
   internal barrier encryption. The provider always reports
   `EncryptionActive`.
@@ -40,31 +40,47 @@ store:
 
 ## Storage model
 
-Each tree ID is stored as a Vault secret at `<mount>/data/<prefix><id>`.
-For example, with the default settings, a tree named `production` is stored
-at `secret/data/zhi/production`.
+Each tree entry is stored as a separate Vault secret at
+`<mount>/data/<prefix><id>/<config-path>`. The secret's data map contains
+a single key (the config path) whose value is a JSON-encoded object with
+`value` and optional `metadata` fields.
 
-The secret's data map contains one entry per tree path. Each entry is a
-JSON-encoded object with `value` and optional `metadata` fields:
+For example, with the default settings and a tree named `production`:
 
 ```
-secret/data/zhi/production
+secret/data/zhi/production/pokedex/trainer.name
   data:
-    "db/host":  '{"value":"localhost","metadata":{"desc":"Database host"}}'
-    "db/port":  '{"value":5432}'
-    "app/name": '{"value":"myapp"}'
+    "pokedex/trainer.name": '{"value":"Ash","metadata":{"description":"Name of the Pokemon trainer"}}'
+
+secret/data/zhi/production/pokedex/starter
+  data:
+    "pokedex/starter": '{"value":"pikachu","metadata":{"description":"Chosen starter Pokemon"}}'
+
+secret/data/zhi/production/pokedex/region
+  data:
+    "pokedex/region": '{"value":"kanto","metadata":{"description":"Home region of the trainer"}}'
+
+secret/data/zhi/production/games/pokemon_golden/hours.played
+  data:
+    "games/pokemon_golden/hours.played": '{"value":120}'
 ```
+
+When a tree is saved, any entries that existed in a previous save but are
+no longer present in the tree are automatically deleted from Vault.
 
 ## Versioning
 
-Vault KV v2 assigns an integer version number to each write. The store
-plugin maps these directly:
+Tree-level versioning is **not supported**. Because each configuration
+value lives in its own Vault secret, each value has an independent Vault
+version history. Coherent tree-level snapshots cannot be reconstructed
+from per-value versions.
 
-- `SupportsVersioning()` returns `true`
-- `ListVersions()` returns Vault version numbers as strings (e.g. `"3"`,
-  `"2"`, `"1"`), newest first
-- `LoadVersion()` accepts these version strings
-- `DeleteVersion()` soft-deletes a version in Vault
+`SupportsVersioning()` returns `false`, and `ListVersions`, `LoadVersion`,
+and `DeleteVersion` return errors.
+
+Individual values still benefit from Vault KV v2's native versioning at
+the secret level — you can inspect per-value history directly via the
+Vault CLI or API.
 
 ## Encryption
 
@@ -83,6 +99,9 @@ rotation.
 
 ### Minimum Vault policy
 
+Because each configuration value is its own Vault secret, you can write
+fine-grained policies. A broad policy that grants access to all values:
+
 ```hcl
 path "<mount>/data/<prefix>*" {
   capabilities = ["create", "read", "update", "delete"]
@@ -91,9 +110,28 @@ path "<mount>/data/<prefix>*" {
 path "<mount>/metadata/<prefix>*" {
   capabilities = ["read", "list", "delete"]
 }
+```
 
-path "<mount>/delete/<prefix>*" {
-  capabilities = ["update"]
+A more restrictive policy that grants read-only access to a specific
+subtree and full access to another:
+
+```hcl
+# Read-only access to pokedex configuration.
+path "<mount>/data/<prefix>production/pokedex/*" {
+  capabilities = ["read"]
+}
+
+path "<mount>/metadata/<prefix>production/pokedex/*" {
+  capabilities = ["read", "list"]
+}
+
+# Full access to games configuration.
+path "<mount>/data/<prefix>production/games/*" {
+  capabilities = ["create", "read", "update", "delete"]
+}
+
+path "<mount>/metadata/<prefix>production/games/*" {
+  capabilities = ["read", "list", "delete"]
 }
 ```
 
@@ -124,4 +162,12 @@ store:
 EOF
 ```
 
-Trees will be stored under `secret/data/myproject/<tree-id>`.
+Trees will be stored under `secret/data/myproject/<tree-id>/<config-path>`.
+
+## Performance considerations
+
+Because each tree entry is a separate Vault secret, loading and saving a
+tree requires one Vault API call per entry plus recursive LIST calls to
+discover entries. For trees with many entries, this is more network-
+intensive than a single-secret model. The tradeoff is fine-grained access
+control at the Vault policy level.
