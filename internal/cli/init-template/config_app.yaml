@@ -1,0 +1,25 @@
+app:
+  name:
+    val: my-app
+    metadata:
+      description: Application name
+  log-level:
+    val: info
+    metadata:
+      description: Logging level (debug, info, warn, error)
+
+database:
+  host:
+    val: localhost
+    metadata:
+      description: Database hostname
+  port:
+    val: 5432
+    metadata:
+      description: Database port number
+
+monitoring:
+  enabled:
+    val: false
+    metadata:
+      description: Enable monitoring

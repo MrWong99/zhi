@@ -1,0 +1,5 @@
+{
+  "app": true,
+  "database": true,
+  "monitoring": false
+}

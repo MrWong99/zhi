@@ -1,12 +1,17 @@
 package cli
 
 import (
+	"embed"
 	"fmt"
 	"os"
 	"path/filepath"
+	"text/template"
 
 	"github.com/spf13/cobra"
 )
+
+//go:embed init-template/*
+var initTemplateFS embed.FS
 
 var initCmd = &cobra.Command{
 	Use:   "init",
@@ -63,39 +68,23 @@ func runInit(cmd *cobra.Command, _ []string) error {
 	w := cmd.OutOrStdout()
 	var created []string
 
-	// 1. Create zhi.yaml
-	yamlContent := fmt.Sprintf(`version: "1"
+	// 1. Create zhi.yaml from template
+	tmpl, err := template.ParseFS(initTemplateFS, "init-template/zhi.yaml.tmpl")
+	if err != nil {
+		return fmt.Errorf("parsing zhi.yaml template: %w", err)
+	}
 
-config:
-  provider: %s
-  options:
-    directory: ./config
+	file, err := os.Create(zhiYaml)
+	if err != nil {
+		return fmt.Errorf("creating zhi.yaml: %w", err)
+	}
+	defer file.Close()
 
-# transform: []
-
-# store:
-#   provider: %s
-
-components:
-  - name: app
-    description: Core application configuration
-    paths:
-      - app/
-    mandatory: true
-  - name: database
-    description: Database connection settings
-    paths:
-      - database/
-    mandatory: true
-  - name: monitoring
-    description: Monitoring and observability
-    paths:
-      - monitoring/
-    mandatory: false
-    dependencies: []
-`, initConfigProvider, initStoreProvider)
-
-	if err := os.WriteFile(zhiYaml, []byte(yamlContent), 0o644); err != nil {
+	templateData := map[string]string{
+		"ConfigProvider": initConfigProvider,
+		"StoreProvider":  initStoreProvider,
+	}
+	if err := tmpl.Execute(file, templateData); err != nil {
 		return fmt.Errorf("writing zhi.yaml: %w", err)
 	}
 	created = append(created, "zhi.yaml")
@@ -106,33 +95,11 @@ components:
 		return fmt.Errorf("creating config directory: %w", err)
 	}
 
-	appYaml := `app:
-  name:
-    val: my-app
-    metadata:
-      description: Application name
-  log-level:
-    val: info
-    metadata:
-      description: Logging level (debug, info, warn, error)
-
-database:
-  host:
-    val: localhost
-    metadata:
-      description: Database hostname
-  port:
-    val: 5432
-    metadata:
-      description: Database port number
-
-monitoring:
-  enabled:
-    val: false
-    metadata:
-      description: Enable monitoring
-`
-	if err := os.WriteFile(filepath.Join(configDir, "app.yaml"), []byte(appYaml), 0o644); err != nil {
+	appYamlContent, err := initTemplateFS.ReadFile("init-template/config_app.yaml")
+	if err != nil {
+		return fmt.Errorf("reading embedded config_app.yaml: %w", err)
+	}
+	if err := os.WriteFile(filepath.Join(configDir, "app.yaml"), appYamlContent, 0o644); err != nil {
 		return fmt.Errorf("writing config/app.yaml: %w", err)
 	}
 	created = append(created, "config/app.yaml")
@@ -143,20 +110,11 @@ monitoring:
 		return fmt.Errorf("creating templates directory: %w", err)
 	}
 
-	sampleTemplate := `# Sample export template
-# This template demonstrates component-aware rendering.
-#
-# Usage: reference configuration values using Go template syntax.
-# Components can be checked with: {{ "{{ if .ComponentEnabled \"monitoring\" }}" }}
-#
-# Example:
-# app_name={{ "{{ .Get \"app/name\" }}" }}
-# db_host={{ "{{ .Get \"database/host\" }}" }}
-# {{ "{{ if .ComponentEnabled \"monitoring\" }}" }}
-# monitoring_enabled=true
-# {{ "{{ end }}" }}
-`
-	if err := os.WriteFile(filepath.Join(templatesDir, "sample.tmpl"), []byte(sampleTemplate), 0o644); err != nil {
+	sampleTemplateContent, err := initTemplateFS.ReadFile("init-template/templates_sample.tmpl")
+	if err != nil {
+		return fmt.Errorf("reading embedded templates_sample.tmpl: %w", err)
+	}
+	if err := os.WriteFile(filepath.Join(templatesDir, "sample.tmpl"), sampleTemplateContent, 0o644); err != nil {
 		return fmt.Errorf("writing templates/sample.tmpl: %w", err)
 	}
 	created = append(created, "templates/sample.tmpl")
@@ -175,14 +133,12 @@ monitoring:
 	created = append(created, ".zhi/store/")
 
 	// 5. Create ./.zhi/components.json with default component state (0600 permissions)
-	componentState := `{
-  "app": true,
-  "database": true,
-  "monitoring": false
-}
-`
+	componentStateContent, err := initTemplateFS.ReadFile("init-template/components.json")
+	if err != nil {
+		return fmt.Errorf("reading embedded components.json: %w", err)
+	}
 	componentsFile := filepath.Join(zhiDir, "components.json")
-	if err := os.WriteFile(componentsFile, []byte(componentState), 0o600); err != nil {
+	if err := os.WriteFile(componentsFile, componentStateContent, 0o600); err != nil {
 		return fmt.Errorf("writing .zhi/components.json: %w", err)
 	}
 	created = append(created, ".zhi/components.json")

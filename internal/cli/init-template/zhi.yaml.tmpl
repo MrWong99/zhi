@@ -1,0 +1,29 @@
+version: "1"
+
+config:
+  provider: {{.ConfigProvider}}
+  options:
+    directory: ./config
+
+# transform: []
+
+# store:
+#   provider: {{.StoreProvider}}
+
+components:
+  - name: app
+    description: Core application configuration
+    paths:
+      - app/
+    mandatory: true
+  - name: database
+    description: Database connection settings
+    paths:
+      - database/
+    mandatory: true
+  - name: monitoring
+    description: Monitoring and observability
+    paths:
+      - monitoring/
+    mandatory: false
+    dependencies: []
