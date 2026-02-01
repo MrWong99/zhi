@@ -1,9 +1,11 @@
 # Store Plugin
 
 The store plugin API lets a zhi plugin persist, retrieve, and delete
-configuration trees. Store plugins act as the storage layer for the
-configuration system, optionally supporting versioning and encryption
-at rest. Each plugin communicates with the host over gRPC using
+configuration values within named trees. Store plugins act as the
+storage layer for the configuration system, with granular value-level
+operations and optional support for versioning (tree-level or
+value-level), encryption at rest, authentication, and access control.
+Each plugin communicates with the host over gRPC using
 [hashicorp/go-plugin](https://github.com/hashicorp/go-plugin).
 
 ## Package layout
@@ -12,7 +14,9 @@ at rest. Each plugin communicates with the host over gRPC using
 pkg/zhiplugin/
   plugin.go              shared Handshake (all plugin types)
   store/
-    store.go             EncryptionStatus type and constants
+    store.go             types: EncryptionStatus, VersioningMode, Capabilities,
+                         AuthMethod, AuthField, Credential, PutOptions,
+                         Action, Permission
     plugin.go            Plugin interface, PluginMap, GRPCPlugin wiring
     grpc_client.go       host-side gRPC client
     grpc_server.go       plugin-side gRPC server
@@ -41,14 +45,115 @@ const (
 | `EncryptionSupported`| store supports encryption but it is not yet initialized |
 | `EncryptionActive`   | encryption is initialized and data is encrypted   |
 
+### VersioningMode
+
+Describes how a store plugin versions data.
+
+```go
+type VersioningMode int
+
+const (
+    VersioningNone  VersioningMode = iota
+    VersioningTree
+    VersioningValue
+)
+```
+
+| Value             | Meaning                                                          |
+|-------------------|------------------------------------------------------------------|
+| `VersioningNone`  | store does not support versioning                                |
+| `VersioningTree`  | entire tree is versioned atomically; rollbacks restore the whole tree |
+| `VersioningValue` | individual values are versioned independently with their own history |
+
+### Capabilities
+
+Returned by the `Capabilities` method to report what a store supports.
+
+```go
+type Capabilities struct {
+    Versioning    VersioningMode
+    Encryption    EncryptionStatus
+    Auth          bool
+    AccessControl bool
+}
+```
+
+### AuthMethod and AuthField
+
+Describe authentication methods and their credential fields.
+
+```go
+type AuthMethod struct {
+    Type        string      // e.g. "userpass", "token", "oidc"
+    Description string
+    Fields      []AuthField
+}
+
+type AuthField struct {
+    Name        string // e.g. "username", "password", "token"
+    Description string
+    Required    bool
+    Secret      bool   // true for passwords and tokens
+}
+```
+
+### Credential
+
+Returned after a successful `Login`.
+
+```go
+type Credential struct {
+    Token     string
+    ExpiresAt string            // optional RFC3339 timestamp
+    Metadata  map[string]string // optional session metadata
+}
+```
+
+### PutOptions
+
+Controls optional behaviour of `PutValues`, including compare-and-swap
+(CAS) semantics.
+
+```go
+type PutOptions struct {
+    CASVersion  string            // tree-level CAS (VersioningTree)
+    CASVersions map[string]string // per-value CAS (VersioningValue)
+}
+```
+
+When `CASVersion` is non-empty the write fails if the current tree
+version differs. When `CASVersions` maps a path to an expected version,
+the write for that path fails if it does not match. `opts` may be `nil`
+when CAS is not needed.
+
+### Action and Permission
+
+Used by the access control methods.
+
+```go
+type Action int
+
+const (
+    ActionRead Action = iota
+    ActionWrite
+    ActionDelete
+)
+
+type Permission struct {
+    Path    string   // exact path or prefix ending in "/"
+    Actions []Action
+}
+```
+
 ### What gets stored
 
-Store plugins persist entire configuration trees. Each tree is
-identified by a string ID (e.g. `"production"`, `"staging"`).
+Store plugins persist individual configuration values within named
+trees. Each tree is identified by a string ID (e.g. `"production"`,
+`"staging"`).
 
 Only `Val` and `Metadata` are stored. The `Validators` field on
 `config.Value` is tagged `json:"-"` and is automatically excluded
-during serialisation. This is by design — validator closures are
+during serialisation. This is by design -- validator closures are
 in-process logic that cannot be serialised over gRPC.
 
 ### Tree identification
@@ -63,75 +168,151 @@ To create a store plugin, implement `store.Plugin`:
 
 ```go
 type Plugin interface {
-    // Core persistence
-    Save(ctx context.Context, id string, tree config.TreeReader) error
-    Load(ctx context.Context, id string) (*config.Tree, bool, error)
-    Delete(ctx context.Context, id string) error
+    // --- Capabilities ---
+    Capabilities(ctx context.Context) (*Capabilities, error)
+
+    // --- Authentication ---
+    AuthMethods(ctx context.Context) ([]AuthMethod, error)
+    Login(ctx context.Context, method string, credentials map[string]string) (*Credential, error)
+
+    // --- Tree management ---
     ListTrees(ctx context.Context) ([]string, error)
+    DeleteTree(ctx context.Context, id string) error
 
-    // Versioning (opt-in)
-    SupportsVersioning(ctx context.Context) (bool, error)
-    ListVersions(ctx context.Context, id string) ([]string, error)
-    LoadVersion(ctx context.Context, id string, version string) (*config.Tree, bool, error)
-    DeleteVersion(ctx context.Context, id string, version string) error
+    // --- Value operations ---
+    GetValues(ctx context.Context, id string, paths []string) (map[string]config.Value, error)
+    PutValues(ctx context.Context, id string, values map[string]config.Value, opts *PutOptions) error
+    DeleteValues(ctx context.Context, id string, paths []string) error
 
-    // Encryption at rest
-    EncryptionStatus(ctx context.Context) (EncryptionStatus, error)
+    // --- Tree-level versioning (VersioningTree mode) ---
+    ListTreeVersions(ctx context.Context, id string) ([]string, error)
+    GetTreeVersion(ctx context.Context, id string, version string, paths []string) (map[string]config.Value, error)
+    RollbackTree(ctx context.Context, id string, version string) error
+    DeleteTreeVersion(ctx context.Context, id string, version string) error
+
+    // --- Value-level versioning (VersioningValue mode) ---
+    ListValueVersions(ctx context.Context, id string, path string) ([]string, error)
+    GetValueVersion(ctx context.Context, id string, path string, version string) (config.Value, bool, error)
+    RollbackValue(ctx context.Context, id string, path string, version string) error
+    DeleteValueVersion(ctx context.Context, id string, path string, version string) error
+
+    // --- Encryption ---
     InitEncryption(ctx context.Context, passphrase []byte) error
     RotateEncryption(ctx context.Context, oldPassphrase, newPassphrase []byte) error
+
+    // --- Access control ---
+    GrantAccess(ctx context.Context, id string, user string, permissions []Permission) error
+    RevokeAccess(ctx context.Context, id string, user string, paths []string) error
+    ListAccess(ctx context.Context, id string) (map[string][]Permission, error)
 }
 ```
 
-### Core persistence
+### Capabilities
 
-| Method      | Purpose                                                      |
-|-------------|--------------------------------------------------------------|
-| `Save`      | persist a configuration tree under the given ID              |
-| `Load`      | retrieve the latest version of a tree; bool reports existence|
-| `Delete`    | remove a tree and all its versions                           |
-| `ListTrees` | return all stored tree IDs                                   |
+| Method         | Purpose                                                    |
+|----------------|------------------------------------------------------------|
+| `Capabilities` | report supported features: versioning mode, encryption state, auth, and access control |
 
-`Save` accepts `config.TreeReader` (read-only interface), which is
-sufficient for serialisation. If the store supports versioning, each
-`Save` creates a new version. If not, `Save` overwrites the previous
-state.
+The host calls `Capabilities` first to discover which parts of the
+interface apply. Methods in unsupported sections should return
+descriptive errors (e.g. `"versioning not supported"`).
 
-`Load` returns a `*config.Tree` reconstructed from storage. The bool
-is `false` when the tree ID does not exist — matching the `(value,
-found, error)` pattern used by `config.Plugin.Get`.
+### Authentication
 
-### Versioning
+| Method        | Purpose                                               |
+|---------------|-------------------------------------------------------|
+| `AuthMethods` | return the authentication methods supported by the store |
+| `Login`       | authenticate with a method and credentials; the plugin stores the session internally |
 
-| Method              | Purpose                                            |
-|---------------------|----------------------------------------------------|
-| `SupportsVersioning`| report whether this store keeps older versions     |
-| `ListVersions`      | return version IDs for a tree, ordered newest first|
-| `LoadVersion`       | retrieve a specific version of a tree              |
-| `DeleteVersion`     | permanently remove a single version                |
+Authentication is optional. Plugins that do not require auth should
+return `nil` or an empty slice from `AuthMethods` and an error from
+`Login`.
 
-Versioning is opt-in. Plugins that do not support versioning should
-return `(false, nil)` from `SupportsVersioning` and return descriptive
-errors from `ListVersions`, `LoadVersion`, and `DeleteVersion`.
+### Tree management
+
+| Method       | Purpose                                              |
+|--------------|------------------------------------------------------|
+| `ListTrees`  | return all tree IDs the current identity has access to |
+| `DeleteTree` | remove an entire tree and all its versions/values    |
+
+### Value operations
+
+| Method         | Purpose                                                        |
+|----------------|----------------------------------------------------------------|
+| `GetValues`    | retrieve specific values from a tree by path; missing paths are omitted |
+| `PutValues`    | create or update specific values; other paths are unaffected   |
+| `DeleteValues` | remove specific values from a tree                             |
+
+Value operations are the core of the store API. Unlike the previous
+tree-level API, individual paths can be read, written, and deleted
+without loading or saving the entire tree. This enables more efficient
+backends (e.g. Vault KV, databases) and fine-grained access control.
+
+`PutValues` accepts an optional `*PutOptions` for compare-and-swap
+semantics. Pass `nil` when CAS is not needed.
+
+### Tree-level versioning (VersioningTree)
+
+| Method               | Purpose                                              |
+|----------------------|------------------------------------------------------|
+| `ListTreeVersions`   | return version IDs for a tree, ordered newest first  |
+| `GetTreeVersion`     | retrieve specific values from a specific tree version |
+| `RollbackTree`       | restore the tree to a previous version (creates a new version) |
+| `DeleteTreeVersion`  | permanently remove a single tree version             |
+
+These methods apply when `Capabilities` reports `VersioningTree`. The
+entire tree is versioned atomically. Plugins that do not support this
+mode should return errors.
 
 Version identifiers are opaque strings. Implementations can use
 timestamps, sequential numbers, UUIDs, or any other scheme. The only
-requirement is that `ListVersions` returns them newest first.
+requirement is that `ListTreeVersions` returns them newest first.
+
+### Value-level versioning (VersioningValue)
+
+| Method                | Purpose                                                |
+|-----------------------|--------------------------------------------------------|
+| `ListValueVersions`   | return version IDs for a specific value, newest first |
+| `GetValueVersion`     | retrieve a specific version of a single value         |
+| `RollbackValue`       | restore a value to a previous version (creates a new version) |
+| `DeleteValueVersion`  | permanently remove a single value version             |
+
+These methods apply when `Capabilities` reports `VersioningValue`.
+Each value has its own independent version history. Plugins that do
+not support this mode should return errors.
+
+`GetValueVersion` follows the `(value, found, error)` pattern --
+`found` is `false` when the version does not exist.
 
 ### Encryption at rest
 
 | Method             | Purpose                                             |
 |--------------------|-----------------------------------------------------|
-| `EncryptionStatus` | report the current encryption state                 |
 | `InitEncryption`   | initialize encryption with a passphrase             |
 | `RotateEncryption` | re-encrypt all data with a new passphrase           |
 
 Encryption is optional. Plugins that do not support encryption should
-return `EncryptionNone` from `EncryptionStatus` and return errors from
-`InitEncryption` and `RotateEncryption`.
+report `EncryptionNone` via `Capabilities` and return errors from
+these methods.
 
 Passphrases are transmitted as raw bytes. Since go-plugin communicates
 over stdio (local process boundary, not a network socket), this is
 acceptable.
+
+### Access control
+
+| Method         | Purpose                                                       |
+|----------------|---------------------------------------------------------------|
+| `GrantAccess`  | grant a user access to specific paths within a tree           |
+| `RevokeAccess` | remove a user's access to specific paths within a tree        |
+| `ListAccess`   | return current access permissions for a tree, keyed by user   |
+
+Access control is optional. Plugins that do not support it should
+report `AccessControl: false` via `Capabilities` and return errors
+from these methods.
+
+Permissions specify a path (exact or prefix ending in `"/"`) and a
+list of allowed actions (`ActionRead`, `ActionWrite`, `ActionDelete`).
 
 ## Wiring a plugin binary
 
@@ -162,38 +343,47 @@ complete, runnable plugin.
 
 ## How storage works over gRPC
 
-### Save
+### GetValues
 
-1. The host calls `GRPCClient.Save(id, tree)`.
-2. The client serialises the `TreeReader` into `TreeEntry` proto
-   messages using `config.TreeToProto`. Each entry contains the path,
-   JSON-encoded value, and JSON-encoded metadata. Validators are
-   excluded automatically.
-3. The plugin-side server receives the entries, reconstructs a
-   `*config.Tree` via `config.TreeFromProto`, and passes it as a
-   `TreeReader` to the implementation's `Save` method.
+1. The host calls `GRPCClient.GetValues(id, paths)`.
+2. The plugin retrieves the requested values from its backend.
+3. The server serialises each value into `TreeEntry` proto messages
+   with JSON-encoded value and metadata.
+4. The client reconstructs a `map[string]config.Value` from the
+   entries and returns it to the host.
 
-### Load / LoadVersion
+### PutValues
 
-1. The host calls `GRPCClient.Load(id)` or `LoadVersion(id, version)`.
-2. The plugin returns a `*config.Tree`.
-3. The server serialises it back to `TreeEntry` messages.
-4. The client reconstructs a `*config.Tree` and returns it to the host.
+1. The host calls `GRPCClient.PutValues(id, values, opts)`.
+2. The client serialises the values map into `TreeEntry` proto
+   messages. CAS fields from `PutOptions` are included in the request.
+3. The plugin-side server deserialises the entries and passes them to
+   the implementation's `PutValues` method.
 
-### Delete / DeleteVersion
+### DeleteValues / DeleteTree
 
-1. The host calls `GRPCClient.Delete(id)` or `DeleteVersion(id, version)`.
+1. The host calls `GRPCClient.DeleteValues(id, paths)` or
+   `DeleteTree(id)`.
 2. The plugin removes the data from its backend.
 3. An empty response is returned.
 
-This reuses the same `TreeEntry` proto type and serialisation helpers
-(`TreeToProto`, `TreeFromProto`) as config and transform plugins.
+### Versioned reads
+
+Tree-version reads (`GetTreeVersion`) and value-version reads
+(`GetValueVersion`) follow the same serialisation pattern as
+`GetValues` -- values are JSON-encoded into `TreeEntry` messages or
+individual value/metadata JSON fields.
+
+Values are always JSON-encoded for wire transfer using `TreeEntry`
+proto messages, reusing the same serialisation helpers as config and
+transform plugins. Validator closures are excluded automatically.
 
 ## Backend mapping examples
 
-| Backend           | ID mapping                                       | Versioning         |
-|-------------------|--------------------------------------------------|--------------------|
-| Vault KV v2       | mount path + ID as secret path                   | native (versions)  |
-| Local filesystem  | directory per ID, JSON/YAML file per version     | filename-based     |
-| PostgreSQL        | table row keyed by ID                            | row per version    |
-| S3                | bucket prefix + ID as key prefix                 | S3 versioning      |
+| Backend           | ID mapping                                       | Versioning           |
+|-------------------|--------------------------------------------------|----------------------|
+| Vault KV v2       | mount path + ID as secret path                   | tree (native versions) |
+| Local filesystem  | directory per ID, JSON/YAML file per version     | tree (filename-based)  |
+| PostgreSQL        | table row keyed by ID, column per path           | value (row per version)|
+| S3                | bucket prefix + ID as key prefix                 | tree (S3 versioning)   |
+| etcd              | key prefix per tree, key per path                | value (revision-based) |
