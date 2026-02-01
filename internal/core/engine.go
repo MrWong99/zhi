@@ -145,22 +145,49 @@ func (e *Engine) SetValue(ctx context.Context, path string, value config.Value) 
 	return e.configPlugin.Set(ctx, path, value)
 }
 
-// SaveTree persists a tree to the store provider. It also persists the
-// current component state. Returns an error if no store is configured.
+// SaveTree persists a tree to the store provider by extracting all values
+// and writing them with PutValues. Returns an error if no store is configured.
 func (e *Engine) SaveTree(ctx context.Context, id string, tree *config.Tree) error {
 	if e.storePlugin == nil {
 		return fmt.Errorf("no store provider configured")
 	}
-	return e.storePlugin.Save(ctx, id, tree)
+	values := make(map[string]config.Value)
+	for _, path := range tree.List() {
+		v, ok := tree.Get(path)
+		if ok {
+			values[path] = v
+		}
+	}
+	return e.storePlugin.PutValues(ctx, id, values, nil)
 }
 
-// LoadStoredTree loads a tree from the store provider. Returns an error if
-// no store is configured.
+// LoadStoredTree loads a tree from the store provider. The config plugin's
+// path list is used so the store knows exactly which values to fetch.
+// Returns an error if no store is configured.
 func (e *Engine) LoadStoredTree(ctx context.Context, id string) (*config.Tree, bool, error) {
 	if e.storePlugin == nil {
 		return nil, false, fmt.Errorf("no store provider configured")
 	}
-	return e.storePlugin.Load(ctx, id)
+	// Obtain the expected paths from the config plugin.
+	paths, err := e.configPlugin.List(ctx)
+	if err != nil {
+		return nil, false, fmt.Errorf("listing config paths for store load: %w", err)
+	}
+	values, err := e.storePlugin.GetValues(ctx, id, paths)
+	if err != nil {
+		return nil, false, err
+	}
+	if len(values) == 0 {
+		return nil, false, nil
+	}
+	tree := config.NewTree()
+	for path, v := range values {
+		cp := v
+		if err := tree.Set(path, &cp); err != nil {
+			return nil, false, fmt.Errorf("setting stored value at %q: %w", path, err)
+		}
+	}
+	return tree, true, nil
 }
 
 // ListTrees returns all tree IDs from the store provider. Returns an error

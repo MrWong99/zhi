@@ -34,21 +34,45 @@ func (s *stubTransform) ValidatePolicy(context.Context) (transform.ValidatePolic
 // stubStore is a minimal store.Plugin for testing.
 type stubStore struct{}
 
-func (s *stubStore) Save(context.Context, string, config.TreeReader) error    { return nil }
-func (s *stubStore) Load(context.Context, string) (*config.Tree, bool, error) { return nil, false, nil }
-func (s *stubStore) Delete(context.Context, string) error                     { return nil }
-func (s *stubStore) ListTrees(context.Context) ([]string, error)              { return nil, nil }
-func (s *stubStore) SupportsVersioning(context.Context) (bool, error)         { return false, nil }
-func (s *stubStore) ListVersions(context.Context, string) ([]string, error)   { return nil, nil }
-func (s *stubStore) LoadVersion(context.Context, string, string) (*config.Tree, bool, error) {
-	return nil, false, nil
+func (s *stubStore) Capabilities(context.Context) (*store.Capabilities, error) {
+	return &store.Capabilities{}, nil
 }
-func (s *stubStore) DeleteVersion(context.Context, string, string) error { return nil }
-func (s *stubStore) EncryptionStatus(context.Context) (store.EncryptionStatus, error) {
-	return store.EncryptionNone, nil
+func (s *stubStore) AuthMethods(context.Context) ([]store.AuthMethod, error) { return nil, nil }
+func (s *stubStore) Login(context.Context, string, map[string]string) (*store.Credential, error) {
+	return nil, nil
 }
-func (s *stubStore) InitEncryption(context.Context, []byte) error           { return nil }
-func (s *stubStore) RotateEncryption(context.Context, []byte, []byte) error { return nil }
+func (s *stubStore) ListTrees(context.Context) ([]string, error) { return nil, nil }
+func (s *stubStore) DeleteTree(context.Context, string) error    { return nil }
+func (s *stubStore) GetValues(context.Context, string, []string) (map[string]config.Value, error) {
+	return nil, nil
+}
+func (s *stubStore) PutValues(context.Context, string, map[string]config.Value, *store.PutOptions) error {
+	return nil
+}
+func (s *stubStore) DeleteValues(context.Context, string, []string) error       { return nil }
+func (s *stubStore) ListTreeVersions(context.Context, string) ([]string, error) { return nil, nil }
+func (s *stubStore) GetTreeVersion(context.Context, string, string, []string) (map[string]config.Value, error) {
+	return nil, nil
+}
+func (s *stubStore) RollbackTree(context.Context, string, string) error      { return nil }
+func (s *stubStore) DeleteTreeVersion(context.Context, string, string) error { return nil }
+func (s *stubStore) ListValueVersions(context.Context, string, string) ([]string, error) {
+	return nil, nil
+}
+func (s *stubStore) GetValueVersion(context.Context, string, string, string) (config.Value, bool, error) {
+	return config.Value{}, false, nil
+}
+func (s *stubStore) RollbackValue(context.Context, string, string, string) error      { return nil }
+func (s *stubStore) DeleteValueVersion(context.Context, string, string, string) error { return nil }
+func (s *stubStore) InitEncryption(context.Context, []byte) error                     { return nil }
+func (s *stubStore) RotateEncryption(context.Context, []byte, []byte) error           { return nil }
+func (s *stubStore) GrantAccess(context.Context, string, string, []store.Permission) error {
+	return nil
+}
+func (s *stubStore) RevokeAccess(context.Context, string, string, []string) error { return nil }
+func (s *stubStore) ListAccess(context.Context, string) (map[string][]store.Permission, error) {
+	return nil, nil
+}
 
 func TestRegistryRegisterAndResolve(t *testing.T) {
 	r := NewRegistry()

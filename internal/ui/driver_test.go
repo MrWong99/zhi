@@ -52,33 +52,23 @@ func (m *mockTransform) ValidatePolicy(_ context.Context) (transform.ValidatePol
 }
 
 type mockStore struct {
-	trees map[string]*config.Tree
+	trees map[string]map[string]config.Value
 }
 
 func newMockStore() *mockStore {
-	return &mockStore{trees: make(map[string]*config.Tree)}
+	return &mockStore{trees: make(map[string]map[string]config.Value)}
 }
 
-func (m *mockStore) Save(_ context.Context, id string, r config.TreeReader) error {
-	t := config.NewTree()
-	for _, p := range r.List() {
-		v, ok := r.Get(p)
-		if ok {
-			_ = t.Set(p, &v)
-		}
-	}
-	m.trees[id] = t
-	return nil
+func (m *mockStore) Capabilities(_ context.Context) (*store.Capabilities, error) {
+	return &store.Capabilities{
+		Versioning: store.VersioningNone,
+		Encryption: store.EncryptionNone,
+	}, nil
 }
 
-func (m *mockStore) Load(_ context.Context, id string) (*config.Tree, bool, error) {
-	t, ok := m.trees[id]
-	return t, ok, nil
-}
-
-func (m *mockStore) Delete(_ context.Context, id string) error {
-	delete(m.trees, id)
-	return nil
+func (m *mockStore) AuthMethods(_ context.Context) ([]store.AuthMethod, error) { return nil, nil }
+func (m *mockStore) Login(_ context.Context, _ string, _ map[string]string) (*store.Credential, error) {
+	return nil, nil
 }
 
 func (m *mockStore) ListTrees(_ context.Context) ([]string, error) {
@@ -89,19 +79,71 @@ func (m *mockStore) ListTrees(_ context.Context) ([]string, error) {
 	return ids, nil
 }
 
-func (m *mockStore) SupportsVersioning(_ context.Context) (bool, error) { return false, nil }
-func (m *mockStore) ListVersions(_ context.Context, _ string) ([]string, error) {
+func (m *mockStore) DeleteTree(_ context.Context, id string) error {
+	delete(m.trees, id)
+	return nil
+}
+
+func (m *mockStore) GetValues(_ context.Context, id string, paths []string) (map[string]config.Value, error) {
+	vals, ok := m.trees[id]
+	if !ok {
+		return nil, nil
+	}
+	result := make(map[string]config.Value)
+	for _, p := range paths {
+		if v, exists := vals[p]; exists {
+			result[p] = v
+		}
+	}
+	return result, nil
+}
+
+func (m *mockStore) PutValues(_ context.Context, id string, values map[string]config.Value, _ *store.PutOptions) error {
+	if m.trees[id] == nil {
+		m.trees[id] = make(map[string]config.Value)
+	}
+	for p, v := range values {
+		m.trees[id][p] = v
+	}
+	return nil
+}
+
+func (m *mockStore) DeleteValues(_ context.Context, id string, paths []string) error {
+	vals := m.trees[id]
+	if vals == nil {
+		return nil
+	}
+	for _, p := range paths {
+		delete(vals, p)
+	}
+	return nil
+}
+
+func (m *mockStore) ListTreeVersions(_ context.Context, _ string) ([]string, error) { return nil, nil }
+func (m *mockStore) GetTreeVersion(_ context.Context, _, _ string, _ []string) (map[string]config.Value, error) {
 	return nil, nil
 }
-func (m *mockStore) LoadVersion(_ context.Context, _, _ string) (*config.Tree, bool, error) {
-	return nil, false, nil
+func (m *mockStore) RollbackTree(_ context.Context, _, _ string) error      { return nil }
+func (m *mockStore) DeleteTreeVersion(_ context.Context, _, _ string) error { return nil }
+func (m *mockStore) ListValueVersions(_ context.Context, _, _ string) ([]string, error) {
+	return nil, nil
 }
-func (m *mockStore) DeleteVersion(_ context.Context, _, _ string) error { return nil }
-func (m *mockStore) EncryptionStatus(_ context.Context) (store.EncryptionStatus, error) {
-	return store.EncryptionNone, nil
+func (m *mockStore) GetValueVersion(_ context.Context, _, _, _ string) (config.Value, bool, error) {
+	return config.Value{}, false, nil
 }
-func (m *mockStore) InitEncryption(_ context.Context, _ []byte) error      { return nil }
-func (m *mockStore) RotateEncryption(_ context.Context, _, _ []byte) error { return nil }
+func (m *mockStore) RollbackValue(_ context.Context, _, _, _ string) error      { return nil }
+func (m *mockStore) DeleteValueVersion(_ context.Context, _, _, _ string) error { return nil }
+func (m *mockStore) InitEncryption(_ context.Context, _ []byte) error           { return nil }
+func (m *mockStore) RotateEncryption(_ context.Context, _, _ []byte) error      { return nil }
+func (m *mockStore) GrantAccess(_ context.Context, _ string, _ string, _ []store.Permission) error {
+	return nil
+}
+func (m *mockStore) RevokeAccess(_ context.Context, _ string, _ string, _ []string) error {
+	return nil
+}
+func (m *mockStore) ListAccess(_ context.Context, _ string) (map[string][]store.Permission, error) {
+	return nil, nil
+}
 
 // --- test helpers ---
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 	"sync"
 	"testing"
 
@@ -13,128 +12,147 @@ import (
 	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
 )
 
-// --- testPlugin: in-memory store with versioning, no encryption -----------
-
+// testPlugin is a full in-memory implementation of Plugin for testing
+// the gRPC round-trip. It supports no versioning, auth, or encryption.
 type testPlugin struct {
 	mu    sync.RWMutex
-	trees map[string][]*config.Tree // id -> versions (newest last)
+	trees map[string]map[string]config.Value // tree id -> path -> value
 }
 
 func newTestPlugin() *testPlugin {
-	return &testPlugin{trees: make(map[string][]*config.Tree)}
+	return &testPlugin{trees: make(map[string]map[string]config.Value)}
 }
 
-func (p *testPlugin) Save(_ context.Context, id string, tree config.TreeReader) error {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	cp := config.NewTree()
-	for _, path := range tree.List() {
-		v, ok := tree.Get(path)
-		if !ok {
-			continue
-		}
-		_ = cp.Set(path, &v)
-	}
-	p.trees[id] = append(p.trees[id], cp)
-	return nil
+func (t *testPlugin) Capabilities(context.Context) (*Capabilities, error) {
+	return &Capabilities{
+		Versioning:    VersioningNone,
+		Encryption:    EncryptionNone,
+		Auth:          false,
+		AccessControl: false,
+	}, nil
 }
 
-func (p *testPlugin) Load(_ context.Context, id string) (*config.Tree, bool, error) {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-	versions, ok := p.trees[id]
-	if !ok || len(versions) == 0 {
-		return nil, false, nil
-	}
-	return versions[len(versions)-1], true, nil
+func (t *testPlugin) AuthMethods(context.Context) ([]AuthMethod, error) {
+	return nil, nil
 }
 
-func (p *testPlugin) Delete(_ context.Context, id string) error {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	delete(p.trees, id)
-	return nil
+func (t *testPlugin) Login(context.Context, string, map[string]string) (*Credential, error) {
+	return nil, errors.New("authentication not supported")
 }
 
-func (p *testPlugin) ListTrees(_ context.Context) ([]string, error) {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-	ids := make([]string, 0, len(p.trees))
-	for id := range p.trees {
+func (t *testPlugin) ListTrees(_ context.Context) ([]string, error) {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+	ids := make([]string, 0, len(t.trees))
+	for id := range t.trees {
 		ids = append(ids, id)
 	}
 	return ids, nil
 }
 
-func (p *testPlugin) SupportsVersioning(_ context.Context) (bool, error) {
-	return true, nil
+func (t *testPlugin) DeleteTree(_ context.Context, id string) error {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	delete(t.trees, id)
+	return nil
 }
 
-func (p *testPlugin) ListVersions(_ context.Context, id string) ([]string, error) {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-	versions, ok := p.trees[id]
+func (t *testPlugin) GetValues(_ context.Context, id string, paths []string) (map[string]config.Value, error) {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+	tree, ok := t.trees[id]
 	if !ok {
-		return nil, nil
+		return map[string]config.Value{}, nil
 	}
-	// Newest first: versions slice stores oldest first, so iterate in reverse.
-	result := make([]string, len(versions))
-	for i := range versions {
-		result[len(versions)-1-i] = fmt.Sprintf("v%d", i+1)
+	result := make(map[string]config.Value, len(paths))
+	for _, p := range paths {
+		if v, found := tree[p]; found {
+			result[p] = v
+		}
 	}
 	return result, nil
 }
 
-func (p *testPlugin) LoadVersion(_ context.Context, id string, version string) (*config.Tree, bool, error) {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-	versions, ok := p.trees[id]
+func (t *testPlugin) PutValues(_ context.Context, id string, values map[string]config.Value, _ *PutOptions) error {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	tree, ok := t.trees[id]
 	if !ok {
-		return nil, false, nil
+		tree = make(map[string]config.Value)
+		t.trees[id] = tree
 	}
-	for i := range versions {
-		label := fmt.Sprintf("v%d", i+1)
-		if label == version {
-			return versions[i], true, nil
-		}
+	for path, v := range values {
+		tree[path] = v
 	}
-	return nil, false, nil
+	return nil
 }
 
-func (p *testPlugin) DeleteVersion(_ context.Context, id string, version string) error {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	versions, ok := p.trees[id]
+func (t *testPlugin) DeleteValues(_ context.Context, id string, paths []string) error {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	tree, ok := t.trees[id]
 	if !ok {
-		return errors.New("tree not found")
+		return nil
 	}
-	for i := range versions {
-		label := fmt.Sprintf("v%d", i+1)
-		if label == version {
-			p.trees[id] = slices.Delete(versions, i, i+1)
-			if len(p.trees[id]) == 0 {
-				delete(p.trees, id)
-			}
-			return nil
-		}
+	for _, p := range paths {
+		delete(tree, p)
 	}
-	return errors.New("version not found")
+	return nil
 }
 
-func (p *testPlugin) EncryptionStatus(_ context.Context) (EncryptionStatus, error) {
-	return EncryptionNone, nil
+func (t *testPlugin) ListTreeVersions(context.Context, string) ([]string, error) {
+	return nil, errors.New("versioning not supported")
 }
 
-func (p *testPlugin) InitEncryption(_ context.Context, _ []byte) error {
+func (t *testPlugin) GetTreeVersion(context.Context, string, string, []string) (map[string]config.Value, error) {
+	return nil, errors.New("versioning not supported")
+}
+
+func (t *testPlugin) RollbackTree(context.Context, string, string) error {
+	return errors.New("versioning not supported")
+}
+
+func (t *testPlugin) DeleteTreeVersion(context.Context, string, string) error {
+	return errors.New("versioning not supported")
+}
+
+func (t *testPlugin) ListValueVersions(context.Context, string, string) ([]string, error) {
+	return nil, errors.New("versioning not supported")
+}
+
+func (t *testPlugin) GetValueVersion(context.Context, string, string, string) (config.Value, bool, error) {
+	return config.Value{}, false, errors.New("versioning not supported")
+}
+
+func (t *testPlugin) RollbackValue(context.Context, string, string, string) error {
+	return errors.New("versioning not supported")
+}
+
+func (t *testPlugin) DeleteValueVersion(context.Context, string, string, string) error {
+	return errors.New("versioning not supported")
+}
+
+func (t *testPlugin) InitEncryption(context.Context, []byte) error {
 	return errors.New("encryption not supported")
 }
 
-func (p *testPlugin) RotateEncryption(_ context.Context, _, _ []byte) error {
+func (t *testPlugin) RotateEncryption(context.Context, []byte, []byte) error {
 	return errors.New("encryption not supported")
 }
 
-// --- dispense helper ------------------------------------------------------
+func (t *testPlugin) GrantAccess(context.Context, string, string, []Permission) error {
+	return errors.New("access control not supported")
+}
 
+func (t *testPlugin) RevokeAccess(context.Context, string, string, []string) error {
+	return errors.New("access control not supported")
+}
+
+func (t *testPlugin) ListAccess(context.Context, string) (map[string][]Permission, error) {
+	return nil, errors.New("access control not supported")
+}
+
+// dispense starts an in-process gRPC plugin and returns a connected client.
 func dispense(t *testing.T, impl Plugin) Plugin {
 	t.Helper()
 	client, _ := goplugin.TestPluginGRPCConn(t, false, map[string]goplugin.Plugin{
@@ -147,75 +165,128 @@ func dispense(t *testing.T, impl Plugin) Plugin {
 	return raw.(Plugin)
 }
 
-// --- tests ----------------------------------------------------------------
-
-func TestEncryptionStatusString(t *testing.T) {
-	tests := []struct {
-		s    EncryptionStatus
-		want string
-	}{
-		{EncryptionNone, "none"},
-		{EncryptionSupported, "supported"},
-		{EncryptionActive, "active"},
-		{EncryptionStatus(99), "unknown"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.want, func(t *testing.T) {
-			if got := tt.s.String(); got != tt.want {
-				t.Errorf("EncryptionStatus(%d).String() = %q, want %q", tt.s, got, tt.want)
-			}
-		})
-	}
-}
-
-func TestSaveAndLoad(t *testing.T) {
+func TestCapabilities(t *testing.T) {
 	p := dispense(t, newTestPlugin())
 	ctx := context.Background()
 
-	tree := config.NewTree()
-	_ = tree.Set("db/host", &config.Value{Val: "localhost", Metadata: map[string]any{"desc": "host"}})
-	_ = tree.Set("db/port", &config.Value{Val: float64(5432)})
-
-	if err := p.Save(ctx, "production", tree); err != nil {
-		t.Fatalf("Save: %v", err)
-	}
-
-	loaded, found, err := p.Load(ctx, "production")
+	caps, err := p.Capabilities(ctx)
 	if err != nil {
-		t.Fatalf("Load: %v", err)
+		t.Fatalf("Capabilities: %v", err)
 	}
-	if !found {
-		t.Fatal("Load: not found")
+	if caps.Versioning != VersioningNone {
+		t.Errorf("Versioning = %v, want VersioningNone", caps.Versioning)
 	}
-
-	v, ok := loaded.Get("db/host")
-	if !ok {
-		t.Fatal("db/host missing from loaded tree")
+	if caps.Encryption != EncryptionNone {
+		t.Errorf("Encryption = %v, want EncryptionNone", caps.Encryption)
 	}
-	if v.Val != "localhost" {
-		t.Errorf("db/host = %v, want %q", v.Val, "localhost")
+	if caps.Auth {
+		t.Error("Auth should be false")
 	}
-	if v.Metadata["desc"] != "host" {
-		t.Errorf("metadata[desc] = %v, want %q", v.Metadata["desc"], "host")
-	}
-
-	v, ok = loaded.Get("db/port")
-	if !ok {
-		t.Fatal("db/port missing from loaded tree")
-	}
-	if v.Val != float64(5432) {
-		t.Errorf("db/port = %v, want 5432", v.Val)
+	if caps.AccessControl {
+		t.Error("AccessControl should be false")
 	}
 }
 
-func TestLoadMissing(t *testing.T) {
+func TestPutAndGetValues(t *testing.T) {
 	p := dispense(t, newTestPlugin())
-	_, found, err := p.Load(context.Background(), "nonexistent")
-	if err != nil {
-		t.Fatalf("Load: %v", err)
+	ctx := context.Background()
+
+	values := map[string]config.Value{
+		"db/host": {Val: "localhost"},
+		"db/port": {Val: float64(5432)},
 	}
-	if found {
-		t.Error("Load returned found=true for missing tree")
+	if err := p.PutValues(ctx, "prod", values, nil); err != nil {
+		t.Fatalf("PutValues: %v", err)
+	}
+
+	got, err := p.GetValues(ctx, "prod", []string{"db/host", "db/port"})
+	if err != nil {
+		t.Fatalf("GetValues: %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("got %d values, want 2", len(got))
+	}
+	if got["db/host"].Val != "localhost" {
+		t.Errorf("db/host = %v, want %q", got["db/host"].Val, "localhost")
+	}
+}
+
+func TestGetValuesMissing(t *testing.T) {
+	p := dispense(t, newTestPlugin())
+	ctx := context.Background()
+
+	got, err := p.GetValues(ctx, "nope", []string{"a/b"})
+	if err != nil {
+		t.Fatalf("GetValues: %v", err)
+	}
+	if len(got) != 0 {
+		t.Errorf("got %d values, want 0 for missing tree", len(got))
+	}
+}
+
+func TestPartialGet(t *testing.T) {
+	p := dispense(t, newTestPlugin())
+	ctx := context.Background()
+
+	values := map[string]config.Value{
+		"a/x": {Val: "one"},
+		"a/y": {Val: "two"},
+		"b/z": {Val: "three"},
+	}
+	_ = p.PutValues(ctx, "test", values, nil)
+
+	// Only request two of the three paths.
+	got, err := p.GetValues(ctx, "test", []string{"a/x", "b/z"})
+	if err != nil {
+		t.Fatalf("GetValues: %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("got %d values, want 2", len(got))
+	}
+	if got["a/x"].Val != "one" {
+		t.Errorf("a/x = %v, want %q", got["a/x"].Val, "one")
+	}
+	if got["b/z"].Val != "three" {
+		t.Errorf("b/z = %v, want %q", got["b/z"].Val, "three")
+	}
+}
+
+func TestPutOverwrite(t *testing.T) {
+	p := dispense(t, newTestPlugin())
+	ctx := context.Background()
+
+	_ = p.PutValues(ctx, "app", map[string]config.Value{
+		"app/name": {Val: "old"},
+	}, nil)
+	_ = p.PutValues(ctx, "app", map[string]config.Value{
+		"app/name": {Val: "new"},
+	}, nil)
+
+	got, _ := p.GetValues(ctx, "app", []string{"app/name"})
+	if got["app/name"].Val != "new" {
+		t.Errorf("Val = %v, want %q", got["app/name"].Val, "new")
+	}
+}
+
+func TestDeleteValues(t *testing.T) {
+	p := dispense(t, newTestPlugin())
+	ctx := context.Background()
+
+	_ = p.PutValues(ctx, "test", map[string]config.Value{
+		"a/x": {Val: "one"},
+		"a/y": {Val: "two"},
+	}, nil)
+
+	if err := p.DeleteValues(ctx, "test", []string{"a/x"}); err != nil {
+		t.Fatalf("DeleteValues: %v", err)
+	}
+
+	got, _ := p.GetValues(ctx, "test", []string{"a/x", "a/y"})
+	if _, found := got["a/x"]; found {
+		t.Error("a/x should have been deleted")
+	}
+	if got["a/y"].Val != "two" {
+		t.Errorf("a/y = %v, want %q", got["a/y"].Val, "two")
 	}
 }
 
@@ -223,17 +294,17 @@ func TestDeleteTree(t *testing.T) {
 	p := dispense(t, newTestPlugin())
 	ctx := context.Background()
 
-	tree := config.NewTree()
-	_ = tree.Set("a/b", &config.Value{Val: "x"})
-	_ = p.Save(ctx, "temp", tree)
+	_ = p.PutValues(ctx, "temp", map[string]config.Value{
+		"a/b": {Val: "x"},
+	}, nil)
 
-	if err := p.Delete(ctx, "temp"); err != nil {
-		t.Fatalf("Delete: %v", err)
+	if err := p.DeleteTree(ctx, "temp"); err != nil {
+		t.Fatalf("DeleteTree: %v", err)
 	}
 
-	_, found, _ := p.Load(ctx, "temp")
-	if found {
-		t.Error("tree still found after Delete")
+	got, _ := p.GetValues(ctx, "temp", []string{"a/b"})
+	if len(got) != 0 {
+		t.Error("tree still has values after DeleteTree")
 	}
 }
 
@@ -241,189 +312,15 @@ func TestListTrees(t *testing.T) {
 	p := dispense(t, newTestPlugin())
 	ctx := context.Background()
 
-	tree := config.NewTree()
-	_ = tree.Set("a/b", &config.Value{Val: "x"})
-
-	_ = p.Save(ctx, "alpha", tree)
-	_ = p.Save(ctx, "beta", tree)
+	_ = p.PutValues(ctx, "one", map[string]config.Value{"a/b": {Val: "x"}}, nil)
+	_ = p.PutValues(ctx, "two", map[string]config.Value{"a/b": {Val: "y"}}, nil)
 
 	ids, err := p.ListTrees(ctx)
 	if err != nil {
 		t.Fatalf("ListTrees: %v", err)
 	}
-	slices.Sort(ids)
-	want := []string{"alpha", "beta"}
-	if !slices.Equal(ids, want) {
-		t.Errorf("ListTrees() = %v, want %v", ids, want)
-	}
-}
-
-func TestSupportsVersioning(t *testing.T) {
-	p := dispense(t, newTestPlugin())
-	supported, err := p.SupportsVersioning(context.Background())
-	if err != nil {
-		t.Fatalf("SupportsVersioning: %v", err)
-	}
-	if !supported {
-		t.Error("SupportsVersioning() = false, want true")
-	}
-}
-
-func TestVersioning(t *testing.T) {
-	p := dispense(t, newTestPlugin())
-	ctx := context.Background()
-
-	// Save two versions.
-	tree1 := config.NewTree()
-	_ = tree1.Set("app/version", &config.Value{Val: "1.0"})
-	_ = p.Save(ctx, "myapp", tree1)
-
-	tree2 := config.NewTree()
-	_ = tree2.Set("app/version", &config.Value{Val: "2.0"})
-	_ = p.Save(ctx, "myapp", tree2)
-
-	// Latest should be v2.
-	latest, found, err := p.Load(ctx, "myapp")
-	if err != nil || !found {
-		t.Fatalf("Load latest: err=%v, found=%v", err, found)
-	}
-	v, _ := latest.Get("app/version")
-	if v.Val != "2.0" {
-		t.Errorf("latest version = %v, want %q", v.Val, "2.0")
-	}
-
-	// List versions.
-	versions, err := p.ListVersions(ctx, "myapp")
-	if err != nil {
-		t.Fatalf("ListVersions: %v", err)
-	}
-	if len(versions) != 2 {
-		t.Fatalf("got %d versions, want 2", len(versions))
-	}
-	// Newest first.
-	if versions[0] != "v2" || versions[1] != "v1" {
-		t.Errorf("versions = %v, want [v2, v1]", versions)
-	}
-
-	// Load older version.
-	old, found, err := p.LoadVersion(ctx, "myapp", "v1")
-	if err != nil || !found {
-		t.Fatalf("LoadVersion v1: err=%v, found=%v", err, found)
-	}
-	v, _ = old.Get("app/version")
-	if v.Val != "1.0" {
-		t.Errorf("v1 version = %v, want %q", v.Val, "1.0")
-	}
-}
-
-func TestLoadVersionMissing(t *testing.T) {
-	p := dispense(t, newTestPlugin())
-	_, found, err := p.LoadVersion(context.Background(), "nope", "v1")
-	if err != nil {
-		t.Fatalf("LoadVersion: %v", err)
-	}
-	if found {
-		t.Error("LoadVersion returned found=true for missing tree")
-	}
-}
-
-func TestDeleteVersion(t *testing.T) {
-	p := dispense(t, newTestPlugin())
-	ctx := context.Background()
-
-	// Save three versions.
-	for i := 1; i <= 3; i++ {
-		tree := config.NewTree()
-		_ = tree.Set("app/version", &config.Value{Val: fmt.Sprintf("%d.0", i)})
-		_ = p.Save(ctx, "myapp", tree)
-	}
-
-	// Delete the middle version.
-	if err := p.DeleteVersion(ctx, "myapp", "v2"); err != nil {
-		t.Fatalf("DeleteVersion: %v", err)
-	}
-
-	versions, err := p.ListVersions(ctx, "myapp")
-	if err != nil {
-		t.Fatalf("ListVersions: %v", err)
-	}
-	if len(versions) != 2 {
-		t.Fatalf("got %d versions after delete, want 2", len(versions))
-	}
-
-	// Latest should still be the last saved version.
-	latest, found, _ := p.Load(ctx, "myapp")
-	if !found {
-		t.Fatal("tree not found after DeleteVersion")
-	}
-	v, _ := latest.Get("app/version")
-	if v.Val != "3.0" {
-		t.Errorf("latest = %v, want %q", v.Val, "3.0")
-	}
-}
-
-func TestDeleteVersionNonexistent(t *testing.T) {
-	p := dispense(t, newTestPlugin())
-	err := p.DeleteVersion(context.Background(), "nope", "v1")
-	if err == nil {
-		t.Error("DeleteVersion should return error for missing tree")
-	}
-}
-
-func TestEncryptionStatusOverGRPC(t *testing.T) {
-	p := dispense(t, newTestPlugin())
-	status, err := p.EncryptionStatus(context.Background())
-	if err != nil {
-		t.Fatalf("EncryptionStatus: %v", err)
-	}
-	if status != EncryptionNone {
-		t.Errorf("EncryptionStatus() = %v, want EncryptionNone", status)
-	}
-}
-
-func TestInitEncryptionUnsupported(t *testing.T) {
-	p := dispense(t, newTestPlugin())
-	err := p.InitEncryption(context.Background(), []byte("secret"))
-	if err == nil {
-		t.Error("InitEncryption should return error for unsupported store")
-	}
-}
-
-func TestRotateEncryptionUnsupported(t *testing.T) {
-	p := dispense(t, newTestPlugin())
-	err := p.RotateEncryption(context.Background(), []byte("old"), []byte("new"))
-	if err == nil {
-		t.Error("RotateEncryption should return error for unsupported store")
-	}
-}
-
-func TestValidatorsNotStored(t *testing.T) {
-	p := dispense(t, newTestPlugin())
-	ctx := context.Background()
-
-	tree := config.NewTree()
-	_ = tree.Set("key", &config.Value{
-		Val: "value",
-		Validators: []config.ValidateFunc{
-			func(any, config.TreeReader) []config.ValidationResult {
-				return []config.ValidationResult{{Severity: config.Blocking, Message: "fail"}}
-			},
-		},
-	})
-
-	_ = p.Save(ctx, "test", tree)
-
-	loaded, found, _ := p.Load(ctx, "test")
-	if !found {
-		t.Fatal("not found")
-	}
-
-	v, ok := loaded.Get("key")
-	if !ok {
-		t.Fatal("key missing")
-	}
-	if len(v.Validators) != 0 {
-		t.Errorf("got %d validators, want 0 (validators must not be stored)", len(v.Validators))
+	if len(ids) != 2 {
+		t.Fatalf("got %d ids, want 2", len(ids))
 	}
 }
 
@@ -431,27 +328,288 @@ func TestMetadataPreserved(t *testing.T) {
 	p := dispense(t, newTestPlugin())
 	ctx := context.Background()
 
-	tree := config.NewTree()
-	_ = tree.Set("db/host", &config.Value{
-		Val:      "localhost",
-		Metadata: map[string]any{"description": "Database host", "required": true},
-	})
+	_ = p.PutValues(ctx, "meta", map[string]config.Value{
+		"key": {Val: "value", Metadata: map[string]any{"description": "test key"}},
+	}, nil)
 
-	_ = p.Save(ctx, "test", tree)
+	got, _ := p.GetValues(ctx, "meta", []string{"key"})
+	if got["key"].Metadata["description"] != "test key" {
+		t.Errorf("description = %v, want %q", got["key"].Metadata["description"], "test key")
+	}
+}
 
-	loaded, found, _ := p.Load(ctx, "test")
-	if !found {
-		t.Fatal("not found")
+func TestValidatorsNotStored(t *testing.T) {
+	p := dispense(t, newTestPlugin())
+	ctx := context.Background()
+
+	_ = p.PutValues(ctx, "val", map[string]config.Value{
+		"key": {
+			Val:        "test",
+			Validators: []config.ValidateFunc{func(any, config.TreeReader) []config.ValidationResult { return nil }},
+		},
+	}, nil)
+
+	got, _ := p.GetValues(ctx, "val", []string{"key"})
+	if len(got["key"].Validators) != 0 {
+		t.Error("Validators should not be stored (they cannot cross gRPC)")
+	}
+}
+
+func TestVersioningNotSupported(t *testing.T) {
+	p := dispense(t, newTestPlugin())
+	ctx := context.Background()
+
+	_, err := p.ListTreeVersions(ctx, "any")
+	if err == nil {
+		t.Error("ListTreeVersions should return error")
 	}
 
-	v, ok := loaded.Get("db/host")
+	_, err = p.GetTreeVersion(ctx, "any", "v1", nil)
+	if err == nil {
+		t.Error("GetTreeVersion should return error")
+	}
+
+	if err := p.RollbackTree(ctx, "any", "v1"); err == nil {
+		t.Error("RollbackTree should return error")
+	}
+
+	if err := p.DeleteTreeVersion(ctx, "any", "v1"); err == nil {
+		t.Error("DeleteTreeVersion should return error")
+	}
+
+	_, err = p.ListValueVersions(ctx, "any", "path")
+	if err == nil {
+		t.Error("ListValueVersions should return error")
+	}
+
+	_, _, err = p.GetValueVersion(ctx, "any", "path", "v1")
+	if err == nil {
+		t.Error("GetValueVersion should return error")
+	}
+
+	if err := p.RollbackValue(ctx, "any", "path", "v1"); err == nil {
+		t.Error("RollbackValue should return error")
+	}
+
+	if err := p.DeleteValueVersion(ctx, "any", "path", "v1"); err == nil {
+		t.Error("DeleteValueVersion should return error")
+	}
+}
+
+func TestEncryptionNotSupported(t *testing.T) {
+	p := dispense(t, newTestPlugin())
+	ctx := context.Background()
+
+	caps, _ := p.Capabilities(ctx)
+	if caps.Encryption != EncryptionNone {
+		t.Errorf("Encryption = %v, want EncryptionNone", caps.Encryption)
+	}
+
+	if err := p.InitEncryption(ctx, []byte("pass")); err == nil {
+		t.Error("InitEncryption should return error")
+	}
+
+	if err := p.RotateEncryption(ctx, []byte("old"), []byte("new")); err == nil {
+		t.Error("RotateEncryption should return error")
+	}
+}
+
+func TestAccessControlNotSupported(t *testing.T) {
+	p := dispense(t, newTestPlugin())
+	ctx := context.Background()
+
+	if err := p.GrantAccess(ctx, "id", "user", []Permission{{Path: "a/b", Actions: []Action{ActionRead}}}); err == nil {
+		t.Error("GrantAccess should return error")
+	}
+
+	if err := p.RevokeAccess(ctx, "id", "user", []string{"a/b"}); err == nil {
+		t.Error("RevokeAccess should return error")
+	}
+
+	_, err := p.ListAccess(ctx, "id")
+	if err == nil {
+		t.Error("ListAccess should return error")
+	}
+}
+
+func TestAuthNotSupported(t *testing.T) {
+	p := dispense(t, newTestPlugin())
+	ctx := context.Background()
+
+	methods, err := p.AuthMethods(ctx)
+	if err != nil {
+		t.Fatalf("AuthMethods: %v", err)
+	}
+	if len(methods) != 0 {
+		t.Errorf("got %d auth methods, want 0", len(methods))
+	}
+
+	_, err = p.Login(ctx, "userpass", map[string]string{"user": "admin"})
+	if err == nil {
+		t.Error("Login should return error")
+	}
+}
+
+// --- Versioned tree test plugin ---
+
+type versionedTreePlugin struct {
+	testPlugin
+	versions map[string][]map[string]config.Value // tree id -> list of snapshots
+}
+
+func newVersionedTreePlugin() *versionedTreePlugin {
+	return &versionedTreePlugin{
+		testPlugin: *newTestPlugin(),
+		versions:   make(map[string][]map[string]config.Value),
+	}
+}
+
+func (v *versionedTreePlugin) Capabilities(context.Context) (*Capabilities, error) {
+	return &Capabilities{
+		Versioning: VersioningTree,
+		Encryption: EncryptionNone,
+	}, nil
+}
+
+func (v *versionedTreePlugin) PutValues(_ context.Context, id string, values map[string]config.Value, _ *PutOptions) error {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+
+	tree, ok := v.trees[id]
 	if !ok {
-		t.Fatal("db/host missing")
+		tree = make(map[string]config.Value)
+		v.trees[id] = tree
 	}
-	if v.Metadata["description"] != "Database host" {
-		t.Errorf("description = %v, want %q", v.Metadata["description"], "Database host")
+	// Snapshot current state before writing.
+	snap := make(map[string]config.Value, len(tree))
+	for k, val := range tree {
+		snap[k] = val
 	}
-	if v.Metadata["required"] != true {
-		t.Errorf("required = %v, want true", v.Metadata["required"])
+	v.versions[id] = append(v.versions[id], snap)
+
+	for path, val := range values {
+		tree[path] = val
+	}
+	return nil
+}
+
+func (v *versionedTreePlugin) ListTreeVersions(_ context.Context, id string) ([]string, error) {
+	v.mu.RLock()
+	defer v.mu.RUnlock()
+	snaps := v.versions[id]
+	versions := make([]string, len(snaps))
+	for i := range snaps {
+		// Newest first.
+		versions[i] = fmt.Sprintf("v%d", len(snaps)-i)
+	}
+	return versions, nil
+}
+
+func (v *versionedTreePlugin) GetTreeVersion(_ context.Context, id string, version string, paths []string) (map[string]config.Value, error) {
+	v.mu.RLock()
+	defer v.mu.RUnlock()
+	snaps := v.versions[id]
+	idx, err := v.versionIndex(id, version)
+	if err != nil {
+		return nil, err
+	}
+	snap := snaps[idx]
+	result := make(map[string]config.Value)
+	for _, p := range paths {
+		if val, ok := snap[p]; ok {
+			result[p] = val
+		}
+	}
+	return result, nil
+}
+
+func (v *versionedTreePlugin) RollbackTree(_ context.Context, id string, version string) error {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	idx, err := v.versionIndex(id, version)
+	if err != nil {
+		return err
+	}
+	snap := v.versions[id][idx]
+	tree := make(map[string]config.Value, len(snap))
+	for k, val := range snap {
+		tree[k] = val
+	}
+	v.trees[id] = tree
+	return nil
+}
+
+func (v *versionedTreePlugin) DeleteTreeVersion(_ context.Context, id string, version string) error {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	idx, err := v.versionIndex(id, version)
+	if err != nil {
+		return err
+	}
+	snaps := v.versions[id]
+	v.versions[id] = append(snaps[:idx], snaps[idx+1:]...)
+	return nil
+}
+
+func (v *versionedTreePlugin) versionIndex(id string, version string) (int, error) {
+	snaps := v.versions[id]
+	for i := range snaps {
+		label := fmt.Sprintf("v%d", i+1)
+		if label == version {
+			return i, nil
+		}
+	}
+	return 0, fmt.Errorf("version %q not found for tree %q", version, id)
+}
+
+func TestTreeVersioning(t *testing.T) {
+	impl := newVersionedTreePlugin()
+	p := dispense(t, impl)
+	ctx := context.Background()
+
+	caps, _ := p.Capabilities(ctx)
+	if caps.Versioning != VersioningTree {
+		t.Fatalf("Versioning = %v, want VersioningTree", caps.Versioning)
+	}
+
+	// Write first version.
+	_ = p.PutValues(ctx, "app", map[string]config.Value{
+		"app/name": {Val: "v1"},
+	}, nil)
+	// Write second version.
+	_ = p.PutValues(ctx, "app", map[string]config.Value{
+		"app/name": {Val: "v2"},
+	}, nil)
+
+	versions, err := p.ListTreeVersions(ctx, "app")
+	if err != nil {
+		t.Fatalf("ListTreeVersions: %v", err)
+	}
+	if len(versions) != 2 {
+		t.Fatalf("got %d versions, want 2", len(versions))
+	}
+
+	// Get first version's data.
+	v1, err := p.GetTreeVersion(ctx, "app", "v1", []string{"app/name"})
+	if err != nil {
+		t.Fatalf("GetTreeVersion v1: %v", err)
+	}
+	// v1 is the snapshot taken before the first PutValues (empty tree).
+	if len(v1) != 0 {
+		t.Errorf("v1 should be empty (snapshot before first write), got %v", v1)
+	}
+
+	// Rollback to v1.
+	if err := p.RollbackTree(ctx, "app", "v1"); err != nil {
+		t.Fatalf("RollbackTree: %v", err)
+	}
+	got, _ := p.GetValues(ctx, "app", []string{"app/name"})
+	if _, found := got["app/name"]; found {
+		t.Error("after rollback to v1, app/name should not exist")
+	}
+
+	// Delete a version.
+	if err := p.DeleteTreeVersion(ctx, "app", "v2"); err != nil {
+		t.Fatalf("DeleteTreeVersion: %v", err)
 	}
 }

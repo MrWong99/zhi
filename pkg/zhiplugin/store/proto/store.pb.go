@@ -25,119 +25,125 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type SaveRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The identifier for this configuration tree.
-	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	// The full configuration tree to persist.
-	Tree          []*proto.TreeEntry `protobuf:"bytes,2,rep,name=tree,proto3" json:"tree,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
+type VersioningMode int32
 
-func (x *SaveRequest) Reset() {
-	*x = SaveRequest{}
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[0]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
+const (
+	VersioningMode_VERSIONING_NONE  VersioningMode = 0
+	VersioningMode_VERSIONING_TREE  VersioningMode = 1
+	VersioningMode_VERSIONING_VALUE VersioningMode = 2
+)
 
-func (x *SaveRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SaveRequest) ProtoMessage() {}
-
-func (x *SaveRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[0]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
+// Enum value maps for VersioningMode.
+var (
+	VersioningMode_name = map[int32]string{
+		0: "VERSIONING_NONE",
+		1: "VERSIONING_TREE",
+		2: "VERSIONING_VALUE",
 	}
-	return mi.MessageOf(x)
+	VersioningMode_value = map[string]int32{
+		"VERSIONING_NONE":  0,
+		"VERSIONING_TREE":  1,
+		"VERSIONING_VALUE": 2,
+	}
+)
+
+func (x VersioningMode) Enum() *VersioningMode {
+	p := new(VersioningMode)
+	*p = x
+	return p
 }
 
-// Deprecated: Use SaveRequest.ProtoReflect.Descriptor instead.
-func (*SaveRequest) Descriptor() ([]byte, []int) {
+func (x VersioningMode) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (VersioningMode) Descriptor() protoreflect.EnumDescriptor {
+	return file_zhiplugin_v1_store_proto_enumTypes[0].Descriptor()
+}
+
+func (VersioningMode) Type() protoreflect.EnumType {
+	return &file_zhiplugin_v1_store_proto_enumTypes[0]
+}
+
+func (x VersioningMode) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use VersioningMode.Descriptor instead.
+func (VersioningMode) EnumDescriptor() ([]byte, []int) {
 	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *SaveRequest) GetId() string {
-	if x != nil {
-		return x.Id
+type ActionType int32
+
+const (
+	ActionType_ACTION_READ   ActionType = 0
+	ActionType_ACTION_WRITE  ActionType = 1
+	ActionType_ACTION_DELETE ActionType = 2
+)
+
+// Enum value maps for ActionType.
+var (
+	ActionType_name = map[int32]string{
+		0: "ACTION_READ",
+		1: "ACTION_WRITE",
+		2: "ACTION_DELETE",
 	}
-	return ""
-}
-
-func (x *SaveRequest) GetTree() []*proto.TreeEntry {
-	if x != nil {
-		return x.Tree
+	ActionType_value = map[string]int32{
+		"ACTION_READ":   0,
+		"ACTION_WRITE":  1,
+		"ACTION_DELETE": 2,
 	}
-	return nil
+)
+
+func (x ActionType) Enum() *ActionType {
+	p := new(ActionType)
+	*p = x
+	return p
 }
 
-// SaveResponse is intentionally empty.
-type SaveResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+func (x ActionType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (x *SaveResponse) Reset() {
-	*x = SaveResponse{}
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[1]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
+func (ActionType) Descriptor() protoreflect.EnumDescriptor {
+	return file_zhiplugin_v1_store_proto_enumTypes[1].Descriptor()
 }
 
-func (x *SaveResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
+func (ActionType) Type() protoreflect.EnumType {
+	return &file_zhiplugin_v1_store_proto_enumTypes[1]
 }
 
-func (*SaveResponse) ProtoMessage() {}
-
-func (x *SaveResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[1]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
+func (x ActionType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use SaveResponse.ProtoReflect.Descriptor instead.
-func (*SaveResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use ActionType.Descriptor instead.
+func (ActionType) EnumDescriptor() ([]byte, []int) {
 	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{1}
 }
 
-type LoadRequest struct {
+type StoreCapabilitiesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *LoadRequest) Reset() {
-	*x = LoadRequest{}
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[2]
+func (x *StoreCapabilitiesRequest) Reset() {
+	*x = StoreCapabilitiesRequest{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *LoadRequest) String() string {
+func (x *StoreCapabilitiesRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*LoadRequest) ProtoMessage() {}
+func (*StoreCapabilitiesRequest) ProtoMessage() {}
 
-func (x *LoadRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[2]
+func (x *StoreCapabilitiesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -148,42 +154,37 @@ func (x *LoadRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use LoadRequest.ProtoReflect.Descriptor instead.
-func (*LoadRequest) Descriptor() ([]byte, []int) {
-	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{2}
+// Deprecated: Use StoreCapabilitiesRequest.ProtoReflect.Descriptor instead.
+func (*StoreCapabilitiesRequest) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *LoadRequest) GetId() string {
-	if x != nil {
-		return x.Id
-	}
-	return ""
-}
-
-type LoadResponse struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	Found bool                   `protobuf:"varint,1,opt,name=found,proto3" json:"found,omitempty"`
-	// The configuration tree entries. Empty when found is false.
-	Tree          []*proto.TreeEntry `protobuf:"bytes,2,rep,name=tree,proto3" json:"tree,omitempty"`
+type StoreCapabilitiesResponse struct {
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	Versioning VersioningMode         `protobuf:"varint,1,opt,name=versioning,proto3,enum=zhiplugin.v1.VersioningMode" json:"versioning,omitempty"`
+	// 0 = EncryptionNone, 1 = EncryptionSupported, 2 = EncryptionActive.
+	Encryption    int32 `protobuf:"varint,2,opt,name=encryption,proto3" json:"encryption,omitempty"`
+	Auth          bool  `protobuf:"varint,3,opt,name=auth,proto3" json:"auth,omitempty"`
+	AccessControl bool  `protobuf:"varint,4,opt,name=access_control,json=accessControl,proto3" json:"access_control,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *LoadResponse) Reset() {
-	*x = LoadResponse{}
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[3]
+func (x *StoreCapabilitiesResponse) Reset() {
+	*x = StoreCapabilitiesResponse{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *LoadResponse) String() string {
+func (x *StoreCapabilitiesResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*LoadResponse) ProtoMessage() {}
+func (*StoreCapabilitiesResponse) ProtoMessage() {}
 
-func (x *LoadResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[3]
+func (x *StoreCapabilitiesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -194,47 +195,64 @@ func (x *LoadResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use LoadResponse.ProtoReflect.Descriptor instead.
-func (*LoadResponse) Descriptor() ([]byte, []int) {
-	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{3}
+// Deprecated: Use StoreCapabilitiesResponse.ProtoReflect.Descriptor instead.
+func (*StoreCapabilitiesResponse) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *LoadResponse) GetFound() bool {
+func (x *StoreCapabilitiesResponse) GetVersioning() VersioningMode {
 	if x != nil {
-		return x.Found
+		return x.Versioning
+	}
+	return VersioningMode_VERSIONING_NONE
+}
+
+func (x *StoreCapabilitiesResponse) GetEncryption() int32 {
+	if x != nil {
+		return x.Encryption
+	}
+	return 0
+}
+
+func (x *StoreCapabilitiesResponse) GetAuth() bool {
+	if x != nil {
+		return x.Auth
 	}
 	return false
 }
 
-func (x *LoadResponse) GetTree() []*proto.TreeEntry {
+func (x *StoreCapabilitiesResponse) GetAccessControl() bool {
 	if x != nil {
-		return x.Tree
+		return x.AccessControl
 	}
-	return nil
+	return false
 }
 
-type DeleteRequest struct {
+type AuthFieldMsg struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Description   string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	Required      bool                   `protobuf:"varint,3,opt,name=required,proto3" json:"required,omitempty"`
+	Secret        bool                   `protobuf:"varint,4,opt,name=secret,proto3" json:"secret,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *DeleteRequest) Reset() {
-	*x = DeleteRequest{}
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[4]
+func (x *AuthFieldMsg) Reset() {
+	*x = AuthFieldMsg{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *DeleteRequest) String() string {
+func (x *AuthFieldMsg) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*DeleteRequest) ProtoMessage() {}
+func (*AuthFieldMsg) ProtoMessage() {}
 
-func (x *DeleteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[4]
+func (x *AuthFieldMsg) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -245,39 +263,156 @@ func (x *DeleteRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use DeleteRequest.ProtoReflect.Descriptor instead.
-func (*DeleteRequest) Descriptor() ([]byte, []int) {
-	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{4}
+// Deprecated: Use AuthFieldMsg.ProtoReflect.Descriptor instead.
+func (*AuthFieldMsg) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *DeleteRequest) GetId() string {
+func (x *AuthFieldMsg) GetName() string {
 	if x != nil {
-		return x.Id
+		return x.Name
 	}
 	return ""
 }
 
-// DeleteResponse is intentionally empty.
-type DeleteResponse struct {
+func (x *AuthFieldMsg) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *AuthFieldMsg) GetRequired() bool {
+	if x != nil {
+		return x.Required
+	}
+	return false
+}
+
+func (x *AuthFieldMsg) GetSecret() bool {
+	if x != nil {
+		return x.Secret
+	}
+	return false
+}
+
+type AuthMethodMsg struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Type          string                 `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
+	Description   string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	Fields        []*AuthFieldMsg        `protobuf:"bytes,3,rep,name=fields,proto3" json:"fields,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AuthMethodMsg) Reset() {
+	*x = AuthMethodMsg{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AuthMethodMsg) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AuthMethodMsg) ProtoMessage() {}
+
+func (x *AuthMethodMsg) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AuthMethodMsg.ProtoReflect.Descriptor instead.
+func (*AuthMethodMsg) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *AuthMethodMsg) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *AuthMethodMsg) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *AuthMethodMsg) GetFields() []*AuthFieldMsg {
+	if x != nil {
+		return x.Fields
+	}
+	return nil
+}
+
+type AuthMethodsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *DeleteResponse) Reset() {
-	*x = DeleteResponse{}
+func (x *AuthMethodsRequest) Reset() {
+	*x = AuthMethodsRequest{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AuthMethodsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AuthMethodsRequest) ProtoMessage() {}
+
+func (x *AuthMethodsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AuthMethodsRequest.ProtoReflect.Descriptor instead.
+func (*AuthMethodsRequest) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{4}
+}
+
+type AuthMethodsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Methods       []*AuthMethodMsg       `protobuf:"bytes,1,rep,name=methods,proto3" json:"methods,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AuthMethodsResponse) Reset() {
+	*x = AuthMethodsResponse{}
 	mi := &file_zhiplugin_v1_store_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *DeleteResponse) String() string {
+func (x *AuthMethodsResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*DeleteResponse) ProtoMessage() {}
+func (*AuthMethodsResponse) ProtoMessage() {}
 
-func (x *DeleteResponse) ProtoReflect() protoreflect.Message {
+func (x *AuthMethodsResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_zhiplugin_v1_store_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -289,12 +424,130 @@ func (x *DeleteResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use DeleteResponse.ProtoReflect.Descriptor instead.
-func (*DeleteResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use AuthMethodsResponse.ProtoReflect.Descriptor instead.
+func (*AuthMethodsResponse) Descriptor() ([]byte, []int) {
 	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{5}
 }
 
-// ListTreesRequest is intentionally empty.
+func (x *AuthMethodsResponse) GetMethods() []*AuthMethodMsg {
+	if x != nil {
+		return x.Methods
+	}
+	return nil
+}
+
+type LoginRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Method        string                 `protobuf:"bytes,1,opt,name=method,proto3" json:"method,omitempty"`
+	Credentials   map[string]string      `protobuf:"bytes,2,rep,name=credentials,proto3" json:"credentials,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LoginRequest) Reset() {
+	*x = LoginRequest{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LoginRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LoginRequest) ProtoMessage() {}
+
+func (x *LoginRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LoginRequest.ProtoReflect.Descriptor instead.
+func (*LoginRequest) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *LoginRequest) GetMethod() string {
+	if x != nil {
+		return x.Method
+	}
+	return ""
+}
+
+func (x *LoginRequest) GetCredentials() map[string]string {
+	if x != nil {
+		return x.Credentials
+	}
+	return nil
+}
+
+type LoginResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	ExpiresAt     string                 `protobuf:"bytes,2,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
+	Metadata      map[string]string      `protobuf:"bytes,3,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LoginResponse) Reset() {
+	*x = LoginResponse{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LoginResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LoginResponse) ProtoMessage() {}
+
+func (x *LoginResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LoginResponse.ProtoReflect.Descriptor instead.
+func (*LoginResponse) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *LoginResponse) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+func (x *LoginResponse) GetExpiresAt() string {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return ""
+}
+
+func (x *LoginResponse) GetMetadata() map[string]string {
+	if x != nil {
+		return x.Metadata
+	}
+	return nil
+}
+
 type ListTreesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -303,7 +556,7 @@ type ListTreesRequest struct {
 
 func (x *ListTreesRequest) Reset() {
 	*x = ListTreesRequest{}
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[6]
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -315,7 +568,7 @@ func (x *ListTreesRequest) String() string {
 func (*ListTreesRequest) ProtoMessage() {}
 
 func (x *ListTreesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[6]
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -328,7 +581,7 @@ func (x *ListTreesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTreesRequest.ProtoReflect.Descriptor instead.
 func (*ListTreesRequest) Descriptor() ([]byte, []int) {
-	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{6}
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{8}
 }
 
 type ListTreesResponse struct {
@@ -340,7 +593,7 @@ type ListTreesResponse struct {
 
 func (x *ListTreesResponse) Reset() {
 	*x = ListTreesResponse{}
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[7]
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -352,7 +605,7 @@ func (x *ListTreesResponse) String() string {
 func (*ListTreesResponse) ProtoMessage() {}
 
 func (x *ListTreesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[7]
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -365,7 +618,7 @@ func (x *ListTreesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTreesResponse.ProtoReflect.Descriptor instead.
 func (*ListTreesResponse) Descriptor() ([]byte, []int) {
-	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{7}
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ListTreesResponse) GetIds() []string {
@@ -375,108 +628,27 @@ func (x *ListTreesResponse) GetIds() []string {
 	return nil
 }
 
-// SupportsVersioningRequest is intentionally empty.
-type SupportsVersioningRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SupportsVersioningRequest) Reset() {
-	*x = SupportsVersioningRequest{}
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[8]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SupportsVersioningRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SupportsVersioningRequest) ProtoMessage() {}
-
-func (x *SupportsVersioningRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[8]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SupportsVersioningRequest.ProtoReflect.Descriptor instead.
-func (*SupportsVersioningRequest) Descriptor() ([]byte, []int) {
-	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{8}
-}
-
-type SupportsVersioningResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Supported     bool                   `protobuf:"varint,1,opt,name=supported,proto3" json:"supported,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SupportsVersioningResponse) Reset() {
-	*x = SupportsVersioningResponse{}
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[9]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SupportsVersioningResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SupportsVersioningResponse) ProtoMessage() {}
-
-func (x *SupportsVersioningResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[9]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SupportsVersioningResponse.ProtoReflect.Descriptor instead.
-func (*SupportsVersioningResponse) Descriptor() ([]byte, []int) {
-	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{9}
-}
-
-func (x *SupportsVersioningResponse) GetSupported() bool {
-	if x != nil {
-		return x.Supported
-	}
-	return false
-}
-
-type ListVersionsRequest struct {
+type DeleteTreeRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ListVersionsRequest) Reset() {
-	*x = ListVersionsRequest{}
+func (x *DeleteTreeRequest) Reset() {
+	*x = DeleteTreeRequest{}
 	mi := &file_zhiplugin_v1_store_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ListVersionsRequest) String() string {
+func (x *DeleteTreeRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListVersionsRequest) ProtoMessage() {}
+func (*DeleteTreeRequest) ProtoMessage() {}
 
-func (x *ListVersionsRequest) ProtoReflect() protoreflect.Message {
+func (x *DeleteTreeRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_zhiplugin_v1_store_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -488,40 +660,38 @@ func (x *ListVersionsRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListVersionsRequest.ProtoReflect.Descriptor instead.
-func (*ListVersionsRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use DeleteTreeRequest.ProtoReflect.Descriptor instead.
+func (*DeleteTreeRequest) Descriptor() ([]byte, []int) {
 	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{10}
 }
 
-func (x *ListVersionsRequest) GetId() string {
+func (x *DeleteTreeRequest) GetId() string {
 	if x != nil {
 		return x.Id
 	}
 	return ""
 }
 
-type ListVersionsResponse struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Version identifiers, ordered newest first.
-	Versions      []string `protobuf:"bytes,1,rep,name=versions,proto3" json:"versions,omitempty"`
+type DeleteTreeResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ListVersionsResponse) Reset() {
-	*x = ListVersionsResponse{}
+func (x *DeleteTreeResponse) Reset() {
+	*x = DeleteTreeResponse{}
 	mi := &file_zhiplugin_v1_store_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ListVersionsResponse) String() string {
+func (x *DeleteTreeResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListVersionsResponse) ProtoMessage() {}
+func (*DeleteTreeResponse) ProtoMessage() {}
 
-func (x *ListVersionsResponse) ProtoReflect() protoreflect.Message {
+func (x *DeleteTreeResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_zhiplugin_v1_store_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -533,19 +703,494 @@ func (x *ListVersionsResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListVersionsResponse.ProtoReflect.Descriptor instead.
-func (*ListVersionsResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use DeleteTreeResponse.ProtoReflect.Descriptor instead.
+func (*DeleteTreeResponse) Descriptor() ([]byte, []int) {
 	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{11}
 }
 
-func (x *ListVersionsResponse) GetVersions() []string {
+type GetValuesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Paths         []string               `protobuf:"bytes,2,rep,name=paths,proto3" json:"paths,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetValuesRequest) Reset() {
+	*x = GetValuesRequest{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetValuesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetValuesRequest) ProtoMessage() {}
+
+func (x *GetValuesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetValuesRequest.ProtoReflect.Descriptor instead.
+func (*GetValuesRequest) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *GetValuesRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *GetValuesRequest) GetPaths() []string {
+	if x != nil {
+		return x.Paths
+	}
+	return nil
+}
+
+type GetValuesResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Values keyed by path.
+	Values        []*proto.TreeEntry `protobuf:"bytes,1,rep,name=values,proto3" json:"values,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetValuesResponse) Reset() {
+	*x = GetValuesResponse{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetValuesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetValuesResponse) ProtoMessage() {}
+
+func (x *GetValuesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetValuesResponse.ProtoReflect.Descriptor instead.
+func (*GetValuesResponse) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *GetValuesResponse) GetValues() []*proto.TreeEntry {
+	if x != nil {
+		return x.Values
+	}
+	return nil
+}
+
+type PutValuesRequest struct {
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	Id     string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Values []*proto.TreeEntry     `protobuf:"bytes,2,rep,name=values,proto3" json:"values,omitempty"`
+	// Optional CAS fields.
+	CasVersion    string            `protobuf:"bytes,3,opt,name=cas_version,json=casVersion,proto3" json:"cas_version,omitempty"`
+	CasVersions   map[string]string `protobuf:"bytes,4,rep,name=cas_versions,json=casVersions,proto3" json:"cas_versions,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PutValuesRequest) Reset() {
+	*x = PutValuesRequest{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PutValuesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PutValuesRequest) ProtoMessage() {}
+
+func (x *PutValuesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PutValuesRequest.ProtoReflect.Descriptor instead.
+func (*PutValuesRequest) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *PutValuesRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *PutValuesRequest) GetValues() []*proto.TreeEntry {
+	if x != nil {
+		return x.Values
+	}
+	return nil
+}
+
+func (x *PutValuesRequest) GetCasVersion() string {
+	if x != nil {
+		return x.CasVersion
+	}
+	return ""
+}
+
+func (x *PutValuesRequest) GetCasVersions() map[string]string {
+	if x != nil {
+		return x.CasVersions
+	}
+	return nil
+}
+
+type PutValuesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PutValuesResponse) Reset() {
+	*x = PutValuesResponse{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PutValuesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PutValuesResponse) ProtoMessage() {}
+
+func (x *PutValuesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PutValuesResponse.ProtoReflect.Descriptor instead.
+func (*PutValuesResponse) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{15}
+}
+
+type DeleteValuesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Paths         []string               `protobuf:"bytes,2,rep,name=paths,proto3" json:"paths,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteValuesRequest) Reset() {
+	*x = DeleteValuesRequest{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteValuesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteValuesRequest) ProtoMessage() {}
+
+func (x *DeleteValuesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteValuesRequest.ProtoReflect.Descriptor instead.
+func (*DeleteValuesRequest) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *DeleteValuesRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *DeleteValuesRequest) GetPaths() []string {
+	if x != nil {
+		return x.Paths
+	}
+	return nil
+}
+
+type DeleteValuesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteValuesResponse) Reset() {
+	*x = DeleteValuesResponse{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteValuesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteValuesResponse) ProtoMessage() {}
+
+func (x *DeleteValuesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteValuesResponse.ProtoReflect.Descriptor instead.
+func (*DeleteValuesResponse) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{17}
+}
+
+type ListTreeVersionsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListTreeVersionsRequest) Reset() {
+	*x = ListTreeVersionsRequest{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListTreeVersionsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListTreeVersionsRequest) ProtoMessage() {}
+
+func (x *ListTreeVersionsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListTreeVersionsRequest.ProtoReflect.Descriptor instead.
+func (*ListTreeVersionsRequest) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *ListTreeVersionsRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+type ListTreeVersionsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Versions      []string               `protobuf:"bytes,1,rep,name=versions,proto3" json:"versions,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListTreeVersionsResponse) Reset() {
+	*x = ListTreeVersionsResponse{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListTreeVersionsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListTreeVersionsResponse) ProtoMessage() {}
+
+func (x *ListTreeVersionsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListTreeVersionsResponse.ProtoReflect.Descriptor instead.
+func (*ListTreeVersionsResponse) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *ListTreeVersionsResponse) GetVersions() []string {
 	if x != nil {
 		return x.Versions
 	}
 	return nil
 }
 
-type LoadVersionRequest struct {
+type GetTreeVersionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Version       string                 `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
+	Paths         []string               `protobuf:"bytes,3,rep,name=paths,proto3" json:"paths,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetTreeVersionRequest) Reset() {
+	*x = GetTreeVersionRequest{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetTreeVersionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetTreeVersionRequest) ProtoMessage() {}
+
+func (x *GetTreeVersionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetTreeVersionRequest.ProtoReflect.Descriptor instead.
+func (*GetTreeVersionRequest) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *GetTreeVersionRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *GetTreeVersionRequest) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+func (x *GetTreeVersionRequest) GetPaths() []string {
+	if x != nil {
+		return x.Paths
+	}
+	return nil
+}
+
+type GetTreeVersionResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Values        []*proto.TreeEntry     `protobuf:"bytes,1,rep,name=values,proto3" json:"values,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetTreeVersionResponse) Reset() {
+	*x = GetTreeVersionResponse{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetTreeVersionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetTreeVersionResponse) ProtoMessage() {}
+
+func (x *GetTreeVersionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetTreeVersionResponse.ProtoReflect.Descriptor instead.
+func (*GetTreeVersionResponse) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *GetTreeVersionResponse) GetValues() []*proto.TreeEntry {
+	if x != nil {
+		return x.Values
+	}
+	return nil
+}
+
+type RollbackTreeRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Version       string                 `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
@@ -553,21 +1198,21 @@ type LoadVersionRequest struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *LoadVersionRequest) Reset() {
-	*x = LoadVersionRequest{}
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[12]
+func (x *RollbackTreeRequest) Reset() {
+	*x = RollbackTreeRequest{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *LoadVersionRequest) String() string {
+func (x *RollbackTreeRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*LoadVersionRequest) ProtoMessage() {}
+func (*RollbackTreeRequest) ProtoMessage() {}
 
-func (x *LoadVersionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[12]
+func (x *RollbackTreeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -578,49 +1223,46 @@ func (x *LoadVersionRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use LoadVersionRequest.ProtoReflect.Descriptor instead.
-func (*LoadVersionRequest) Descriptor() ([]byte, []int) {
-	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{12}
+// Deprecated: Use RollbackTreeRequest.ProtoReflect.Descriptor instead.
+func (*RollbackTreeRequest) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{22}
 }
 
-func (x *LoadVersionRequest) GetId() string {
+func (x *RollbackTreeRequest) GetId() string {
 	if x != nil {
 		return x.Id
 	}
 	return ""
 }
 
-func (x *LoadVersionRequest) GetVersion() string {
+func (x *RollbackTreeRequest) GetVersion() string {
 	if x != nil {
 		return x.Version
 	}
 	return ""
 }
 
-type LoadVersionResponse struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	Found bool                   `protobuf:"varint,1,opt,name=found,proto3" json:"found,omitempty"`
-	// The configuration tree entries. Empty when found is false.
-	Tree          []*proto.TreeEntry `protobuf:"bytes,2,rep,name=tree,proto3" json:"tree,omitempty"`
+type RollbackTreeResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *LoadVersionResponse) Reset() {
-	*x = LoadVersionResponse{}
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[13]
+func (x *RollbackTreeResponse) Reset() {
+	*x = RollbackTreeResponse{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *LoadVersionResponse) String() string {
+func (x *RollbackTreeResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*LoadVersionResponse) ProtoMessage() {}
+func (*RollbackTreeResponse) ProtoMessage() {}
 
-func (x *LoadVersionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[13]
+func (x *RollbackTreeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -631,48 +1273,339 @@ func (x *LoadVersionResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use LoadVersionResponse.ProtoReflect.Descriptor instead.
-func (*LoadVersionResponse) Descriptor() ([]byte, []int) {
-	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{13}
+// Deprecated: Use RollbackTreeResponse.ProtoReflect.Descriptor instead.
+func (*RollbackTreeResponse) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{23}
 }
 
-func (x *LoadVersionResponse) GetFound() bool {
+type DeleteTreeVersionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Version       string                 `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteTreeVersionRequest) Reset() {
+	*x = DeleteTreeVersionRequest{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteTreeVersionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteTreeVersionRequest) ProtoMessage() {}
+
+func (x *DeleteTreeVersionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteTreeVersionRequest.ProtoReflect.Descriptor instead.
+func (*DeleteTreeVersionRequest) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *DeleteTreeVersionRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *DeleteTreeVersionRequest) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+type DeleteTreeVersionResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteTreeVersionResponse) Reset() {
+	*x = DeleteTreeVersionResponse{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteTreeVersionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteTreeVersionResponse) ProtoMessage() {}
+
+func (x *DeleteTreeVersionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteTreeVersionResponse.ProtoReflect.Descriptor instead.
+func (*DeleteTreeVersionResponse) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{25}
+}
+
+type ListValueVersionsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Path          string                 `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListValueVersionsRequest) Reset() {
+	*x = ListValueVersionsRequest{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListValueVersionsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListValueVersionsRequest) ProtoMessage() {}
+
+func (x *ListValueVersionsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListValueVersionsRequest.ProtoReflect.Descriptor instead.
+func (*ListValueVersionsRequest) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *ListValueVersionsRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *ListValueVersionsRequest) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
+}
+
+type ListValueVersionsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Versions      []string               `protobuf:"bytes,1,rep,name=versions,proto3" json:"versions,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListValueVersionsResponse) Reset() {
+	*x = ListValueVersionsResponse{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListValueVersionsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListValueVersionsResponse) ProtoMessage() {}
+
+func (x *ListValueVersionsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListValueVersionsResponse.ProtoReflect.Descriptor instead.
+func (*ListValueVersionsResponse) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *ListValueVersionsResponse) GetVersions() []string {
+	if x != nil {
+		return x.Versions
+	}
+	return nil
+}
+
+type GetValueVersionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Path          string                 `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
+	Version       string                 `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetValueVersionRequest) Reset() {
+	*x = GetValueVersionRequest{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetValueVersionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetValueVersionRequest) ProtoMessage() {}
+
+func (x *GetValueVersionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetValueVersionRequest.ProtoReflect.Descriptor instead.
+func (*GetValueVersionRequest) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *GetValueVersionRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *GetValueVersionRequest) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
+}
+
+func (x *GetValueVersionRequest) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+type GetValueVersionResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Found         bool                   `protobuf:"varint,1,opt,name=found,proto3" json:"found,omitempty"`
+	ValueJson     []byte                 `protobuf:"bytes,2,opt,name=value_json,json=valueJson,proto3" json:"value_json,omitempty"`
+	MetadataJson  []byte                 `protobuf:"bytes,3,opt,name=metadata_json,json=metadataJson,proto3" json:"metadata_json,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetValueVersionResponse) Reset() {
+	*x = GetValueVersionResponse{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetValueVersionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetValueVersionResponse) ProtoMessage() {}
+
+func (x *GetValueVersionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetValueVersionResponse.ProtoReflect.Descriptor instead.
+func (*GetValueVersionResponse) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *GetValueVersionResponse) GetFound() bool {
 	if x != nil {
 		return x.Found
 	}
 	return false
 }
 
-func (x *LoadVersionResponse) GetTree() []*proto.TreeEntry {
+func (x *GetValueVersionResponse) GetValueJson() []byte {
 	if x != nil {
-		return x.Tree
+		return x.ValueJson
 	}
 	return nil
 }
 
-type DeleteVersionRequest struct {
+func (x *GetValueVersionResponse) GetMetadataJson() []byte {
+	if x != nil {
+		return x.MetadataJson
+	}
+	return nil
+}
+
+type RollbackValueRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Version       string                 `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
+	Path          string                 `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
+	Version       string                 `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *DeleteVersionRequest) Reset() {
-	*x = DeleteVersionRequest{}
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[14]
+func (x *RollbackValueRequest) Reset() {
+	*x = RollbackValueRequest{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *DeleteVersionRequest) String() string {
+func (x *RollbackValueRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*DeleteVersionRequest) ProtoMessage() {}
+func (*RollbackValueRequest) ProtoMessage() {}
 
-func (x *DeleteVersionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[14]
+func (x *RollbackValueRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -683,47 +1616,53 @@ func (x *DeleteVersionRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use DeleteVersionRequest.ProtoReflect.Descriptor instead.
-func (*DeleteVersionRequest) Descriptor() ([]byte, []int) {
-	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{14}
+// Deprecated: Use RollbackValueRequest.ProtoReflect.Descriptor instead.
+func (*RollbackValueRequest) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{30}
 }
 
-func (x *DeleteVersionRequest) GetId() string {
+func (x *RollbackValueRequest) GetId() string {
 	if x != nil {
 		return x.Id
 	}
 	return ""
 }
 
-func (x *DeleteVersionRequest) GetVersion() string {
+func (x *RollbackValueRequest) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
+}
+
+func (x *RollbackValueRequest) GetVersion() string {
 	if x != nil {
 		return x.Version
 	}
 	return ""
 }
 
-// DeleteVersionResponse is intentionally empty.
-type DeleteVersionResponse struct {
+type RollbackValueResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *DeleteVersionResponse) Reset() {
-	*x = DeleteVersionResponse{}
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[15]
+func (x *RollbackValueResponse) Reset() {
+	*x = RollbackValueResponse{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *DeleteVersionResponse) String() string {
+func (x *RollbackValueResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*DeleteVersionResponse) ProtoMessage() {}
+func (*RollbackValueResponse) ProtoMessage() {}
 
-func (x *DeleteVersionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[15]
+func (x *RollbackValueResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -734,33 +1673,92 @@ func (x *DeleteVersionResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use DeleteVersionResponse.ProtoReflect.Descriptor instead.
-func (*DeleteVersionResponse) Descriptor() ([]byte, []int) {
-	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{15}
+// Deprecated: Use RollbackValueResponse.ProtoReflect.Descriptor instead.
+func (*RollbackValueResponse) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{31}
 }
 
-// EncryptionStatusRequest is intentionally empty.
-type EncryptionStatusRequest struct {
+type DeleteValueVersionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Path          string                 `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
+	Version       string                 `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteValueVersionRequest) Reset() {
+	*x = DeleteValueVersionRequest{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteValueVersionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteValueVersionRequest) ProtoMessage() {}
+
+func (x *DeleteValueVersionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteValueVersionRequest.ProtoReflect.Descriptor instead.
+func (*DeleteValueVersionRequest) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *DeleteValueVersionRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *DeleteValueVersionRequest) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
+}
+
+func (x *DeleteValueVersionRequest) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+type DeleteValueVersionResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *EncryptionStatusRequest) Reset() {
-	*x = EncryptionStatusRequest{}
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[16]
+func (x *DeleteValueVersionResponse) Reset() {
+	*x = DeleteValueVersionResponse{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *EncryptionStatusRequest) String() string {
+func (x *DeleteValueVersionResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*EncryptionStatusRequest) ProtoMessage() {}
+func (*DeleteValueVersionResponse) ProtoMessage() {}
 
-func (x *EncryptionStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[16]
+func (x *DeleteValueVersionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -771,67 +1769,21 @@ func (x *EncryptionStatusRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use EncryptionStatusRequest.ProtoReflect.Descriptor instead.
-func (*EncryptionStatusRequest) Descriptor() ([]byte, []int) {
-	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{16}
-}
-
-type EncryptionStatusResponse struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// 0 = EncryptionNone, 1 = EncryptionSupported, 2 = EncryptionActive.
-	Status        int32 `protobuf:"varint,1,opt,name=status,proto3" json:"status,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *EncryptionStatusResponse) Reset() {
-	*x = EncryptionStatusResponse{}
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[17]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *EncryptionStatusResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*EncryptionStatusResponse) ProtoMessage() {}
-
-func (x *EncryptionStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[17]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use EncryptionStatusResponse.ProtoReflect.Descriptor instead.
-func (*EncryptionStatusResponse) Descriptor() ([]byte, []int) {
-	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{17}
-}
-
-func (x *EncryptionStatusResponse) GetStatus() int32 {
-	if x != nil {
-		return x.Status
-	}
-	return 0
+// Deprecated: Use DeleteValueVersionResponse.ProtoReflect.Descriptor instead.
+func (*DeleteValueVersionResponse) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{33}
 }
 
 type InitEncryptionRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The passphrase or key material to initialize encryption with.
-	Passphrase    []byte `protobuf:"bytes,1,opt,name=passphrase,proto3" json:"passphrase,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Passphrase    []byte                 `protobuf:"bytes,1,opt,name=passphrase,proto3" json:"passphrase,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *InitEncryptionRequest) Reset() {
 	*x = InitEncryptionRequest{}
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[18]
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -843,7 +1795,7 @@ func (x *InitEncryptionRequest) String() string {
 func (*InitEncryptionRequest) ProtoMessage() {}
 
 func (x *InitEncryptionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[18]
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -856,7 +1808,7 @@ func (x *InitEncryptionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InitEncryptionRequest.ProtoReflect.Descriptor instead.
 func (*InitEncryptionRequest) Descriptor() ([]byte, []int) {
-	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{18}
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *InitEncryptionRequest) GetPassphrase() []byte {
@@ -866,7 +1818,6 @@ func (x *InitEncryptionRequest) GetPassphrase() []byte {
 	return nil
 }
 
-// InitEncryptionResponse is intentionally empty.
 type InitEncryptionResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -875,7 +1826,7 @@ type InitEncryptionResponse struct {
 
 func (x *InitEncryptionResponse) Reset() {
 	*x = InitEncryptionResponse{}
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[19]
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -887,7 +1838,7 @@ func (x *InitEncryptionResponse) String() string {
 func (*InitEncryptionResponse) ProtoMessage() {}
 
 func (x *InitEncryptionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[19]
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -900,22 +1851,20 @@ func (x *InitEncryptionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InitEncryptionResponse.ProtoReflect.Descriptor instead.
 func (*InitEncryptionResponse) Descriptor() ([]byte, []int) {
-	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{19}
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{35}
 }
 
 type RotateEncryptionRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The current passphrase.
-	OldPassphrase []byte `protobuf:"bytes,1,opt,name=old_passphrase,json=oldPassphrase,proto3" json:"old_passphrase,omitempty"`
-	// The new passphrase to rotate to.
-	NewPassphrase []byte `protobuf:"bytes,2,opt,name=new_passphrase,json=newPassphrase,proto3" json:"new_passphrase,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	OldPassphrase []byte                 `protobuf:"bytes,1,opt,name=old_passphrase,json=oldPassphrase,proto3" json:"old_passphrase,omitempty"`
+	NewPassphrase []byte                 `protobuf:"bytes,2,opt,name=new_passphrase,json=newPassphrase,proto3" json:"new_passphrase,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *RotateEncryptionRequest) Reset() {
 	*x = RotateEncryptionRequest{}
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[20]
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -927,7 +1876,7 @@ func (x *RotateEncryptionRequest) String() string {
 func (*RotateEncryptionRequest) ProtoMessage() {}
 
 func (x *RotateEncryptionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[20]
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -940,7 +1889,7 @@ func (x *RotateEncryptionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RotateEncryptionRequest.ProtoReflect.Descriptor instead.
 func (*RotateEncryptionRequest) Descriptor() ([]byte, []int) {
-	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{20}
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *RotateEncryptionRequest) GetOldPassphrase() []byte {
@@ -957,7 +1906,6 @@ func (x *RotateEncryptionRequest) GetNewPassphrase() []byte {
 	return nil
 }
 
-// RotateEncryptionResponse is intentionally empty.
 type RotateEncryptionResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -966,7 +1914,7 @@ type RotateEncryptionResponse struct {
 
 func (x *RotateEncryptionResponse) Reset() {
 	*x = RotateEncryptionResponse{}
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[21]
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -978,7 +1926,7 @@ func (x *RotateEncryptionResponse) String() string {
 func (*RotateEncryptionResponse) ProtoMessage() {}
 
 func (x *RotateEncryptionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_zhiplugin_v1_store_proto_msgTypes[21]
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -991,49 +1939,494 @@ func (x *RotateEncryptionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RotateEncryptionResponse.ProtoReflect.Descriptor instead.
 func (*RotateEncryptionResponse) Descriptor() ([]byte, []int) {
-	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{21}
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{37}
+}
+
+type PermissionMsg struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	Actions       []ActionType           `protobuf:"varint,2,rep,packed,name=actions,proto3,enum=zhiplugin.v1.ActionType" json:"actions,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PermissionMsg) Reset() {
+	*x = PermissionMsg{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PermissionMsg) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PermissionMsg) ProtoMessage() {}
+
+func (x *PermissionMsg) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PermissionMsg.ProtoReflect.Descriptor instead.
+func (*PermissionMsg) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{38}
+}
+
+func (x *PermissionMsg) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
+}
+
+func (x *PermissionMsg) GetActions() []ActionType {
+	if x != nil {
+		return x.Actions
+	}
+	return nil
+}
+
+type GrantAccessRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	User          string                 `protobuf:"bytes,2,opt,name=user,proto3" json:"user,omitempty"`
+	Permissions   []*PermissionMsg       `protobuf:"bytes,3,rep,name=permissions,proto3" json:"permissions,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GrantAccessRequest) Reset() {
+	*x = GrantAccessRequest{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[39]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GrantAccessRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GrantAccessRequest) ProtoMessage() {}
+
+func (x *GrantAccessRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[39]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GrantAccessRequest.ProtoReflect.Descriptor instead.
+func (*GrantAccessRequest) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{39}
+}
+
+func (x *GrantAccessRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *GrantAccessRequest) GetUser() string {
+	if x != nil {
+		return x.User
+	}
+	return ""
+}
+
+func (x *GrantAccessRequest) GetPermissions() []*PermissionMsg {
+	if x != nil {
+		return x.Permissions
+	}
+	return nil
+}
+
+type GrantAccessResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GrantAccessResponse) Reset() {
+	*x = GrantAccessResponse{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[40]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GrantAccessResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GrantAccessResponse) ProtoMessage() {}
+
+func (x *GrantAccessResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[40]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GrantAccessResponse.ProtoReflect.Descriptor instead.
+func (*GrantAccessResponse) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{40}
+}
+
+type RevokeAccessRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	User          string                 `protobuf:"bytes,2,opt,name=user,proto3" json:"user,omitempty"`
+	Paths         []string               `protobuf:"bytes,3,rep,name=paths,proto3" json:"paths,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevokeAccessRequest) Reset() {
+	*x = RevokeAccessRequest{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[41]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevokeAccessRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevokeAccessRequest) ProtoMessage() {}
+
+func (x *RevokeAccessRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[41]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevokeAccessRequest.ProtoReflect.Descriptor instead.
+func (*RevokeAccessRequest) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{41}
+}
+
+func (x *RevokeAccessRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *RevokeAccessRequest) GetUser() string {
+	if x != nil {
+		return x.User
+	}
+	return ""
+}
+
+func (x *RevokeAccessRequest) GetPaths() []string {
+	if x != nil {
+		return x.Paths
+	}
+	return nil
+}
+
+type RevokeAccessResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevokeAccessResponse) Reset() {
+	*x = RevokeAccessResponse{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[42]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevokeAccessResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevokeAccessResponse) ProtoMessage() {}
+
+func (x *RevokeAccessResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[42]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevokeAccessResponse.ProtoReflect.Descriptor instead.
+func (*RevokeAccessResponse) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{42}
+}
+
+type ListAccessRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListAccessRequest) Reset() {
+	*x = ListAccessRequest{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[43]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAccessRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAccessRequest) ProtoMessage() {}
+
+func (x *ListAccessRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[43]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAccessRequest.ProtoReflect.Descriptor instead.
+func (*ListAccessRequest) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{43}
+}
+
+func (x *ListAccessRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+type UserPermissions struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Permissions   []*PermissionMsg       `protobuf:"bytes,1,rep,name=permissions,proto3" json:"permissions,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UserPermissions) Reset() {
+	*x = UserPermissions{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[44]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UserPermissions) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UserPermissions) ProtoMessage() {}
+
+func (x *UserPermissions) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[44]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UserPermissions.ProtoReflect.Descriptor instead.
+func (*UserPermissions) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{44}
+}
+
+func (x *UserPermissions) GetPermissions() []*PermissionMsg {
+	if x != nil {
+		return x.Permissions
+	}
+	return nil
+}
+
+type ListAccessResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Access permissions keyed by user.
+	Access        map[string]*UserPermissions `protobuf:"bytes,1,rep,name=access,proto3" json:"access,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListAccessResponse) Reset() {
+	*x = ListAccessResponse{}
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[45]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAccessResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAccessResponse) ProtoMessage() {}
+
+func (x *ListAccessResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_store_proto_msgTypes[45]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAccessResponse.ProtoReflect.Descriptor instead.
+func (*ListAccessResponse) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_store_proto_rawDescGZIP(), []int{45}
+}
+
+func (x *ListAccessResponse) GetAccess() map[string]*UserPermissions {
+	if x != nil {
+		return x.Access
+	}
+	return nil
 }
 
 var File_zhiplugin_v1_store_proto protoreflect.FileDescriptor
 
 const file_zhiplugin_v1_store_proto_rawDesc = "" +
 	"\n" +
-	"\x18zhiplugin/v1/store.proto\x12\fzhiplugin.v1\x1a\x19zhiplugin/v1/config.proto\"J\n" +
-	"\vSaveRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12+\n" +
-	"\x04tree\x18\x02 \x03(\v2\x17.zhiplugin.v1.TreeEntryR\x04tree\"\x0e\n" +
-	"\fSaveResponse\"\x1d\n" +
-	"\vLoadRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"Q\n" +
-	"\fLoadResponse\x12\x14\n" +
-	"\x05found\x18\x01 \x01(\bR\x05found\x12+\n" +
-	"\x04tree\x18\x02 \x03(\v2\x17.zhiplugin.v1.TreeEntryR\x04tree\"\x1f\n" +
-	"\rDeleteRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"\x10\n" +
-	"\x0eDeleteResponse\"\x12\n" +
+	"\x18zhiplugin/v1/store.proto\x12\fzhiplugin.v1\x1a\x19zhiplugin/v1/config.proto\"\x1a\n" +
+	"\x18StoreCapabilitiesRequest\"\xb4\x01\n" +
+	"\x19StoreCapabilitiesResponse\x12<\n" +
+	"\n" +
+	"versioning\x18\x01 \x01(\x0e2\x1c.zhiplugin.v1.VersioningModeR\n" +
+	"versioning\x12\x1e\n" +
+	"\n" +
+	"encryption\x18\x02 \x01(\x05R\n" +
+	"encryption\x12\x12\n" +
+	"\x04auth\x18\x03 \x01(\bR\x04auth\x12%\n" +
+	"\x0eaccess_control\x18\x04 \x01(\bR\raccessControl\"x\n" +
+	"\fAuthFieldMsg\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x1a\n" +
+	"\brequired\x18\x03 \x01(\bR\brequired\x12\x16\n" +
+	"\x06secret\x18\x04 \x01(\bR\x06secret\"y\n" +
+	"\rAuthMethodMsg\x12\x12\n" +
+	"\x04type\x18\x01 \x01(\tR\x04type\x12 \n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\x122\n" +
+	"\x06fields\x18\x03 \x03(\v2\x1a.zhiplugin.v1.AuthFieldMsgR\x06fields\"\x14\n" +
+	"\x12AuthMethodsRequest\"L\n" +
+	"\x13AuthMethodsResponse\x125\n" +
+	"\amethods\x18\x01 \x03(\v2\x1b.zhiplugin.v1.AuthMethodMsgR\amethods\"\xb5\x01\n" +
+	"\fLoginRequest\x12\x16\n" +
+	"\x06method\x18\x01 \x01(\tR\x06method\x12M\n" +
+	"\vcredentials\x18\x02 \x03(\v2+.zhiplugin.v1.LoginRequest.CredentialsEntryR\vcredentials\x1a>\n" +
+	"\x10CredentialsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xc8\x01\n" +
+	"\rLoginResponse\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\x12\x1d\n" +
+	"\n" +
+	"expires_at\x18\x02 \x01(\tR\texpiresAt\x12E\n" +
+	"\bmetadata\x18\x03 \x03(\v2).zhiplugin.v1.LoginResponse.MetadataEntryR\bmetadata\x1a;\n" +
+	"\rMetadataEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x12\n" +
 	"\x10ListTreesRequest\"%\n" +
 	"\x11ListTreesResponse\x12\x10\n" +
-	"\x03ids\x18\x01 \x03(\tR\x03ids\"\x1b\n" +
-	"\x19SupportsVersioningRequest\":\n" +
-	"\x1aSupportsVersioningResponse\x12\x1c\n" +
-	"\tsupported\x18\x01 \x01(\bR\tsupported\"%\n" +
-	"\x13ListVersionsRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"2\n" +
-	"\x14ListVersionsResponse\x12\x1a\n" +
-	"\bversions\x18\x01 \x03(\tR\bversions\">\n" +
-	"\x12LoadVersionRequest\x12\x0e\n" +
+	"\x03ids\x18\x01 \x03(\tR\x03ids\"#\n" +
+	"\x11DeleteTreeRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\x14\n" +
+	"\x12DeleteTreeResponse\"8\n" +
+	"\x10GetValuesRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
+	"\x05paths\x18\x02 \x03(\tR\x05paths\"D\n" +
+	"\x11GetValuesResponse\x12/\n" +
+	"\x06values\x18\x01 \x03(\v2\x17.zhiplugin.v1.TreeEntryR\x06values\"\x88\x02\n" +
+	"\x10PutValuesRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12/\n" +
+	"\x06values\x18\x02 \x03(\v2\x17.zhiplugin.v1.TreeEntryR\x06values\x12\x1f\n" +
+	"\vcas_version\x18\x03 \x01(\tR\n" +
+	"casVersion\x12R\n" +
+	"\fcas_versions\x18\x04 \x03(\v2/.zhiplugin.v1.PutValuesRequest.CasVersionsEntryR\vcasVersions\x1a>\n" +
+	"\x10CasVersionsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x13\n" +
+	"\x11PutValuesResponse\";\n" +
+	"\x13DeleteValuesRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
+	"\x05paths\x18\x02 \x03(\tR\x05paths\"\x16\n" +
+	"\x14DeleteValuesResponse\")\n" +
+	"\x17ListTreeVersionsRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"6\n" +
+	"\x18ListTreeVersionsResponse\x12\x1a\n" +
+	"\bversions\x18\x01 \x03(\tR\bversions\"W\n" +
+	"\x15GetTreeVersionRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x18\n" +
-	"\aversion\x18\x02 \x01(\tR\aversion\"X\n" +
-	"\x13LoadVersionResponse\x12\x14\n" +
-	"\x05found\x18\x01 \x01(\bR\x05found\x12+\n" +
-	"\x04tree\x18\x02 \x03(\v2\x17.zhiplugin.v1.TreeEntryR\x04tree\"@\n" +
-	"\x14DeleteVersionRequest\x12\x0e\n" +
+	"\aversion\x18\x02 \x01(\tR\aversion\x12\x14\n" +
+	"\x05paths\x18\x03 \x03(\tR\x05paths\"I\n" +
+	"\x16GetTreeVersionResponse\x12/\n" +
+	"\x06values\x18\x01 \x03(\v2\x17.zhiplugin.v1.TreeEntryR\x06values\"?\n" +
+	"\x13RollbackTreeRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x18\n" +
-	"\aversion\x18\x02 \x01(\tR\aversion\"\x17\n" +
-	"\x15DeleteVersionResponse\"\x19\n" +
-	"\x17EncryptionStatusRequest\"2\n" +
-	"\x18EncryptionStatusResponse\x12\x16\n" +
-	"\x06status\x18\x01 \x01(\x05R\x06status\"7\n" +
+	"\aversion\x18\x02 \x01(\tR\aversion\"\x16\n" +
+	"\x14RollbackTreeResponse\"D\n" +
+	"\x18DeleteTreeVersionRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x18\n" +
+	"\aversion\x18\x02 \x01(\tR\aversion\"\x1b\n" +
+	"\x19DeleteTreeVersionResponse\">\n" +
+	"\x18ListValueVersionsRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04path\x18\x02 \x01(\tR\x04path\"7\n" +
+	"\x19ListValueVersionsResponse\x12\x1a\n" +
+	"\bversions\x18\x01 \x03(\tR\bversions\"V\n" +
+	"\x16GetValueVersionRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04path\x18\x02 \x01(\tR\x04path\x12\x18\n" +
+	"\aversion\x18\x03 \x01(\tR\aversion\"s\n" +
+	"\x17GetValueVersionResponse\x12\x14\n" +
+	"\x05found\x18\x01 \x01(\bR\x05found\x12\x1d\n" +
+	"\n" +
+	"value_json\x18\x02 \x01(\fR\tvalueJson\x12#\n" +
+	"\rmetadata_json\x18\x03 \x01(\fR\fmetadataJson\"T\n" +
+	"\x14RollbackValueRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04path\x18\x02 \x01(\tR\x04path\x12\x18\n" +
+	"\aversion\x18\x03 \x01(\tR\aversion\"\x17\n" +
+	"\x15RollbackValueResponse\"Y\n" +
+	"\x19DeleteValueVersionRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04path\x18\x02 \x01(\tR\x04path\x12\x18\n" +
+	"\aversion\x18\x03 \x01(\tR\aversion\"\x1c\n" +
+	"\x1aDeleteValueVersionResponse\"7\n" +
 	"\x15InitEncryptionRequest\x12\x1e\n" +
 	"\n" +
 	"passphrase\x18\x01 \x01(\fR\n" +
@@ -1042,19 +2435,62 @@ const file_zhiplugin_v1_store_proto_rawDesc = "" +
 	"\x17RotateEncryptionRequest\x12%\n" +
 	"\x0eold_passphrase\x18\x01 \x01(\fR\roldPassphrase\x12%\n" +
 	"\x0enew_passphrase\x18\x02 \x01(\fR\rnewPassphrase\"\x1a\n" +
-	"\x18RotateEncryptionResponse2\xb0\a\n" +
-	"\fStoreService\x12=\n" +
-	"\x04Save\x12\x19.zhiplugin.v1.SaveRequest\x1a\x1a.zhiplugin.v1.SaveResponse\x12=\n" +
-	"\x04Load\x12\x19.zhiplugin.v1.LoadRequest\x1a\x1a.zhiplugin.v1.LoadResponse\x12C\n" +
-	"\x06Delete\x12\x1b.zhiplugin.v1.DeleteRequest\x1a\x1c.zhiplugin.v1.DeleteResponse\x12L\n" +
-	"\tListTrees\x12\x1e.zhiplugin.v1.ListTreesRequest\x1a\x1f.zhiplugin.v1.ListTreesResponse\x12g\n" +
-	"\x12SupportsVersioning\x12'.zhiplugin.v1.SupportsVersioningRequest\x1a(.zhiplugin.v1.SupportsVersioningResponse\x12U\n" +
-	"\fListVersions\x12!.zhiplugin.v1.ListVersionsRequest\x1a\".zhiplugin.v1.ListVersionsResponse\x12R\n" +
-	"\vLoadVersion\x12 .zhiplugin.v1.LoadVersionRequest\x1a!.zhiplugin.v1.LoadVersionResponse\x12X\n" +
-	"\rDeleteVersion\x12\".zhiplugin.v1.DeleteVersionRequest\x1a#.zhiplugin.v1.DeleteVersionResponse\x12a\n" +
-	"\x10EncryptionStatus\x12%.zhiplugin.v1.EncryptionStatusRequest\x1a&.zhiplugin.v1.EncryptionStatusResponse\x12[\n" +
+	"\x18RotateEncryptionResponse\"W\n" +
+	"\rPermissionMsg\x12\x12\n" +
+	"\x04path\x18\x01 \x01(\tR\x04path\x122\n" +
+	"\aactions\x18\x02 \x03(\x0e2\x18.zhiplugin.v1.ActionTypeR\aactions\"w\n" +
+	"\x12GrantAccessRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04user\x18\x02 \x01(\tR\x04user\x12=\n" +
+	"\vpermissions\x18\x03 \x03(\v2\x1b.zhiplugin.v1.PermissionMsgR\vpermissions\"\x15\n" +
+	"\x13GrantAccessResponse\"O\n" +
+	"\x13RevokeAccessRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04user\x18\x02 \x01(\tR\x04user\x12\x14\n" +
+	"\x05paths\x18\x03 \x03(\tR\x05paths\"\x16\n" +
+	"\x14RevokeAccessResponse\"#\n" +
+	"\x11ListAccessRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"P\n" +
+	"\x0fUserPermissions\x12=\n" +
+	"\vpermissions\x18\x01 \x03(\v2\x1b.zhiplugin.v1.PermissionMsgR\vpermissions\"\xb4\x01\n" +
+	"\x12ListAccessResponse\x12D\n" +
+	"\x06access\x18\x01 \x03(\v2,.zhiplugin.v1.ListAccessResponse.AccessEntryR\x06access\x1aX\n" +
+	"\vAccessEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x123\n" +
+	"\x05value\x18\x02 \x01(\v2\x1d.zhiplugin.v1.UserPermissionsR\x05value:\x028\x01*P\n" +
+	"\x0eVersioningMode\x12\x13\n" +
+	"\x0fVERSIONING_NONE\x10\x00\x12\x13\n" +
+	"\x0fVERSIONING_TREE\x10\x01\x12\x14\n" +
+	"\x10VERSIONING_VALUE\x10\x02*B\n" +
+	"\n" +
+	"ActionType\x12\x0f\n" +
+	"\vACTION_READ\x10\x00\x12\x10\n" +
+	"\fACTION_WRITE\x10\x01\x12\x11\n" +
+	"\rACTION_DELETE\x10\x022\xd9\x0e\n" +
+	"\fStoreService\x12_\n" +
+	"\fCapabilities\x12&.zhiplugin.v1.StoreCapabilitiesRequest\x1a'.zhiplugin.v1.StoreCapabilitiesResponse\x12R\n" +
+	"\vAuthMethods\x12 .zhiplugin.v1.AuthMethodsRequest\x1a!.zhiplugin.v1.AuthMethodsResponse\x12@\n" +
+	"\x05Login\x12\x1a.zhiplugin.v1.LoginRequest\x1a\x1b.zhiplugin.v1.LoginResponse\x12L\n" +
+	"\tListTrees\x12\x1e.zhiplugin.v1.ListTreesRequest\x1a\x1f.zhiplugin.v1.ListTreesResponse\x12O\n" +
+	"\n" +
+	"DeleteTree\x12\x1f.zhiplugin.v1.DeleteTreeRequest\x1a .zhiplugin.v1.DeleteTreeResponse\x12L\n" +
+	"\tGetValues\x12\x1e.zhiplugin.v1.GetValuesRequest\x1a\x1f.zhiplugin.v1.GetValuesResponse\x12L\n" +
+	"\tPutValues\x12\x1e.zhiplugin.v1.PutValuesRequest\x1a\x1f.zhiplugin.v1.PutValuesResponse\x12U\n" +
+	"\fDeleteValues\x12!.zhiplugin.v1.DeleteValuesRequest\x1a\".zhiplugin.v1.DeleteValuesResponse\x12a\n" +
+	"\x10ListTreeVersions\x12%.zhiplugin.v1.ListTreeVersionsRequest\x1a&.zhiplugin.v1.ListTreeVersionsResponse\x12[\n" +
+	"\x0eGetTreeVersion\x12#.zhiplugin.v1.GetTreeVersionRequest\x1a$.zhiplugin.v1.GetTreeVersionResponse\x12U\n" +
+	"\fRollbackTree\x12!.zhiplugin.v1.RollbackTreeRequest\x1a\".zhiplugin.v1.RollbackTreeResponse\x12d\n" +
+	"\x11DeleteTreeVersion\x12&.zhiplugin.v1.DeleteTreeVersionRequest\x1a'.zhiplugin.v1.DeleteTreeVersionResponse\x12d\n" +
+	"\x11ListValueVersions\x12&.zhiplugin.v1.ListValueVersionsRequest\x1a'.zhiplugin.v1.ListValueVersionsResponse\x12^\n" +
+	"\x0fGetValueVersion\x12$.zhiplugin.v1.GetValueVersionRequest\x1a%.zhiplugin.v1.GetValueVersionResponse\x12X\n" +
+	"\rRollbackValue\x12\".zhiplugin.v1.RollbackValueRequest\x1a#.zhiplugin.v1.RollbackValueResponse\x12g\n" +
+	"\x12DeleteValueVersion\x12'.zhiplugin.v1.DeleteValueVersionRequest\x1a(.zhiplugin.v1.DeleteValueVersionResponse\x12[\n" +
 	"\x0eInitEncryption\x12#.zhiplugin.v1.InitEncryptionRequest\x1a$.zhiplugin.v1.InitEncryptionResponse\x12a\n" +
-	"\x10RotateEncryption\x12%.zhiplugin.v1.RotateEncryptionRequest\x1a&.zhiplugin.v1.RotateEncryptionResponseB3Z1github.com/MrWong99/zhi/pkg/zhiplugin/store/protob\x06proto3"
+	"\x10RotateEncryption\x12%.zhiplugin.v1.RotateEncryptionRequest\x1a&.zhiplugin.v1.RotateEncryptionResponse\x12R\n" +
+	"\vGrantAccess\x12 .zhiplugin.v1.GrantAccessRequest\x1a!.zhiplugin.v1.GrantAccessResponse\x12U\n" +
+	"\fRevokeAccess\x12!.zhiplugin.v1.RevokeAccessRequest\x1a\".zhiplugin.v1.RevokeAccessResponse\x12O\n" +
+	"\n" +
+	"ListAccess\x12\x1f.zhiplugin.v1.ListAccessRequest\x1a .zhiplugin.v1.ListAccessResponseB3Z1github.com/MrWong99/zhi/pkg/zhiplugin/store/protob\x06proto3"
 
 var (
 	file_zhiplugin_v1_store_proto_rawDescOnce sync.Once
@@ -1068,63 +2504,125 @@ func file_zhiplugin_v1_store_proto_rawDescGZIP() []byte {
 	return file_zhiplugin_v1_store_proto_rawDescData
 }
 
-var file_zhiplugin_v1_store_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
+var file_zhiplugin_v1_store_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_zhiplugin_v1_store_proto_msgTypes = make([]protoimpl.MessageInfo, 50)
 var file_zhiplugin_v1_store_proto_goTypes = []any{
-	(*SaveRequest)(nil),                // 0: zhiplugin.v1.SaveRequest
-	(*SaveResponse)(nil),               // 1: zhiplugin.v1.SaveResponse
-	(*LoadRequest)(nil),                // 2: zhiplugin.v1.LoadRequest
-	(*LoadResponse)(nil),               // 3: zhiplugin.v1.LoadResponse
-	(*DeleteRequest)(nil),              // 4: zhiplugin.v1.DeleteRequest
-	(*DeleteResponse)(nil),             // 5: zhiplugin.v1.DeleteResponse
-	(*ListTreesRequest)(nil),           // 6: zhiplugin.v1.ListTreesRequest
-	(*ListTreesResponse)(nil),          // 7: zhiplugin.v1.ListTreesResponse
-	(*SupportsVersioningRequest)(nil),  // 8: zhiplugin.v1.SupportsVersioningRequest
-	(*SupportsVersioningResponse)(nil), // 9: zhiplugin.v1.SupportsVersioningResponse
-	(*ListVersionsRequest)(nil),        // 10: zhiplugin.v1.ListVersionsRequest
-	(*ListVersionsResponse)(nil),       // 11: zhiplugin.v1.ListVersionsResponse
-	(*LoadVersionRequest)(nil),         // 12: zhiplugin.v1.LoadVersionRequest
-	(*LoadVersionResponse)(nil),        // 13: zhiplugin.v1.LoadVersionResponse
-	(*DeleteVersionRequest)(nil),       // 14: zhiplugin.v1.DeleteVersionRequest
-	(*DeleteVersionResponse)(nil),      // 15: zhiplugin.v1.DeleteVersionResponse
-	(*EncryptionStatusRequest)(nil),    // 16: zhiplugin.v1.EncryptionStatusRequest
-	(*EncryptionStatusResponse)(nil),   // 17: zhiplugin.v1.EncryptionStatusResponse
-	(*InitEncryptionRequest)(nil),      // 18: zhiplugin.v1.InitEncryptionRequest
-	(*InitEncryptionResponse)(nil),     // 19: zhiplugin.v1.InitEncryptionResponse
-	(*RotateEncryptionRequest)(nil),    // 20: zhiplugin.v1.RotateEncryptionRequest
-	(*RotateEncryptionResponse)(nil),   // 21: zhiplugin.v1.RotateEncryptionResponse
-	(*proto.TreeEntry)(nil),            // 22: zhiplugin.v1.TreeEntry
+	(VersioningMode)(0),                // 0: zhiplugin.v1.VersioningMode
+	(ActionType)(0),                    // 1: zhiplugin.v1.ActionType
+	(*StoreCapabilitiesRequest)(nil),   // 2: zhiplugin.v1.StoreCapabilitiesRequest
+	(*StoreCapabilitiesResponse)(nil),  // 3: zhiplugin.v1.StoreCapabilitiesResponse
+	(*AuthFieldMsg)(nil),               // 4: zhiplugin.v1.AuthFieldMsg
+	(*AuthMethodMsg)(nil),              // 5: zhiplugin.v1.AuthMethodMsg
+	(*AuthMethodsRequest)(nil),         // 6: zhiplugin.v1.AuthMethodsRequest
+	(*AuthMethodsResponse)(nil),        // 7: zhiplugin.v1.AuthMethodsResponse
+	(*LoginRequest)(nil),               // 8: zhiplugin.v1.LoginRequest
+	(*LoginResponse)(nil),              // 9: zhiplugin.v1.LoginResponse
+	(*ListTreesRequest)(nil),           // 10: zhiplugin.v1.ListTreesRequest
+	(*ListTreesResponse)(nil),          // 11: zhiplugin.v1.ListTreesResponse
+	(*DeleteTreeRequest)(nil),          // 12: zhiplugin.v1.DeleteTreeRequest
+	(*DeleteTreeResponse)(nil),         // 13: zhiplugin.v1.DeleteTreeResponse
+	(*GetValuesRequest)(nil),           // 14: zhiplugin.v1.GetValuesRequest
+	(*GetValuesResponse)(nil),          // 15: zhiplugin.v1.GetValuesResponse
+	(*PutValuesRequest)(nil),           // 16: zhiplugin.v1.PutValuesRequest
+	(*PutValuesResponse)(nil),          // 17: zhiplugin.v1.PutValuesResponse
+	(*DeleteValuesRequest)(nil),        // 18: zhiplugin.v1.DeleteValuesRequest
+	(*DeleteValuesResponse)(nil),       // 19: zhiplugin.v1.DeleteValuesResponse
+	(*ListTreeVersionsRequest)(nil),    // 20: zhiplugin.v1.ListTreeVersionsRequest
+	(*ListTreeVersionsResponse)(nil),   // 21: zhiplugin.v1.ListTreeVersionsResponse
+	(*GetTreeVersionRequest)(nil),      // 22: zhiplugin.v1.GetTreeVersionRequest
+	(*GetTreeVersionResponse)(nil),     // 23: zhiplugin.v1.GetTreeVersionResponse
+	(*RollbackTreeRequest)(nil),        // 24: zhiplugin.v1.RollbackTreeRequest
+	(*RollbackTreeResponse)(nil),       // 25: zhiplugin.v1.RollbackTreeResponse
+	(*DeleteTreeVersionRequest)(nil),   // 26: zhiplugin.v1.DeleteTreeVersionRequest
+	(*DeleteTreeVersionResponse)(nil),  // 27: zhiplugin.v1.DeleteTreeVersionResponse
+	(*ListValueVersionsRequest)(nil),   // 28: zhiplugin.v1.ListValueVersionsRequest
+	(*ListValueVersionsResponse)(nil),  // 29: zhiplugin.v1.ListValueVersionsResponse
+	(*GetValueVersionRequest)(nil),     // 30: zhiplugin.v1.GetValueVersionRequest
+	(*GetValueVersionResponse)(nil),    // 31: zhiplugin.v1.GetValueVersionResponse
+	(*RollbackValueRequest)(nil),       // 32: zhiplugin.v1.RollbackValueRequest
+	(*RollbackValueResponse)(nil),      // 33: zhiplugin.v1.RollbackValueResponse
+	(*DeleteValueVersionRequest)(nil),  // 34: zhiplugin.v1.DeleteValueVersionRequest
+	(*DeleteValueVersionResponse)(nil), // 35: zhiplugin.v1.DeleteValueVersionResponse
+	(*InitEncryptionRequest)(nil),      // 36: zhiplugin.v1.InitEncryptionRequest
+	(*InitEncryptionResponse)(nil),     // 37: zhiplugin.v1.InitEncryptionResponse
+	(*RotateEncryptionRequest)(nil),    // 38: zhiplugin.v1.RotateEncryptionRequest
+	(*RotateEncryptionResponse)(nil),   // 39: zhiplugin.v1.RotateEncryptionResponse
+	(*PermissionMsg)(nil),              // 40: zhiplugin.v1.PermissionMsg
+	(*GrantAccessRequest)(nil),         // 41: zhiplugin.v1.GrantAccessRequest
+	(*GrantAccessResponse)(nil),        // 42: zhiplugin.v1.GrantAccessResponse
+	(*RevokeAccessRequest)(nil),        // 43: zhiplugin.v1.RevokeAccessRequest
+	(*RevokeAccessResponse)(nil),       // 44: zhiplugin.v1.RevokeAccessResponse
+	(*ListAccessRequest)(nil),          // 45: zhiplugin.v1.ListAccessRequest
+	(*UserPermissions)(nil),            // 46: zhiplugin.v1.UserPermissions
+	(*ListAccessResponse)(nil),         // 47: zhiplugin.v1.ListAccessResponse
+	nil,                                // 48: zhiplugin.v1.LoginRequest.CredentialsEntry
+	nil,                                // 49: zhiplugin.v1.LoginResponse.MetadataEntry
+	nil,                                // 50: zhiplugin.v1.PutValuesRequest.CasVersionsEntry
+	nil,                                // 51: zhiplugin.v1.ListAccessResponse.AccessEntry
+	(*proto.TreeEntry)(nil),            // 52: zhiplugin.v1.TreeEntry
 }
 var file_zhiplugin_v1_store_proto_depIdxs = []int32{
-	22, // 0: zhiplugin.v1.SaveRequest.tree:type_name -> zhiplugin.v1.TreeEntry
-	22, // 1: zhiplugin.v1.LoadResponse.tree:type_name -> zhiplugin.v1.TreeEntry
-	22, // 2: zhiplugin.v1.LoadVersionResponse.tree:type_name -> zhiplugin.v1.TreeEntry
-	0,  // 3: zhiplugin.v1.StoreService.Save:input_type -> zhiplugin.v1.SaveRequest
-	2,  // 4: zhiplugin.v1.StoreService.Load:input_type -> zhiplugin.v1.LoadRequest
-	4,  // 5: zhiplugin.v1.StoreService.Delete:input_type -> zhiplugin.v1.DeleteRequest
-	6,  // 6: zhiplugin.v1.StoreService.ListTrees:input_type -> zhiplugin.v1.ListTreesRequest
-	8,  // 7: zhiplugin.v1.StoreService.SupportsVersioning:input_type -> zhiplugin.v1.SupportsVersioningRequest
-	10, // 8: zhiplugin.v1.StoreService.ListVersions:input_type -> zhiplugin.v1.ListVersionsRequest
-	12, // 9: zhiplugin.v1.StoreService.LoadVersion:input_type -> zhiplugin.v1.LoadVersionRequest
-	14, // 10: zhiplugin.v1.StoreService.DeleteVersion:input_type -> zhiplugin.v1.DeleteVersionRequest
-	16, // 11: zhiplugin.v1.StoreService.EncryptionStatus:input_type -> zhiplugin.v1.EncryptionStatusRequest
-	18, // 12: zhiplugin.v1.StoreService.InitEncryption:input_type -> zhiplugin.v1.InitEncryptionRequest
-	20, // 13: zhiplugin.v1.StoreService.RotateEncryption:input_type -> zhiplugin.v1.RotateEncryptionRequest
-	1,  // 14: zhiplugin.v1.StoreService.Save:output_type -> zhiplugin.v1.SaveResponse
-	3,  // 15: zhiplugin.v1.StoreService.Load:output_type -> zhiplugin.v1.LoadResponse
-	5,  // 16: zhiplugin.v1.StoreService.Delete:output_type -> zhiplugin.v1.DeleteResponse
-	7,  // 17: zhiplugin.v1.StoreService.ListTrees:output_type -> zhiplugin.v1.ListTreesResponse
-	9,  // 18: zhiplugin.v1.StoreService.SupportsVersioning:output_type -> zhiplugin.v1.SupportsVersioningResponse
-	11, // 19: zhiplugin.v1.StoreService.ListVersions:output_type -> zhiplugin.v1.ListVersionsResponse
-	13, // 20: zhiplugin.v1.StoreService.LoadVersion:output_type -> zhiplugin.v1.LoadVersionResponse
-	15, // 21: zhiplugin.v1.StoreService.DeleteVersion:output_type -> zhiplugin.v1.DeleteVersionResponse
-	17, // 22: zhiplugin.v1.StoreService.EncryptionStatus:output_type -> zhiplugin.v1.EncryptionStatusResponse
-	19, // 23: zhiplugin.v1.StoreService.InitEncryption:output_type -> zhiplugin.v1.InitEncryptionResponse
-	21, // 24: zhiplugin.v1.StoreService.RotateEncryption:output_type -> zhiplugin.v1.RotateEncryptionResponse
-	14, // [14:25] is the sub-list for method output_type
-	3,  // [3:14] is the sub-list for method input_type
-	3,  // [3:3] is the sub-list for extension type_name
-	3,  // [3:3] is the sub-list for extension extendee
-	0,  // [0:3] is the sub-list for field type_name
+	0,  // 0: zhiplugin.v1.StoreCapabilitiesResponse.versioning:type_name -> zhiplugin.v1.VersioningMode
+	4,  // 1: zhiplugin.v1.AuthMethodMsg.fields:type_name -> zhiplugin.v1.AuthFieldMsg
+	5,  // 2: zhiplugin.v1.AuthMethodsResponse.methods:type_name -> zhiplugin.v1.AuthMethodMsg
+	48, // 3: zhiplugin.v1.LoginRequest.credentials:type_name -> zhiplugin.v1.LoginRequest.CredentialsEntry
+	49, // 4: zhiplugin.v1.LoginResponse.metadata:type_name -> zhiplugin.v1.LoginResponse.MetadataEntry
+	52, // 5: zhiplugin.v1.GetValuesResponse.values:type_name -> zhiplugin.v1.TreeEntry
+	52, // 6: zhiplugin.v1.PutValuesRequest.values:type_name -> zhiplugin.v1.TreeEntry
+	50, // 7: zhiplugin.v1.PutValuesRequest.cas_versions:type_name -> zhiplugin.v1.PutValuesRequest.CasVersionsEntry
+	52, // 8: zhiplugin.v1.GetTreeVersionResponse.values:type_name -> zhiplugin.v1.TreeEntry
+	1,  // 9: zhiplugin.v1.PermissionMsg.actions:type_name -> zhiplugin.v1.ActionType
+	40, // 10: zhiplugin.v1.GrantAccessRequest.permissions:type_name -> zhiplugin.v1.PermissionMsg
+	40, // 11: zhiplugin.v1.UserPermissions.permissions:type_name -> zhiplugin.v1.PermissionMsg
+	51, // 12: zhiplugin.v1.ListAccessResponse.access:type_name -> zhiplugin.v1.ListAccessResponse.AccessEntry
+	46, // 13: zhiplugin.v1.ListAccessResponse.AccessEntry.value:type_name -> zhiplugin.v1.UserPermissions
+	2,  // 14: zhiplugin.v1.StoreService.Capabilities:input_type -> zhiplugin.v1.StoreCapabilitiesRequest
+	6,  // 15: zhiplugin.v1.StoreService.AuthMethods:input_type -> zhiplugin.v1.AuthMethodsRequest
+	8,  // 16: zhiplugin.v1.StoreService.Login:input_type -> zhiplugin.v1.LoginRequest
+	10, // 17: zhiplugin.v1.StoreService.ListTrees:input_type -> zhiplugin.v1.ListTreesRequest
+	12, // 18: zhiplugin.v1.StoreService.DeleteTree:input_type -> zhiplugin.v1.DeleteTreeRequest
+	14, // 19: zhiplugin.v1.StoreService.GetValues:input_type -> zhiplugin.v1.GetValuesRequest
+	16, // 20: zhiplugin.v1.StoreService.PutValues:input_type -> zhiplugin.v1.PutValuesRequest
+	18, // 21: zhiplugin.v1.StoreService.DeleteValues:input_type -> zhiplugin.v1.DeleteValuesRequest
+	20, // 22: zhiplugin.v1.StoreService.ListTreeVersions:input_type -> zhiplugin.v1.ListTreeVersionsRequest
+	22, // 23: zhiplugin.v1.StoreService.GetTreeVersion:input_type -> zhiplugin.v1.GetTreeVersionRequest
+	24, // 24: zhiplugin.v1.StoreService.RollbackTree:input_type -> zhiplugin.v1.RollbackTreeRequest
+	26, // 25: zhiplugin.v1.StoreService.DeleteTreeVersion:input_type -> zhiplugin.v1.DeleteTreeVersionRequest
+	28, // 26: zhiplugin.v1.StoreService.ListValueVersions:input_type -> zhiplugin.v1.ListValueVersionsRequest
+	30, // 27: zhiplugin.v1.StoreService.GetValueVersion:input_type -> zhiplugin.v1.GetValueVersionRequest
+	32, // 28: zhiplugin.v1.StoreService.RollbackValue:input_type -> zhiplugin.v1.RollbackValueRequest
+	34, // 29: zhiplugin.v1.StoreService.DeleteValueVersion:input_type -> zhiplugin.v1.DeleteValueVersionRequest
+	36, // 30: zhiplugin.v1.StoreService.InitEncryption:input_type -> zhiplugin.v1.InitEncryptionRequest
+	38, // 31: zhiplugin.v1.StoreService.RotateEncryption:input_type -> zhiplugin.v1.RotateEncryptionRequest
+	41, // 32: zhiplugin.v1.StoreService.GrantAccess:input_type -> zhiplugin.v1.GrantAccessRequest
+	43, // 33: zhiplugin.v1.StoreService.RevokeAccess:input_type -> zhiplugin.v1.RevokeAccessRequest
+	45, // 34: zhiplugin.v1.StoreService.ListAccess:input_type -> zhiplugin.v1.ListAccessRequest
+	3,  // 35: zhiplugin.v1.StoreService.Capabilities:output_type -> zhiplugin.v1.StoreCapabilitiesResponse
+	7,  // 36: zhiplugin.v1.StoreService.AuthMethods:output_type -> zhiplugin.v1.AuthMethodsResponse
+	9,  // 37: zhiplugin.v1.StoreService.Login:output_type -> zhiplugin.v1.LoginResponse
+	11, // 38: zhiplugin.v1.StoreService.ListTrees:output_type -> zhiplugin.v1.ListTreesResponse
+	13, // 39: zhiplugin.v1.StoreService.DeleteTree:output_type -> zhiplugin.v1.DeleteTreeResponse
+	15, // 40: zhiplugin.v1.StoreService.GetValues:output_type -> zhiplugin.v1.GetValuesResponse
+	17, // 41: zhiplugin.v1.StoreService.PutValues:output_type -> zhiplugin.v1.PutValuesResponse
+	19, // 42: zhiplugin.v1.StoreService.DeleteValues:output_type -> zhiplugin.v1.DeleteValuesResponse
+	21, // 43: zhiplugin.v1.StoreService.ListTreeVersions:output_type -> zhiplugin.v1.ListTreeVersionsResponse
+	23, // 44: zhiplugin.v1.StoreService.GetTreeVersion:output_type -> zhiplugin.v1.GetTreeVersionResponse
+	25, // 45: zhiplugin.v1.StoreService.RollbackTree:output_type -> zhiplugin.v1.RollbackTreeResponse
+	27, // 46: zhiplugin.v1.StoreService.DeleteTreeVersion:output_type -> zhiplugin.v1.DeleteTreeVersionResponse
+	29, // 47: zhiplugin.v1.StoreService.ListValueVersions:output_type -> zhiplugin.v1.ListValueVersionsResponse
+	31, // 48: zhiplugin.v1.StoreService.GetValueVersion:output_type -> zhiplugin.v1.GetValueVersionResponse
+	33, // 49: zhiplugin.v1.StoreService.RollbackValue:output_type -> zhiplugin.v1.RollbackValueResponse
+	35, // 50: zhiplugin.v1.StoreService.DeleteValueVersion:output_type -> zhiplugin.v1.DeleteValueVersionResponse
+	37, // 51: zhiplugin.v1.StoreService.InitEncryption:output_type -> zhiplugin.v1.InitEncryptionResponse
+	39, // 52: zhiplugin.v1.StoreService.RotateEncryption:output_type -> zhiplugin.v1.RotateEncryptionResponse
+	42, // 53: zhiplugin.v1.StoreService.GrantAccess:output_type -> zhiplugin.v1.GrantAccessResponse
+	44, // 54: zhiplugin.v1.StoreService.RevokeAccess:output_type -> zhiplugin.v1.RevokeAccessResponse
+	47, // 55: zhiplugin.v1.StoreService.ListAccess:output_type -> zhiplugin.v1.ListAccessResponse
+	35, // [35:56] is the sub-list for method output_type
+	14, // [14:35] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_zhiplugin_v1_store_proto_init() }
@@ -1137,13 +2635,14 @@ func file_zhiplugin_v1_store_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_zhiplugin_v1_store_proto_rawDesc), len(file_zhiplugin_v1_store_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   22,
+			NumEnums:      2,
+			NumMessages:   50,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_zhiplugin_v1_store_proto_goTypes,
 		DependencyIndexes: file_zhiplugin_v1_store_proto_depIdxs,
+		EnumInfos:         file_zhiplugin_v1_store_proto_enumTypes,
 		MessageInfos:      file_zhiplugin_v1_store_proto_msgTypes,
 	}.Build()
 	File_zhiplugin_v1_store_proto = out.File
