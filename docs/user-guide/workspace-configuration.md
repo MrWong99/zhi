@@ -87,8 +87,10 @@ Specifies the storage backend for persisting configuration trees, component stat
 
 | Field | Description |
 |-------|-------------|
-| `provider` | Store provider name (e.g., `zhi-store-json`). |
+| `provider` | Store provider name (e.g., `vault`, `zhi-store-json`). |
 | `options` | Provider-specific options. |
+
+The built-in `vault` store provider persists trees in HashiCorp Vault KV v2. See [Vault Store](vault-store.md) for details.
 
 ### `components`
 
