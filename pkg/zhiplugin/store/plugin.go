@@ -12,39 +12,103 @@ import (
 
 // Plugin is the interface every zhi store plugin must implement.
 // The host communicates with it over gRPC.
+//
+// Plugins may support different subsets of the interface. Methods that
+// do not apply to a plugin's capabilities should return a descriptive
+// error (e.g. "versioning not supported"). The Capabilities method
+// lets the host discover which features are available.
 type Plugin interface {
-	// Save persists a configuration tree under the given ID.
-	// If versioning is supported, this creates a new version.
-	Save(ctx context.Context, id string, tree config.TreeReader) error
-	// Load retrieves the latest version of the configuration tree with
-	// the given ID. The bool reports whether the tree was found.
-	Load(ctx context.Context, id string) (*config.Tree, bool, error)
-	// Delete removes the configuration tree and all its versions.
-	Delete(ctx context.Context, id string) error
-	// ListTrees returns all stored tree IDs.
+	// --- Capabilities ---
+
+	// Capabilities reports the store's supported features including
+	// versioning mode, encryption state, and auth/access control.
+	Capabilities(ctx context.Context) (*Capabilities, error)
+
+	// --- Authentication ---
+
+	// AuthMethods returns the authentication methods supported by this
+	// store. Returns nil or empty if authentication is not required.
+	AuthMethods(ctx context.Context) ([]AuthMethod, error)
+	// Login authenticates with the store using the given method and
+	// credentials. The plugin stores the resulting session internally;
+	// the returned Credential is informational for the host/UI.
+	Login(ctx context.Context, method string, credentials map[string]string) (*Credential, error)
+
+	// --- Tree management ---
+
+	// ListTrees returns all tree IDs the current identity has access to.
 	ListTrees(ctx context.Context) ([]string, error)
+	// DeleteTree removes an entire tree and all its versions/values.
+	DeleteTree(ctx context.Context, id string) error
 
-	// SupportsVersioning reports whether this store keeps older versions
-	// of trees.
-	SupportsVersioning(ctx context.Context) (bool, error)
-	// ListVersions returns version identifiers for the given tree ID,
-	// ordered newest first. Returns an error if versioning is not
-	// supported.
-	ListVersions(ctx context.Context, id string) ([]string, error)
-	// LoadVersion retrieves a specific version of the configuration tree.
-	// Returns an error if versioning is not supported.
-	LoadVersion(ctx context.Context, id string, version string) (*config.Tree, bool, error)
-	// DeleteVersion permanently removes a single version of a
-	// configuration tree. Returns an error if versioning is not supported.
-	DeleteVersion(ctx context.Context, id string, version string) error
+	// --- Value operations (structure-aware) ---
 
-	// EncryptionStatus reports the current encryption state of the store.
-	EncryptionStatus(ctx context.Context) (EncryptionStatus, error)
-	// InitEncryption initializes encryption for the store with the given
-	// passphrase. The exact semantics depend on the implementation.
+	// GetValues retrieves specific values from a tree. The paths slice
+	// specifies exactly which values to read, enabling the plugin to
+	// fetch them directly without recursive traversal. Paths that do
+	// not exist are omitted from the result.
+	GetValues(ctx context.Context, id string, paths []string) (map[string]config.Value, error)
+	// PutValues writes specific values to a tree. Only the specified
+	// paths are created or updated; other existing paths are not
+	// affected. The opts parameter may be nil when no CAS is needed.
+	PutValues(ctx context.Context, id string, values map[string]config.Value, opts *PutOptions) error
+	// DeleteValues removes specific values from a tree.
+	DeleteValues(ctx context.Context, id string, paths []string) error
+
+	// --- Tree-level versioning (VersioningTree mode) ---
+
+	// ListTreeVersions returns version identifiers for the tree,
+	// ordered newest first. Returns an error if versioning mode is not
+	// VersioningTree.
+	ListTreeVersions(ctx context.Context, id string) ([]string, error)
+	// GetTreeVersion retrieves specific values from a specific tree
+	// version. Returns an error if versioning mode is not VersioningTree.
+	GetTreeVersion(ctx context.Context, id string, version string, paths []string) (map[string]config.Value, error)
+	// RollbackTree restores the tree to a previous version, creating a
+	// new version whose contents match the specified version. Returns an
+	// error if versioning mode is not VersioningTree.
+	RollbackTree(ctx context.Context, id string, version string) error
+	// DeleteTreeVersion permanently removes a single tree version.
+	// Returns an error if versioning mode is not VersioningTree.
+	DeleteTreeVersion(ctx context.Context, id string, version string) error
+
+	// --- Value-level versioning (VersioningValue mode) ---
+
+	// ListValueVersions returns version identifiers for a specific
+	// value, ordered newest first. Returns an error if versioning mode
+	// is not VersioningValue.
+	ListValueVersions(ctx context.Context, id string, path string) ([]string, error)
+	// GetValueVersion retrieves a specific version of a single value.
+	// Returns an error if versioning mode is not VersioningValue.
+	GetValueVersion(ctx context.Context, id string, path string, version string) (config.Value, bool, error)
+	// RollbackValue restores a value to a previous version, creating
+	// a new version with the old content. Returns an error if
+	// versioning mode is not VersioningValue.
+	RollbackValue(ctx context.Context, id string, path string, version string) error
+	// DeleteValueVersion permanently removes a single value version.
+	// Returns an error if versioning mode is not VersioningValue.
+	DeleteValueVersion(ctx context.Context, id string, path string, version string) error
+
+	// --- Encryption ---
+
+	// InitEncryption initializes encryption for the store with the
+	// given passphrase. The exact semantics depend on the implementation.
 	InitEncryption(ctx context.Context, passphrase []byte) error
 	// RotateEncryption re-encrypts all stored data with a new passphrase.
 	RotateEncryption(ctx context.Context, oldPassphrase, newPassphrase []byte) error
+
+	// --- Access control ---
+
+	// GrantAccess grants a user access to specific paths within a tree.
+	// Returns an error if the store does not support access control.
+	GrantAccess(ctx context.Context, id string, user string, permissions []Permission) error
+	// RevokeAccess removes a user's access to specific paths within a
+	// tree. Returns an error if the store does not support access control.
+	RevokeAccess(ctx context.Context, id string, user string, paths []string) error
+	// ListAccess returns the current access permissions for a tree,
+	// keyed by user. Returns an error if the store does not support
+	// access control.
+	ListAccess(ctx context.Context, id string) (map[string][]Permission, error)
 }
 
 // PluginMap is the map of plugins the host expects. Plugin binaries must

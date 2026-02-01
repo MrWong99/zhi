@@ -10,132 +10,281 @@ import "zhiplugin/v1/config.proto";
 option go_package = "github.com/MrWong99/zhi/pkg/zhiplugin/store/proto";
 
 // StoreService is the gRPC interface every zhi store plugin must implement.
-// Store plugins persist, retrieve, and delete configuration trees.
+// Store plugins persist, retrieve, and delete configuration values within
+// named trees with granular, value-level operations.
 service StoreService {
-  // Save persists a configuration tree under the given ID.
-  // If versioning is supported, this creates a new version.
-  rpc Save(SaveRequest) returns (SaveResponse);
-  // Load retrieves the latest version of the configuration tree with the
-  // given ID.
-  rpc Load(LoadRequest) returns (LoadResponse);
-  // Delete removes the configuration tree and all its versions.
-  rpc Delete(DeleteRequest) returns (DeleteResponse);
-  // ListTrees returns all stored tree IDs.
+  // Capabilities reports the store's supported features.
+  rpc Capabilities(StoreCapabilitiesRequest) returns (StoreCapabilitiesResponse);
+
+  // AuthMethods returns the authentication methods supported by this store.
+  rpc AuthMethods(AuthMethodsRequest) returns (AuthMethodsResponse);
+  // Login authenticates with the store using the given method and credentials.
+  rpc Login(LoginRequest) returns (LoginResponse);
+
+  // ListTrees returns all tree IDs the current identity has access to.
   rpc ListTrees(ListTreesRequest) returns (ListTreesResponse);
-  // SupportsVersioning reports whether this store keeps older versions of
-  // trees.
-  rpc SupportsVersioning(SupportsVersioningRequest) returns (SupportsVersioningResponse);
-  // ListVersions returns version identifiers for a given tree ID, ordered
-  // newest first. Returns an error if versioning is not supported.
-  rpc ListVersions(ListVersionsRequest) returns (ListVersionsResponse);
-  // LoadVersion retrieves a specific version of the configuration tree.
-  // Returns an error if versioning is not supported.
-  rpc LoadVersion(LoadVersionRequest) returns (LoadVersionResponse);
-  // DeleteVersion permanently removes a single version of a configuration
-  // tree. Returns an error if versioning is not supported.
-  rpc DeleteVersion(DeleteVersionRequest) returns (DeleteVersionResponse);
-  // EncryptionStatus reports the current encryption state of the store.
-  rpc EncryptionStatus(EncryptionStatusRequest) returns (EncryptionStatusResponse);
-  // InitEncryption initializes encryption for the store with the given
-  // passphrase. Returns an error if encryption is not supported or is
-  // already active.
+  // DeleteTree removes an entire tree and all its versions/values.
+  rpc DeleteTree(DeleteTreeRequest) returns (DeleteTreeResponse);
+
+  // GetValues retrieves specific values from a tree by their paths.
+  rpc GetValues(GetValuesRequest) returns (GetValuesResponse);
+  // PutValues writes specific values to a tree.
+  rpc PutValues(PutValuesRequest) returns (PutValuesResponse);
+  // DeleteValues removes specific values from a tree.
+  rpc DeleteValues(DeleteValuesRequest) returns (DeleteValuesResponse);
+
+  // ListTreeVersions returns version identifiers for a tree (VersioningTree).
+  rpc ListTreeVersions(ListTreeVersionsRequest) returns (ListTreeVersionsResponse);
+  // GetTreeVersion retrieves specific values from a specific tree version.
+  rpc GetTreeVersion(GetTreeVersionRequest) returns (GetTreeVersionResponse);
+  // RollbackTree restores a tree to a previous version.
+  rpc RollbackTree(RollbackTreeRequest) returns (RollbackTreeResponse);
+  // DeleteTreeVersion permanently removes a single tree version.
+  rpc DeleteTreeVersion(DeleteTreeVersionRequest) returns (DeleteTreeVersionResponse);
+
+  // ListValueVersions returns version identifiers for a specific value (VersioningValue).
+  rpc ListValueVersions(ListValueVersionsRequest) returns (ListValueVersionsResponse);
+  // GetValueVersion retrieves a specific version of a single value.
+  rpc GetValueVersion(GetValueVersionRequest) returns (GetValueVersionResponse);
+  // RollbackValue restores a value to a previous version.
+  rpc RollbackValue(RollbackValueRequest) returns (RollbackValueResponse);
+  // DeleteValueVersion permanently removes a single value version.
+  rpc DeleteValueVersion(DeleteValueVersionRequest) returns (DeleteValueVersionResponse);
+
+  // InitEncryption initializes encryption for the store.
   rpc InitEncryption(InitEncryptionRequest) returns (InitEncryptionResponse);
-  // RotateEncryption re-encrypts all stored data with a new passphrase.
-  // Returns an error if encryption is not supported or not active.
+  // RotateEncryption re-encrypts stored data with a new passphrase.
   rpc RotateEncryption(RotateEncryptionRequest) returns (RotateEncryptionResponse);
+
+  // GrantAccess grants a user access to specific paths within a tree.
+  rpc GrantAccess(GrantAccessRequest) returns (GrantAccessResponse);
+  // RevokeAccess removes a user's access to specific paths within a tree.
+  rpc RevokeAccess(RevokeAccessRequest) returns (RevokeAccessResponse);
+  // ListAccess returns the current access permissions for a tree.
+  rpc ListAccess(ListAccessRequest) returns (ListAccessResponse);
 }
 
-message SaveRequest {
-  // The identifier for this configuration tree.
-  string id = 1;
-  // The full configuration tree to persist.
-  repeated TreeEntry tree = 2;
+// --- Enums ---
+
+enum VersioningMode {
+  VERSIONING_NONE = 0;
+  VERSIONING_TREE = 1;
+  VERSIONING_VALUE = 2;
 }
 
-// SaveResponse is intentionally empty.
-message SaveResponse {}
-
-message LoadRequest {
-  string id = 1;
+enum ActionType {
+  ACTION_READ = 0;
+  ACTION_WRITE = 1;
+  ACTION_DELETE = 2;
 }
 
-message LoadResponse {
-  bool found = 1;
-  // The configuration tree entries. Empty when found is false.
-  repeated TreeEntry tree = 2;
+// --- Capabilities ---
+
+message StoreCapabilitiesRequest {}
+
+message StoreCapabilitiesResponse {
+  VersioningMode versioning = 1;
+  // 0 = EncryptionNone, 1 = EncryptionSupported, 2 = EncryptionActive.
+  int32 encryption = 2;
+  bool auth = 3;
+  bool access_control = 4;
 }
 
-message DeleteRequest {
-  string id = 1;
+// --- Authentication ---
+
+message AuthFieldMsg {
+  string name = 1;
+  string description = 2;
+  bool required = 3;
+  bool secret = 4;
 }
 
-// DeleteResponse is intentionally empty.
-message DeleteResponse {}
+message AuthMethodMsg {
+  string type = 1;
+  string description = 2;
+  repeated AuthFieldMsg fields = 3;
+}
 
-// ListTreesRequest is intentionally empty.
+message AuthMethodsRequest {}
+
+message AuthMethodsResponse {
+  repeated AuthMethodMsg methods = 1;
+}
+
+message LoginRequest {
+  string method = 1;
+  map<string, string> credentials = 2;
+}
+
+message LoginResponse {
+  string token = 1;
+  string expires_at = 2;
+  map<string, string> metadata = 3;
+}
+
+// --- Tree management ---
+
 message ListTreesRequest {}
 
 message ListTreesResponse {
   repeated string ids = 1;
 }
 
-// SupportsVersioningRequest is intentionally empty.
-message SupportsVersioningRequest {}
-
-message SupportsVersioningResponse {
-  bool supported = 1;
-}
-
-message ListVersionsRequest {
+message DeleteTreeRequest {
   string id = 1;
 }
 
-message ListVersionsResponse {
-  // Version identifiers, ordered newest first.
+message DeleteTreeResponse {}
+
+// --- Value operations ---
+
+message GetValuesRequest {
+  string id = 1;
+  repeated string paths = 2;
+}
+
+message GetValuesResponse {
+  // Values keyed by path.
+  repeated TreeEntry values = 1;
+}
+
+message PutValuesRequest {
+  string id = 1;
+  repeated TreeEntry values = 2;
+  // Optional CAS fields.
+  string cas_version = 3;
+  map<string, string> cas_versions = 4;
+}
+
+message PutValuesResponse {}
+
+message DeleteValuesRequest {
+  string id = 1;
+  repeated string paths = 2;
+}
+
+message DeleteValuesResponse {}
+
+// --- Tree-level versioning ---
+
+message ListTreeVersionsRequest {
+  string id = 1;
+}
+
+message ListTreeVersionsResponse {
   repeated string versions = 1;
 }
 
-message LoadVersionRequest {
+message GetTreeVersionRequest {
+  string id = 1;
+  string version = 2;
+  repeated string paths = 3;
+}
+
+message GetTreeVersionResponse {
+  repeated TreeEntry values = 1;
+}
+
+message RollbackTreeRequest {
   string id = 1;
   string version = 2;
 }
 
-message LoadVersionResponse {
+message RollbackTreeResponse {}
+
+message DeleteTreeVersionRequest {
+  string id = 1;
+  string version = 2;
+}
+
+message DeleteTreeVersionResponse {}
+
+// --- Value-level versioning ---
+
+message ListValueVersionsRequest {
+  string id = 1;
+  string path = 2;
+}
+
+message ListValueVersionsResponse {
+  repeated string versions = 1;
+}
+
+message GetValueVersionRequest {
+  string id = 1;
+  string path = 2;
+  string version = 3;
+}
+
+message GetValueVersionResponse {
   bool found = 1;
-  // The configuration tree entries. Empty when found is false.
-  repeated TreeEntry tree = 2;
+  bytes value_json = 2;
+  bytes metadata_json = 3;
 }
 
-message DeleteVersionRequest {
+message RollbackValueRequest {
   string id = 1;
-  string version = 2;
+  string path = 2;
+  string version = 3;
 }
 
-// DeleteVersionResponse is intentionally empty.
-message DeleteVersionResponse {}
+message RollbackValueResponse {}
 
-// EncryptionStatusRequest is intentionally empty.
-message EncryptionStatusRequest {}
-
-message EncryptionStatusResponse {
-  // 0 = EncryptionNone, 1 = EncryptionSupported, 2 = EncryptionActive.
-  int32 status = 1;
+message DeleteValueVersionRequest {
+  string id = 1;
+  string path = 2;
+  string version = 3;
 }
+
+message DeleteValueVersionResponse {}
+
+// --- Encryption ---
 
 message InitEncryptionRequest {
-  // The passphrase or key material to initialize encryption with.
   bytes passphrase = 1;
 }
 
-// InitEncryptionResponse is intentionally empty.
 message InitEncryptionResponse {}
 
 message RotateEncryptionRequest {
-  // The current passphrase.
   bytes old_passphrase = 1;
-  // The new passphrase to rotate to.
   bytes new_passphrase = 2;
 }
 
-// RotateEncryptionResponse is intentionally empty.
 message RotateEncryptionResponse {}
+
+// --- Access control ---
+
+message PermissionMsg {
+  string path = 1;
+  repeated ActionType actions = 2;
+}
+
+message GrantAccessRequest {
+  string id = 1;
+  string user = 2;
+  repeated PermissionMsg permissions = 3;
+}
+
+message GrantAccessResponse {}
+
+message RevokeAccessRequest {
+  string id = 1;
+  string user = 2;
+  repeated string paths = 3;
+}
+
+message RevokeAccessResponse {}
+
+message ListAccessRequest {
+  string id = 1;
+}
+
+message UserPermissions {
+  repeated PermissionMsg permissions = 1;
+}
+
+message ListAccessResponse {
+  // Access permissions keyed by user.
+  map<string, UserPermissions> access = 1;
+}

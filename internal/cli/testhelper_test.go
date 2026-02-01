@@ -75,36 +75,25 @@ func (m *mockTransform) ValidatePolicy(context.Context) (transform.ValidatePolic
 
 // mockStore is a store.Plugin backed by an in-memory map for testing.
 type mockStore struct {
-	trees map[string]*config.Tree
+	trees map[string]map[string]config.Value
 }
 
 func newMockStore() *mockStore {
-	return &mockStore{trees: make(map[string]*config.Tree)}
+	return &mockStore{trees: make(map[string]map[string]config.Value)}
 }
 
-func (m *mockStore) Save(_ context.Context, id string, tree config.TreeReader) error {
-	t := config.NewTree()
-	for _, path := range tree.List() {
-		v, ok := tree.Get(path)
-		if ok {
-			_ = t.Set(path, &v)
-		}
-	}
-	m.trees[id] = t
-	return nil
+func (m *mockStore) Capabilities(context.Context) (*store.Capabilities, error) {
+	return &store.Capabilities{
+		Versioning: store.VersioningNone,
+		Encryption: store.EncryptionNone,
+	}, nil
 }
 
-func (m *mockStore) Load(_ context.Context, id string) (*config.Tree, bool, error) {
-	t, ok := m.trees[id]
-	if !ok {
-		return nil, false, nil
-	}
-	return t, true, nil
+func (m *mockStore) AuthMethods(context.Context) ([]store.AuthMethod, error) {
+	return nil, fmt.Errorf("auth not supported")
 }
-
-func (m *mockStore) Delete(_ context.Context, id string) error {
-	delete(m.trees, id)
-	return nil
+func (m *mockStore) Login(context.Context, string, map[string]string) (*store.Credential, error) {
+	return nil, fmt.Errorf("auth not supported")
 }
 
 func (m *mockStore) ListTrees(context.Context) ([]string, error) {
@@ -116,21 +105,81 @@ func (m *mockStore) ListTrees(context.Context) ([]string, error) {
 	return ids, nil
 }
 
-func (m *mockStore) SupportsVersioning(context.Context) (bool, error) { return false, nil }
-func (m *mockStore) ListVersions(context.Context, string) ([]string, error) {
+func (m *mockStore) DeleteTree(_ context.Context, id string) error {
+	delete(m.trees, id)
+	return nil
+}
+
+func (m *mockStore) GetValues(_ context.Context, id string, paths []string) (map[string]config.Value, error) {
+	vals, ok := m.trees[id]
+	if !ok {
+		return nil, nil
+	}
+	result := make(map[string]config.Value)
+	for _, p := range paths {
+		if v, exists := vals[p]; exists {
+			result[p] = v
+		}
+	}
+	return result, nil
+}
+
+func (m *mockStore) PutValues(_ context.Context, id string, values map[string]config.Value, _ *store.PutOptions) error {
+	if m.trees[id] == nil {
+		m.trees[id] = make(map[string]config.Value)
+	}
+	for p, v := range values {
+		m.trees[id][p] = v
+	}
+	return nil
+}
+
+func (m *mockStore) DeleteValues(_ context.Context, id string, paths []string) error {
+	vals := m.trees[id]
+	if vals == nil {
+		return nil
+	}
+	for _, p := range paths {
+		delete(vals, p)
+	}
+	return nil
+}
+
+func (m *mockStore) ListTreeVersions(context.Context, string) ([]string, error) {
 	return nil, fmt.Errorf("versioning not supported")
 }
-func (m *mockStore) LoadVersion(context.Context, string, string) (*config.Tree, bool, error) {
-	return nil, false, fmt.Errorf("versioning not supported")
+func (m *mockStore) GetTreeVersion(context.Context, string, string, []string) (map[string]config.Value, error) {
+	return nil, fmt.Errorf("versioning not supported")
 }
-func (m *mockStore) DeleteVersion(context.Context, string, string) error {
+func (m *mockStore) RollbackTree(context.Context, string, string) error {
 	return fmt.Errorf("versioning not supported")
 }
-func (m *mockStore) EncryptionStatus(context.Context) (store.EncryptionStatus, error) {
-	return store.EncryptionNone, nil
+func (m *mockStore) DeleteTreeVersion(context.Context, string, string) error {
+	return fmt.Errorf("versioning not supported")
+}
+func (m *mockStore) ListValueVersions(context.Context, string, string) ([]string, error) {
+	return nil, fmt.Errorf("versioning not supported")
+}
+func (m *mockStore) GetValueVersion(context.Context, string, string, string) (config.Value, bool, error) {
+	return config.Value{}, false, fmt.Errorf("versioning not supported")
+}
+func (m *mockStore) RollbackValue(context.Context, string, string, string) error {
+	return fmt.Errorf("versioning not supported")
+}
+func (m *mockStore) DeleteValueVersion(context.Context, string, string, string) error {
+	return fmt.Errorf("versioning not supported")
 }
 func (m *mockStore) InitEncryption(context.Context, []byte) error           { return nil }
 func (m *mockStore) RotateEncryption(context.Context, []byte, []byte) error { return nil }
+func (m *mockStore) GrantAccess(context.Context, string, string, []store.Permission) error {
+	return fmt.Errorf("access control not supported")
+}
+func (m *mockStore) RevokeAccess(context.Context, string, string, []string) error {
+	return fmt.Errorf("access control not supported")
+}
+func (m *mockStore) ListAccess(context.Context, string) (map[string][]store.Permission, error) {
+	return nil, fmt.Errorf("access control not supported")
+}
 
 // setupTestEngine creates a test engine with mock providers and the given components.
 func setupTestEngine(t *testing.T, components []core.ComponentDef) *core.Engine {

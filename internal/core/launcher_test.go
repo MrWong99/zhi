@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
+
+	"github.com/MrWong99/zhi/pkg/zhiplugin/store"
 )
 
 // findProjectRoot walks up from the current directory to find the go.mod file.
@@ -136,13 +138,13 @@ func TestLaunchStorePlugin(t *testing.T) {
 		t.Errorf("ListTrees = %v, want empty", trees)
 	}
 
-	// Test SupportsVersioning.
-	versioning, err := p.SupportsVersioning(context.Background())
+	// Test Capabilities.
+	caps, err := p.Capabilities(context.Background())
 	if err != nil {
-		t.Fatalf("SupportsVersioning: %v", err)
+		t.Fatalf("Capabilities: %v", err)
 	}
-	if versioning {
-		t.Error("zhi-store-memory should not support versioning")
+	if caps.Versioning != store.VersioningNone {
+		t.Errorf("Capabilities.Versioning = %v, want VersioningNone", caps.Versioning)
 	}
 }
 

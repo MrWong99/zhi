@@ -22,17 +22,27 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	StoreService_Save_FullMethodName               = "/zhiplugin.v1.StoreService/Save"
-	StoreService_Load_FullMethodName               = "/zhiplugin.v1.StoreService/Load"
-	StoreService_Delete_FullMethodName             = "/zhiplugin.v1.StoreService/Delete"
+	StoreService_Capabilities_FullMethodName       = "/zhiplugin.v1.StoreService/Capabilities"
+	StoreService_AuthMethods_FullMethodName        = "/zhiplugin.v1.StoreService/AuthMethods"
+	StoreService_Login_FullMethodName              = "/zhiplugin.v1.StoreService/Login"
 	StoreService_ListTrees_FullMethodName          = "/zhiplugin.v1.StoreService/ListTrees"
-	StoreService_SupportsVersioning_FullMethodName = "/zhiplugin.v1.StoreService/SupportsVersioning"
-	StoreService_ListVersions_FullMethodName       = "/zhiplugin.v1.StoreService/ListVersions"
-	StoreService_LoadVersion_FullMethodName        = "/zhiplugin.v1.StoreService/LoadVersion"
-	StoreService_DeleteVersion_FullMethodName      = "/zhiplugin.v1.StoreService/DeleteVersion"
-	StoreService_EncryptionStatus_FullMethodName   = "/zhiplugin.v1.StoreService/EncryptionStatus"
+	StoreService_DeleteTree_FullMethodName         = "/zhiplugin.v1.StoreService/DeleteTree"
+	StoreService_GetValues_FullMethodName          = "/zhiplugin.v1.StoreService/GetValues"
+	StoreService_PutValues_FullMethodName          = "/zhiplugin.v1.StoreService/PutValues"
+	StoreService_DeleteValues_FullMethodName       = "/zhiplugin.v1.StoreService/DeleteValues"
+	StoreService_ListTreeVersions_FullMethodName   = "/zhiplugin.v1.StoreService/ListTreeVersions"
+	StoreService_GetTreeVersion_FullMethodName     = "/zhiplugin.v1.StoreService/GetTreeVersion"
+	StoreService_RollbackTree_FullMethodName       = "/zhiplugin.v1.StoreService/RollbackTree"
+	StoreService_DeleteTreeVersion_FullMethodName  = "/zhiplugin.v1.StoreService/DeleteTreeVersion"
+	StoreService_ListValueVersions_FullMethodName  = "/zhiplugin.v1.StoreService/ListValueVersions"
+	StoreService_GetValueVersion_FullMethodName    = "/zhiplugin.v1.StoreService/GetValueVersion"
+	StoreService_RollbackValue_FullMethodName      = "/zhiplugin.v1.StoreService/RollbackValue"
+	StoreService_DeleteValueVersion_FullMethodName = "/zhiplugin.v1.StoreService/DeleteValueVersion"
 	StoreService_InitEncryption_FullMethodName     = "/zhiplugin.v1.StoreService/InitEncryption"
 	StoreService_RotateEncryption_FullMethodName   = "/zhiplugin.v1.StoreService/RotateEncryption"
+	StoreService_GrantAccess_FullMethodName        = "/zhiplugin.v1.StoreService/GrantAccess"
+	StoreService_RevokeAccess_FullMethodName       = "/zhiplugin.v1.StoreService/RevokeAccess"
+	StoreService_ListAccess_FullMethodName         = "/zhiplugin.v1.StoreService/ListAccess"
 )
 
 // StoreServiceClient is the client API for StoreService service.
@@ -40,39 +50,51 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
 // StoreService is the gRPC interface every zhi store plugin must implement.
-// Store plugins persist, retrieve, and delete configuration trees.
+// Store plugins persist, retrieve, and delete configuration values within
+// named trees with granular, value-level operations.
 type StoreServiceClient interface {
-	// Save persists a configuration tree under the given ID.
-	// If versioning is supported, this creates a new version.
-	Save(ctx context.Context, in *SaveRequest, opts ...grpc.CallOption) (*SaveResponse, error)
-	// Load retrieves the latest version of the configuration tree with the
-	// given ID.
-	Load(ctx context.Context, in *LoadRequest, opts ...grpc.CallOption) (*LoadResponse, error)
-	// Delete removes the configuration tree and all its versions.
-	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
-	// ListTrees returns all stored tree IDs.
+	// Capabilities reports the store's supported features.
+	Capabilities(ctx context.Context, in *StoreCapabilitiesRequest, opts ...grpc.CallOption) (*StoreCapabilitiesResponse, error)
+	// AuthMethods returns the authentication methods supported by this store.
+	AuthMethods(ctx context.Context, in *AuthMethodsRequest, opts ...grpc.CallOption) (*AuthMethodsResponse, error)
+	// Login authenticates with the store using the given method and credentials.
+	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
+	// ListTrees returns all tree IDs the current identity has access to.
 	ListTrees(ctx context.Context, in *ListTreesRequest, opts ...grpc.CallOption) (*ListTreesResponse, error)
-	// SupportsVersioning reports whether this store keeps older versions of
-	// trees.
-	SupportsVersioning(ctx context.Context, in *SupportsVersioningRequest, opts ...grpc.CallOption) (*SupportsVersioningResponse, error)
-	// ListVersions returns version identifiers for a given tree ID, ordered
-	// newest first. Returns an error if versioning is not supported.
-	ListVersions(ctx context.Context, in *ListVersionsRequest, opts ...grpc.CallOption) (*ListVersionsResponse, error)
-	// LoadVersion retrieves a specific version of the configuration tree.
-	// Returns an error if versioning is not supported.
-	LoadVersion(ctx context.Context, in *LoadVersionRequest, opts ...grpc.CallOption) (*LoadVersionResponse, error)
-	// DeleteVersion permanently removes a single version of a configuration
-	// tree. Returns an error if versioning is not supported.
-	DeleteVersion(ctx context.Context, in *DeleteVersionRequest, opts ...grpc.CallOption) (*DeleteVersionResponse, error)
-	// EncryptionStatus reports the current encryption state of the store.
-	EncryptionStatus(ctx context.Context, in *EncryptionStatusRequest, opts ...grpc.CallOption) (*EncryptionStatusResponse, error)
-	// InitEncryption initializes encryption for the store with the given
-	// passphrase. Returns an error if encryption is not supported or is
-	// already active.
+	// DeleteTree removes an entire tree and all its versions/values.
+	DeleteTree(ctx context.Context, in *DeleteTreeRequest, opts ...grpc.CallOption) (*DeleteTreeResponse, error)
+	// GetValues retrieves specific values from a tree by their paths.
+	GetValues(ctx context.Context, in *GetValuesRequest, opts ...grpc.CallOption) (*GetValuesResponse, error)
+	// PutValues writes specific values to a tree.
+	PutValues(ctx context.Context, in *PutValuesRequest, opts ...grpc.CallOption) (*PutValuesResponse, error)
+	// DeleteValues removes specific values from a tree.
+	DeleteValues(ctx context.Context, in *DeleteValuesRequest, opts ...grpc.CallOption) (*DeleteValuesResponse, error)
+	// ListTreeVersions returns version identifiers for a tree (VersioningTree).
+	ListTreeVersions(ctx context.Context, in *ListTreeVersionsRequest, opts ...grpc.CallOption) (*ListTreeVersionsResponse, error)
+	// GetTreeVersion retrieves specific values from a specific tree version.
+	GetTreeVersion(ctx context.Context, in *GetTreeVersionRequest, opts ...grpc.CallOption) (*GetTreeVersionResponse, error)
+	// RollbackTree restores a tree to a previous version.
+	RollbackTree(ctx context.Context, in *RollbackTreeRequest, opts ...grpc.CallOption) (*RollbackTreeResponse, error)
+	// DeleteTreeVersion permanently removes a single tree version.
+	DeleteTreeVersion(ctx context.Context, in *DeleteTreeVersionRequest, opts ...grpc.CallOption) (*DeleteTreeVersionResponse, error)
+	// ListValueVersions returns version identifiers for a specific value (VersioningValue).
+	ListValueVersions(ctx context.Context, in *ListValueVersionsRequest, opts ...grpc.CallOption) (*ListValueVersionsResponse, error)
+	// GetValueVersion retrieves a specific version of a single value.
+	GetValueVersion(ctx context.Context, in *GetValueVersionRequest, opts ...grpc.CallOption) (*GetValueVersionResponse, error)
+	// RollbackValue restores a value to a previous version.
+	RollbackValue(ctx context.Context, in *RollbackValueRequest, opts ...grpc.CallOption) (*RollbackValueResponse, error)
+	// DeleteValueVersion permanently removes a single value version.
+	DeleteValueVersion(ctx context.Context, in *DeleteValueVersionRequest, opts ...grpc.CallOption) (*DeleteValueVersionResponse, error)
+	// InitEncryption initializes encryption for the store.
 	InitEncryption(ctx context.Context, in *InitEncryptionRequest, opts ...grpc.CallOption) (*InitEncryptionResponse, error)
-	// RotateEncryption re-encrypts all stored data with a new passphrase.
-	// Returns an error if encryption is not supported or not active.
+	// RotateEncryption re-encrypts stored data with a new passphrase.
 	RotateEncryption(ctx context.Context, in *RotateEncryptionRequest, opts ...grpc.CallOption) (*RotateEncryptionResponse, error)
+	// GrantAccess grants a user access to specific paths within a tree.
+	GrantAccess(ctx context.Context, in *GrantAccessRequest, opts ...grpc.CallOption) (*GrantAccessResponse, error)
+	// RevokeAccess removes a user's access to specific paths within a tree.
+	RevokeAccess(ctx context.Context, in *RevokeAccessRequest, opts ...grpc.CallOption) (*RevokeAccessResponse, error)
+	// ListAccess returns the current access permissions for a tree.
+	ListAccess(ctx context.Context, in *ListAccessRequest, opts ...grpc.CallOption) (*ListAccessResponse, error)
 }
 
 type storeServiceClient struct {
@@ -83,30 +105,30 @@ func NewStoreServiceClient(cc grpc.ClientConnInterface) StoreServiceClient {
 	return &storeServiceClient{cc}
 }
 
-func (c *storeServiceClient) Save(ctx context.Context, in *SaveRequest, opts ...grpc.CallOption) (*SaveResponse, error) {
+func (c *storeServiceClient) Capabilities(ctx context.Context, in *StoreCapabilitiesRequest, opts ...grpc.CallOption) (*StoreCapabilitiesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SaveResponse)
-	err := c.cc.Invoke(ctx, StoreService_Save_FullMethodName, in, out, cOpts...)
+	out := new(StoreCapabilitiesResponse)
+	err := c.cc.Invoke(ctx, StoreService_Capabilities_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *storeServiceClient) Load(ctx context.Context, in *LoadRequest, opts ...grpc.CallOption) (*LoadResponse, error) {
+func (c *storeServiceClient) AuthMethods(ctx context.Context, in *AuthMethodsRequest, opts ...grpc.CallOption) (*AuthMethodsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(LoadResponse)
-	err := c.cc.Invoke(ctx, StoreService_Load_FullMethodName, in, out, cOpts...)
+	out := new(AuthMethodsResponse)
+	err := c.cc.Invoke(ctx, StoreService_AuthMethods_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *storeServiceClient) Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error) {
+func (c *storeServiceClient) Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DeleteResponse)
-	err := c.cc.Invoke(ctx, StoreService_Delete_FullMethodName, in, out, cOpts...)
+	out := new(LoginResponse)
+	err := c.cc.Invoke(ctx, StoreService_Login_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -123,50 +145,120 @@ func (c *storeServiceClient) ListTrees(ctx context.Context, in *ListTreesRequest
 	return out, nil
 }
 
-func (c *storeServiceClient) SupportsVersioning(ctx context.Context, in *SupportsVersioningRequest, opts ...grpc.CallOption) (*SupportsVersioningResponse, error) {
+func (c *storeServiceClient) DeleteTree(ctx context.Context, in *DeleteTreeRequest, opts ...grpc.CallOption) (*DeleteTreeResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SupportsVersioningResponse)
-	err := c.cc.Invoke(ctx, StoreService_SupportsVersioning_FullMethodName, in, out, cOpts...)
+	out := new(DeleteTreeResponse)
+	err := c.cc.Invoke(ctx, StoreService_DeleteTree_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *storeServiceClient) ListVersions(ctx context.Context, in *ListVersionsRequest, opts ...grpc.CallOption) (*ListVersionsResponse, error) {
+func (c *storeServiceClient) GetValues(ctx context.Context, in *GetValuesRequest, opts ...grpc.CallOption) (*GetValuesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListVersionsResponse)
-	err := c.cc.Invoke(ctx, StoreService_ListVersions_FullMethodName, in, out, cOpts...)
+	out := new(GetValuesResponse)
+	err := c.cc.Invoke(ctx, StoreService_GetValues_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *storeServiceClient) LoadVersion(ctx context.Context, in *LoadVersionRequest, opts ...grpc.CallOption) (*LoadVersionResponse, error) {
+func (c *storeServiceClient) PutValues(ctx context.Context, in *PutValuesRequest, opts ...grpc.CallOption) (*PutValuesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(LoadVersionResponse)
-	err := c.cc.Invoke(ctx, StoreService_LoadVersion_FullMethodName, in, out, cOpts...)
+	out := new(PutValuesResponse)
+	err := c.cc.Invoke(ctx, StoreService_PutValues_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *storeServiceClient) DeleteVersion(ctx context.Context, in *DeleteVersionRequest, opts ...grpc.CallOption) (*DeleteVersionResponse, error) {
+func (c *storeServiceClient) DeleteValues(ctx context.Context, in *DeleteValuesRequest, opts ...grpc.CallOption) (*DeleteValuesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DeleteVersionResponse)
-	err := c.cc.Invoke(ctx, StoreService_DeleteVersion_FullMethodName, in, out, cOpts...)
+	out := new(DeleteValuesResponse)
+	err := c.cc.Invoke(ctx, StoreService_DeleteValues_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *storeServiceClient) EncryptionStatus(ctx context.Context, in *EncryptionStatusRequest, opts ...grpc.CallOption) (*EncryptionStatusResponse, error) {
+func (c *storeServiceClient) ListTreeVersions(ctx context.Context, in *ListTreeVersionsRequest, opts ...grpc.CallOption) (*ListTreeVersionsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(EncryptionStatusResponse)
-	err := c.cc.Invoke(ctx, StoreService_EncryptionStatus_FullMethodName, in, out, cOpts...)
+	out := new(ListTreeVersionsResponse)
+	err := c.cc.Invoke(ctx, StoreService_ListTreeVersions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *storeServiceClient) GetTreeVersion(ctx context.Context, in *GetTreeVersionRequest, opts ...grpc.CallOption) (*GetTreeVersionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetTreeVersionResponse)
+	err := c.cc.Invoke(ctx, StoreService_GetTreeVersion_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *storeServiceClient) RollbackTree(ctx context.Context, in *RollbackTreeRequest, opts ...grpc.CallOption) (*RollbackTreeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RollbackTreeResponse)
+	err := c.cc.Invoke(ctx, StoreService_RollbackTree_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *storeServiceClient) DeleteTreeVersion(ctx context.Context, in *DeleteTreeVersionRequest, opts ...grpc.CallOption) (*DeleteTreeVersionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteTreeVersionResponse)
+	err := c.cc.Invoke(ctx, StoreService_DeleteTreeVersion_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *storeServiceClient) ListValueVersions(ctx context.Context, in *ListValueVersionsRequest, opts ...grpc.CallOption) (*ListValueVersionsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListValueVersionsResponse)
+	err := c.cc.Invoke(ctx, StoreService_ListValueVersions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *storeServiceClient) GetValueVersion(ctx context.Context, in *GetValueVersionRequest, opts ...grpc.CallOption) (*GetValueVersionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetValueVersionResponse)
+	err := c.cc.Invoke(ctx, StoreService_GetValueVersion_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *storeServiceClient) RollbackValue(ctx context.Context, in *RollbackValueRequest, opts ...grpc.CallOption) (*RollbackValueResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RollbackValueResponse)
+	err := c.cc.Invoke(ctx, StoreService_RollbackValue_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *storeServiceClient) DeleteValueVersion(ctx context.Context, in *DeleteValueVersionRequest, opts ...grpc.CallOption) (*DeleteValueVersionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteValueVersionResponse)
+	err := c.cc.Invoke(ctx, StoreService_DeleteValueVersion_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -193,44 +285,86 @@ func (c *storeServiceClient) RotateEncryption(ctx context.Context, in *RotateEnc
 	return out, nil
 }
 
+func (c *storeServiceClient) GrantAccess(ctx context.Context, in *GrantAccessRequest, opts ...grpc.CallOption) (*GrantAccessResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GrantAccessResponse)
+	err := c.cc.Invoke(ctx, StoreService_GrantAccess_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *storeServiceClient) RevokeAccess(ctx context.Context, in *RevokeAccessRequest, opts ...grpc.CallOption) (*RevokeAccessResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RevokeAccessResponse)
+	err := c.cc.Invoke(ctx, StoreService_RevokeAccess_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *storeServiceClient) ListAccess(ctx context.Context, in *ListAccessRequest, opts ...grpc.CallOption) (*ListAccessResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListAccessResponse)
+	err := c.cc.Invoke(ctx, StoreService_ListAccess_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // StoreServiceServer is the server API for StoreService service.
 // All implementations must embed UnimplementedStoreServiceServer
 // for forward compatibility.
 //
 // StoreService is the gRPC interface every zhi store plugin must implement.
-// Store plugins persist, retrieve, and delete configuration trees.
+// Store plugins persist, retrieve, and delete configuration values within
+// named trees with granular, value-level operations.
 type StoreServiceServer interface {
-	// Save persists a configuration tree under the given ID.
-	// If versioning is supported, this creates a new version.
-	Save(context.Context, *SaveRequest) (*SaveResponse, error)
-	// Load retrieves the latest version of the configuration tree with the
-	// given ID.
-	Load(context.Context, *LoadRequest) (*LoadResponse, error)
-	// Delete removes the configuration tree and all its versions.
-	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
-	// ListTrees returns all stored tree IDs.
+	// Capabilities reports the store's supported features.
+	Capabilities(context.Context, *StoreCapabilitiesRequest) (*StoreCapabilitiesResponse, error)
+	// AuthMethods returns the authentication methods supported by this store.
+	AuthMethods(context.Context, *AuthMethodsRequest) (*AuthMethodsResponse, error)
+	// Login authenticates with the store using the given method and credentials.
+	Login(context.Context, *LoginRequest) (*LoginResponse, error)
+	// ListTrees returns all tree IDs the current identity has access to.
 	ListTrees(context.Context, *ListTreesRequest) (*ListTreesResponse, error)
-	// SupportsVersioning reports whether this store keeps older versions of
-	// trees.
-	SupportsVersioning(context.Context, *SupportsVersioningRequest) (*SupportsVersioningResponse, error)
-	// ListVersions returns version identifiers for a given tree ID, ordered
-	// newest first. Returns an error if versioning is not supported.
-	ListVersions(context.Context, *ListVersionsRequest) (*ListVersionsResponse, error)
-	// LoadVersion retrieves a specific version of the configuration tree.
-	// Returns an error if versioning is not supported.
-	LoadVersion(context.Context, *LoadVersionRequest) (*LoadVersionResponse, error)
-	// DeleteVersion permanently removes a single version of a configuration
-	// tree. Returns an error if versioning is not supported.
-	DeleteVersion(context.Context, *DeleteVersionRequest) (*DeleteVersionResponse, error)
-	// EncryptionStatus reports the current encryption state of the store.
-	EncryptionStatus(context.Context, *EncryptionStatusRequest) (*EncryptionStatusResponse, error)
-	// InitEncryption initializes encryption for the store with the given
-	// passphrase. Returns an error if encryption is not supported or is
-	// already active.
+	// DeleteTree removes an entire tree and all its versions/values.
+	DeleteTree(context.Context, *DeleteTreeRequest) (*DeleteTreeResponse, error)
+	// GetValues retrieves specific values from a tree by their paths.
+	GetValues(context.Context, *GetValuesRequest) (*GetValuesResponse, error)
+	// PutValues writes specific values to a tree.
+	PutValues(context.Context, *PutValuesRequest) (*PutValuesResponse, error)
+	// DeleteValues removes specific values from a tree.
+	DeleteValues(context.Context, *DeleteValuesRequest) (*DeleteValuesResponse, error)
+	// ListTreeVersions returns version identifiers for a tree (VersioningTree).
+	ListTreeVersions(context.Context, *ListTreeVersionsRequest) (*ListTreeVersionsResponse, error)
+	// GetTreeVersion retrieves specific values from a specific tree version.
+	GetTreeVersion(context.Context, *GetTreeVersionRequest) (*GetTreeVersionResponse, error)
+	// RollbackTree restores a tree to a previous version.
+	RollbackTree(context.Context, *RollbackTreeRequest) (*RollbackTreeResponse, error)
+	// DeleteTreeVersion permanently removes a single tree version.
+	DeleteTreeVersion(context.Context, *DeleteTreeVersionRequest) (*DeleteTreeVersionResponse, error)
+	// ListValueVersions returns version identifiers for a specific value (VersioningValue).
+	ListValueVersions(context.Context, *ListValueVersionsRequest) (*ListValueVersionsResponse, error)
+	// GetValueVersion retrieves a specific version of a single value.
+	GetValueVersion(context.Context, *GetValueVersionRequest) (*GetValueVersionResponse, error)
+	// RollbackValue restores a value to a previous version.
+	RollbackValue(context.Context, *RollbackValueRequest) (*RollbackValueResponse, error)
+	// DeleteValueVersion permanently removes a single value version.
+	DeleteValueVersion(context.Context, *DeleteValueVersionRequest) (*DeleteValueVersionResponse, error)
+	// InitEncryption initializes encryption for the store.
 	InitEncryption(context.Context, *InitEncryptionRequest) (*InitEncryptionResponse, error)
-	// RotateEncryption re-encrypts all stored data with a new passphrase.
-	// Returns an error if encryption is not supported or not active.
+	// RotateEncryption re-encrypts stored data with a new passphrase.
 	RotateEncryption(context.Context, *RotateEncryptionRequest) (*RotateEncryptionResponse, error)
+	// GrantAccess grants a user access to specific paths within a tree.
+	GrantAccess(context.Context, *GrantAccessRequest) (*GrantAccessResponse, error)
+	// RevokeAccess removes a user's access to specific paths within a tree.
+	RevokeAccess(context.Context, *RevokeAccessRequest) (*RevokeAccessResponse, error)
+	// ListAccess returns the current access permissions for a tree.
+	ListAccess(context.Context, *ListAccessRequest) (*ListAccessResponse, error)
 	mustEmbedUnimplementedStoreServiceServer()
 }
 
@@ -241,38 +375,68 @@ type StoreServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedStoreServiceServer struct{}
 
-func (UnimplementedStoreServiceServer) Save(context.Context, *SaveRequest) (*SaveResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Save not implemented")
+func (UnimplementedStoreServiceServer) Capabilities(context.Context, *StoreCapabilitiesRequest) (*StoreCapabilitiesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Capabilities not implemented")
 }
-func (UnimplementedStoreServiceServer) Load(context.Context, *LoadRequest) (*LoadResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Load not implemented")
+func (UnimplementedStoreServiceServer) AuthMethods(context.Context, *AuthMethodsRequest) (*AuthMethodsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method AuthMethods not implemented")
 }
-func (UnimplementedStoreServiceServer) Delete(context.Context, *DeleteRequest) (*DeleteResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Delete not implemented")
+func (UnimplementedStoreServiceServer) Login(context.Context, *LoginRequest) (*LoginResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Login not implemented")
 }
 func (UnimplementedStoreServiceServer) ListTrees(context.Context, *ListTreesRequest) (*ListTreesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListTrees not implemented")
 }
-func (UnimplementedStoreServiceServer) SupportsVersioning(context.Context, *SupportsVersioningRequest) (*SupportsVersioningResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method SupportsVersioning not implemented")
+func (UnimplementedStoreServiceServer) DeleteTree(context.Context, *DeleteTreeRequest) (*DeleteTreeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteTree not implemented")
 }
-func (UnimplementedStoreServiceServer) ListVersions(context.Context, *ListVersionsRequest) (*ListVersionsResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method ListVersions not implemented")
+func (UnimplementedStoreServiceServer) GetValues(context.Context, *GetValuesRequest) (*GetValuesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetValues not implemented")
 }
-func (UnimplementedStoreServiceServer) LoadVersion(context.Context, *LoadVersionRequest) (*LoadVersionResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method LoadVersion not implemented")
+func (UnimplementedStoreServiceServer) PutValues(context.Context, *PutValuesRequest) (*PutValuesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method PutValues not implemented")
 }
-func (UnimplementedStoreServiceServer) DeleteVersion(context.Context, *DeleteVersionRequest) (*DeleteVersionResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method DeleteVersion not implemented")
+func (UnimplementedStoreServiceServer) DeleteValues(context.Context, *DeleteValuesRequest) (*DeleteValuesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteValues not implemented")
 }
-func (UnimplementedStoreServiceServer) EncryptionStatus(context.Context, *EncryptionStatusRequest) (*EncryptionStatusResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method EncryptionStatus not implemented")
+func (UnimplementedStoreServiceServer) ListTreeVersions(context.Context, *ListTreeVersionsRequest) (*ListTreeVersionsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListTreeVersions not implemented")
+}
+func (UnimplementedStoreServiceServer) GetTreeVersion(context.Context, *GetTreeVersionRequest) (*GetTreeVersionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetTreeVersion not implemented")
+}
+func (UnimplementedStoreServiceServer) RollbackTree(context.Context, *RollbackTreeRequest) (*RollbackTreeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RollbackTree not implemented")
+}
+func (UnimplementedStoreServiceServer) DeleteTreeVersion(context.Context, *DeleteTreeVersionRequest) (*DeleteTreeVersionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteTreeVersion not implemented")
+}
+func (UnimplementedStoreServiceServer) ListValueVersions(context.Context, *ListValueVersionsRequest) (*ListValueVersionsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListValueVersions not implemented")
+}
+func (UnimplementedStoreServiceServer) GetValueVersion(context.Context, *GetValueVersionRequest) (*GetValueVersionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetValueVersion not implemented")
+}
+func (UnimplementedStoreServiceServer) RollbackValue(context.Context, *RollbackValueRequest) (*RollbackValueResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RollbackValue not implemented")
+}
+func (UnimplementedStoreServiceServer) DeleteValueVersion(context.Context, *DeleteValueVersionRequest) (*DeleteValueVersionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteValueVersion not implemented")
 }
 func (UnimplementedStoreServiceServer) InitEncryption(context.Context, *InitEncryptionRequest) (*InitEncryptionResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method InitEncryption not implemented")
 }
 func (UnimplementedStoreServiceServer) RotateEncryption(context.Context, *RotateEncryptionRequest) (*RotateEncryptionResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RotateEncryption not implemented")
+}
+func (UnimplementedStoreServiceServer) GrantAccess(context.Context, *GrantAccessRequest) (*GrantAccessResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GrantAccess not implemented")
+}
+func (UnimplementedStoreServiceServer) RevokeAccess(context.Context, *RevokeAccessRequest) (*RevokeAccessResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RevokeAccess not implemented")
+}
+func (UnimplementedStoreServiceServer) ListAccess(context.Context, *ListAccessRequest) (*ListAccessResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListAccess not implemented")
 }
 func (UnimplementedStoreServiceServer) mustEmbedUnimplementedStoreServiceServer() {}
 func (UnimplementedStoreServiceServer) testEmbeddedByValue()                      {}
@@ -295,56 +459,56 @@ func RegisterStoreServiceServer(s grpc.ServiceRegistrar, srv StoreServiceServer)
 	s.RegisterService(&StoreService_ServiceDesc, srv)
 }
 
-func _StoreService_Save_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SaveRequest)
+func _StoreService_Capabilities_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StoreCapabilitiesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(StoreServiceServer).Save(ctx, in)
+		return srv.(StoreServiceServer).Capabilities(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: StoreService_Save_FullMethodName,
+		FullMethod: StoreService_Capabilities_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StoreServiceServer).Save(ctx, req.(*SaveRequest))
+		return srv.(StoreServiceServer).Capabilities(ctx, req.(*StoreCapabilitiesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _StoreService_Load_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(LoadRequest)
+func _StoreService_AuthMethods_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuthMethodsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(StoreServiceServer).Load(ctx, in)
+		return srv.(StoreServiceServer).AuthMethods(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: StoreService_Load_FullMethodName,
+		FullMethod: StoreService_AuthMethods_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StoreServiceServer).Load(ctx, req.(*LoadRequest))
+		return srv.(StoreServiceServer).AuthMethods(ctx, req.(*AuthMethodsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _StoreService_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteRequest)
+func _StoreService_Login_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LoginRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(StoreServiceServer).Delete(ctx, in)
+		return srv.(StoreServiceServer).Login(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: StoreService_Delete_FullMethodName,
+		FullMethod: StoreService_Login_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StoreServiceServer).Delete(ctx, req.(*DeleteRequest))
+		return srv.(StoreServiceServer).Login(ctx, req.(*LoginRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -367,92 +531,218 @@ func _StoreService_ListTrees_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
-func _StoreService_SupportsVersioning_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SupportsVersioningRequest)
+func _StoreService_DeleteTree_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteTreeRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(StoreServiceServer).SupportsVersioning(ctx, in)
+		return srv.(StoreServiceServer).DeleteTree(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: StoreService_SupportsVersioning_FullMethodName,
+		FullMethod: StoreService_DeleteTree_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StoreServiceServer).SupportsVersioning(ctx, req.(*SupportsVersioningRequest))
+		return srv.(StoreServiceServer).DeleteTree(ctx, req.(*DeleteTreeRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _StoreService_ListVersions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListVersionsRequest)
+func _StoreService_GetValues_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetValuesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(StoreServiceServer).ListVersions(ctx, in)
+		return srv.(StoreServiceServer).GetValues(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: StoreService_ListVersions_FullMethodName,
+		FullMethod: StoreService_GetValues_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StoreServiceServer).ListVersions(ctx, req.(*ListVersionsRequest))
+		return srv.(StoreServiceServer).GetValues(ctx, req.(*GetValuesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _StoreService_LoadVersion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(LoadVersionRequest)
+func _StoreService_PutValues_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PutValuesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(StoreServiceServer).LoadVersion(ctx, in)
+		return srv.(StoreServiceServer).PutValues(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: StoreService_LoadVersion_FullMethodName,
+		FullMethod: StoreService_PutValues_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StoreServiceServer).LoadVersion(ctx, req.(*LoadVersionRequest))
+		return srv.(StoreServiceServer).PutValues(ctx, req.(*PutValuesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _StoreService_DeleteVersion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteVersionRequest)
+func _StoreService_DeleteValues_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteValuesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(StoreServiceServer).DeleteVersion(ctx, in)
+		return srv.(StoreServiceServer).DeleteValues(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: StoreService_DeleteVersion_FullMethodName,
+		FullMethod: StoreService_DeleteValues_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StoreServiceServer).DeleteVersion(ctx, req.(*DeleteVersionRequest))
+		return srv.(StoreServiceServer).DeleteValues(ctx, req.(*DeleteValuesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _StoreService_EncryptionStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EncryptionStatusRequest)
+func _StoreService_ListTreeVersions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListTreeVersionsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(StoreServiceServer).EncryptionStatus(ctx, in)
+		return srv.(StoreServiceServer).ListTreeVersions(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: StoreService_EncryptionStatus_FullMethodName,
+		FullMethod: StoreService_ListTreeVersions_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(StoreServiceServer).EncryptionStatus(ctx, req.(*EncryptionStatusRequest))
+		return srv.(StoreServiceServer).ListTreeVersions(ctx, req.(*ListTreeVersionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StoreService_GetTreeVersion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTreeVersionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StoreServiceServer).GetTreeVersion(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StoreService_GetTreeVersion_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StoreServiceServer).GetTreeVersion(ctx, req.(*GetTreeVersionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StoreService_RollbackTree_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RollbackTreeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StoreServiceServer).RollbackTree(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StoreService_RollbackTree_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StoreServiceServer).RollbackTree(ctx, req.(*RollbackTreeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StoreService_DeleteTreeVersion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteTreeVersionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StoreServiceServer).DeleteTreeVersion(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StoreService_DeleteTreeVersion_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StoreServiceServer).DeleteTreeVersion(ctx, req.(*DeleteTreeVersionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StoreService_ListValueVersions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListValueVersionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StoreServiceServer).ListValueVersions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StoreService_ListValueVersions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StoreServiceServer).ListValueVersions(ctx, req.(*ListValueVersionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StoreService_GetValueVersion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetValueVersionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StoreServiceServer).GetValueVersion(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StoreService_GetValueVersion_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StoreServiceServer).GetValueVersion(ctx, req.(*GetValueVersionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StoreService_RollbackValue_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RollbackValueRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StoreServiceServer).RollbackValue(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StoreService_RollbackValue_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StoreServiceServer).RollbackValue(ctx, req.(*RollbackValueRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StoreService_DeleteValueVersion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteValueVersionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StoreServiceServer).DeleteValueVersion(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StoreService_DeleteValueVersion_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StoreServiceServer).DeleteValueVersion(ctx, req.(*DeleteValueVersionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -493,6 +783,60 @@ func _StoreService_RotateEncryption_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _StoreService_GrantAccess_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GrantAccessRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StoreServiceServer).GrantAccess(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StoreService_GrantAccess_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StoreServiceServer).GrantAccess(ctx, req.(*GrantAccessRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StoreService_RevokeAccess_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevokeAccessRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StoreServiceServer).RevokeAccess(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StoreService_RevokeAccess_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StoreServiceServer).RevokeAccess(ctx, req.(*RevokeAccessRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StoreService_ListAccess_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListAccessRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StoreServiceServer).ListAccess(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StoreService_ListAccess_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StoreServiceServer).ListAccess(ctx, req.(*ListAccessRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // StoreService_ServiceDesc is the grpc.ServiceDesc for StoreService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -501,40 +845,68 @@ var StoreService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*StoreServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Save",
-			Handler:    _StoreService_Save_Handler,
+			MethodName: "Capabilities",
+			Handler:    _StoreService_Capabilities_Handler,
 		},
 		{
-			MethodName: "Load",
-			Handler:    _StoreService_Load_Handler,
+			MethodName: "AuthMethods",
+			Handler:    _StoreService_AuthMethods_Handler,
 		},
 		{
-			MethodName: "Delete",
-			Handler:    _StoreService_Delete_Handler,
+			MethodName: "Login",
+			Handler:    _StoreService_Login_Handler,
 		},
 		{
 			MethodName: "ListTrees",
 			Handler:    _StoreService_ListTrees_Handler,
 		},
 		{
-			MethodName: "SupportsVersioning",
-			Handler:    _StoreService_SupportsVersioning_Handler,
+			MethodName: "DeleteTree",
+			Handler:    _StoreService_DeleteTree_Handler,
 		},
 		{
-			MethodName: "ListVersions",
-			Handler:    _StoreService_ListVersions_Handler,
+			MethodName: "GetValues",
+			Handler:    _StoreService_GetValues_Handler,
 		},
 		{
-			MethodName: "LoadVersion",
-			Handler:    _StoreService_LoadVersion_Handler,
+			MethodName: "PutValues",
+			Handler:    _StoreService_PutValues_Handler,
 		},
 		{
-			MethodName: "DeleteVersion",
-			Handler:    _StoreService_DeleteVersion_Handler,
+			MethodName: "DeleteValues",
+			Handler:    _StoreService_DeleteValues_Handler,
 		},
 		{
-			MethodName: "EncryptionStatus",
-			Handler:    _StoreService_EncryptionStatus_Handler,
+			MethodName: "ListTreeVersions",
+			Handler:    _StoreService_ListTreeVersions_Handler,
+		},
+		{
+			MethodName: "GetTreeVersion",
+			Handler:    _StoreService_GetTreeVersion_Handler,
+		},
+		{
+			MethodName: "RollbackTree",
+			Handler:    _StoreService_RollbackTree_Handler,
+		},
+		{
+			MethodName: "DeleteTreeVersion",
+			Handler:    _StoreService_DeleteTreeVersion_Handler,
+		},
+		{
+			MethodName: "ListValueVersions",
+			Handler:    _StoreService_ListValueVersions_Handler,
+		},
+		{
+			MethodName: "GetValueVersion",
+			Handler:    _StoreService_GetValueVersion_Handler,
+		},
+		{
+			MethodName: "RollbackValue",
+			Handler:    _StoreService_RollbackValue_Handler,
+		},
+		{
+			MethodName: "DeleteValueVersion",
+			Handler:    _StoreService_DeleteValueVersion_Handler,
 		},
 		{
 			MethodName: "InitEncryption",
@@ -543,6 +915,18 @@ var StoreService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RotateEncryption",
 			Handler:    _StoreService_RotateEncryption_Handler,
+		},
+		{
+			MethodName: "GrantAccess",
+			Handler:    _StoreService_GrantAccess_Handler,
+		},
+		{
+			MethodName: "RevokeAccess",
+			Handler:    _StoreService_RevokeAccess_Handler,
+		},
+		{
+			MethodName: "ListAccess",
+			Handler:    _StoreService_ListAccess_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
