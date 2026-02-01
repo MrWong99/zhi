@@ -3,32 +3,32 @@ package cli
 import (
 	"embed"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"text/template"
 
 	"github.com/spf13/cobra"
 )
 
-//go:embed init-template/*
+//go:embed all:init-template
 var initTemplateFS embed.FS
 
 var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize a new zhi workspace",
-	Long: `Initialize a new zhi workspace by scaffolding the directory structure
-and configuration files needed to get started.
+	Long: `Initialize a new zhi workspace by scaffolding a sample Docker Compose
+application.
 
 This creates:
-  - zhi.yaml                 Workspace configuration
-  - config/app.yaml          Starter configuration values
-  - templates/sample.tmpl    Example export template
-  - .zhi/                    Internal data directory
+  - zhi.yaml:      Workspace configuration to manage the app.
+  - config/:       Starter configuration values for the services.
+  - templates/:    A template to generate docker-compose.yml.
+  - app-data/:     Data and configuration for the example services.
+  - .zhi/:         Internal directory for workspace state.
 
-Examples:
-  zhi init                        # initialize in the current directory
-  zhi init --workspace ./myapp    # initialize in ./myapp
-  zhi init --force                # overwrite existing zhi.yaml`,
+Run 'zhi export' to generate the final docker-compose.yml.`,
 	Example: `  zhi init
   zhi init --config-provider structuredfile --store-provider zhi-store-json
   zhi init --force`,
@@ -58,9 +58,9 @@ func runInit(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("resolving directory: %w", err)
 	}
 
-	zhiYaml := filepath.Join(absDir, "zhi.yaml")
+	zhiYamlPath := filepath.Join(absDir, "zhi.yaml")
 	if !initForce {
-		if _, err := os.Stat(zhiYaml); err == nil {
+		if _, err := os.Stat(zhiYamlPath); err == nil {
 			return fmt.Errorf("zhi.yaml already exists (use --force to overwrite)")
 		}
 	}
@@ -68,95 +68,120 @@ func runInit(cmd *cobra.Command, _ []string) error {
 	w := cmd.OutOrStdout()
 	var created []string
 
-	// 1. Create zhi.yaml from template
-	tmpl, err := template.ParseFS(initTemplateFS, "init-template/zhi.yaml.tmpl")
-	if err != nil {
-		return fmt.Errorf("parsing zhi.yaml template: %w", err)
-	}
-
-	file, err := os.Create(zhiYaml)
-	if err != nil {
-		return fmt.Errorf("creating zhi.yaml: %w", err)
-	}
-	defer file.Close()
-
-	templateData := map[string]string{
-		"ConfigProvider": initConfigProvider,
-		"StoreProvider":  initStoreProvider,
-	}
-	if err := tmpl.Execute(file, templateData); err != nil {
-		return fmt.Errorf("writing zhi.yaml: %w", err)
-	}
-	created = append(created, "zhi.yaml")
-
-	// 2. Create ./config/ directory with starter configuration file
-	configDir := filepath.Join(absDir, "config")
-	if err := os.MkdirAll(configDir, 0o755); err != nil {
-		return fmt.Errorf("creating config directory: %w", err)
-	}
-
-	appYamlContent, err := initTemplateFS.ReadFile("init-template/config_app.yaml")
-	if err != nil {
-		return fmt.Errorf("reading embedded config_app.yaml: %w", err)
-	}
-	if err := os.WriteFile(filepath.Join(configDir, "app.yaml"), appYamlContent, 0o644); err != nil {
-		return fmt.Errorf("writing config/app.yaml: %w", err)
-	}
-	created = append(created, "config/app.yaml")
-
-	// 3. Create ./templates/ directory with sample export template
-	templatesDir := filepath.Join(absDir, "templates")
-	if err := os.MkdirAll(templatesDir, 0o755); err != nil {
-		return fmt.Errorf("creating templates directory: %w", err)
-	}
-
-	sampleTemplateContent, err := initTemplateFS.ReadFile("init-template/templates_sample.tmpl")
-	if err != nil {
-		return fmt.Errorf("reading embedded templates_sample.tmpl: %w", err)
-	}
-	if err := os.WriteFile(filepath.Join(templatesDir, "sample.tmpl"), sampleTemplateContent, 0o644); err != nil {
-		return fmt.Errorf("writing templates/sample.tmpl: %w", err)
-	}
-	created = append(created, "templates/sample.tmpl")
-
-	// 4. Create ./.zhi/ directory with user-only permissions (0700)
+	// Create ./.zhi/ and subdirectories first with specific permissions
 	zhiDir := filepath.Join(absDir, ".zhi")
 	if err := os.MkdirAll(zhiDir, 0o700); err != nil {
 		return fmt.Errorf("creating .zhi directory: %w", err)
 	}
-
-	// Create .zhi/store/ subdirectory
 	storeDir := filepath.Join(zhiDir, "store")
 	if err := os.MkdirAll(storeDir, 0o700); err != nil {
 		return fmt.Errorf("creating .zhi/store directory: %w", err)
 	}
 	created = append(created, ".zhi/store/")
 
-	// 5. Create ./.zhi/components.json with default component state (0600 permissions)
-	componentStateContent, err := initTemplateFS.ReadFile("init-template/components.json")
-	if err != nil {
-		return fmt.Errorf("reading embedded components.json: %w", err)
+	// Walk the embedded FS to create the workspace files
+	templateData := map[string]string{
+		"ConfigProvider": initConfigProvider,
+		"StoreProvider":  initStoreProvider,
 	}
-	componentsFile := filepath.Join(zhiDir, "components.json")
-	if err := os.WriteFile(componentsFile, componentStateContent, 0o600); err != nil {
-		return fmt.Errorf("writing .zhi/components.json: %w", err)
-	}
-	created = append(created, ".zhi/components.json")
 
-	// 6. Print summary
+	walkErr := fs.WalkDir(initTemplateFS, "init-template", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if path == "init-template" {
+			return nil // Skip the root directory itself.
+		}
+
+		// The path relative to the root of the embedded templates.
+		relativePath := strings.TrimPrefix(path, "init-template/")
+
+		// Determine the destination path on the filesystem.
+		destPath := filepath.Join(absDir, relativePath)
+		createdPath := relativePath
+		perms := fs.FileMode(0o644)
+
+		// Apply special handling for specific files.
+		switch relativePath {
+		case "zhi.yaml.tmpl":
+			// This is a template, render it to zhi.yaml in the workspace root.
+			tmpl, err := template.ParseFS(initTemplateFS, path)
+			if err != nil {
+				return fmt.Errorf("parsing zhi.yaml template: %w", err)
+			}
+			file, err := os.Create(zhiYamlPath)
+			if err != nil {
+				return fmt.Errorf("creating zhi.yaml: %w", err)
+			}
+			defer file.Close()
+			if err := tmpl.Execute(file, templateData); err != nil {
+				return fmt.Errorf("writing zhi.yaml: %w", err)
+			}
+			created = append(created, "zhi.yaml")
+			return nil // Handled.
+
+		case "config_app.yaml":
+			// This file gets a new name and location.
+			destPath = filepath.Join(absDir, "config", "app.yaml")
+			createdPath = "config/app.yaml"
+
+		case "components.json":
+			// This file goes into the .zhi directory with stricter permissions.
+			destPath = filepath.Join(zhiDir, "components.json")
+			createdPath = ".zhi/components.json"
+			perms = 0o600
+		}
+
+		if d.IsDir() {
+			// For all other directories, just create them.
+			// This handles `templates`, `app-data`, etc.
+			if err := os.MkdirAll(destPath, 0o755); err != nil {
+				return fmt.Errorf("creating directory %s: %w", destPath, err)
+			}
+			return nil
+		}
+
+		// For all other files, copy them over.
+		content, err := initTemplateFS.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("reading embedded %s: %w", path, err)
+		}
+
+		// Ensure the parent directory exists.
+		if err := os.MkdirAll(filepath.Dir(destPath), 0o755); err != nil {
+			return fmt.Errorf("creating parent directory for %s: %w", destPath, err)
+		}
+
+		if err := os.WriteFile(destPath, content, perms); err != nil {
+			return fmt.Errorf("writing file %s: %w", destPath, err)
+		}
+
+		created = append(created, createdPath)
+		return nil
+	})
+
+	if walkErr != nil {
+		return walkErr
+	}
+
+	// Print summary
 	fmt.Fprintln(w, "Initialized zhi workspace:")
+	// Sort created files for consistent output? For now, it's FS order.
 	for _, f := range created {
 		fmt.Fprintf(w, "  %s\n", f)
 	}
 
-	// 7. Print what's next message
+	// Print what's next message
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "What's next?")
-	fmt.Fprintln(w, "  Edit configuration values:   zhi edit")
-	fmt.Fprintln(w, "  Export configuration:         zhi export --format json")
-	fmt.Fprintln(w, "  Validate configuration:       zhi validate")
-	fmt.Fprintln(w, "  List config paths:            zhi list paths")
-	fmt.Fprintln(w, "  Manage components:            zhi component list")
+	fmt.Fprintln(w, "  1. Generate the Docker Compose file:  zhi export")
+	fmt.Fprintln(w, "  2. Start the Pokedex stack:           docker-compose up")
+	fmt.Fprintln(w, "  3. View the Pokedex at:               http://localhost:8080")
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "Explore more commands:")
+	fmt.Fprintln(w, "  - Edit configuration: zhi edit")
+	fmt.Fprintln(w, "  - See all config:     zhi list")
+	fmt.Fprintln(w, "  - Manage components:  zhi component list")
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Add .zhi/ to your .gitignore to keep internal state out of version control.")
 

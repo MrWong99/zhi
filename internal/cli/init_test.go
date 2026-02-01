@@ -45,10 +45,10 @@ func TestInitCreatesWorkspace(t *testing.T) {
 		t.Error("config/app.yaml was not created")
 	}
 
-	// Check templates/sample.tmpl exists.
-	tmplFile := filepath.Join(dir, "templates", "sample.tmpl")
+	// Check templates/docker-compose.yml.tmpl exists.
+	tmplFile := filepath.Join(dir, "templates", "docker-compose.yml.tmpl")
 	if _, err := os.Stat(tmplFile); os.IsNotExist(err) {
-		t.Error("templates/sample.tmpl was not created")
+		t.Error("templates/docker-compose.yml.tmpl was not created")
 	}
 
 	// Check .zhi/store/ directory exists.
@@ -70,14 +70,14 @@ func TestInitCreatesWorkspace(t *testing.T) {
 	if err := json.Unmarshal(data, &state); err != nil {
 		t.Fatalf("parsing components.json: %v", err)
 	}
-	if !state["app"] {
-		t.Error("app component should be enabled")
+	if !state["pokedex-web"] {
+		t.Error("pokedex-web component should be enabled")
 	}
-	if !state["database"] {
-		t.Error("database component should be enabled")
+	if !state["pokemon-api"] {
+		t.Error("pokemon-api component should be enabled")
 	}
-	if state["monitoring"] {
-		t.Error("monitoring component should be disabled")
+	if state["trainer-info"] {
+		t.Error("trainer-info component should be disabled")
 	}
 }
 
@@ -151,13 +151,13 @@ func TestInitComponentDefinitions(t *testing.T) {
 	}
 
 	content := string(data)
-	if !strings.Contains(content, "name: app") {
-		t.Error("zhi.yaml should contain app component")
+	if !strings.Contains(content, "name: pokedex-web") {
+		t.Error("zhi.yaml should contain pokedex-web component")
 	}
-	if !strings.Contains(content, "name: database") {
-		t.Error("zhi.yaml should contain database component")
+	if !strings.Contains(content, "name: pokemon-api") {
+		t.Error("zhi.yaml should contain pokemon-api component")
 	}
-	if !strings.Contains(content, "name: monitoring") {
-		t.Error("zhi.yaml should contain monitoring component")
+	if !strings.Contains(content, "name: trainer-info") {
+		t.Error("zhi.yaml should contain trainer-info component")
 	}
 }

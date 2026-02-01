@@ -1,5 +1,5 @@
 {
-  "app": true,
-  "database": true,
-  "monitoring": false
+  "pokedex-web": true,
+  "pokemon-api": true,
+  "trainer-info": false
 }

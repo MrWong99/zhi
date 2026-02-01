@@ -1,25 +1,36 @@
-app:
+# Configuration for your Pokedex stack.
+# Gotta' configure 'em all!
+
+pokedex-web:
+  # The port on your machine to access the Pokedex UI.
+  # Try to avoid common ports used by other services (like a wild Snorlax blocking the way).
+  external_port:
+    val: 8080
+    metadata:
+      description: "External port to access the Pokedex web UI. It's like choosing which gate of Saffron City to enter."
+  # The name of the docker network.
+  network_name:
+    val: "kanto-region"
+    metadata:
+      description: "The Docker network name, connecting your services like routes between cities."
+
+pokemon-api:
+  # The base image for our Pokemon data API.
+  # Using httpd to serve a static JSON file, simple and sturdy like a Geodude.
+  image:
+    val: "httpd:2.4"
+    metadata:
+      description: "The container image for the Pokemon API."
+
+# Optional: Add your trainer info to the Pokedex!
+trainer-info:
+  # Your name, Trainer!
   name:
-    val: my-app
+    val: "Ash Ketchum"
     metadata:
-      description: Application name
-  log-level:
-    val: info
+      description: "The name of the Pokemon Trainer."
+  # Where are you from? Pallet Town?
+  hometown:
+    val: "Pallet Town"
     metadata:
-      description: Logging level (debug, info, warn, error)
-
-database:
-  host:
-    val: localhost
-    metadata:
-      description: Database hostname
-  port:
-    val: 5432
-    metadata:
-      description: Database port number
-
-monitoring:
-  enabled:
-    val: false
-    metadata:
-      description: Enable monitoring
+      description: "The trainer's hometown."

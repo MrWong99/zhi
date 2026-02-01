@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Pokedex</title>
+    <style>
+        body { font-family: sans-serif; background-color: #f0f0f0; color: #333; margin: 0; padding: 20px; }
+        h1 { color: #e3350d; text-align: center; }
+        #pokedex { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+        .pokemon-card { background: white; border-radius: 10px; padding: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; }
+        .pokemon-card h2 { margin: 10px 0 5px; }
+        .pokemon-card p { font-size: 0.9em; color: #666; }
+        .pokemon-card .type { font-style: italic; font-size: 0.8em; }
+        .loading { text-align: center; padding: 50px; }
+    </style>
+</head>
+<body>
+
+    <h1>Welcome to the Pokedex!</h1>
+    <div id="pokedex" class="loading">Loading Pokemon... A wild Snorlax might be blocking the data path.</div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Fetching data like a fishing rod in Vermilion City!
+            fetch('/api/pokedex.json')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok. Could not fetch the Pokemons!');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const pokedexContainer = document.getElementById('pokedex');
+                    pokedexContainer.innerHTML = ''; // Clear loading message
+                    pokedexContainer.classList.remove('loading');
+
+                    data.pokemon.forEach(p => {
+                        const card = document.createElement('div');
+                        card.className = 'pokemon-card';
+                        card.innerHTML = `
+                            <h2>#${p.id} ${p.name}</h2>
+                            <p class="type">Type: ${p.type.join(', ')}</p>
+                            <p>${p.description}</p>
+                        `;
+                        pokedexContainer.appendChild(card);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching Pokedex data:', error);
+                    const pokedexContainer = document.getElementById('pokedex');
+                    pokedexContainer.innerHTML = 'Failed to load Pokedex. Team Rocket must be interfering with the signal!';
+                    pokedexContainer.style.color = 'red';
+                });
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,33 @@
+{
+  "pokemon": [
+    {
+      "id": 1,
+      "name": "Bulbasaur",
+      "type": ["Grass", "Poison"],
+      "description": "For some time after its birth, it grows by gaining nourishment from the seed on its back."
+    },
+    {
+      "id": 4,
+      "name": "Charmander",
+      "type": ["Fire"],
+      "description": "The flame on its tail indicates Charmander's life force. If it is healthy, the flame burns brightly."
+    },
+    {
+      "id": 7,
+      "name": "Squirtle",
+      "type": ["Water"],
+      "description": "It shelters itself in its shell, then strikes back with spouts of water at every opportunity."
+    },
+    {
+      "id": 25,
+      "name": "Pikachu",
+      "type": ["Electric"],
+      "description": "It raises its tail to check its surroundings. The tail is sometimes struck by lightning in this pose."
+    }
+  ],
+  "metadata": {
+    "region": "Kanto",
+    "total": 4,
+    "timestamp": "2026-02-01T12:00:00Z"
+  }
+}

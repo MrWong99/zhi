@@ -1,0 +1,41 @@
+services:
+  pokedex-web:
+    image: nginx:1.25
+    ports:
+      # Published port for the Pokedex, so you can access it from your browser.
+      - "{{ .Get "pokedex-web/external_port" }}:80"
+    volumes:
+      - ./app-data/pokedex-web/html:/usr/share/nginx/html
+      - ./app-data/pokedex-web/nginx.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - {{ .Get "pokedex-web/network_name" }}
+    depends_on:
+      - pokemon-api
+    deploy:
+      resources:
+        limits:
+          # Keep it lightweight, like a Pidgey.
+          memory: 128M
+
+  pokemon-api:
+    image: {{ .Get "pokemon-api/image" }}
+    volumes:
+      # This is where the API finds its Pokedex data.
+      - ./app-data/pokedex-api:/usr/local/apache2/htdocs/
+    networks:
+      - {{ .Get "pokedex-web/network_name" }}
+    deploy:
+      resources:
+        limits:
+          # The API doesn't need much, it's as efficient as a Magikarp's Splash attack.
+          memory: 64M
+{{ if .ComponentEnabled "trainer-info" }}
+    environment:
+      # Passing trainer info to the container, maybe for a future feature?
+      TRAINER_NAME: {{ .Get "trainer-info/name" | quote }}
+      TRAINER_HOMETOWN: {{ .Get "trainer-info/hometown" | quote }}
+{{ end }}
+
+networks:
+  {{ .Get "pokedex-web/network_name" }}:
+    driver: bridge

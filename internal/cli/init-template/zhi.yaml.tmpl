@@ -5,25 +5,33 @@ config:
   options:
     directory: ./config
 
-# transform: []
-
-# store:
-#   provider: {{.StoreProvider}}
-
 components:
-  - name: app
-    description: Core application configuration
+  - name: pokedex-web
+    description: "Pokedex web UI - your digital gateway to the Pokemon world"
     paths:
-      - app/
+      - "pokedex-web/"
     mandatory: true
-  - name: database
-    description: Database connection settings
+  - name: pokemon-api
+    description: "Pokemon data API - the source of all Pokemon knowledge"
     paths:
-      - database/
+      - "pokemon-api/"
     mandatory: true
-  - name: monitoring
-    description: Monitoring and observability
+  - name: trainer-info
+    description: "Trainer details for a personalized Pokedex"
     paths:
-      - monitoring/
+      - "trainer-info/"
     mandatory: false
-    dependencies: []
+
+export:
+  templates:
+    - name: docker-compose
+      template: ./templates/docker-compose.yml.tmpl
+      output: ./docker-compose.yml
+
+apply:
+  command: "docker compose up -d"
+  workdir: "."
+  pre-export: true
+  env:
+    COMPOSE_PROJECT_NAME: "pokedex_api"
+  timeout: 300
