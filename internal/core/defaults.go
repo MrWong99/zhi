@@ -9,5 +9,8 @@ func DefaultRegistry() *Registry {
 	if err := r.RegisterConfig("structuredfile", NewStructuredFileProvider); err != nil {
 		panic("registering built-in config provider: " + err.Error())
 	}
+	if err := r.RegisterStore("vault", NewVaultStoreProvider); err != nil {
+		panic("registering built-in store provider: " + err.Error())
+	}
 	return r
 }
