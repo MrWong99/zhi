@@ -128,6 +128,13 @@ The [`examples/`](../../examples/) directory contains working reference implemen
 | [zhi-store-json](../../examples/zhi-store-json/) | Store | File-based persistence |
 | [zhi-store-memory](../../examples/zhi-store-memory/) | Store | Minimal in-memory store |
 | [zhi-ui-httpapi](../../examples/zhi-ui-httpapi/) | UI | HTTP/JSON API with SSE streaming |
+| [zhi-config-javabean](../../examples/zhi-config-javabean/) | Config | Java bean with Bean Validation, GraalVM native-image |
+
+## Non-Go Plugin Development
+
+Plugins communicate over gRPC, so any language with gRPC support can implement a zhi plugin. See the language-specific guides:
+
+- [Java Plugin Development](java-plugin.md) -- Gradle setup, Bean Validation, GraalVM native-image
 
 ## Built-in Provider Reference
 
@@ -139,3 +146,4 @@ The [`examples/`](../../examples/) directory contains working reference implemen
 - [Transform Plugin API](transform-plugin.md)
 - [Store Plugin API](store-plugin.md)
 - [UI Plugin API](ui-plugin.md)
+- [Java Plugin Development](java-plugin.md)

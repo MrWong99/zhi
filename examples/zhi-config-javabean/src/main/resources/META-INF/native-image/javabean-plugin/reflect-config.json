@@ -1,0 +1,29 @@
+[
+  {
+    "name": "dev.zhi.plugin.javabean.model.DatabaseConfig",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "dev.zhi.plugin.javabean.model.SslRequiredForRemoteHostValidator",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "dev.zhi.plugin.javabean.model.SslRequiredForRemoteHost",
+    "queryAllDeclaredMethods": true
+  },
+  {
+    "name": "dev.zhi.plugin.javabean.annotation.ConfigPrefix",
+    "queryAllDeclaredMethods": true
+  },
+  {
+    "name": "dev.zhi.plugin.javabean.annotation.ConfigProperty",
+    "queryAllDeclaredMethods": true
+  },
+  {
+    "name": "dev.zhi.plugin.javabean.annotation.WarnConstraint",
+    "queryAllDeclaredMethods": true
+  }
+]
