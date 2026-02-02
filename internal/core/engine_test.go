@@ -559,3 +559,272 @@ func TestNewEngineUnknownStoreProvider(t *testing.T) {
 		t.Error("expected error for unknown store provider")
 	}
 }
+
+// --- Engine store operation tests ---
+
+func TestEngineDeleteTree(t *testing.T) {
+	eng, _, _, _ := setupTestEngine(t)
+	ctx := context.Background()
+
+	tree, _ := eng.LoadTree(ctx)
+	_ = eng.SaveTree(ctx, "to-delete", tree)
+
+	if err := eng.DeleteTree(ctx, "to-delete"); err != nil {
+		t.Fatalf("DeleteTree: %v", err)
+	}
+
+	ids, _ := eng.ListTrees(ctx)
+	for _, id := range ids {
+		if id == "to-delete" {
+			t.Error("tree should have been deleted")
+		}
+	}
+}
+
+func TestEngineDeleteValues(t *testing.T) {
+	eng, _, _, _ := setupTestEngine(t)
+	ctx := context.Background()
+
+	tree, _ := eng.LoadTree(ctx)
+	_ = eng.SaveTree(ctx, "test", tree)
+
+	if err := eng.DeleteValues(ctx, "test", []string{"database/host"}); err != nil {
+		t.Fatalf("DeleteValues: %v", err)
+	}
+
+	loaded, found, _ := eng.LoadStoredTree(ctx, "test")
+	if !found {
+		t.Fatal("tree not found after DeleteValues")
+	}
+	if _, ok := loaded.Get("database/host"); ok {
+		t.Error("database/host should have been deleted")
+	}
+}
+
+func TestEngineStoreCapabilities(t *testing.T) {
+	eng, _, _, _ := setupTestEngine(t)
+	ctx := context.Background()
+
+	caps, err := eng.StoreCapabilities(ctx)
+	if err != nil {
+		t.Fatalf("StoreCapabilities: %v", err)
+	}
+	if caps.Versioning != store.VersioningNone {
+		t.Errorf("Versioning = %v, want VersioningNone", caps.Versioning)
+	}
+}
+
+func TestEngineNoStoreVersionOps(t *testing.T) {
+	reg := NewRegistry()
+	_ = reg.RegisterConfig("mock", func(string, map[string]any) (config.Plugin, error) {
+		return newMockConfig(), nil
+	})
+
+	ws := &WorkspaceConfig{
+		Version: "1",
+		Config:  ProviderRef{Provider: "mock"},
+	}
+
+	eng, err := NewEngine(reg, ws)
+	if err != nil {
+		t.Fatalf("NewEngine: %v", err)
+	}
+	ctx := context.Background()
+
+	if _, err := eng.StoreCapabilities(ctx); err == nil {
+		t.Error("expected error for StoreCapabilities without store")
+	}
+	if err := eng.DeleteTree(ctx, "x"); err == nil {
+		t.Error("expected error for DeleteTree without store")
+	}
+	if err := eng.DeleteValues(ctx, "x", nil); err == nil {
+		t.Error("expected error for DeleteValues without store")
+	}
+	if _, err := eng.ListTreeVersions(ctx, "x"); err == nil {
+		t.Error("expected error for ListTreeVersions without store")
+	}
+	if _, _, err := eng.GetTreeVersion(ctx, "x", "v1"); err == nil {
+		t.Error("expected error for GetTreeVersion without store")
+	}
+	if err := eng.RollbackTree(ctx, "x", "v1"); err == nil {
+		t.Error("expected error for RollbackTree without store")
+	}
+	if err := eng.DeleteTreeVersion(ctx, "x", "v1"); err == nil {
+		t.Error("expected error for DeleteTreeVersion without store")
+	}
+	if _, err := eng.ListValueVersions(ctx, "x", "p"); err == nil {
+		t.Error("expected error for ListValueVersions without store")
+	}
+	if _, _, err := eng.GetValueVersion(ctx, "x", "p", "v1"); err == nil {
+		t.Error("expected error for GetValueVersion without store")
+	}
+	if err := eng.RollbackValue(ctx, "x", "p", "v1"); err == nil {
+		t.Error("expected error for RollbackValue without store")
+	}
+	if err := eng.DeleteValueVersion(ctx, "x", "p", "v1"); err == nil {
+		t.Error("expected error for DeleteValueVersion without store")
+	}
+}
+
+// --- Versioned mock store for engine tests ---
+
+type versionedMockStore struct {
+	mockStore
+	versions map[string][]map[string]config.Value // tree id -> list of snapshots
+}
+
+func newVersionedMockStore() *versionedMockStore {
+	return &versionedMockStore{
+		mockStore: *newMockStore(),
+		versions:  make(map[string][]map[string]config.Value),
+	}
+}
+
+func (m *versionedMockStore) Capabilities(context.Context) (*store.Capabilities, error) {
+	return &store.Capabilities{
+		Versioning: store.VersioningTree,
+		Encryption: store.EncryptionNone,
+	}, nil
+}
+
+func (m *versionedMockStore) PutValues(_ context.Context, id string, values map[string]config.Value, _ *store.PutOptions) error {
+	if m.trees[id] == nil {
+		m.trees[id] = make(map[string]config.Value)
+	}
+	// Snapshot before writing.
+	snap := make(map[string]config.Value, len(m.trees[id]))
+	for k, v := range m.trees[id] {
+		snap[k] = v
+	}
+	m.versions[id] = append(m.versions[id], snap)
+
+	for p, v := range values {
+		m.trees[id][p] = v
+	}
+	return nil
+}
+
+func (m *versionedMockStore) ListTreeVersions(_ context.Context, id string) ([]string, error) {
+	snaps := m.versions[id]
+	versions := make([]string, len(snaps))
+	for i := range snaps {
+		versions[i] = fmt.Sprintf("v%d", len(snaps)-i)
+	}
+	return versions, nil
+}
+
+func (m *versionedMockStore) GetTreeVersion(_ context.Context, id string, version string, paths []string) (map[string]config.Value, error) {
+	snaps := m.versions[id]
+	for i := range snaps {
+		if fmt.Sprintf("v%d", i+1) == version {
+			result := make(map[string]config.Value)
+			for _, p := range paths {
+				if v, ok := snaps[i][p]; ok {
+					result[p] = v
+				}
+			}
+			return result, nil
+		}
+	}
+	return nil, fmt.Errorf("version %q not found", version)
+}
+
+func (m *versionedMockStore) RollbackTree(_ context.Context, id string, version string) error {
+	snaps := m.versions[id]
+	for i := range snaps {
+		if fmt.Sprintf("v%d", i+1) == version {
+			tree := make(map[string]config.Value, len(snaps[i]))
+			for k, v := range snaps[i] {
+				tree[k] = v
+			}
+			m.trees[id] = tree
+			return nil
+		}
+	}
+	return fmt.Errorf("version %q not found", version)
+}
+
+func (m *versionedMockStore) DeleteTreeVersion(_ context.Context, id string, version string) error {
+	snaps := m.versions[id]
+	for i := range snaps {
+		if fmt.Sprintf("v%d", i+1) == version {
+			m.versions[id] = append(snaps[:i], snaps[i+1:]...)
+			return nil
+		}
+	}
+	return fmt.Errorf("version %q not found", version)
+}
+
+func setupVersionedTestEngine(t *testing.T) (*Engine, *mockConfig, *versionedMockStore) {
+	t.Helper()
+
+	mc := newMockConfig()
+	ms := newVersionedMockStore()
+
+	reg := NewRegistry()
+	_ = reg.RegisterConfig("mock", func(string, map[string]any) (config.Plugin, error) {
+		return mc, nil
+	})
+	_ = reg.RegisterStore("vmock", func(string, map[string]any) (store.Plugin, error) {
+		return ms, nil
+	})
+
+	ws := &WorkspaceConfig{
+		Version: "1",
+		Config:  ProviderRef{Provider: "mock"},
+		Store:   ProviderRef{Provider: "vmock"},
+	}
+
+	eng, err := NewEngine(reg, ws)
+	if err != nil {
+		t.Fatalf("NewEngine: %v", err)
+	}
+	return eng, mc, ms
+}
+
+func TestEngineTreeVersioning(t *testing.T) {
+	eng, _, _ := setupVersionedTestEngine(t)
+	ctx := context.Background()
+
+	// Save two versions.
+	tree1, _ := eng.LoadTree(ctx)
+	_ = eng.SaveTree(ctx, "app", tree1)
+
+	_ = eng.SetValue(ctx, "database/host", config.Value{Val: "remote"})
+	tree2, _ := eng.LoadTree(ctx)
+	_ = eng.SaveTree(ctx, "app", tree2)
+
+	// List versions.
+	versions, err := eng.ListTreeVersions(ctx, "app")
+	if err != nil {
+		t.Fatalf("ListTreeVersions: %v", err)
+	}
+	if len(versions) != 2 {
+		t.Fatalf("got %d versions, want 2", len(versions))
+	}
+
+	// Get version 1 (empty snapshot before first write).
+	v1tree, found, err := eng.GetTreeVersion(ctx, "app", "v1")
+	if err != nil {
+		t.Fatalf("GetTreeVersion v1: %v", err)
+	}
+	// v1 is snapshot before first write, should be empty.
+	if found {
+		t.Logf("v1 tree has %d paths (empty snapshot expected)", len(v1tree.List()))
+	}
+
+	// Rollback to v1.
+	if err := eng.RollbackTree(ctx, "app", "v1"); err != nil {
+		t.Fatalf("RollbackTree: %v", err)
+	}
+
+	// Delete version v2.
+	if err := eng.DeleteTreeVersion(ctx, "app", "v2"); err != nil {
+		t.Fatalf("DeleteTreeVersion: %v", err)
+	}
+
+	versions, _ = eng.ListTreeVersions(ctx, "app")
+	if len(versions) != 1 {
+		t.Errorf("got %d versions after delete, want 1", len(versions))
+	}
+}

@@ -29,7 +29,7 @@ and engine integration) has been implemented and all tests pass.
 
 - [ ] Wire `PutOptions.CASVersions` to Vault KV v2 CAS: each per-path write
   should include `cas=<expected_version>` to prevent lost updates
-- [ ] Surface Vault 412 (Precondition Failed) errors as a structured CAS
+- [x] Surface Vault 412 (Precondition Failed) errors as a structured CAS
   conflict error type that the engine/UI can present to the user
 
 ### Value-Level Versioning
@@ -65,7 +65,7 @@ and engine integration) has been implemented and all tests pass.
 
 ## Engine & UI Integration
 
-- [ ] Add engine methods for tree-level and value-level version operations
+- [x] Add engine methods for tree-level and value-level version operations
   (currently only `SaveTree`/`LoadStoredTree`/`ListTrees` are wired)
 - [ ] Expose Capabilities in the UI so users see versioning/encryption/auth
   status
@@ -77,30 +77,30 @@ and engine integration) has been implemented and all tests pass.
 
 ## Documentation
 
-- [ ] Update `docs/plugin-development/store-plugin.md` to reflect the new API
+- [x] Update `docs/plugin-development/store-plugin.md` to reflect the new API
   (the current docs still reference the old `Save`/`Load`/`Delete`/
   `SupportsVersioning` interface)
 - [ ] Add a Vault-specific plugin development guide with examples
-- [ ] Document the CAS workflow and error handling patterns
+- [x] Document the CAS workflow and error handling patterns
 - [ ] Document auth method registration and credential flow
 
 ## Error Handling
 
-- [ ] Define structured error types for common store failures:
+- [x] Define structured error types for common store failures:
   - CAS conflict (version mismatch)
   - Authentication required / session expired
   - Access denied (insufficient permissions)
   - Path not found
   - Encryption not initialized
-- [ ] Ensure gRPC status codes map cleanly to these error types so the engine
+- [x] Ensure gRPC status codes map cleanly to these error types so the engine
   and UI can present meaningful feedback
 
 ## Testing
 
 - [ ] Add integration tests for the Vault plugin against a real Vault dev
   server (use `t.Skip` for CI environments without Vault)
-- [ ] Add CAS conflict test cases in the store package test suite
-- [ ] Add value-level versioning test plugin and tests (analogous to the
+- [x] Add CAS conflict test cases in the store package test suite
+- [x] Add value-level versioning test plugin and tests (analogous to the
   existing `versionedTreePlugin` for tree-level versioning)
 - [ ] Add auth flow test cases (mock auth method, login, token expiry)
 - [ ] Add access control test cases

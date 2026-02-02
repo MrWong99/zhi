@@ -378,6 +378,91 @@ Values are always JSON-encoded for wire transfer using `TreeEntry`
 proto messages, reusing the same serialisation helpers as config and
 transform plugins. Validator closures are excluded automatically.
 
+## Structured error types
+
+The `store` package provides structured error types for common failure
+scenarios. Plugin implementations should return these errors (or wrap
+them with `fmt.Errorf("...: %w", err)`) so that the engine and UI can
+present meaningful feedback without string-matching.
+
+### Error types
+
+| Type                         | When to return                                                |
+|------------------------------|---------------------------------------------------------------|
+| `*ErrCASConflict`            | compare-and-swap version mismatch during `PutValues`          |
+| `*ErrAuthRequired`           | authentication is required or the session has expired         |
+| `*ErrAccessDenied`           | insufficient permissions for the requested operation          |
+| `*ErrPathNotFound`           | the requested path does not exist in the tree                 |
+| `*ErrEncryptionNotInitialized` | an operation requiring encryption was attempted before setup |
+| `*ErrNotSupported`           | a feature is not supported by the plugin's capabilities       |
+
+### Creating errors
+
+```go
+// CAS conflict with details
+return &store.ErrCASConflict{
+    Path:     "database/host",
+    Expected: "v3",
+    Actual:   "v5",
+}
+
+// Authentication required
+return &store.ErrAuthRequired{Reason: "token expired"}
+
+// Access denied
+return &store.ErrAccessDenied{Path: "secrets/", Action: "write"}
+
+// Path not found
+return &store.ErrPathNotFound{TreeID: "production", Path: "missing/key"}
+
+// Encryption not initialized
+return &store.ErrEncryptionNotInitialized{}
+
+// Feature not supported
+return &store.ErrNotSupported{Feature: "versioning"}
+```
+
+### Checking errors
+
+Each error type has a corresponding `Is*` helper that uses
+`errors.As` to match wrapped errors:
+
+```go
+err := plugin.PutValues(ctx, id, values, opts)
+if store.IsCASConflict(err) {
+    // handle version mismatch -- show diff, let user retry
+}
+if store.IsAuthRequired(err) {
+    // prompt for credentials
+}
+if store.IsAccessDenied(err) {
+    // show permission error
+}
+if store.IsNotSupported(err) {
+    // feature unavailable
+}
+```
+
+### gRPC status code mapping
+
+Structured errors are automatically mapped to gRPC status codes when
+crossing the plugin boundary:
+
+| Error type                   | gRPC code              |
+|------------------------------|------------------------|
+| `ErrCASConflict`             | `codes.Aborted`        |
+| `ErrAuthRequired`            | `codes.Unauthenticated`|
+| `ErrAccessDenied`            | `codes.PermissionDenied`|
+| `ErrPathNotFound`            | `codes.NotFound`       |
+| `ErrEncryptionNotInitialized`| `codes.FailedPrecondition`|
+| `ErrNotSupported`            | `codes.Unimplemented`  |
+
+The gRPC server (`grpc_server.go`) converts structured errors to status
+codes before sending, and the gRPC client (`grpc_client.go`) converts
+status codes back to structured errors on receipt. This means plugin
+implementations can return the Go error types directly and callers on
+the host side can use the `Is*` helpers transparently.
+
 ## Backend mapping examples
 
 | Backend           | ID mapping                                       | Versioning           |
