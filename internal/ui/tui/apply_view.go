@@ -38,6 +38,8 @@ type ApplyView struct {
 	cancelFn context.CancelFunc
 	width    int
 	height   int
+	outputCh <-chan core.ApplyOutput // persisted for chained reads
+	resultCh <-chan ApplyDoneMsg     // carries the apply result
 }
 
 // NewApplyView creates a new apply view.
@@ -76,19 +78,26 @@ func (v *ApplyView) StartApply(ctx context.Context, controller *ui.UIController)
 	v.cancelFn = cancel
 
 	outputCh := make(chan core.ApplyOutput, 100)
+	resultCh := make(chan ApplyDoneMsg, 1)
+
+	v.outputCh = outputCh
+	v.resultCh = resultCh
 
 	// Start the apply goroutine.
 	go func() {
-		_, _ = controller.Apply(applyCtx, "", outputCh)
+		result, err := controller.Apply(applyCtx, "", outputCh)
+		resultCh <- ApplyDoneMsg{Result: result, Err: err}
 	}()
 
 	return tea.Batch(
 		v.spinner.Tick,
-		v.readOutput(outputCh),
+		v.readOutput(),
 	)
 }
 
-func (v *ApplyView) readOutput(ch <-chan core.ApplyOutput) tea.Cmd {
+func (v *ApplyView) readOutput() tea.Cmd {
+	ch := v.outputCh
+	rch := v.resultCh
 	return func() tea.Msg {
 		var batch []core.ApplyOutput
 		timer := time.NewTimer(50 * time.Millisecond)
@@ -102,7 +111,7 @@ func (v *ApplyView) readOutput(ch <-chan core.ApplyOutput) tea.Cmd {
 					if len(batch) > 0 {
 						return ApplyOutputMsg{Lines: batch}
 					}
-					return ApplyDoneMsg{}
+					return <-rch
 				}
 				batch = append(batch, line)
 				// If we've accumulated enough, send the batch.
@@ -136,7 +145,7 @@ func (v ApplyView) UpdateApply(msg tea.Msg) (ApplyView, tea.Cmd) {
 			v.cursor = len(v.lines) - 1
 			v.ensureVisible()
 		}
-		return v, nil
+		return v, v.readOutput()
 
 	case ApplyDoneMsg:
 		v.running = false
