@@ -20,7 +20,7 @@ type GRPCClient struct {
 func (c *GRPCClient) Capabilities(ctx context.Context) (*Capabilities, error) {
 	resp, err := c.client.Capabilities(ctx, &pb.StoreCapabilitiesRequest{})
 	if err != nil {
-		return nil, err
+		return nil, statusToError(err)
 	}
 	return &Capabilities{
 		Versioning:    VersioningMode(resp.GetVersioning()),
@@ -35,7 +35,7 @@ func (c *GRPCClient) Capabilities(ctx context.Context) (*Capabilities, error) {
 func (c *GRPCClient) AuthMethods(ctx context.Context) ([]AuthMethod, error) {
 	resp, err := c.client.AuthMethods(ctx, &pb.AuthMethodsRequest{})
 	if err != nil {
-		return nil, err
+		return nil, statusToError(err)
 	}
 	methods := make([]AuthMethod, 0, len(resp.GetMethods()))
 	for _, m := range resp.GetMethods() {
@@ -62,7 +62,7 @@ func (c *GRPCClient) Login(ctx context.Context, method string, credentials map[s
 		Credentials: credentials,
 	})
 	if err != nil {
-		return nil, err
+		return nil, statusToError(err)
 	}
 	return &Credential{
 		Token:     resp.GetToken(),
@@ -76,14 +76,14 @@ func (c *GRPCClient) Login(ctx context.Context, method string, credentials map[s
 func (c *GRPCClient) ListTrees(ctx context.Context) ([]string, error) {
 	resp, err := c.client.ListTrees(ctx, &pb.ListTreesRequest{})
 	if err != nil {
-		return nil, err
+		return nil, statusToError(err)
 	}
 	return resp.GetIds(), nil
 }
 
 func (c *GRPCClient) DeleteTree(ctx context.Context, id string) error {
 	_, err := c.client.DeleteTree(ctx, &pb.DeleteTreeRequest{Id: id})
-	return err
+	return statusToError(err)
 }
 
 // --- Value operations ---
@@ -94,7 +94,7 @@ func (c *GRPCClient) GetValues(ctx context.Context, id string, paths []string) (
 		Paths: paths,
 	})
 	if err != nil {
-		return nil, err
+		return nil, statusToError(err)
 	}
 	return entriesFromProto(resp.GetValues())
 }
@@ -110,7 +110,7 @@ func (c *GRPCClient) PutValues(ctx context.Context, id string, values map[string
 		req.CasVersions = opts.CASVersions
 	}
 	_, err := c.client.PutValues(ctx, req)
-	return err
+	return statusToError(err)
 }
 
 func (c *GRPCClient) DeleteValues(ctx context.Context, id string, paths []string) error {
@@ -118,7 +118,7 @@ func (c *GRPCClient) DeleteValues(ctx context.Context, id string, paths []string
 		Id:    id,
 		Paths: paths,
 	})
-	return err
+	return statusToError(err)
 }
 
 // --- Tree-level versioning ---
@@ -126,7 +126,7 @@ func (c *GRPCClient) DeleteValues(ctx context.Context, id string, paths []string
 func (c *GRPCClient) ListTreeVersions(ctx context.Context, id string) ([]string, error) {
 	resp, err := c.client.ListTreeVersions(ctx, &pb.ListTreeVersionsRequest{Id: id})
 	if err != nil {
-		return nil, err
+		return nil, statusToError(err)
 	}
 	return resp.GetVersions(), nil
 }
@@ -138,7 +138,7 @@ func (c *GRPCClient) GetTreeVersion(ctx context.Context, id string, version stri
 		Paths:   paths,
 	})
 	if err != nil {
-		return nil, err
+		return nil, statusToError(err)
 	}
 	return entriesFromProto(resp.GetValues())
 }
@@ -148,7 +148,7 @@ func (c *GRPCClient) RollbackTree(ctx context.Context, id string, version string
 		Id:      id,
 		Version: version,
 	})
-	return err
+	return statusToError(err)
 }
 
 func (c *GRPCClient) DeleteTreeVersion(ctx context.Context, id string, version string) error {
@@ -156,7 +156,7 @@ func (c *GRPCClient) DeleteTreeVersion(ctx context.Context, id string, version s
 		Id:      id,
 		Version: version,
 	})
-	return err
+	return statusToError(err)
 }
 
 // --- Value-level versioning ---
@@ -167,7 +167,7 @@ func (c *GRPCClient) ListValueVersions(ctx context.Context, id string, path stri
 		Path: path,
 	})
 	if err != nil {
-		return nil, err
+		return nil, statusToError(err)
 	}
 	return resp.GetVersions(), nil
 }
@@ -179,7 +179,7 @@ func (c *GRPCClient) GetValueVersion(ctx context.Context, id string, path string
 		Version: version,
 	})
 	if err != nil {
-		return config.Value{}, false, err
+		return config.Value{}, false, statusToError(err)
 	}
 	if !resp.GetFound() {
 		return config.Value{}, false, nil
@@ -197,7 +197,7 @@ func (c *GRPCClient) RollbackValue(ctx context.Context, id string, path string, 
 		Path:    path,
 		Version: version,
 	})
-	return err
+	return statusToError(err)
 }
 
 func (c *GRPCClient) DeleteValueVersion(ctx context.Context, id string, path string, version string) error {
@@ -206,7 +206,7 @@ func (c *GRPCClient) DeleteValueVersion(ctx context.Context, id string, path str
 		Path:    path,
 		Version: version,
 	})
-	return err
+	return statusToError(err)
 }
 
 // --- Encryption ---
@@ -215,7 +215,7 @@ func (c *GRPCClient) InitEncryption(ctx context.Context, passphrase []byte) erro
 	_, err := c.client.InitEncryption(ctx, &pb.InitEncryptionRequest{
 		Passphrase: passphrase,
 	})
-	return err
+	return statusToError(err)
 }
 
 func (c *GRPCClient) RotateEncryption(ctx context.Context, oldPassphrase, newPassphrase []byte) error {
@@ -223,7 +223,7 @@ func (c *GRPCClient) RotateEncryption(ctx context.Context, oldPassphrase, newPas
 		OldPassphrase: oldPassphrase,
 		NewPassphrase: newPassphrase,
 	})
-	return err
+	return statusToError(err)
 }
 
 // --- Access control ---
@@ -234,7 +234,7 @@ func (c *GRPCClient) GrantAccess(ctx context.Context, id string, user string, pe
 		User:        user,
 		Permissions: permissionsToProto(permissions),
 	})
-	return err
+	return statusToError(err)
 }
 
 func (c *GRPCClient) RevokeAccess(ctx context.Context, id string, user string, paths []string) error {
@@ -243,13 +243,13 @@ func (c *GRPCClient) RevokeAccess(ctx context.Context, id string, user string, p
 		User:  user,
 		Paths: paths,
 	})
-	return err
+	return statusToError(err)
 }
 
 func (c *GRPCClient) ListAccess(ctx context.Context, id string) (map[string][]Permission, error) {
 	resp, err := c.client.ListAccess(ctx, &pb.ListAccessRequest{Id: id})
 	if err != nil {
-		return nil, err
+		return nil, statusToError(err)
 	}
 	result := make(map[string][]Permission, len(resp.GetAccess()))
 	for user, up := range resp.GetAccess() {

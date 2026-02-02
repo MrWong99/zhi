@@ -199,6 +199,128 @@ func (e *Engine) ListTrees(ctx context.Context) ([]string, error) {
 	return e.storePlugin.ListTrees(ctx)
 }
 
+// StoreCapabilities returns the store plugin's capabilities. Returns an
+// error if no store is configured.
+func (e *Engine) StoreCapabilities(ctx context.Context) (*store.Capabilities, error) {
+	if e.storePlugin == nil {
+		return nil, fmt.Errorf("no store provider configured")
+	}
+	return e.storePlugin.Capabilities(ctx)
+}
+
+// DeleteTree removes an entire tree from the store. Returns an error if
+// no store is configured.
+func (e *Engine) DeleteTree(ctx context.Context, id string) error {
+	if e.storePlugin == nil {
+		return fmt.Errorf("no store provider configured")
+	}
+	return e.storePlugin.DeleteTree(ctx, id)
+}
+
+// DeleteValues removes specific values from a tree in the store. Returns
+// an error if no store is configured.
+func (e *Engine) DeleteValues(ctx context.Context, id string, paths []string) error {
+	if e.storePlugin == nil {
+		return fmt.Errorf("no store provider configured")
+	}
+	return e.storePlugin.DeleteValues(ctx, id, paths)
+}
+
+// --- Tree-level versioning ---
+
+// ListTreeVersions returns version identifiers for a stored tree,
+// ordered newest first. Returns an error if no store is configured.
+func (e *Engine) ListTreeVersions(ctx context.Context, id string) ([]string, error) {
+	if e.storePlugin == nil {
+		return nil, fmt.Errorf("no store provider configured")
+	}
+	return e.storePlugin.ListTreeVersions(ctx, id)
+}
+
+// GetTreeVersion retrieves a specific version of a tree from the store.
+// The config plugin's path list determines which values to request.
+// Returns an error if no store is configured.
+func (e *Engine) GetTreeVersion(ctx context.Context, id string, version string) (*config.Tree, bool, error) {
+	if e.storePlugin == nil {
+		return nil, false, fmt.Errorf("no store provider configured")
+	}
+	paths, err := e.configPlugin.List(ctx)
+	if err != nil {
+		return nil, false, fmt.Errorf("listing config paths for version load: %w", err)
+	}
+	values, err := e.storePlugin.GetTreeVersion(ctx, id, version, paths)
+	if err != nil {
+		return nil, false, err
+	}
+	if len(values) == 0 {
+		return nil, false, nil
+	}
+	tree := config.NewTree()
+	for path, v := range values {
+		cp := v
+		if err := tree.Set(path, &cp); err != nil {
+			return nil, false, fmt.Errorf("setting versioned value at %q: %w", path, err)
+		}
+	}
+	return tree, true, nil
+}
+
+// RollbackTree restores a stored tree to a previous version. Returns an
+// error if no store is configured.
+func (e *Engine) RollbackTree(ctx context.Context, id string, version string) error {
+	if e.storePlugin == nil {
+		return fmt.Errorf("no store provider configured")
+	}
+	return e.storePlugin.RollbackTree(ctx, id, version)
+}
+
+// DeleteTreeVersion permanently removes a single tree version. Returns
+// an error if no store is configured.
+func (e *Engine) DeleteTreeVersion(ctx context.Context, id string, version string) error {
+	if e.storePlugin == nil {
+		return fmt.Errorf("no store provider configured")
+	}
+	return e.storePlugin.DeleteTreeVersion(ctx, id, version)
+}
+
+// --- Value-level versioning ---
+
+// ListValueVersions returns version identifiers for a specific value,
+// ordered newest first. Returns an error if no store is configured.
+func (e *Engine) ListValueVersions(ctx context.Context, id string, path string) ([]string, error) {
+	if e.storePlugin == nil {
+		return nil, fmt.Errorf("no store provider configured")
+	}
+	return e.storePlugin.ListValueVersions(ctx, id, path)
+}
+
+// GetValueVersion retrieves a specific version of a single value from
+// the store. Returns an error if no store is configured.
+func (e *Engine) GetValueVersion(ctx context.Context, id string, path string, version string) (config.Value, bool, error) {
+	if e.storePlugin == nil {
+		return config.Value{}, false, fmt.Errorf("no store provider configured")
+	}
+	return e.storePlugin.GetValueVersion(ctx, id, path, version)
+}
+
+// RollbackValue restores a value to a previous version. Returns an
+// error if no store is configured.
+func (e *Engine) RollbackValue(ctx context.Context, id string, path string, version string) error {
+	if e.storePlugin == nil {
+		return fmt.Errorf("no store provider configured")
+	}
+	return e.storePlugin.RollbackValue(ctx, id, path, version)
+}
+
+// DeleteValueVersion permanently removes a single value version.
+// Returns an error if no store is configured.
+func (e *Engine) DeleteValueVersion(ctx context.Context, id string, path string, version string) error {
+	if e.storePlugin == nil {
+		return fmt.Errorf("no store provider configured")
+	}
+	return e.storePlugin.DeleteValueVersion(ctx, id, path, version)
+}
+
 // Close shuts down the engine, killing all external plugin processes.
 func (e *Engine) Close() {
 	if e.registry != nil {
