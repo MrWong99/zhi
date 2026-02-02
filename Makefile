@@ -65,12 +65,16 @@ build: ## Build the zhi binary
 	go build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/$(BIN_NAME) $(CMD_DIR)
 
 .PHONY: build-examples
-build-examples: ## Build all example plugins
+build-examples: ## Build all Go example plugins
 	@mkdir -p $(BIN_DIR)/examples
 	@for dir in examples/*/; do \
 		name=$$(basename "$$dir"); \
-		echo "Building example: $$name"; \
-		go build $(GOFLAGS) -o $(BIN_DIR)/examples/$$name ./$$dir; \
+		if ls "$$dir"*.go 1>/dev/null 2>&1; then \
+			echo "Building example: $$name"; \
+			go build $(GOFLAGS) -o $(BIN_DIR)/examples/$$name ./$$dir; \
+		else \
+			echo "Skipping non-Go example: $$name (build separately)"; \
+		fi; \
 	done
 
 .PHONY: build-all
