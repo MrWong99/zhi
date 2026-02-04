@@ -140,7 +140,7 @@ install-protoc: ## Download and install the required protoc version locally
 	unzip -q -o /tmp/$(PROTOC_ZIP) -d $(PROTO_INSTALL_DIR); \
 	rm /tmp/$(PROTOC_ZIP); \
 	chmod +x $(PROTOC); \
-	echo "protoc $(PROTO_VERSION) installed successfully"
+	$(PROTOC) --version
 
 .PHONY: proto
 proto: install-protoc ## Generate Go code from Protocol Buffer definitions
@@ -155,6 +155,7 @@ proto-check: proto ## Verify generated proto code is up-to-date
 	@if [ -n "$$(git diff --name-only -- '*.pb.go')" ]; then \
 		echo "error: generated protobuf files are out of date; run 'make proto' and commit the changes"; \
 		git diff --stat -- '*.pb.go'; \
+		$(PROTOC) --version; \
 		exit 1; \
 	fi
 
