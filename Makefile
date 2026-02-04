@@ -154,7 +154,7 @@ proto: install-protoc ## Generate Go code from Protocol Buffer definitions
 proto-check: proto ## Verify generated proto code is up-to-date
 	@if [ -n "$$(git diff --name-only -- '*.pb.go')" ]; then \
 		echo "error: generated protobuf files are out of date; run 'make proto' and commit the changes"; \
-		git diff --stat -- '*.pb.go'; \
+		git diff -- '*.pb.go'; \
 		$(PROTOC) --version; \
 		exit 1; \
 	fi

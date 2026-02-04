@@ -131,8 +131,8 @@ func TestGetStringSlice(t *testing.T) {
 
 func TestGetAny(t *testing.T) {
 	metadata := map[string]any{
-		"exists":    "value",
-		"nilValue":  nil,
+		"exists":   "value",
+		"nilValue": nil,
 	}
 
 	t.Run("existing key", func(t *testing.T) {
