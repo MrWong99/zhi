@@ -311,10 +311,13 @@ func (*SetResponse) Descriptor() ([]byte, []int) {
 // TreeEntry is a single value in the configuration tree snapshot sent during
 // validation.
 type TreeEntry struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
-	ValueJson     []byte                 `protobuf:"bytes,2,opt,name=value_json,json=valueJson,proto3" json:"value_json,omitempty"`
-	MetadataJson  []byte                 `protobuf:"bytes,3,opt,name=metadata_json,json=metadataJson,proto3" json:"metadata_json,omitempty"`
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	Path         string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	ValueJson    []byte                 `protobuf:"bytes,2,opt,name=value_json,json=valueJson,proto3" json:"value_json,omitempty"`
+	MetadataJson []byte                 `protobuf:"bytes,3,opt,name=metadata_json,json=metadataJson,proto3" json:"metadata_json,omitempty"`
+	// Optional version identifier. Populated by store plugins on reads and
+	// used for optimistic locking (check-and-set) on writes.
+	Version       string `protobuf:"bytes,4,opt,name=version,proto3" json:"version,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -368,6 +371,13 @@ func (x *TreeEntry) GetMetadataJson() []byte {
 		return x.MetadataJson
 	}
 	return nil
+}
+
+func (x *TreeEntry) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
 }
 
 type ValidateRequest struct {
@@ -553,12 +563,13 @@ const file_zhiplugin_v1_config_proto_rawDesc = "" +
 	"\n" +
 	"value_json\x18\x02 \x01(\fR\tvalueJson\x12#\n" +
 	"\rmetadata_json\x18\x03 \x01(\fR\fmetadataJson\"\r\n" +
-	"\vSetResponse\"c\n" +
+	"\vSetResponse\"}\n" +
 	"\tTreeEntry\x12\x12\n" +
 	"\x04path\x18\x01 \x01(\tR\x04path\x12\x1d\n" +
 	"\n" +
 	"value_json\x18\x02 \x01(\fR\tvalueJson\x12#\n" +
-	"\rmetadata_json\x18\x03 \x01(\fR\fmetadataJson\"R\n" +
+	"\rmetadata_json\x18\x03 \x01(\fR\fmetadataJson\x12\x18\n" +
+	"\aversion\x18\x04 \x01(\tR\aversion\"R\n" +
 	"\x0fValidateRequest\x12\x12\n" +
 	"\x04path\x18\x01 \x01(\tR\x04path\x12+\n" +
 	"\x04tree\x18\x02 \x03(\v2\x17.zhiplugin.v1.TreeEntryR\x04tree\"p\n" +

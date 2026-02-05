@@ -55,6 +55,9 @@ message TreeEntry {
   string path = 1;
   bytes value_json = 2;
   bytes metadata_json = 3;
+  // Optional version identifier. Populated by store plugins on reads and
+  // used for optimistic locking (check-and-set) on writes.
+  string version = 4;
 }
 
 message ValidateRequest {

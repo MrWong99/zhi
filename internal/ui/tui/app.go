@@ -9,6 +9,7 @@ import (
 
 	"github.com/MrWong99/zhi/internal/ui"
 	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
+	"github.com/MrWong99/zhi/pkg/zhiplugin/store"
 )
 
 // viewType identifies which sub-view is currently active.
@@ -226,7 +227,11 @@ func (a *App) updateTreeView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "s":
 			err := a.controller.SaveTree(a.ctx, "default")
 			if err != nil {
-				a.statusMsg = "Save failed: " + err.Error()
+				if store.IsCASConflict(err) {
+					a.statusMsg = "Save conflict: tree was modified externally. Press r to reload."
+				} else {
+					a.statusMsg = "Save failed: " + err.Error()
+				}
 			} else {
 				a.statusMsg = "Tree saved"
 			}

@@ -1195,7 +1195,7 @@ func TestNoVersionOverridesMaxVersions(t *testing.T) {
 	}
 }
 
-func TestCASFromLabel(t *testing.T) {
+func TestCASFromVersion(t *testing.T) {
 	s, _ := newTestStore(t)
 	ctx := context.Background()
 
@@ -1207,29 +1207,38 @@ func TestCASFromLabel(t *testing.T) {
 		t.Fatalf("PutValues v1: %v", err)
 	}
 
-	// Write version 2 using store.cas label (expected version 1).
-	meta := labels.NewBuilder().CAS(1).Build()
-	err = s.PutValues(ctx, "app", map[string]config.Value{
-		"cas/key": {Val: "second", Metadata: meta},
-	}, nil)
+	// Read back to get the Version field populated.
+	got, err := s.GetValues(ctx, "app", []string{"cas/key"})
 	if err != nil {
-		t.Fatalf("PutValues with CAS label: %v", err)
+		t.Fatalf("GetValues: %v", err)
+	}
+	v := got["cas/key"]
+	if v.Version != "1" {
+		t.Fatalf("expected Version %q, got %q", "1", v.Version)
 	}
 
-	// Write version 3 with wrong CAS from label (should fail).
-	meta = labels.NewBuilder().CAS(1).Build()
+	// Write version 2 using the Version from the read (automatic CAS).
+	v.Val = "second"
 	err = s.PutValues(ctx, "app", map[string]config.Value{
-		"cas/key": {Val: "third", Metadata: meta},
+		"cas/key": v,
+	}, nil)
+	if err != nil {
+		t.Fatalf("PutValues with Version CAS: %v", err)
+	}
+
+	// Write version 3 with stale Version=1 (should fail).
+	err = s.PutValues(ctx, "app", map[string]config.Value{
+		"cas/key": {Val: "third", Version: "1"},
 	}, nil)
 	if err == nil {
-		t.Fatal("expected CAS conflict error from label")
+		t.Fatal("expected CAS conflict error from stale Version")
 	}
 	if !store.IsCASConflict(err) {
 		t.Errorf("expected ErrCASConflict, got %T: %v", err, err)
 	}
 }
 
-func TestCASOptionsOverrideLabel(t *testing.T) {
+func TestCASOptionsOverrideVersion(t *testing.T) {
 	s, _ := newTestStore(t)
 	ctx := context.Background()
 
@@ -1238,11 +1247,10 @@ func TestCASOptionsOverrideLabel(t *testing.T) {
 		"cas/key": {Val: "first"},
 	}, nil)
 
-	// Metadata says CAS=5 (wrong), but PutOptions says CAS=1 (correct).
+	// Value.Version says 5 (wrong), but PutOptions says 1 (correct).
 	// PutOptions should take precedence.
-	meta := labels.NewBuilder().CAS(5).Build()
 	err := s.PutValues(ctx, "app", map[string]config.Value{
-		"cas/key": {Val: "second", Metadata: meta},
+		"cas/key": {Val: "second", Version: "5"},
 	}, &store.PutOptions{CASVersions: map[string]string{"cas/key": "1"}})
 	if err != nil {
 		t.Fatalf("PutValues with CAS option override: %v", err)
@@ -1251,6 +1259,31 @@ func TestCASOptionsOverrideLabel(t *testing.T) {
 	got, _ := s.GetValues(ctx, "app", []string{"cas/key"})
 	if got["cas/key"].Val != "second" {
 		t.Errorf("value should be updated, got %v", got["cas/key"].Val)
+	}
+}
+
+func TestGetValuesPopulatesVersion(t *testing.T) {
+	s, _ := newTestStore(t)
+	ctx := context.Background()
+
+	// Write two versions.
+	_ = s.PutValues(ctx, "app", map[string]config.Value{
+		"ver/key": {Val: "v1"},
+	}, nil)
+	_ = s.PutValues(ctx, "app", map[string]config.Value{
+		"ver/key": {Val: "v2"},
+	}, nil)
+
+	got, err := s.GetValues(ctx, "app", []string{"ver/key"})
+	if err != nil {
+		t.Fatalf("GetValues: %v", err)
+	}
+	v := got["ver/key"]
+	if v.Version != "2" {
+		t.Errorf("Version = %q, want %q", v.Version, "2")
+	}
+	if v.Val != "v2" {
+		t.Errorf("Val = %v, want %q", v.Val, "v2")
 	}
 }
 

@@ -479,8 +479,8 @@ func (s *Store) PutValues(ctx context.Context, id string, values map[string]conf
 			"data": encodeValue(v),
 		}
 
-		// Wire CAS from explicit PutOptions first, then fall back to
-		// the store.cas label in metadata.
+		// Wire CAS: explicit PutOptions take precedence, then fall back
+		// to Value.Version (populated by prior reads for optimistic locking).
 		casVersion := 0
 		if opts != nil && opts.CASVersions != nil {
 			if expected, ok := opts.CASVersions[p]; ok {
@@ -491,9 +491,11 @@ func (s *Store) PutValues(ctx context.Context, id string, values map[string]conf
 				casVersion = cas
 			}
 		}
-		if casVersion == 0 {
-			// store.cas: use label-based CAS if no explicit option was given.
-			casVersion = labels.GetCAS(v.Metadata)
+		if casVersion == 0 && v.Version != "" {
+			cas, err := strconv.Atoi(v.Version)
+			if err == nil {
+				casVersion = cas
+			}
 		}
 		if casVersion > 0 {
 			body["options"] = map[string]any{"cas": casVersion}
@@ -859,6 +861,8 @@ func encodeValue(v config.Value) map[string]any {
 }
 
 // decodeKVResponse parses the KV v2 read response into a config.Value.
+// The version is extracted from the Vault response metadata and set on
+// the returned Value for automatic optimistic locking on writes.
 func decodeKVResponse(resp *vaultResponse) (config.Value, error) {
 	if resp == nil || len(resp.Data) == 0 {
 		return config.Value{}, nil
@@ -867,8 +871,9 @@ func decodeKVResponse(resp *vaultResponse) (config.Value, error) {
 	var envelope struct {
 		Data     map[string]any `json:"data"`
 		Metadata struct {
-			DeletionTime string `json:"deletion_time"`
-			Destroyed    bool   `json:"destroyed"`
+			Version      json.Number `json:"version"`
+			DeletionTime string      `json:"deletion_time"`
+			Destroyed    bool        `json:"destroyed"`
 		} `json:"metadata"`
 	}
 	if err := json.Unmarshal(resp.Data, &envelope); err != nil {
@@ -900,6 +905,11 @@ func decodeKVResponse(resp *vaultResponse) (config.Value, error) {
 			return config.Value{}, fmt.Errorf("decoding metadata: %w", err)
 		}
 		val.Metadata = meta
+	}
+
+	// Extract version for optimistic locking.
+	if v := envelope.Metadata.Version.String(); v != "" && v != "0" {
+		val.Version = v
 	}
 
 	return val, nil

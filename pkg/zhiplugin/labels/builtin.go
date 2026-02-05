@@ -239,17 +239,6 @@ var storeLabels = []*Label{
 		Since: "0.1.0",
 	},
 	{
-		Name:        "store.cas",
-		Namespace:   "store",
-		Description: "Check-and-set version for optimistic locking. Store will reject update if current version differs.",
-		ValueType:   "int",
-		AppliesTo:   []string{"store"},
-		Constraints: &Constraints{
-			Min: ptr(0.0),
-		},
-		Since: "0.1.0",
-	},
-	{
 		Name:        "store.maxversions",
 		Namespace:   "store",
 		Description: "Maximum number of versions to retain for this value. Older versions beyond this limit are automatically deleted.",
@@ -425,12 +414,11 @@ const (
 	LabelUISection     = "ui.section"
 
 	// Store labels
-	LabelStoreWriteonly    = "store.writeonly"
-	LabelStoreEncrypt      = "store.encrypt"
-	LabelStoreNoVersion    = "store.noversion"
-	LabelStoreTTL          = "store.ttl"
-	LabelStoreCAS          = "store.cas"
-	LabelStoreMaxVersions  = "store.maxversions"
+	LabelStoreWriteonly   = "store.writeonly"
+	LabelStoreEncrypt     = "store.encrypt"
+	LabelStoreNoVersion   = "store.noversion"
+	LabelStoreTTL         = "store.ttl"
+	LabelStoreMaxVersions = "store.maxversions"
 
 	// Transform labels
 	LabelTransformHidden = "transform.hidden"

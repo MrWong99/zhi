@@ -117,6 +117,12 @@ func resultsFromProto(msgs []*pb.ValidationResultMsg) ([]ValidationResult, error
 // ValueFromProto reconstructs a Value from JSON-encoded bytes received over
 // the wire.
 func ValueFromProto(valJSON, metaJSON []byte) (Value, error) {
+	return ValueFromProtoVersioned(valJSON, metaJSON, "")
+}
+
+// ValueFromProtoVersioned reconstructs a Value from JSON-encoded bytes and
+// an optional version identifier received over the wire.
+func ValueFromProtoVersioned(valJSON, metaJSON []byte, version string) (Value, error) {
 	var v Value
 	if len(valJSON) > 0 {
 		if err := json.Unmarshal(valJSON, &v.Val); err != nil {
@@ -128,5 +134,6 @@ func ValueFromProto(valJSON, metaJSON []byte) (Value, error) {
 			return Value{}, err
 		}
 	}
+	v.Version = version
 	return v, nil
 }

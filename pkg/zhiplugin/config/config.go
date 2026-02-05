@@ -89,6 +89,13 @@ type Value struct {
 	// configuration entry (descriptions, display hints, etc.).
 	Metadata map[string]any `json:"metadata,omitempty" yaml:"metadata,omitempty"`
 
+	// Version is an opaque version identifier set by store plugins when
+	// reading values. Store plugins use it for automatic optimistic locking
+	// (check-and-set): if Version is non-empty when writing, the store
+	// rejects the write if the current version differs.
+	// This field is transient and not serialised to JSON/YAML.
+	Version string `json:"-" yaml:"-"`
+
 	// Validators is an optional set of validation functions executed in
 	// order. The field is not serialised.
 	Validators []ValidateFunc `json:"-" yaml:"-"`

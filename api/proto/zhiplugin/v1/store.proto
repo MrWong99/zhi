@@ -220,6 +220,8 @@ message GetValueVersionResponse {
   bool found = 1;
   bytes value_json = 2;
   bytes metadata_json = 3;
+  // The version identifier of this specific version.
+  string version = 4;
 }
 
 message RollbackValueRequest {
