@@ -249,6 +249,21 @@ var storeLabels = []*Label{
 		},
 		Since: "0.1.0",
 	},
+	{
+		Name:        "store.maxversions",
+		Namespace:   "store",
+		Description: "Maximum number of versions to retain for this value. Older versions beyond this limit are automatically deleted.",
+		ValueType:   "int",
+		AppliesTo:   []string{"store"},
+		Constraints: &Constraints{
+			Min: ptr(1.0),
+		},
+		Examples: []Example{
+			{Value: 5, Description: "Keep at most 5 versions"},
+			{Value: 1, Description: "Keep only the latest version (no history)"},
+		},
+		Since: "0.2.0",
+	},
 }
 
 // Transform namespace - interpreted by transform plugins
@@ -410,11 +425,12 @@ const (
 	LabelUISection     = "ui.section"
 
 	// Store labels
-	LabelStoreWriteonly = "store.writeonly"
-	LabelStoreEncrypt   = "store.encrypt"
-	LabelStoreNoVersion = "store.noversion"
-	LabelStoreTTL       = "store.ttl"
-	LabelStoreCAS       = "store.cas"
+	LabelStoreWriteonly    = "store.writeonly"
+	LabelStoreEncrypt      = "store.encrypt"
+	LabelStoreNoVersion    = "store.noversion"
+	LabelStoreTTL          = "store.ttl"
+	LabelStoreCAS          = "store.cas"
+	LabelStoreMaxVersions  = "store.maxversions"
 
 	// Transform labels
 	LabelTransformHidden = "transform.hidden"

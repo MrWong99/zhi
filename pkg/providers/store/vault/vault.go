@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
+	"github.com/MrWong99/zhi/pkg/zhiplugin/labels"
 	"github.com/MrWong99/zhi/pkg/zhiplugin/store"
 )
 
@@ -456,6 +457,10 @@ func (s *Store) GetValues(ctx context.Context, id string, paths []string) (map[s
 			return nil, err
 		}
 		if found {
+			// store.writeonly: return metadata but redact the actual value.
+			if labels.IsWriteonly(val.Metadata) {
+				val.Val = nil
+			}
 			result[p] = val
 		}
 	}
@@ -464,27 +469,74 @@ func (s *Store) GetValues(ctx context.Context, id string, paths []string) (map[s
 
 func (s *Store) PutValues(ctx context.Context, id string, values map[string]config.Value, opts *store.PutOptions) error {
 	for p, v := range values {
+		// Apply per-value metadata settings to Vault KV v2 metadata endpoint
+		// before writing the data. This configures TTL, max versions, etc.
+		if err := s.applyValueMetadata(ctx, id, p, v.Metadata); err != nil {
+			return err
+		}
+
 		body := map[string]any{
 			"data": encodeValue(v),
 		}
 
-		// Wire CAS if requested.
-		if opts != nil {
-			if opts.CASVersions != nil {
-				if expected, ok := opts.CASVersions[p]; ok {
-					cas, err := strconv.Atoi(expected)
-					if err != nil {
-						return fmt.Errorf("invalid CAS version %q for path %q: %w", expected, p, err)
-					}
-					body["options"] = map[string]any{"cas": cas}
+		// Wire CAS from explicit PutOptions first, then fall back to
+		// the store.cas label in metadata.
+		casVersion := 0
+		if opts != nil && opts.CASVersions != nil {
+			if expected, ok := opts.CASVersions[p]; ok {
+				cas, err := strconv.Atoi(expected)
+				if err != nil {
+					return fmt.Errorf("invalid CAS version %q for path %q: %w", expected, p, err)
 				}
+				casVersion = cas
 			}
+		}
+		if casVersion == 0 {
+			// store.cas: use label-based CAS if no explicit option was given.
+			casVersion = labels.GetCAS(v.Metadata)
+		}
+		if casVersion > 0 {
+			body["options"] = map[string]any{"cas": casVersion}
 		}
 
 		_, err := s.client.request(ctx, http.MethodPost, s.dataPath(id, p), body)
 		if err != nil {
 			return s.mapWriteError(err, p)
 		}
+	}
+	return nil
+}
+
+// applyValueMetadata configures Vault KV v2 per-secret metadata based on
+// store labels. This uses the metadata API endpoint to set properties like
+// max_versions and delete_version_after on individual secrets.
+func (s *Store) applyValueMetadata(ctx context.Context, treeID, path string, metadata map[string]any) error {
+	metaBody := make(map[string]any)
+
+	// store.noversion: limit to 1 version so no history is kept.
+	if labels.IsNoVersion(metadata) {
+		metaBody["max_versions"] = 1
+	}
+
+	// store.maxversions: set the maximum number of versions to retain.
+	// If store.noversion is also set, noversion takes precedence (1 version).
+	if maxV := labels.GetMaxVersions(metadata); maxV > 0 && !labels.IsNoVersion(metadata) {
+		metaBody["max_versions"] = maxV
+	}
+
+	// store.ttl: set delete_version_after to automatically expire versions.
+	// Vault KV v2 accepts a Go-style duration string.
+	if ttl := labels.GetTTL(metadata); ttl > 0 {
+		metaBody["delete_version_after"] = fmt.Sprintf("%ds", ttl)
+	}
+
+	if len(metaBody) == 0 {
+		return nil
+	}
+
+	_, err := s.client.request(ctx, http.MethodPost, s.metadataPath(treeID, path), metaBody)
+	if err != nil {
+		return s.mapError(err)
 	}
 	return nil
 }

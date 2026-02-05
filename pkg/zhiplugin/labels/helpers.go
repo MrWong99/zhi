@@ -157,6 +157,23 @@ func ShouldEncrypt(metadata map[string]any) bool {
 	return GetBool(metadata, LabelStoreEncrypt, false)
 }
 
+// IsNoVersion checks if store.noversion is set to true.
+func IsNoVersion(metadata map[string]any) bool {
+	return GetBool(metadata, LabelStoreNoVersion, false)
+}
+
+// GetCAS returns the store.cas label value (expected version for optimistic locking).
+// Returns 0 if not set.
+func GetCAS(metadata map[string]any) int {
+	return GetInt(metadata, LabelStoreCAS, 0)
+}
+
+// GetMaxVersions returns the store.maxversions label value.
+// Returns 0 if not set (meaning no limit).
+func GetMaxVersions(metadata map[string]any) int {
+	return GetInt(metadata, LabelStoreMaxVersions, 0)
+}
+
 // IsTransformHidden checks if transform.hidden is set to true.
 func IsTransformHidden(metadata map[string]any) bool {
 	return GetBool(metadata, LabelTransformHidden, false)
@@ -383,6 +400,21 @@ func (b *Builder) DefaultValue(val any) *Builder {
 // TTL sets store.ttl in seconds.
 func (b *Builder) TTL(seconds int) *Builder {
 	return b.Set(LabelStoreTTL, seconds)
+}
+
+// NoVersion sets store.noversion to true.
+func (b *Builder) NoVersion() *Builder {
+	return b.Set(LabelStoreNoVersion, true)
+}
+
+// CAS sets store.cas to the expected version.
+func (b *Builder) CAS(version int) *Builder {
+	return b.Set(LabelStoreCAS, version)
+}
+
+// MaxVersions sets store.maxversions.
+func (b *Builder) MaxVersions(n int) *Builder {
+	return b.Set(LabelStoreMaxVersions, n)
 }
 
 // Multiline sets ui.multiline to true.

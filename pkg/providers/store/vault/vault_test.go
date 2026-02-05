@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
+	"github.com/MrWong99/zhi/pkg/zhiplugin/labels"
 	"github.com/MrWong99/zhi/pkg/zhiplugin/store"
 )
 
@@ -20,9 +21,16 @@ import (
 
 // mockVault simulates a Vault KV v2 server for unit testing.
 type mockVault struct {
-	mu       sync.Mutex
-	secrets  map[string][]secretVersion // path -> versions (1-indexed)
-	policies map[string]string          // policy name -> HCL
+	mu             sync.Mutex
+	secrets        map[string][]secretVersion // path -> versions (1-indexed)
+	policies       map[string]string          // policy name -> HCL
+	secretMetadata map[string]secretMeta      // path -> per-secret metadata config
+}
+
+// secretMeta holds per-secret metadata configured via POST to /metadata/.
+type secretMeta struct {
+	MaxVersions        int    `json:"max_versions"`
+	DeleteVersionAfter string `json:"delete_version_after"`
 }
 
 type secretVersion struct {
@@ -33,8 +41,9 @@ type secretVersion struct {
 
 func newMockVault() *mockVault {
 	return &mockVault{
-		secrets:  make(map[string][]secretVersion),
-		policies: make(map[string]string),
+		secrets:        make(map[string][]secretVersion),
+		policies:       make(map[string]string),
+		secretMetadata: make(map[string]secretMeta),
 	}
 }
 
@@ -228,6 +237,26 @@ func (m *mockVault) handleMetadata(w http.ResponseWriter, r *http.Request, path 
 				"versions":        versionsMeta,
 			},
 		})
+
+	case http.MethodPost:
+		// Handle per-secret metadata configuration (max_versions, delete_version_after).
+		var body struct {
+			MaxVersions        int    `json:"max_versions"`
+			DeleteVersionAfter string `json:"delete_version_after"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			writeVaultError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		meta := m.secretMetadata[secretPath]
+		if body.MaxVersions > 0 {
+			meta.MaxVersions = body.MaxVersions
+		}
+		if body.DeleteVersionAfter != "" {
+			meta.DeleteVersionAfter = body.DeleteVersionAfter
+		}
+		m.secretMetadata[secretPath] = meta
+		w.WriteHeader(http.StatusNoContent)
 
 	case "LIST":
 		m.handleList(w, secretPath)
@@ -1026,4 +1055,243 @@ func TestIntegrationWithVaultDev(t *testing.T) {
 
 	// Cleanup.
 	_ = s.DeleteTree(ctx, "integration")
+}
+
+// --- Store label tests ---
+
+func TestWriteonlyLabel(t *testing.T) {
+	s, _ := newTestStore(t)
+	ctx := context.Background()
+
+	meta := labels.NewBuilder().Writeonly().Build()
+	err := s.PutValues(ctx, "app", map[string]config.Value{
+		"secret/key": {Val: "super-secret", Metadata: meta},
+	}, nil)
+	if err != nil {
+		t.Fatalf("PutValues: %v", err)
+	}
+
+	got, err := s.GetValues(ctx, "app", []string{"secret/key"})
+	if err != nil {
+		t.Fatalf("GetValues: %v", err)
+	}
+
+	val, ok := got["secret/key"]
+	if !ok {
+		t.Fatal("expected secret/key to be present in results")
+	}
+	if val.Val != nil {
+		t.Errorf("write-only value should be nil, got %v", val.Val)
+	}
+	// Metadata should still be preserved so the label is visible.
+	if !labels.IsWriteonly(val.Metadata) {
+		t.Error("metadata should preserve store.writeonly label")
+	}
+}
+
+func TestWriteonlyLabelNotSetReturnsValue(t *testing.T) {
+	s, _ := newTestStore(t)
+	ctx := context.Background()
+
+	err := s.PutValues(ctx, "app", map[string]config.Value{
+		"normal/key": {Val: "visible"},
+	}, nil)
+	if err != nil {
+		t.Fatalf("PutValues: %v", err)
+	}
+
+	got, err := s.GetValues(ctx, "app", []string{"normal/key"})
+	if err != nil {
+		t.Fatalf("GetValues: %v", err)
+	}
+	if got["normal/key"].Val != "visible" {
+		t.Errorf("non-writeonly value should be returned, got %v", got["normal/key"].Val)
+	}
+}
+
+func TestNoVersionLabel(t *testing.T) {
+	s, mock := newTestStore(t)
+	ctx := context.Background()
+
+	meta := labels.NewBuilder().NoVersion().Build()
+	err := s.PutValues(ctx, "app", map[string]config.Value{
+		"ephemeral/key": {Val: "data", Metadata: meta},
+	}, nil)
+	if err != nil {
+		t.Fatalf("PutValues: %v", err)
+	}
+
+	// Verify the mock recorded max_versions=1 on the metadata.
+	sm, ok := mock.secretMetadata["zhi/app/ephemeral/key"]
+	if !ok {
+		t.Fatal("expected secret metadata to be set for noversion path")
+	}
+	if sm.MaxVersions != 1 {
+		t.Errorf("max_versions = %d, want 1", sm.MaxVersions)
+	}
+}
+
+func TestTTLLabel(t *testing.T) {
+	s, mock := newTestStore(t)
+	ctx := context.Background()
+
+	meta := labels.NewBuilder().TTL(3600).Build()
+	err := s.PutValues(ctx, "app", map[string]config.Value{
+		"temp/key": {Val: "expires", Metadata: meta},
+	}, nil)
+	if err != nil {
+		t.Fatalf("PutValues: %v", err)
+	}
+
+	sm, ok := mock.secretMetadata["zhi/app/temp/key"]
+	if !ok {
+		t.Fatal("expected secret metadata to be set for TTL path")
+	}
+	if sm.DeleteVersionAfter != "3600s" {
+		t.Errorf("delete_version_after = %q, want %q", sm.DeleteVersionAfter, "3600s")
+	}
+}
+
+func TestMaxVersionsLabel(t *testing.T) {
+	s, mock := newTestStore(t)
+	ctx := context.Background()
+
+	meta := labels.NewBuilder().MaxVersions(5).Build()
+	err := s.PutValues(ctx, "app", map[string]config.Value{
+		"versioned/key": {Val: "data", Metadata: meta},
+	}, nil)
+	if err != nil {
+		t.Fatalf("PutValues: %v", err)
+	}
+
+	sm, ok := mock.secretMetadata["zhi/app/versioned/key"]
+	if !ok {
+		t.Fatal("expected secret metadata to be set for maxversions path")
+	}
+	if sm.MaxVersions != 5 {
+		t.Errorf("max_versions = %d, want 5", sm.MaxVersions)
+	}
+}
+
+func TestNoVersionOverridesMaxVersions(t *testing.T) {
+	s, mock := newTestStore(t)
+	ctx := context.Background()
+
+	// When both noversion and maxversions are set, noversion wins.
+	meta := labels.NewBuilder().NoVersion().MaxVersions(10).Build()
+	err := s.PutValues(ctx, "app", map[string]config.Value{
+		"conflict/key": {Val: "data", Metadata: meta},
+	}, nil)
+	if err != nil {
+		t.Fatalf("PutValues: %v", err)
+	}
+
+	sm, ok := mock.secretMetadata["zhi/app/conflict/key"]
+	if !ok {
+		t.Fatal("expected secret metadata to be set")
+	}
+	if sm.MaxVersions != 1 {
+		t.Errorf("max_versions = %d, want 1 (noversion should override)", sm.MaxVersions)
+	}
+}
+
+func TestCASFromLabel(t *testing.T) {
+	s, _ := newTestStore(t)
+	ctx := context.Background()
+
+	// Write version 1.
+	err := s.PutValues(ctx, "app", map[string]config.Value{
+		"cas/key": {Val: "first"},
+	}, nil)
+	if err != nil {
+		t.Fatalf("PutValues v1: %v", err)
+	}
+
+	// Write version 2 using store.cas label (expected version 1).
+	meta := labels.NewBuilder().CAS(1).Build()
+	err = s.PutValues(ctx, "app", map[string]config.Value{
+		"cas/key": {Val: "second", Metadata: meta},
+	}, nil)
+	if err != nil {
+		t.Fatalf("PutValues with CAS label: %v", err)
+	}
+
+	// Write version 3 with wrong CAS from label (should fail).
+	meta = labels.NewBuilder().CAS(1).Build()
+	err = s.PutValues(ctx, "app", map[string]config.Value{
+		"cas/key": {Val: "third", Metadata: meta},
+	}, nil)
+	if err == nil {
+		t.Fatal("expected CAS conflict error from label")
+	}
+	if !store.IsCASConflict(err) {
+		t.Errorf("expected ErrCASConflict, got %T: %v", err, err)
+	}
+}
+
+func TestCASOptionsOverrideLabel(t *testing.T) {
+	s, _ := newTestStore(t)
+	ctx := context.Background()
+
+	// Write version 1.
+	_ = s.PutValues(ctx, "app", map[string]config.Value{
+		"cas/key": {Val: "first"},
+	}, nil)
+
+	// Metadata says CAS=5 (wrong), but PutOptions says CAS=1 (correct).
+	// PutOptions should take precedence.
+	meta := labels.NewBuilder().CAS(5).Build()
+	err := s.PutValues(ctx, "app", map[string]config.Value{
+		"cas/key": {Val: "second", Metadata: meta},
+	}, &store.PutOptions{CASVersions: map[string]string{"cas/key": "1"}})
+	if err != nil {
+		t.Fatalf("PutValues with CAS option override: %v", err)
+	}
+
+	got, _ := s.GetValues(ctx, "app", []string{"cas/key"})
+	if got["cas/key"].Val != "second" {
+		t.Errorf("value should be updated, got %v", got["cas/key"].Val)
+	}
+}
+
+func TestNoLabelsSkipsMetadataCall(t *testing.T) {
+	s, mock := newTestStore(t)
+	ctx := context.Background()
+
+	// Write a value with no store labels. No metadata POST should be made.
+	err := s.PutValues(ctx, "app", map[string]config.Value{
+		"plain/key": {Val: "data"},
+	}, nil)
+	if err != nil {
+		t.Fatalf("PutValues: %v", err)
+	}
+
+	if _, ok := mock.secretMetadata["zhi/app/plain/key"]; ok {
+		t.Error("expected no secret metadata to be set for plain value")
+	}
+}
+
+func TestCombinedLabels(t *testing.T) {
+	s, mock := newTestStore(t)
+	ctx := context.Background()
+
+	// Combine TTL and maxversions labels.
+	meta := labels.NewBuilder().TTL(7200).MaxVersions(3).Build()
+	err := s.PutValues(ctx, "app", map[string]config.Value{
+		"combined/key": {Val: "data", Metadata: meta},
+	}, nil)
+	if err != nil {
+		t.Fatalf("PutValues: %v", err)
+	}
+
+	sm, ok := mock.secretMetadata["zhi/app/combined/key"]
+	if !ok {
+		t.Fatal("expected secret metadata to be set")
+	}
+	if sm.MaxVersions != 3 {
+		t.Errorf("max_versions = %d, want 3", sm.MaxVersions)
+	}
+	if sm.DeleteVersionAfter != "7200s" {
+		t.Errorf("delete_version_after = %q, want %q", sm.DeleteVersionAfter, "7200s")
+	}
 }
