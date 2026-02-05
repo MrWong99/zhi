@@ -2,6 +2,7 @@ package labels
 
 import (
 	"strconv"
+	"strings"
 )
 
 // GetBool returns a boolean label value with default fallback.
@@ -231,6 +232,45 @@ func ShouldConfirm(metadata map[string]any) bool {
 	return GetBool(metadata, LabelUIConfirm, false)
 }
 
+// GetShowIf returns the ui.showIf label value (format: "path=value").
+func GetShowIf(metadata map[string]any) string {
+	return GetString(metadata, LabelUIShowIf, "")
+}
+
+// ParseShowIf parses a ui.showIf value into path and expected value.
+// Returns empty strings if the label is not set or malformed.
+func ParseShowIf(metadata map[string]any) (path, expected string) {
+	raw := GetShowIf(metadata)
+	if raw == "" {
+		return "", ""
+	}
+	idx := strings.Index(raw, "=")
+	if idx < 1 || idx >= len(raw)-1 {
+		return "", ""
+	}
+	return raw[:idx], raw[idx+1:]
+}
+
+// GetDisplayName returns the ui.displayName label value.
+func GetDisplayName(metadata map[string]any) string {
+	return GetString(metadata, LabelUIDisplayName, "")
+}
+
+// GetEnum returns the ui.enum label value.
+func GetEnum(metadata map[string]any) []string {
+	return GetStringSlice(metadata, LabelUIEnum)
+}
+
+// GetSection returns the ui.section label value.
+func GetSection(metadata map[string]any) string {
+	return GetString(metadata, LabelUISection, "")
+}
+
+// GetPlaceholder returns the ui.placeholder label value.
+func GetPlaceholder(metadata map[string]any) string {
+	return GetString(metadata, LabelUIPlaceholder, "")
+}
+
 // --- Builder helpers for creating metadata ---
 
 // Builder helps construct metadata maps with labels.
@@ -358,6 +398,31 @@ func (b *Builder) Confirm() *Builder {
 // Deprecated sets core.deprecated.
 func (b *Builder) Deprecated(message string) *Builder {
 	return b.Set(LabelCoreDeprecated, message)
+}
+
+// ShowIf sets ui.showIf with the format "path=value".
+func (b *Builder) ShowIf(path, value string) *Builder {
+	return b.Set(LabelUIShowIf, path+"="+value)
+}
+
+// DisplayName sets ui.displayName.
+func (b *Builder) DisplayName(name string) *Builder {
+	return b.Set(LabelUIDisplayName, name)
+}
+
+// Enum sets ui.enum.
+func (b *Builder) Enum(values []string) *Builder {
+	return b.Set(LabelUIEnum, values)
+}
+
+// Section sets ui.section.
+func (b *Builder) Section(section string) *Builder {
+	return b.Set(LabelUISection, section)
+}
+
+// Placeholder sets ui.placeholder.
+func (b *Builder) Placeholder(text string) *Builder {
+	return b.Set(LabelUIPlaceholder, text)
 }
 
 // Build returns the constructed metadata map.

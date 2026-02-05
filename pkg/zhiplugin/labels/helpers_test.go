@@ -434,3 +434,155 @@ func TestGetDefaultValue(t *testing.T) {
 		}
 	})
 }
+
+func TestParseShowIf(t *testing.T) {
+	tests := []struct {
+		name         string
+		metadata     map[string]any
+		wantPath     string
+		wantExpected string
+	}{
+		{
+			name:         "valid condition",
+			metadata:     map[string]any{LabelUIShowIf: "database/type=postgres"},
+			wantPath:     "database/type",
+			wantExpected: "postgres",
+		},
+		{
+			name:         "boolean condition",
+			metadata:     map[string]any{LabelUIShowIf: "app/tls/enabled=true"},
+			wantPath:     "app/tls/enabled",
+			wantExpected: "true",
+		},
+		{
+			name:         "missing label",
+			metadata:     map[string]any{},
+			wantPath:     "",
+			wantExpected: "",
+		},
+		{
+			name:         "nil metadata",
+			metadata:     nil,
+			wantPath:     "",
+			wantExpected: "",
+		},
+		{
+			name:         "malformed no equals",
+			metadata:     map[string]any{LabelUIShowIf: "noequalssign"},
+			wantPath:     "",
+			wantExpected: "",
+		},
+		{
+			name:         "malformed empty path",
+			metadata:     map[string]any{LabelUIShowIf: "=value"},
+			wantPath:     "",
+			wantExpected: "",
+		},
+		{
+			name:         "malformed empty value",
+			metadata:     map[string]any{LabelUIShowIf: "path="},
+			wantPath:     "",
+			wantExpected: "",
+		},
+		{
+			name:         "value with equals sign",
+			metadata:     map[string]any{LabelUIShowIf: "path=a=b"},
+			wantPath:     "path",
+			wantExpected: "a=b",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotPath, gotExpected := ParseShowIf(tt.metadata)
+			if gotPath != tt.wantPath {
+				t.Errorf("ParseShowIf() path = %q, want %q", gotPath, tt.wantPath)
+			}
+			if gotExpected != tt.wantExpected {
+				t.Errorf("ParseShowIf() expected = %q, want %q", gotExpected, tt.wantExpected)
+			}
+		})
+	}
+}
+
+func TestGetShowIf(t *testing.T) {
+	meta := map[string]any{LabelUIShowIf: "db/type=postgres"}
+	if got := GetShowIf(meta); got != "db/type=postgres" {
+		t.Errorf("GetShowIf() = %v, want db/type=postgres", got)
+	}
+
+	if got := GetShowIf(nil); got != "" {
+		t.Errorf("GetShowIf(nil) = %v, want empty", got)
+	}
+}
+
+func TestGetDisplayName(t *testing.T) {
+	meta := map[string]any{LabelUIDisplayName: "Database Host"}
+	if got := GetDisplayName(meta); got != "Database Host" {
+		t.Errorf("GetDisplayName() = %v, want Database Host", got)
+	}
+
+	if got := GetDisplayName(nil); got != "" {
+		t.Errorf("GetDisplayName(nil) = %v, want empty", got)
+	}
+}
+
+func TestGetEnum(t *testing.T) {
+	meta := map[string]any{LabelUIEnum: []string{"a", "b", "c"}}
+	got := GetEnum(meta)
+	if len(got) != 3 || got[0] != "a" || got[1] != "b" || got[2] != "c" {
+		t.Errorf("GetEnum() = %v, want [a b c]", got)
+	}
+
+	if got := GetEnum(nil); got != nil {
+		t.Errorf("GetEnum(nil) = %v, want nil", got)
+	}
+}
+
+func TestGetSection(t *testing.T) {
+	meta := map[string]any{LabelUISection: "Advanced"}
+	if got := GetSection(meta); got != "Advanced" {
+		t.Errorf("GetSection() = %v, want Advanced", got)
+	}
+
+	if got := GetSection(nil); got != "" {
+		t.Errorf("GetSection(nil) = %v, want empty", got)
+	}
+}
+
+func TestGetPlaceholder(t *testing.T) {
+	meta := map[string]any{LabelUIPlaceholder: "Enter a value..."}
+	if got := GetPlaceholder(meta); got != "Enter a value..." {
+		t.Errorf("GetPlaceholder() = %v, want 'Enter a value...'", got)
+	}
+
+	if got := GetPlaceholder(nil); got != "" {
+		t.Errorf("GetPlaceholder(nil) = %v, want empty", got)
+	}
+}
+
+func TestBuilder_NewLabels(t *testing.T) {
+	meta := NewBuilder().
+		ShowIf("db/type", "postgres").
+		DisplayName("Database Host").
+		Enum([]string{"a", "b"}).
+		Section("Advanced").
+		Placeholder("Enter value").
+		Build()
+
+	if GetShowIf(meta) != "db/type=postgres" {
+		t.Errorf("Builder.ShowIf() = %v, want db/type=postgres", GetShowIf(meta))
+	}
+	if GetDisplayName(meta) != "Database Host" {
+		t.Errorf("Builder.DisplayName() = %v, want Database Host", GetDisplayName(meta))
+	}
+	if got := GetEnum(meta); len(got) != 2 || got[0] != "a" || got[1] != "b" {
+		t.Errorf("Builder.Enum() = %v, want [a b]", got)
+	}
+	if GetSection(meta) != "Advanced" {
+		t.Errorf("Builder.Section() = %v, want Advanced", GetSection(meta))
+	}
+	if GetPlaceholder(meta) != "Enter value" {
+		t.Errorf("Builder.Placeholder() = %v, want Enter value", GetPlaceholder(meta))
+	}
+}

@@ -97,4 +97,41 @@ var (
 	// SpinnerStyle is used for the activity spinner.
 	SpinnerStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("205"))
+
+	// PasswordStyle is used for masked password values.
+	PasswordStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("8"))
+
+	// ReadonlyBadgeStyle is used for the [readonly] badge.
+	ReadonlyBadgeStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("8")).
+				Italic(true)
+
+	// RequiredBadgeStyle is used for the [required] badge.
+	RequiredBadgeStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("9"))
+
+	// DeprecatedStyle is used for deprecated value paths.
+	DeprecatedStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("8")).
+			Strikethrough(true)
+
+	// SectionHeaderStyle is used for section headings in the tree view.
+	SectionHeaderStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("14")).
+				Bold(true).
+				Underline(true)
+
+	// GroupBadgeStyle is used for the group badge in the tree view.
+	GroupBadgeStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("6"))
+
+	// ConfirmStyle is used for the [confirm] badge.
+	ConfirmStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("11"))
+
+	// EnumBadgeStyle is used for the enum indicator badge.
+	EnumBadgeStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("6")).
+			Italic(true)
 )
