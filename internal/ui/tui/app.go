@@ -277,6 +277,23 @@ func (a *App) updateTreeView(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (a *App) updateEditorView(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// When confirming, delegate all input to the editor.
+	if a.editorView.IsConfirming() {
+		var cmd tea.Cmd
+		a.editorView, cmd = a.editorView.UpdateEditor(msg)
+		// If confirmation was declined (dirty reset to false), go back.
+		if !a.editorView.IsConfirming() && !a.editorView.dirty {
+			a.statusMsg = "Change cancelled"
+			a.activeView = viewTree
+			return a, nil
+		}
+		// If confirmation accepted, commit the value.
+		if !a.editorView.IsConfirming() && a.editorView.dirty {
+			return a.commitEditorValue()
+		}
+		return a, cmd
+	}
+
 	if keyMsg, ok := msg.(tea.KeyMsg); ok {
 		switch keyMsg.String() {
 		case "esc":
@@ -285,16 +302,17 @@ func (a *App) updateEditorView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return a, nil
 		case "enter":
 			if a.editorView.dirty {
-				val := a.editorView.CommitValue()
-				err := a.controller.SetValue(a.ctx, a.editorView.path, val)
-				if err != nil {
-					a.statusMsg = "Set failed: " + err.Error()
-				} else {
-					a.statusMsg = fmt.Sprintf("Updated %s", a.editorView.path)
-					a.refreshTreeView()
+				// Block save if pattern validation fails.
+				if a.editorView.HasPatternError() {
+					a.statusMsg = "Fix pattern errors before saving"
+					return a, nil
 				}
-				a.activeView = viewTree
-				return a, nil
+				// Check if confirmation is required.
+				if a.editorView.NeedsConfirmation() {
+					a.editorView.StartConfirmation()
+					return a, nil
+				}
+				return a.commitEditorValue()
 			}
 			a.activeView = viewTree
 			return a, nil
@@ -304,6 +322,19 @@ func (a *App) updateEditorView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	a.editorView, cmd = a.editorView.UpdateEditor(msg)
 	return a, cmd
+}
+
+func (a *App) commitEditorValue() (tea.Model, tea.Cmd) {
+	val := a.editorView.CommitValue()
+	err := a.controller.SetValue(a.ctx, a.editorView.path, val)
+	if err != nil {
+		a.statusMsg = "Set failed: " + err.Error()
+	} else {
+		a.statusMsg = fmt.Sprintf("Updated %s", a.editorView.path)
+		a.refreshTreeView()
+	}
+	a.activeView = viewTree
+	return a, nil
 }
 
 func (a *App) updateComponentView(msg tea.Msg) (tea.Model, tea.Cmd) {

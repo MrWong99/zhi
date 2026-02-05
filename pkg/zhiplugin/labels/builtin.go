@@ -143,6 +143,56 @@ var uiLabels = []*Label{
 		},
 		Since: "0.1.0",
 	},
+	{
+		Name:        "ui.showIf",
+		Namespace:   "ui",
+		Description: "Conditionally shows this value only when another configuration path equals a specific value. Format: 'path=value'. The value is hidden when the condition is not met.",
+		ValueType:   "string",
+		AppliesTo:   []string{"ui"},
+		Constraints: &Constraints{
+			Pattern: `^[a-z][a-z0-9./_-]*=.+$`,
+		},
+		Examples: []Example{
+			{Value: "database/type=postgres", Description: "Show only when database type is postgres"},
+			{Value: "app/tls/enabled=true", Description: "Show only when TLS is enabled"},
+		},
+		Since: "0.2.0",
+	},
+	{
+		Name:        "ui.displayName",
+		Namespace:   "ui",
+		Description: "Human-readable display name for this value in the UI, shown instead of the raw path.",
+		ValueType:   "string",
+		AppliesTo:   []string{"ui"},
+		Examples: []Example{
+			{Value: "Database Host", Description: "Friendly name for database/host"},
+		},
+		Since: "0.2.0",
+	},
+	{
+		Name:        "ui.enum",
+		Namespace:   "ui",
+		Description: "Restricts input to a predefined list of allowed values. UI should present these as a selection list.",
+		ValueType:   "string[]",
+		AppliesTo:   []string{"ui"},
+		Examples: []Example{
+			{Value: []string{"postgres", "mysql", "sqlite"}, Description: "Database type options"},
+			{Value: []string{"debug", "info", "warn", "error"}, Description: "Log level options"},
+		},
+		Since: "0.2.0",
+	},
+	{
+		Name:        "ui.section",
+		Namespace:   "ui",
+		Description: "Assigns this value to a collapsible section in the UI. Values in the same section are rendered under a common heading.",
+		ValueType:   "string",
+		AppliesTo:   []string{"ui"},
+		Examples: []Example{
+			{Value: "Connection Settings", Description: "Group under connection settings section"},
+			{Value: "Advanced", Description: "Group under advanced section"},
+		},
+		Since: "0.2.0",
+	},
 }
 
 // Store namespace - interpreted by store plugins
@@ -354,6 +404,10 @@ const (
 	LabelUIPlaceholder = "ui.placeholder"
 	LabelUIFormat      = "ui.format"
 	LabelUIConfirm     = "ui.confirm"
+	LabelUIShowIf      = "ui.showIf"
+	LabelUIDisplayName = "ui.displayName"
+	LabelUIEnum        = "ui.enum"
+	LabelUISection     = "ui.section"
 
 	// Store labels
 	LabelStoreWriteonly = "store.writeonly"

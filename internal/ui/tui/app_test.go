@@ -28,6 +28,123 @@ func newMockConfig() *mockConfig {
 	return &mockConfig{tree: t}
 }
 
+// newMockConfigWithLabels creates a mock config with various UI labels set for testing.
+func newMockConfigWithLabels() *mockConfig {
+	t := config.NewTree()
+	_ = t.Set("database/type", &config.Value{
+		Val: "postgres",
+		Metadata: map[string]any{
+			"ui.enum":        []string{"postgres", "mysql", "sqlite"},
+			"ui.order":       1,
+			"ui.section":     "Connection",
+			"ui.displayName": "Database Engine",
+		},
+	})
+	_ = t.Set("database/host", &config.Value{
+		Val: "localhost",
+		Metadata: map[string]any{
+			"core.description": "Database hostname",
+			"ui.order":         2,
+			"ui.section":       "Connection",
+			"ui.placeholder":   "Enter hostname...",
+			"config.required":  true,
+		},
+	})
+	_ = t.Set("database/port", &config.Value{
+		Val: 5432,
+		Metadata: map[string]any{
+			"ui.order":   3,
+			"ui.section": "Connection",
+			"ui.pattern": `^\d+$`,
+		},
+	})
+	_ = t.Set("database/password", &config.Value{
+		Val: "s3cret",
+		Metadata: map[string]any{
+			"ui.password": true,
+			"ui.confirm":  true,
+			"ui.order":    4,
+			"ui.section":  "Connection",
+		},
+	})
+	_ = t.Set("database/internal-key", &config.Value{
+		Val:      "should-not-appear",
+		Metadata: map[string]any{"ui.hidden": true},
+	})
+	_ = t.Set("database/pg-options", &config.Value{
+		Val: "sslmode=require",
+		Metadata: map[string]any{
+			"ui.showIf":  "database/type=postgres",
+			"ui.order":   5,
+			"ui.section": "Connection",
+		},
+	})
+	_ = t.Set("database/mysql-charset", &config.Value{
+		Val: "utf8mb4",
+		Metadata: map[string]any{
+			"ui.showIf":  "database/type=mysql",
+			"ui.order":   5,
+			"ui.section": "Connection",
+		},
+	})
+	_ = t.Set("app/name", &config.Value{
+		Val: "myapp",
+		Metadata: map[string]any{
+			"ui.readonly":    true,
+			"ui.group":       "Application",
+			"ui.displayName": "Application Name",
+		},
+	})
+	_ = t.Set("app/version", &config.Value{
+		Val: "1.0.0",
+		Metadata: map[string]any{
+			"core.deprecated": "Use app/release-version instead",
+			"ui.group":        "Application",
+		},
+	})
+	_ = t.Set("redis/url", &config.Value{Val: "redis://localhost:6379"})
+	return &mockConfig{tree: t}
+}
+
+// setupTestControllerWithLabels creates a test controller with label-rich config values.
+func setupTestControllerWithLabels(t *testing.T) *ui.UIController {
+	t.Helper()
+
+	reg := core.NewRegistry()
+	mc := newMockConfigWithLabels()
+	ms := newMockStore()
+
+	if err := reg.RegisterConfig("mock", func(string, map[string]any) (config.Plugin, error) {
+		return mc, nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := reg.RegisterStore("mock", func(string, map[string]any) (store.Plugin, error) {
+		return ms, nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	ws := &core.WorkspaceConfig{
+		Version: "1",
+		Config:  core.ProviderRef{Provider: "mock"},
+		Store:   core.ProviderRef{Provider: "mock"},
+		Components: []core.ComponentDef{
+			{Name: "database", Paths: []string{"database/"}, Mandatory: true, Description: "PostgreSQL database"},
+			{Name: "app", Paths: []string{"app/"}, Dependencies: []string{"database"}, Description: "Application config"},
+			{Name: "redis", Paths: []string{"redis/"}, Dependencies: []string{"database"}, Description: "Redis cache"},
+		},
+		Dir: t.TempDir(),
+	}
+
+	eng, err := core.NewEngine(reg, ws)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return ui.NewUIController(eng)
+}
+
 func (m *mockConfig) List(_ context.Context) ([]string, error) {
 	return m.tree.List(), nil
 }
