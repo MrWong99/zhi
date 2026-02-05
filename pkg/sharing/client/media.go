@@ -10,3 +10,10 @@ const (
 	MediaTypePluginReadme  = "application/vnd.zhi.plugin.readme.v1+markdown"
 	MediaTypePluginLicense = "application/vnd.zhi.plugin.license.v1"
 )
+
+// OCI media types for zhi workspace artifacts.
+const (
+	MediaTypeWorkspaceConfig = "application/vnd.zhi.workspace.config.v1+json"
+	MediaTypeWorkspaceBundle = "application/vnd.zhi.workspace.bundle.v1+tar.gz"
+	MediaTypeWorkspaceReadme = "application/vnd.zhi.workspace.readme.v1+markdown"
+)

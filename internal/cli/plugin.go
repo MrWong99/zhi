@@ -18,15 +18,19 @@ import (
 var pluginCmd = &cobra.Command{
 	Use:   "plugin",
 	Short: "Manage shared plugins",
-	Long: `Install, uninstall, and list shared plugins from OCI registries.
+	Long: `Install, uninstall, publish, and manage shared plugins from OCI registries.
 
 Subcommands:
   install      Install a plugin from an OCI reference
   uninstall    Remove an installed plugin
-  list         List installed shared plugins`,
+  list         List installed shared plugins
+  init         Generate a zhi-plugin.yaml manifest for a new plugin
+  publish      Publish a plugin to an OCI registry`,
 	Example: `  zhi plugin install oci://ghcr.io/zhi-project/zhi-config-ansible:v1.2.0
   zhi plugin uninstall ansible-config
-  zhi plugin list`,
+  zhi plugin list
+  zhi plugin init --name my-config --type config --version 1.0.0
+  zhi plugin publish --registry ghcr.io/myorg`,
 }
 
 // --- plugin install ---
@@ -57,6 +61,8 @@ func init() {
 	pluginCmd.AddCommand(pluginInstallCmd)
 	pluginCmd.AddCommand(pluginUninstallCmd)
 	pluginCmd.AddCommand(pluginListCmd)
+	pluginCmd.AddCommand(pluginInitCmd)
+	pluginCmd.AddCommand(pluginPublishCmd)
 	rootCmd.AddCommand(pluginCmd)
 }
 
