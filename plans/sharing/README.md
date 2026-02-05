@@ -15,7 +15,7 @@ This directory contains the design plan for zhi's plugin and workspace sharing s
 | [Local Proxy](local-proxy.md) | Local registry as caching proxy for air-gapped environments |
 | [Update Mechanism](update-mechanism.md) | Automatic and manual update workflows |
 | [Ratings & Verification](ratings-and-verification.md) | Community ratings and verified publisher program |
-| [Implementation Roadmap](roadmap.md) | Phased delivery plan with milestones |
+| [Implementation Roadmap](roadmap.md) | Phased delivery plan (index) with [per-phase details](roadmap/) |
 
 ## Design Principles
 
