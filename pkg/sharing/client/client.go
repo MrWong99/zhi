@@ -45,6 +45,8 @@ type PullOptions struct {
 	SkipVerify bool
 	// Force overwrites an existing plugin even if the same version is installed.
 	Force bool
+	// SkipDependencies skips installing plugin dependencies when pulling a workspace.
+	SkipDependencies bool
 }
 
 // PullResult describes the outcome of a pull operation.
