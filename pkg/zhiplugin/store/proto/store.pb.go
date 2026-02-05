@@ -1523,10 +1523,12 @@ func (x *GetValueVersionRequest) GetVersion() string {
 }
 
 type GetValueVersionResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Found         bool                   `protobuf:"varint,1,opt,name=found,proto3" json:"found,omitempty"`
-	ValueJson     []byte                 `protobuf:"bytes,2,opt,name=value_json,json=valueJson,proto3" json:"value_json,omitempty"`
-	MetadataJson  []byte                 `protobuf:"bytes,3,opt,name=metadata_json,json=metadataJson,proto3" json:"metadata_json,omitempty"`
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	Found        bool                   `protobuf:"varint,1,opt,name=found,proto3" json:"found,omitempty"`
+	ValueJson    []byte                 `protobuf:"bytes,2,opt,name=value_json,json=valueJson,proto3" json:"value_json,omitempty"`
+	MetadataJson []byte                 `protobuf:"bytes,3,opt,name=metadata_json,json=metadataJson,proto3" json:"metadata_json,omitempty"`
+	// The version identifier of this specific version.
+	Version       string `protobuf:"bytes,4,opt,name=version,proto3" json:"version,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1580,6 +1582,13 @@ func (x *GetValueVersionResponse) GetMetadataJson() []byte {
 		return x.MetadataJson
 	}
 	return nil
+}
+
+func (x *GetValueVersionResponse) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
 }
 
 type RollbackValueRequest struct {
@@ -2411,12 +2420,13 @@ const file_zhiplugin_v1_store_proto_rawDesc = "" +
 	"\x16GetValueVersionRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04path\x18\x02 \x01(\tR\x04path\x12\x18\n" +
-	"\aversion\x18\x03 \x01(\tR\aversion\"s\n" +
+	"\aversion\x18\x03 \x01(\tR\aversion\"\x8d\x01\n" +
 	"\x17GetValueVersionResponse\x12\x14\n" +
 	"\x05found\x18\x01 \x01(\bR\x05found\x12\x1d\n" +
 	"\n" +
 	"value_json\x18\x02 \x01(\fR\tvalueJson\x12#\n" +
-	"\rmetadata_json\x18\x03 \x01(\fR\fmetadataJson\"T\n" +
+	"\rmetadata_json\x18\x03 \x01(\fR\fmetadataJson\x12\x18\n" +
+	"\aversion\x18\x04 \x01(\tR\aversion\"T\n" +
 	"\x14RollbackValueRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04path\x18\x02 \x01(\tR\x04path\x12\x18\n" +

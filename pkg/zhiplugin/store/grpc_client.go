@@ -184,7 +184,7 @@ func (c *GRPCClient) GetValueVersion(ctx context.Context, id string, path string
 	if !resp.GetFound() {
 		return config.Value{}, false, nil
 	}
-	v, err := config.ValueFromProto(resp.GetValueJson(), resp.GetMetadataJson())
+	v, err := config.ValueFromProtoVersioned(resp.GetValueJson(), resp.GetMetadataJson(), resp.GetVersion())
 	if err != nil {
 		return config.Value{}, false, err
 	}
@@ -276,6 +276,7 @@ func valuesToProto(values map[string]config.Value) []*configpb.TreeEntry {
 			Path:         path,
 			ValueJson:    valJSON,
 			MetadataJson: metaJSON,
+			Version:      v.Version,
 		})
 	}
 	return entries
@@ -286,7 +287,7 @@ func valuesToProto(values map[string]config.Value) []*configpb.TreeEntry {
 func entriesFromProto(entries []*configpb.TreeEntry) (map[string]config.Value, error) {
 	result := make(map[string]config.Value, len(entries))
 	for _, e := range entries {
-		v, err := config.ValueFromProto(e.GetValueJson(), e.GetMetadataJson())
+		v, err := config.ValueFromProtoVersioned(e.GetValueJson(), e.GetMetadataJson(), e.GetVersion())
 		if err != nil {
 			return nil, err
 		}

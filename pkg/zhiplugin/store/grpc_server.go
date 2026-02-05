@@ -186,6 +186,7 @@ func (s *GRPCServer) GetValueVersion(ctx context.Context, req *pb.GetValueVersio
 		Found:        true,
 		ValueJson:    valJSON,
 		MetadataJson: metaJSON,
+		Version:      v.Version,
 	}, nil
 }
 
@@ -255,7 +256,7 @@ func (s *GRPCServer) ListAccess(ctx context.Context, req *pb.ListAccessRequest) 
 func serverEntriesFromProto(entries []*configpb.TreeEntry) (map[string]config.Value, error) {
 	result := make(map[string]config.Value, len(entries))
 	for _, e := range entries {
-		v, err := config.ValueFromProto(e.GetValueJson(), e.GetMetadataJson())
+		v, err := config.ValueFromProtoVersioned(e.GetValueJson(), e.GetMetadataJson(), e.GetVersion())
 		if err != nil {
 			return nil, err
 		}
