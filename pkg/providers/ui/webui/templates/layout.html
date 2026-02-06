@@ -17,16 +17,19 @@
   <link rel="stylesheet" href="/static/css/export.css" nonce="{{nonce .}}">
   <link rel="stylesheet" href="/static/css/apply.css" nonce="{{nonce .}}">
   <link rel="stylesheet" href="/static/css/shortcuts.css" nonce="{{nonce .}}">
+  <link rel="stylesheet" href="/static/css/marketplace.css" nonce="{{nonce .}}">
+  <link rel="stylesheet" href="/static/css/polish.css" nonce="{{nonce .}}">
   <link rel="stylesheet" href="/static/css/themes/light.css" nonce="{{nonce .}}">
   <link rel="stylesheet" href="/static/css/themes/dark.css" nonce="{{nonce .}}">
   <script src="/static/js/vendor/htmx.min.js" nonce="{{nonce .}}"></script>
 </head>
 <body hx-headers='{"X-CSRF-Token": "{{csrfToken .}}"}'>
+  <a href="#main-content" class="skip-link">Skip to content</a>
   <div class="app">
     {{template "sidebar" .}}
     <div class="main">
       {{template "topbar" .}}
-      <div class="content">
+      <div class="content" id="main-content" role="main">
         {{block "content" .}}{{end}}
       </div>
     </div>

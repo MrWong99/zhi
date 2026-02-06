@@ -208,6 +208,16 @@
       window.location.href = "/apply";
       return;
     }
+    if (sequence === "gm") {
+      sequence = "";
+      window.location.href = "/marketplace";
+      return;
+    }
+    if (sequence === "gp") {
+      sequence = "";
+      window.location.href = "/plugins";
+      return;
+    }
 
     // Reset sequence after timeout.
     if (sequence.length > 0) {
@@ -234,6 +244,8 @@
   registerShortcut("g v", "Navigate to Validation", function () {});
   registerShortcut("g e", "Navigate to Export", function () {});
   registerShortcut("g a", "Navigate to Apply", function () {});
+  registerShortcut("g m", "Navigate to Marketplace", function () {});
+  registerShortcut("g p", "Navigate to Plugins", function () {});
   registerShortcut("Ctrl+S", "Save tree", function () {});
   registerShortcut("Esc", "Close edit form / Cancel", function () {});
   registerShortcut("?", "Show shortcut overlay", function () {});

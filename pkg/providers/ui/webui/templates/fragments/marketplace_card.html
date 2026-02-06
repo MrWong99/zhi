@@ -1,0 +1,45 @@
+{{define "marketplace_card"}}
+<div class="marketplace-card" role="listitem">
+  <div class="marketplace-card-header">
+    <div class="plugin-identity">
+      {{if .Verified}}<span class="verified-badge" title="Verified publisher">{{icon "shield"}}</span>{{end}}
+      <a href="/marketplace/{{.Publisher}}/{{.Name}}" class="plugin-name">{{.Name}}</a>
+    </div>
+    <div class="plugin-meta">
+      <span class="badge badge-muted">{{.Type}}</span>
+      <span class="plugin-version">v{{.LatestVersion}}</span>
+    </div>
+  </div>
+  <div class="marketplace-card-publisher">
+    by {{.Publisher}}
+  </div>
+  <div class="marketplace-card-body">
+    <p class="plugin-description">{{.Description}}</p>
+  </div>
+  <div class="marketplace-card-footer">
+    <span class="plugin-rating" title="{{.Rating}} out of 5">
+      <span class="stars">{{.RatingStars}}</span>
+      <span class="rating-count">({{.RatingCount}})</span>
+    </span>
+    <span class="plugin-downloads" title="Downloads">{{icon "download"}} {{.Downloads}}</span>
+    <div class="plugin-actions">
+      {{if .Installed}}
+        {{if .UpdateAvail}}
+          <button class="btn btn-primary btn-sm"
+                  hx-post="/plugins/{{.Name}}/update"
+                  hx-swap="none"
+                  title="Update available">Update</button>
+        {{else}}
+          <span class="badge badge-success">Installed</span>
+        {{end}}
+      {{else}}
+        <button class="btn btn-primary btn-sm"
+                hx-post="/plugins/install"
+                hx-vals='{"ref": "{{.Publisher}}/{{.Name}}"}'
+                hx-swap="none"
+                title="Install plugin">Install</button>
+      {{end}}
+    </div>
+  </div>
+</div>
+{{end}}

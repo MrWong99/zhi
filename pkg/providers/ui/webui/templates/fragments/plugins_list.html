@@ -1,0 +1,56 @@
+{{define "plugins_list"}}
+<div class="plugins-list-wrapper">
+  {{if .InstalledPlugins}}
+    <table class="plugins-table" aria-label="Installed plugins">
+      <thead>
+        <tr>
+          <th>Plugin</th>
+          <th>Type</th>
+          <th>Version</th>
+          <th>Source</th>
+          <th>Installed</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .InstalledPlugins}}
+        <tr id="plugin-row-{{.Name}}">
+          <td class="plugin-name-cell">
+            {{.Name}}
+            {{if .Verified}}<span class="verified-badge" title="Verified">{{icon "shield"}}</span>{{end}}
+          </td>
+          <td><span class="badge badge-muted">{{.Type}}</span></td>
+          <td>
+            {{.Version}}
+            {{if .UpdateAvail}}<span class="badge badge-primary" title="Update available">{{.UpdateAvail}}</span>{{end}}
+          </td>
+          <td class="mono">{{.Source}}</td>
+          <td>{{.InstalledAt}}</td>
+          <td class="plugin-actions-cell">
+            {{if .UpdateAvail}}
+              <button class="btn btn-primary btn-sm"
+                      hx-post="/plugins/{{.Name}}/update"
+                      hx-vals='{"version": "{{.UpdateAvail}}"}'
+                      hx-swap="none"
+                      title="Update to {{.UpdateAvail}}">Update</button>
+            {{end}}
+            {{if not .BuiltIn}}
+              <button class="btn btn-outline btn-sm btn-danger"
+                      hx-post="/plugins/{{.Name}}/uninstall"
+                      hx-vals='{"type": "{{.Type}}"}'
+                      hx-swap="none"
+                      hx-confirm="Uninstall {{.Name}}?"
+                      title="Uninstall">Uninstall</button>
+            {{end}}
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  {{else}}
+    <div class="plugins-empty">
+      <p>No plugins installed. Browse the <a href="/marketplace">Marketplace</a> to find plugins.</p>
+    </div>
+  {{end}}
+</div>
+{{end}}

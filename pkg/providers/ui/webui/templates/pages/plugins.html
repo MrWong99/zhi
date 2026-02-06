@@ -1,0 +1,30 @@
+{{define "title"}}Installed Plugins{{end}}
+
+{{define "content"}}
+<div class="plugins-page">
+  <div class="page-header">
+    <h2>Installed Plugins</h2>
+    <div class="page-actions">
+      <button class="btn btn-outline btn-sm"
+              hx-get="/plugins"
+              hx-target="#plugins-list"
+              hx-swap="innerHTML"
+              aria-label="Check for updates">
+        {{icon "refresh"}} Check for Updates
+      </button>
+      {{if gt .PluginUpdates 0}}
+      <button class="btn btn-primary btn-sm"
+              hx-post="/plugins/update-all"
+              hx-swap="none"
+              aria-label="Update all plugins">
+        {{icon "download"}} Update All ({{.PluginUpdates}})
+      </button>
+      {{end}}
+    </div>
+  </div>
+
+  <div id="plugins-list" aria-live="polite">
+    {{template "plugins_list" .}}
+  </div>
+</div>
+{{end}}

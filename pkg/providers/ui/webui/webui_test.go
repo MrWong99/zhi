@@ -95,16 +95,69 @@ func (m *mockController) DisableComponent(_ context.Context, _ string) error {
 	return nil
 }
 
-func (m *mockController) SearchMarketplace(_ context.Context, _ ui.MarketplaceQuery) (*ui.MarketplaceResults, error) {
-	return &ui.MarketplaceResults{}, nil
+func (m *mockController) SearchMarketplace(_ context.Context, q ui.MarketplaceQuery) (*ui.MarketplaceResults, error) {
+	results := []ui.MarketplaceEntry{
+		{
+			Name:          "zhi-store-vault",
+			Publisher:     "hashicorp",
+			Type:          "store",
+			Description:   "HashiCorp Vault KV v2 backend",
+			LatestVersion: "1.2.0",
+			Rating:        4.2,
+			RatingCount:   42,
+			Downloads:     1200,
+			Verified:      true,
+			Platforms:     []string{"linux/amd64", "darwin/arm64"},
+		},
+		{
+			Name:          "zhi-config-env",
+			Publisher:     "community",
+			Type:          "config",
+			Description:   "Environment variable config provider",
+			LatestVersion: "0.5.0",
+			Rating:        3.8,
+			RatingCount:   15,
+			Downloads:     800,
+			Installed:     true,
+			InstalledVer:  "0.4.0",
+			UpdateAvail:   true,
+		},
+	}
+	// Apply type filter if present.
+	if q.Type != "" {
+		var filtered []ui.MarketplaceEntry
+		for _, r := range results {
+			if r.Type == q.Type {
+				filtered = append(filtered, r)
+			}
+		}
+		return &ui.MarketplaceResults{Total: len(filtered), Results: filtered}, nil
+	}
+	return &ui.MarketplaceResults{Total: len(results), Results: results}, nil
 }
 
-func (m *mockController) GetMarketplaceDetail(_ context.Context, _, _ string) (*ui.MarketplaceDetail, error) {
-	return &ui.MarketplaceDetail{}, nil
+func (m *mockController) GetMarketplaceDetail(_ context.Context, publisher, name string) (*ui.MarketplaceDetail, error) {
+	return &ui.MarketplaceDetail{
+		MarketplaceEntry: ui.MarketplaceEntry{
+			Name:          name,
+			Publisher:     publisher,
+			Type:          "store",
+			Description:   "A test plugin",
+			LatestVersion: "1.0.0",
+			Rating:        4.5,
+			RatingCount:   10,
+			Downloads:     500,
+			Verified:      true,
+			Platforms:     []string{"linux/amd64"},
+		},
+		LongDescription: "A detailed description of the plugin.",
+		License:         "MIT",
+		Keywords:        []string{"vault", "store"},
+	}, nil
 }
 
-func (m *mockController) InstallPlugin(_ context.Context, _ string) (*ui.InstallResult, error) {
-	return &ui.InstallResult{}, nil
+func (m *mockController) InstallPlugin(_ context.Context, ref string) (*ui.InstallResult, error) {
+	return &ui.InstallResult{Name: ref, Version: "1.0.0"}, nil
 }
 
 func (m *mockController) UninstallPlugin(_ context.Context, _, _ string) error {
@@ -112,15 +165,34 @@ func (m *mockController) UninstallPlugin(_ context.Context, _, _ string) error {
 }
 
 func (m *mockController) ListInstalledPlugins(_ context.Context) ([]ui.InstalledPlugin, error) {
-	return nil, nil
+	return []ui.InstalledPlugin{
+		{
+			Name:    "structuredfile",
+			Type:    "config",
+			Version: "1.0.0",
+			Source:  "built-in",
+		},
+		{
+			Name:     "zhi-store-vault",
+			Type:     "store",
+			Version:  "1.1.0",
+			Source:   "registry.zhi.dev/hashicorp/zhi-store-vault",
+			Verified: true,
+		},
+	}, nil
 }
 
 func (m *mockController) CheckUpdates(_ context.Context) ([]ui.PluginUpdate, error) {
-	return nil, nil
+	return []ui.PluginUpdate{
+		{Name: "zhi-store-vault", Type: "store", CurrentVersion: "1.1.0", LatestVersion: "1.2.0"},
+	}, nil
 }
 
-func (m *mockController) UpdatePlugin(_ context.Context, _, _ string) (*ui.InstallResult, error) {
-	return &ui.InstallResult{}, nil
+func (m *mockController) UpdatePlugin(_ context.Context, name, version string) (*ui.InstallResult, error) {
+	if version == "" {
+		version = "1.2.0"
+	}
+	return &ui.InstallResult{Name: name, Version: version}, nil
 }
 
 func (m *mockController) RatePlugin(_ context.Context, _, _ string, _ ui.Rating) error {
@@ -1213,6 +1285,475 @@ func TestToApplyTargetData(t *testing.T) {
 	}
 	if targets[0].Name != "default" {
 		t.Errorf("target name = %q, want 'default'", targets[0].Name)
+	}
+}
+
+// ---------- Phase 4: marketplace tests ----------
+
+func TestMarketplacePage(t *testing.T) {
+	base, _ := startTestServer(t)
+	resp := get(t, base+"/marketplace")
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if !strings.Contains(body, "Marketplace") {
+		t.Error("marketplace page should contain 'Marketplace'")
+	}
+	if !strings.Contains(body, "zhi-store-vault") {
+		t.Error("marketplace page should contain 'zhi-store-vault'")
+	}
+	if !strings.Contains(body, "zhi-config-env") {
+		t.Error("marketplace page should contain 'zhi-config-env'")
+	}
+	if !strings.Contains(body, "hashicorp") {
+		t.Error("marketplace page should contain publisher 'hashicorp'")
+	}
+	if !strings.Contains(body, "2 results") {
+		t.Error("marketplace page should show '2 results'")
+	}
+}
+
+func TestMarketplaceHTMXFragment(t *testing.T) {
+	base, _ := startTestServer(t)
+	req, err := http.NewRequest("GET", base+"/marketplace?q=vault", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("HX-Request", "true")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX fragment should not contain full HTML document")
+	}
+	if !strings.Contains(body, "zhi-store-vault") {
+		t.Error("fragment should contain search results")
+	}
+}
+
+func TestMarketplaceTypeFilter(t *testing.T) {
+	base, _ := startTestServer(t)
+	resp := get(t, base+"/marketplace?type=store")
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if !strings.Contains(body, "zhi-store-vault") {
+		t.Error("filtered results should contain store plugin")
+	}
+	if !strings.Contains(body, "1 result") {
+		t.Error("filtered results should show '1 result'")
+	}
+}
+
+func TestMarketplaceVerifiedBadge(t *testing.T) {
+	base, _ := startTestServer(t)
+	resp := get(t, base+"/marketplace")
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if !strings.Contains(body, "verified-badge") {
+		t.Error("marketplace should show verified badge for verified plugins")
+	}
+}
+
+func TestMarketplaceInstalledBadge(t *testing.T) {
+	base, _ := startTestServer(t)
+	resp := get(t, base+"/marketplace")
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	// The zhi-config-env plugin is installed with an update available.
+	if !strings.Contains(body, "Update") {
+		t.Error("marketplace should show Update button for plugins with updates")
+	}
+}
+
+func TestPluginDetailPage(t *testing.T) {
+	base, _ := startTestServer(t)
+	resp := get(t, base+"/marketplace/hashicorp/zhi-store-vault")
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if !strings.Contains(body, "zhi-store-vault") {
+		t.Error("detail page should contain plugin name")
+	}
+	if !strings.Contains(body, "hashicorp") {
+		t.Error("detail page should contain publisher")
+	}
+	if !strings.Contains(body, "A detailed description") {
+		t.Error("detail page should contain long description")
+	}
+	if !strings.Contains(body, "MIT") {
+		t.Error("detail page should contain license")
+	}
+	if !strings.Contains(body, "vault") {
+		t.Error("detail page should contain keywords")
+	}
+}
+
+func TestPluginDetailHasRatingForm(t *testing.T) {
+	base, _ := startTestServer(t)
+	resp := get(t, base+"/marketplace/hashicorp/zhi-store-vault")
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if !strings.Contains(body, "star-rating") {
+		t.Error("detail page should contain star rating form")
+	}
+	if !strings.Contains(body, "Submit Rating") {
+		t.Error("detail page should contain rating submit button")
+	}
+}
+
+func TestRatePlugin(t *testing.T) {
+	base, _ := startTestServer(t)
+	token, cookies := getCSRFToken(t, base)
+	resp := postWithCSRF(t, base+"/marketplace/hashicorp/zhi-store-vault/rate", "score=5&comment=Great+plugin", token, cookies)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("status = %d, want 200", resp.StatusCode)
+	}
+	trigger := resp.Header.Get("HX-Trigger")
+	if !strings.Contains(trigger, "showNotification") {
+		t.Error("rate should trigger showNotification")
+	}
+	if !strings.Contains(trigger, "success") {
+		t.Error("rate should show success notification")
+	}
+}
+
+func TestRatePluginInvalidScore(t *testing.T) {
+	base, _ := startTestServer(t)
+	token, cookies := getCSRFToken(t, base)
+	resp := postWithCSRF(t, base+"/marketplace/hashicorp/zhi-store-vault/rate", "score=0", token, cookies)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("status = %d, want 400", resp.StatusCode)
+	}
+}
+
+// ---------- Phase 4: installed plugins tests ----------
+
+func TestPluginsPage(t *testing.T) {
+	base, _ := startTestServer(t)
+	resp := get(t, base+"/plugins")
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if !strings.Contains(body, "Installed Plugins") {
+		t.Error("plugins page should contain 'Installed Plugins'")
+	}
+	if !strings.Contains(body, "structuredfile") {
+		t.Error("plugins page should list 'structuredfile' plugin")
+	}
+	if !strings.Contains(body, "zhi-store-vault") {
+		t.Error("plugins page should list 'zhi-store-vault' plugin")
+	}
+}
+
+func TestPluginsPageUpdateBadge(t *testing.T) {
+	base, _ := startTestServer(t)
+	resp := get(t, base+"/plugins")
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if !strings.Contains(body, "1.2.0") {
+		t.Error("plugins page should show available update version")
+	}
+	if !strings.Contains(body, "Update All") {
+		t.Error("plugins page should show 'Update All' button when updates available")
+	}
+}
+
+func TestPluginsPageHTMXFragment(t *testing.T) {
+	base, _ := startTestServer(t)
+	req, err := http.NewRequest("GET", base+"/plugins", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("HX-Request", "true")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX fragment should not contain full HTML document")
+	}
+}
+
+func TestInstallPlugin(t *testing.T) {
+	base, _ := startTestServer(t)
+	token, cookies := getCSRFToken(t, base)
+	resp := postWithCSRF(t, base+"/plugins/install", "ref=hashicorp/zhi-store-vault", token, cookies)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("status = %d, want 200", resp.StatusCode)
+	}
+	trigger := resp.Header.Get("HX-Trigger")
+	if !strings.Contains(trigger, "showNotification") {
+		t.Error("install should trigger showNotification")
+	}
+	if !strings.Contains(trigger, "success") {
+		t.Error("install should show success notification")
+	}
+}
+
+func TestInstallPluginMissingRef(t *testing.T) {
+	base, _ := startTestServer(t)
+	token, cookies := getCSRFToken(t, base)
+	resp := postWithCSRF(t, base+"/plugins/install", "", token, cookies)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("status = %d, want 400", resp.StatusCode)
+	}
+}
+
+func TestUninstallPlugin(t *testing.T) {
+	base, _ := startTestServer(t)
+	token, cookies := getCSRFToken(t, base)
+	resp := postWithCSRF(t, base+"/plugins/zhi-store-vault/uninstall", "type=store", token, cookies)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("status = %d, want 200", resp.StatusCode)
+	}
+	trigger := resp.Header.Get("HX-Trigger")
+	if !strings.Contains(trigger, "Uninstalled") {
+		t.Error("uninstall should show success message")
+	}
+}
+
+func TestUpdatePlugin(t *testing.T) {
+	base, _ := startTestServer(t)
+	token, cookies := getCSRFToken(t, base)
+	resp := postWithCSRF(t, base+"/plugins/zhi-store-vault/update", "version=1.2.0", token, cookies)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("status = %d, want 200", resp.StatusCode)
+	}
+	trigger := resp.Header.Get("HX-Trigger")
+	if !strings.Contains(trigger, "Updated") {
+		t.Error("update should show success message")
+	}
+}
+
+func TestUpdateAllPlugins(t *testing.T) {
+	base, _ := startTestServer(t)
+	token, cookies := getCSRFToken(t, base)
+	resp := postWithCSRF(t, base+"/plugins/update-all", "", token, cookies)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("status = %d, want 200", resp.StatusCode)
+	}
+	trigger := resp.Header.Get("HX-Trigger")
+	if !strings.Contains(trigger, "showNotification") {
+		t.Error("update all should trigger showNotification")
+	}
+	if !strings.Contains(trigger, "Updated all") {
+		t.Error("update all should show success message")
+	}
+}
+
+// ---------- Phase 4: sidebar navigation ----------
+
+func TestSidebarHasMarketplaceAndPluginsLinks(t *testing.T) {
+	base, _ := startTestServer(t)
+	resp := get(t, base+"/tree")
+	body := bodyString(t, resp)
+	if !strings.Contains(body, "/marketplace") {
+		t.Error("sidebar should contain link to /marketplace")
+	}
+	if !strings.Contains(body, "/plugins") {
+		t.Error("sidebar should contain link to /plugins")
+	}
+}
+
+// ---------- Phase 4: shortcuts ----------
+
+func TestShortcutsPageHasMarketplaceAndPlugins(t *testing.T) {
+	base, _ := startTestServer(t)
+	resp := get(t, base+"/shortcuts")
+	body := bodyString(t, resp)
+	if !strings.Contains(body, "Marketplace") {
+		t.Error("shortcuts page should document Marketplace shortcut")
+	}
+	if !strings.Contains(body, "Plugins") {
+		t.Error("shortcuts page should document Plugins shortcut")
+	}
+}
+
+// ---------- Phase 4: capabilities ----------
+
+func TestCapabilitiesSupportsMarketplace(t *testing.T) {
+	w := New(DefaultConfig())
+	caps, err := w.Capabilities(context.Background())
+	if err != nil {
+		t.Fatalf("Capabilities: %v", err)
+	}
+	if !caps.SupportsMarketplace {
+		t.Error("SupportsMarketplace should be true for web UI")
+	}
+}
+
+// ---------- Phase 4: accessibility ----------
+
+func TestLayoutHasSkipLink(t *testing.T) {
+	base, _ := startTestServer(t)
+	resp := get(t, base+"/tree")
+	body := bodyString(t, resp)
+	if !strings.Contains(body, "skip-link") {
+		t.Error("layout should contain skip-to-content link")
+	}
+	if !strings.Contains(body, `role="main"`) {
+		t.Error("content area should have role=main")
+	}
+}
+
+// ---------- Phase 4: unit tests ----------
+
+func TestBuildMarketplaceQuery(t *testing.T) {
+	r, _ := http.NewRequest("GET", "/marketplace?q=vault&type=store&sort=downloads&verified=true&page=2", nil)
+	q := buildMarketplaceQuery(r)
+	if q.Query != "vault" {
+		t.Errorf("Query = %q, want 'vault'", q.Query)
+	}
+	if q.Type != "store" {
+		t.Errorf("Type = %q, want 'store'", q.Type)
+	}
+	if q.Sort != "downloads" {
+		t.Errorf("Sort = %q, want 'downloads'", q.Sort)
+	}
+	if !q.Verified {
+		t.Error("Verified should be true")
+	}
+	if q.Page != 2 {
+		t.Errorf("Page = %d, want 2", q.Page)
+	}
+}
+
+func TestBuildMarketplaceQueryDefaults(t *testing.T) {
+	r, _ := http.NewRequest("GET", "/marketplace", nil)
+	q := buildMarketplaceQuery(r)
+	if q.Sort != "relevance" {
+		t.Errorf("default Sort = %q, want 'relevance'", q.Sort)
+	}
+	if q.Page != 1 {
+		t.Errorf("default Page = %d, want 1", q.Page)
+	}
+	if q.PerPage != 20 {
+		t.Errorf("default PerPage = %d, want 20", q.PerPage)
+	}
+}
+
+func TestPageCount(t *testing.T) {
+	tests := []struct {
+		total   int
+		perPage int
+		want    int
+	}{
+		{0, 20, 1},
+		{10, 20, 1},
+		{20, 20, 1},
+		{21, 20, 2},
+		{40, 20, 2},
+		{41, 20, 3},
+		{100, 0, 1},
+	}
+	for _, tt := range tests {
+		got := pageCount(tt.total, tt.perPage)
+		if got != tt.want {
+			t.Errorf("pageCount(%d, %d) = %d, want %d", tt.total, tt.perPage, got, tt.want)
+		}
+	}
+}
+
+func TestRatingStars(t *testing.T) {
+	tests := []struct {
+		rating float64
+		want   string
+	}{
+		{0, "\u2606\u2606\u2606\u2606\u2606"},
+		{3.0, "\u2605\u2605\u2605\u2606\u2606"},
+		{5.0, "\u2605\u2605\u2605\u2605\u2605"},
+		{4.7, "\u2605\u2605\u2605\u2605\u2606"},
+	}
+	for _, tt := range tests {
+		got := ratingStars(tt.rating)
+		if got != tt.want {
+			t.Errorf("ratingStars(%v) = %q, want %q", tt.rating, got, tt.want)
+		}
+	}
+}
+
+func TestFormatDownloads(t *testing.T) {
+	tests := []struct {
+		n    int
+		want string
+	}{
+		{0, "0"},
+		{999, "999"},
+		{1000, "1.0k"},
+		{1200, "1.2k"},
+		{1000000, "1.0M"},
+		{2500000, "2.5M"},
+	}
+	for _, tt := range tests {
+		got := formatDownloads(tt.n)
+		if got != tt.want {
+			t.Errorf("formatDownloads(%d) = %q, want %q", tt.n, got, tt.want)
+		}
+	}
+}
+
+func TestFormatTime(t *testing.T) {
+	got := formatTime(time.Time{})
+	if got != "" {
+		t.Errorf("formatTime(zero) = %q, want empty", got)
+	}
+	tm := time.Date(2025, 1, 15, 0, 0, 0, 0, time.UTC)
+	got = formatTime(tm)
+	if got != "2025-01-15" {
+		t.Errorf("formatTime = %q, want '2025-01-15'", got)
+	}
+}
+
+func TestSeqFunc(t *testing.T) {
+	got := seqFunc(1, 5)
+	if len(got) != 5 {
+		t.Fatalf("seqFunc(1,5) returned %d items, want 5", len(got))
+	}
+	if got[0] != 1 || got[4] != 5 {
+		t.Errorf("seqFunc(1,5) = %v, want [1,2,3,4,5]", got)
+	}
+	empty := seqFunc(5, 1)
+	if len(empty) != 0 {
+		t.Errorf("seqFunc(5,1) should be empty, got %v", empty)
+	}
+}
+
+func TestTriggerNotification(t *testing.T) {
+	got := triggerNotification("success", "test message")
+	if !strings.Contains(got, "success") {
+		t.Error("should contain notification type")
+	}
+	if !strings.Contains(got, "test message") {
+		t.Error("should contain notification message")
 	}
 }
 
