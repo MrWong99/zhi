@@ -44,7 +44,7 @@ func (w *WebUI) Run(ctx context.Context, controller ui.Controller) error {
 func (w *WebUI) Capabilities(_ context.Context) (ui.Capabilities, error) {
 	return ui.Capabilities{
 		RequiresTTY:         false,
-		SupportsMarketplace: false,
+		SupportsMarketplace: true,
 	}, nil
 }
 

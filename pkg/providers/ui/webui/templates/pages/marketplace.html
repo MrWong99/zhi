@@ -1,0 +1,72 @@
+{{define "title"}}Marketplace{{end}}
+
+{{define "content"}}
+<div class="marketplace-page">
+  <div class="page-header">
+    <h2>Marketplace</h2>
+  </div>
+
+  <form class="marketplace-search"
+        hx-get="/marketplace"
+        hx-target="#marketplace-results"
+        hx-swap="innerHTML"
+        hx-push-url="true"
+        hx-trigger="submit, input[name=q] changed delay:400ms, change from:select, change from:input[type=radio], change from:input[type=checkbox]"
+        role="search"
+        aria-label="Search plugins">
+    <div class="search-bar">
+      {{icon "search"}}
+      <input type="search" name="q" value="{{.MarketplaceQuery}}"
+             placeholder="Search plugins..."
+             aria-label="Search plugins"
+             autocomplete="off">
+    </div>
+
+    <div class="marketplace-filters">
+      <div class="filter-chips" role="radiogroup" aria-label="Plugin type filter">
+        <label class="chip {{if eq .MarketplaceType ""}}active{{end}}">
+          <input type="radio" name="type" value="" {{if eq .MarketplaceType ""}}checked{{end}}>
+          All
+        </label>
+        <label class="chip {{if eq .MarketplaceType "config"}}active{{end}}">
+          <input type="radio" name="type" value="config" {{if eq .MarketplaceType "config"}}checked{{end}}>
+          config
+        </label>
+        <label class="chip {{if eq .MarketplaceType "transform"}}active{{end}}">
+          <input type="radio" name="type" value="transform" {{if eq .MarketplaceType "transform"}}checked{{end}}>
+          transform
+        </label>
+        <label class="chip {{if eq .MarketplaceType "store"}}active{{end}}">
+          <input type="radio" name="type" value="store" {{if eq .MarketplaceType "store"}}checked{{end}}>
+          store
+        </label>
+        <label class="chip {{if eq .MarketplaceType "ui"}}active{{end}}">
+          <input type="radio" name="type" value="ui" {{if eq .MarketplaceType "ui"}}checked{{end}}>
+          ui
+        </label>
+        <label class="chip {{if eq .MarketplaceType "workspace"}}active{{end}}">
+          <input type="radio" name="type" value="workspace" {{if eq .MarketplaceType "workspace"}}checked{{end}}>
+          workspace
+        </label>
+      </div>
+
+      <div class="filter-controls">
+        <select name="sort" aria-label="Sort results">
+          <option value="relevance" {{if eq .MarketplaceSort "relevance"}}selected{{end}}>Relevance</option>
+          <option value="downloads" {{if eq .MarketplaceSort "downloads"}}selected{{end}}>Downloads</option>
+          <option value="rating" {{if eq .MarketplaceSort "rating"}}selected{{end}}>Rating</option>
+          <option value="updated" {{if eq .MarketplaceSort "updated"}}selected{{end}}>Updated</option>
+        </select>
+        <label class="verified-toggle">
+          <input type="checkbox" name="verified" value="true" {{if .MarketplaceVerOnly}}checked{{end}}>
+          {{icon "shield"}} Verified only
+        </label>
+      </div>
+    </div>
+  </form>
+
+  <div id="marketplace-results" aria-live="polite">
+    {{template "marketplace_grid" .}}
+  </div>
+</div>
+{{end}}

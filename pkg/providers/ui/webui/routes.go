@@ -56,6 +56,18 @@ func (s *Server) registerRoutes() {
 	// Keyboard shortcuts (Phase 2).
 	s.mux.HandleFunc("GET /shortcuts", s.handleShortcutsPage)
 
+	// Marketplace (Phase 4).
+	s.mux.HandleFunc("GET /marketplace", s.handleMarketplacePage)
+	s.mux.HandleFunc("GET /marketplace/{publisher}/{name}", s.handlePluginDetail)
+	s.mux.HandleFunc("POST /marketplace/{publisher}/{name}/rate", s.handleRatePlugin)
+
+	// Installed plugins (Phase 4).
+	s.mux.HandleFunc("GET /plugins", s.handlePluginsPage)
+	s.mux.HandleFunc("POST /plugins/install", s.handleInstallPlugin)
+	s.mux.HandleFunc("POST /plugins/update-all", s.handleUpdateAllPlugins)
+	s.mux.HandleFunc("POST /plugins/{name}/uninstall", s.handleUninstallPlugin)
+	s.mux.HandleFunc("POST /plugins/{name}/update", s.handleUpdatePlugin)
+
 	// 404 catch-all. The standard mux routes unmatched paths to the
 	// longest matching pattern. With Go 1.22+ patterns, we register a
 	// wildcard that catches everything else.

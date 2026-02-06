@@ -1,0 +1,23 @@
+{{define "rating_section"}}
+<div class="rating-display">
+  <h3>Rating</h3>
+  <div class="rating-summary">
+    <span class="stars-large">{{.RatingStars}}</span>
+    <span class="rating-value">{{.RatingCount}} rating{{if ne .RatingCount 1}}s{{end}}</span>
+  </div>
+</div>
+<form class="rating-form"
+      hx-post="/marketplace/{{.Publisher}}/{{.Name}}/rate"
+      hx-target="#rating-section"
+      hx-swap="outerHTML">
+  <fieldset class="star-rating" aria-label="Rate this plugin">
+    <legend class="sr-only">Rate this plugin</legend>
+    {{range $i := seq 1 5}}
+      <input type="radio" name="score" value="{{$i}}" id="star-{{$i}}" aria-label="{{$i}} star{{if ne $i 1}}s{{end}}">
+      <label for="star-{{$i}}">&#9733;</label>
+    {{end}}
+  </fieldset>
+  <textarea name="comment" placeholder="Optional review..." rows="3" aria-label="Review comment"></textarea>
+  <button type="submit" class="btn btn-primary btn-sm">Submit Rating</button>
+</form>
+{{end}}

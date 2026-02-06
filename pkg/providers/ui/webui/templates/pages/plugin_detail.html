@@ -1,0 +1,128 @@
+{{define "title"}}{{.PluginDetail.Name}} - Marketplace{{end}}
+
+{{define "content"}}
+<div class="plugin-detail-page">
+  {{with .PluginDetail}}
+  <div class="plugin-detail-header">
+    <div class="plugin-detail-title">
+      {{if .Verified}}<span class="verified-badge" title="Verified publisher">{{icon "shield"}}</span>{{end}}
+      <h2>{{.Name}}</h2>
+      <span class="badge badge-muted">{{.Type}}</span>
+    </div>
+    <div class="plugin-detail-publisher">by {{.Publisher}}</div>
+    <p class="plugin-detail-description">{{.Description}}</p>
+  </div>
+
+  <div class="plugin-detail-actions">
+    {{if .Installed}}
+      {{if .UpdateAvail}}
+        <button class="btn btn-primary"
+                hx-post="/plugins/{{.Name}}/update"
+                hx-swap="none">
+          {{icon "refresh"}} Update to v{{.LatestVersion}}
+        </button>
+      {{else}}
+        <span class="badge badge-success">Installed v{{.InstalledVer}}</span>
+      {{end}}
+      <button class="btn btn-outline btn-danger"
+              hx-post="/plugins/{{.Name}}/uninstall"
+              hx-vals='{"type": "{{.Type}}"}'
+              hx-swap="none"
+              hx-confirm="Uninstall {{.Name}}?">
+        {{icon "trash"}} Uninstall
+      </button>
+    {{else}}
+      <button class="btn btn-primary"
+              hx-post="/plugins/install"
+              hx-vals='{"ref": "{{.Publisher}}/{{.Name}}"}'
+              hx-swap="none">
+        {{icon "download"}} Install v{{.LatestVersion}}
+      </button>
+    {{end}}
+  </div>
+
+  <div class="plugin-detail-grid">
+    <div class="plugin-detail-main">
+      {{if .LongDescription}}
+        <section class="detail-section">
+          <h3>About</h3>
+          <p>{{.LongDescription}}</p>
+        </section>
+      {{end}}
+
+      {{if .Keywords}}
+        <section class="detail-section">
+          <h3>Keywords</h3>
+          <div class="keyword-list">
+            {{range .Keywords}}<span class="badge badge-muted">{{.}}</span>{{end}}
+          </div>
+        </section>
+      {{end}}
+
+      {{if .Dependencies}}
+        <section class="detail-section">
+          <h3>Dependencies</h3>
+          <table class="detail-table" aria-label="Plugin dependencies">
+            <thead><tr><th>Name</th><th>Type</th><th>Publisher</th><th>Required</th></tr></thead>
+            <tbody>
+              {{range .Dependencies}}
+              <tr>
+                <td>{{.Name}}</td>
+                <td><span class="badge badge-muted">{{.Type}}</span></td>
+                <td>{{.Publisher}}</td>
+                <td>{{if .Required}}Yes{{else}}No{{end}}</td>
+              </tr>
+              {{end}}
+            </tbody>
+          </table>
+        </section>
+      {{end}}
+    </div>
+
+    <div class="plugin-detail-sidebar">
+      <section class="detail-section">
+        <h3>Info</h3>
+        <dl class="detail-info">
+          <dt>Version</dt><dd>{{.LatestVersion}}</dd>
+          {{if .License}}<dt>License</dt><dd>{{.License}}</dd>{{end}}
+          {{if .Homepage}}<dt>Homepage</dt><dd><a href="{{.Homepage}}" target="_blank" rel="noopener">Link</a></dd>{{end}}
+          {{if .Repository}}<dt>Repository</dt><dd><a href="{{.Repository}}" target="_blank" rel="noopener">Link</a></dd>{{end}}
+          <dt>Downloads</dt><dd>{{.Downloads}}</dd>
+        </dl>
+      </section>
+
+      {{if .Platforms}}
+        <section class="detail-section">
+          <h3>Platforms</h3>
+          <div class="platform-list">
+            {{range .Platforms}}<span class="badge badge-muted">{{.}}</span>{{end}}
+          </div>
+        </section>
+      {{end}}
+
+      <section class="detail-section" id="rating-section">
+        {{template "rating_section" .}}
+      </section>
+    </div>
+  </div>
+
+  {{if .Versions}}
+  <section class="detail-section">
+    <h3>Version History</h3>
+    <table class="detail-table" aria-label="Version history">
+      <thead><tr><th>Version</th><th>Published</th><th>Platforms</th></tr></thead>
+      <tbody>
+        {{range .Versions}}
+        <tr>
+          <td>{{.Version}}</td>
+          <td>{{.CreatedAt.Format "2006-01-02"}}</td>
+          <td>{{range .Platforms}}<span class="badge badge-muted">{{.}}</span> {{end}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </section>
+  {{end}}
+  {{end}}
+</div>
+{{end}}

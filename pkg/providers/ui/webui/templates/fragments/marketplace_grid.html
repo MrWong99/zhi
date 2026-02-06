@@ -1,0 +1,41 @@
+{{define "marketplace_grid"}}
+<div class="marketplace-grid-wrapper">
+  {{if .MarketplaceError}}
+    <div class="marketplace-unavailable" role="alert">
+      <p>{{.MarketplaceError}}</p>
+    </div>
+  {{else if .MarketplaceResults}}
+    <div class="marketplace-results-info">
+      <span class="results-count">{{.MarketplaceTotal}} result{{if ne .MarketplaceTotal 1}}s{{end}}</span>
+    </div>
+    <div class="marketplace-grid" role="list">
+      {{range .MarketplaceResults}}
+        {{template "marketplace_card" .}}
+      {{end}}
+    </div>
+    {{if gt .MarketplacePageCount 1}}
+    <nav class="pagination" aria-label="Marketplace results pages">
+      {{if gt .MarketplacePage 1}}
+        <a href="/marketplace?page={{sub .MarketplacePage 1}}" class="btn btn-outline btn-sm"
+           hx-get="/marketplace?page={{sub .MarketplacePage 1}}"
+           hx-target="#marketplace-results"
+           hx-swap="innerHTML"
+           hx-push-url="true">&laquo; Previous</a>
+      {{end}}
+      <span class="page-info">Page {{.MarketplacePage}} of {{.MarketplacePageCount}}</span>
+      {{if lt .MarketplacePage .MarketplacePageCount}}
+        <a href="/marketplace?page={{add .MarketplacePage 1}}" class="btn btn-outline btn-sm"
+           hx-get="/marketplace?page={{add .MarketplacePage 1}}"
+           hx-target="#marketplace-results"
+           hx-swap="innerHTML"
+           hx-push-url="true">Next &raquo;</a>
+      {{end}}
+    </nav>
+    {{end}}
+  {{else}}
+    <div class="marketplace-empty">
+      <p>No plugins found. Try adjusting your search or filters.</p>
+    </div>
+  {{end}}
+</div>
+{{end}}
