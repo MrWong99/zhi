@@ -27,6 +27,7 @@ Core principles:
 - **Template-based exports** -- render configuration to JSON, YAML, TOML, dotenv, or custom templates
 - **Provisioning** -- trigger external commands (Docker Compose, kubectl, Ansible, etc.) with exported configuration
 - **Plugin sharing** -- install and publish plugins via OCI registries with signature verification and binary integrity checks
+- **Enterprise mirror** -- `zhi-mirror` provides a local OCI pull-through cache with policy controls, audit logging, and air-gapped export/import
 
 ---
 
@@ -162,6 +163,32 @@ make build-all
 ```
 
 See the [examples README](examples/README.md) for more details.
+
+---
+
+## Enterprise Mirror (`zhi-mirror`)
+
+For enterprise and air-gapped environments, `zhi-mirror` provides a local registry mirror with:
+
+- **OCI pull-through cache** -- transparently caches artifacts from upstream registries
+- **Marketplace API proxy** -- caches and filters marketplace search results
+- **Policy engine** -- control which publishers, artifact types, and plugins are allowed
+- **Audit logging** -- structured JSON logs of all pull operations for SIEM integration
+- **Pre-population sync** -- scheduled syncing of approved artifacts
+- **Air-gapped export/import** -- bundle artifacts for transfer to disconnected networks
+
+```sh
+# Start the mirror server
+zhi-mirror serve --listen :5050 --upstream-registry ghcr.io
+
+# Export artifacts for air-gapped transfer
+zhi-mirror export --artifacts zhi-project/zhi-config-ansible:v1.2.0 --output bundle.tar
+
+# Import into an air-gapped mirror
+zhi-mirror import --input bundle.tar
+```
+
+Clients point to the mirror by setting `sharing.defaultRegistry` in `~/.zhi/config.yaml` or via the `ZHI_REGISTRY` environment variable. See the [Local Proxy](plans/sharing/local-proxy.md) design document for the full architecture.
 
 ---
 
