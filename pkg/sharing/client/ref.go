@@ -29,6 +29,17 @@ func (r *ParsedRef) Reference() string {
 	return ref
 }
 
+// IsShortName returns true when the input looks like a marketplace short name
+// (e.g. "ansible-config" or "ansible-config@1.2.0") rather than a full OCI
+// reference. A short name contains no slashes and no "oci://" scheme prefix.
+func IsShortName(ref string) bool {
+	if strings.HasPrefix(ref, "oci://") {
+		return false
+	}
+	// A short name has no slashes (OCI refs always have host/repo).
+	return !strings.Contains(ref, "/")
+}
+
 // ParseReference parses an OCI reference string. It accepts:
 //   - oci://host/repo:tag
 //   - oci://host/repo@digest

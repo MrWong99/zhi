@@ -18,6 +18,16 @@ type Config struct {
 	Default string `yaml:"default,omitempty" json:"default,omitempty"`
 	// Registries maps host names to per-registry configuration.
 	Registries map[string]Entry `yaml:"registries,omitempty" json:"registries,omitempty"`
+	// Marketplace holds marketplace connection settings.
+	Marketplace MarketplaceConfig `yaml:"marketplace,omitempty" json:"marketplace,omitempty"`
+}
+
+// MarketplaceConfig holds configuration for connecting to a marketplace server.
+type MarketplaceConfig struct {
+	// URL is the base URL of the marketplace (e.g. "https://marketplace.zhi.dev").
+	URL string `yaml:"url,omitempty" json:"url,omitempty"`
+	// APIKey is the API key for authenticated operations (publishing, registration).
+	APIKey string `yaml:"apiKey,omitempty" json:"apiKey,omitempty"`
 }
 
 // Entry holds authentication and options for a single OCI registry.
@@ -127,6 +137,20 @@ func (s *Store) DefaultRegistry() string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.cfg.Default
+}
+
+// MarketplaceURL returns the configured marketplace URL, or empty if not set.
+func (s *Store) MarketplaceURL() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.cfg.Marketplace.URL
+}
+
+// MarketplaceAPIKey returns the configured marketplace API key, or empty if not set.
+func (s *Store) MarketplaceAPIKey() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.cfg.Marketplace.APIKey
 }
 
 // save writes the current configuration to disk. Must be called with s.mu held.
