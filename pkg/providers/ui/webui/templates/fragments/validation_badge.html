@@ -1,0 +1,7 @@
+{{define "validation_badge"}}
+{{if .Results}}
+  {{range .Results}}
+    <div class="validation-msg validation-{{.Severity}}">{{.Message}}</div>
+  {{end}}
+{{end}}
+{{end}}

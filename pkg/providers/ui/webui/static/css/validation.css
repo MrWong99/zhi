@@ -1,0 +1,70 @@
+/* Validation page styles */
+.validation-group {
+  margin-bottom: var(--space-6);
+}
+
+.validation-group-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  margin-bottom: var(--space-2);
+}
+
+.validation-group-header.validation-danger {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.validation-group-header.validation-warning {
+  background: var(--color-warning-bg);
+  color: #856404;
+}
+
+.validation-group-header.validation-info {
+  background: var(--color-info-bg);
+  color: var(--color-info);
+}
+
+.validation-severity-icon {
+  font-size: var(--text-lg);
+}
+
+.validation-results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.validation-result {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+}
+
+.validation-path {
+  flex-shrink: 0;
+  color: var(--color-primary);
+}
+
+.validation-path:hover {
+  text-decoration: underline;
+}
+
+.validation-message {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.validation-empty {
+  padding: var(--space-8);
+  text-align: center;
+  color: var(--color-text-muted);
+}

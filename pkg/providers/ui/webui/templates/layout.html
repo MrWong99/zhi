@@ -10,6 +10,11 @@
   <link rel="stylesheet" href="/static/css/layout.css" nonce="{{nonce .}}">
   <link rel="stylesheet" href="/static/css/components.css" nonce="{{nonce .}}">
   <link rel="stylesheet" href="/static/css/tree.css" nonce="{{nonce .}}">
+  <link rel="stylesheet" href="/static/css/editor.css" nonce="{{nonce .}}">
+  <link rel="stylesheet" href="/static/css/validation.css" nonce="{{nonce .}}">
+  <link rel="stylesheet" href="/static/css/component-mgmt.css" nonce="{{nonce .}}">
+  <link rel="stylesheet" href="/static/css/notifications.css" nonce="{{nonce .}}">
+  <link rel="stylesheet" href="/static/css/shortcuts.css" nonce="{{nonce .}}">
   <link rel="stylesheet" href="/static/css/themes/light.css" nonce="{{nonce .}}">
   <link rel="stylesheet" href="/static/css/themes/dark.css" nonce="{{nonce .}}">
   <script src="/static/js/vendor/htmx.min.js" nonce="{{nonce .}}"></script>
@@ -24,11 +29,7 @@
       </div>
     </div>
   </div>
-  <script nonce="{{nonce .}}">
-    (function() {
-      var saved = localStorage.getItem('zhi-theme');
-      if (saved) document.documentElement.setAttribute('data-theme', saved);
-    })();
-  </script>
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+  <script src="/static/js/app.js" nonce="{{nonce .}}"></script>
 </body>
 </html>

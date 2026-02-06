@@ -10,5 +10,16 @@
       <span>Configuration Tree</span>
     {{end}}
   </nav>
+  <div class="topbar-actions">
+    <div id="unsaved-indicator" class="unsaved-indicator">
+      <span class="unsaved-dot"></span>
+      <span>Unsaved changes</span>
+    </div>
+    <button id="save-tree-btn" class="btn btn-primary btn-sm"
+            hx-post="/tree/save"
+            hx-swap="none">
+      {{icon "save"}} Save
+    </button>
+  </div>
 </div>
 {{end}}

@@ -1,0 +1,82 @@
+{{define "value_form"}}
+<div class="tree-value tree-value-editing" id="tree-value-{{.PathID}}">
+  <form class="editor-form"
+        hx-post="/tree/values/{{.Path}}"
+        hx-target="#tree-value-{{.PathID}}"
+        hx-swap="outerHTML">
+    <div class="editor-header">
+      <span class="leaf-icon">&#9679;</span>
+      <span class="leaf-name">{{.Name}}</span>
+      {{if .Component}}
+        <span class="badge badge-primary tree-component-badge{{if not .ComponentEnabled}} disabled{{end}}">{{.Component}}</span>
+      {{end}}
+    </div>
+    <input type="hidden" name="value_type" value="{{.ValueType}}">
+    {{if .Options}}
+      <select name="value" class="input value-input" autofocus>
+        {{range .Options}}
+          <option value="{{.}}" {{if eq . $.EditValue}}selected{{end}}>{{.}}</option>
+        {{end}}
+      </select>
+    {{else if eq .ValueType "bool"}}
+      <label class="toggle-label">
+        <input type="checkbox" name="value" value="true" {{if eq .EditValue "true"}}checked{{end}} class="toggle-input">
+        <span class="toggle-switch"></span>
+        <span class="toggle-text">{{if eq .EditValue "true"}}true{{else}}false{{end}}</span>
+      </label>
+    {{else if .IsMultiline}}
+      <textarea name="value" class="input value-input value-textarea" autofocus
+                rows="4"
+                {{if .Placeholder}}placeholder="{{.Placeholder}}"{{end}}
+                hx-post="/validate/inline/{{.Path}}"
+                hx-trigger="input changed delay:500ms"
+                hx-target="#validation-inline-{{.PathID}}"
+                hx-swap="innerHTML"
+                hx-include="[name='value_type']">{{.EditValue}}</textarea>
+    {{else if eq .ValueType "number"}}
+      <input type="number" name="value" value="{{.EditValue}}"
+             class="input value-input" autofocus step="any"
+             {{if .Placeholder}}placeholder="{{.Placeholder}}"{{end}}
+             hx-post="/validate/inline/{{.Path}}"
+             hx-trigger="input changed delay:500ms"
+             hx-target="#validation-inline-{{.PathID}}"
+             hx-swap="innerHTML"
+             hx-include="[name='value_type']">
+    {{else}}
+      <input type="text" name="value" value="{{.EditValue}}"
+             class="input value-input" autofocus
+             {{if .Placeholder}}placeholder="{{.Placeholder}}"{{end}}
+             hx-post="/validate/inline/{{.Path}}"
+             hx-trigger="input changed delay:500ms"
+             hx-target="#validation-inline-{{.PathID}}"
+             hx-swap="innerHTML"
+             hx-include="[name='value_type']">
+    {{end}}
+    <div id="validation-inline-{{.PathID}}" class="validation-inline">
+      {{if .ValidationResults}}
+        {{range .ValidationResults}}
+          <div class="validation-msg validation-{{.Severity}}">{{.Message}}</div>
+        {{end}}
+      {{end}}
+    </div>
+    {{if .Error}}
+      <div class="editor-error">{{.Error}}</div>
+    {{end}}
+    <div class="editor-meta">
+      <span class="meta-type">{{.ValueType}}</span>
+      {{if .Metadata}}
+        {{range $k, $v := .Metadata}}
+          <span class="meta-tag">{{$k}}: {{$v}}</span>
+        {{end}}
+      {{end}}
+    </div>
+    <div class="editor-actions">
+      <button type="submit" class="btn btn-primary btn-sm">Save</button>
+      <button type="button" class="btn btn-outline btn-sm"
+              hx-get="/tree/display/{{.Path}}"
+              hx-target="#tree-value-{{.PathID}}"
+              hx-swap="outerHTML">Cancel</button>
+    </div>
+  </form>
+</div>
+{{end}}
