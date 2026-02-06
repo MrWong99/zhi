@@ -13,9 +13,10 @@ The platform follows a Vault-style architecture: built-in providers are compiled
 ```bash
 # Build
 make build              # Build zhi binary to bin/
+make build-marketplace  # Build the zhi-marketplace binary to bin/
 make build-examples     # Build all Go example plugins to bin/examples/
 make build-mirror       # Build the zhi-mirror binary to bin/
-make build-all          # Build zhi + zhi-mirror + examples
+make build-all          # Build zhi + marketplace + mirror + examples
 make install            # Install zhi to $GOPATH/bin
 
 # Test
@@ -65,7 +66,7 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on push/PR to main:
 
 1. **Lint** -- formatting check, `go vet`, golangci-lint
 2. **Test** -- `make test` + `make test-cover` on ubuntu and macOS
-3. **Build** -- cross-compile (linux/darwin × amd64/arm64) with `CGO_ENABLED=0`
+3. **Build** -- cross-compile zhi, marketplace, and mirror (linux/darwin × amd64/arm64) with `CGO_ENABLED=0`
 4. **Proto Check** -- ensures generated `*.pb.go` files are committed
 5. **Integration** -- builds all binaries, runs `test/` if test files exist
 
