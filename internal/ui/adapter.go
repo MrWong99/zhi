@@ -172,3 +172,35 @@ func (c *ControllerAdapter) DisableComponent(_ context.Context, name string) err
 func (c *ControllerAdapter) WorkspaceName(_ context.Context) (string, error) {
 	return c.Inner.WorkspaceName(), nil
 }
+
+func (c *ControllerAdapter) SearchMarketplace(ctx context.Context, query zhiui.MarketplaceQuery) (*zhiui.MarketplaceResults, error) {
+	return c.Inner.SearchMarketplace(ctx, query)
+}
+
+func (c *ControllerAdapter) GetMarketplaceDetail(ctx context.Context, publisher, name string) (*zhiui.MarketplaceDetail, error) {
+	return c.Inner.GetMarketplaceDetail(ctx, publisher, name)
+}
+
+func (c *ControllerAdapter) InstallPlugin(ctx context.Context, ref string) (*zhiui.InstallResult, error) {
+	return c.Inner.InstallPlugin(ctx, ref)
+}
+
+func (c *ControllerAdapter) UninstallPlugin(ctx context.Context, name string, pluginType string) error {
+	return c.Inner.UninstallPlugin(ctx, name, pluginType)
+}
+
+func (c *ControllerAdapter) ListInstalledPlugins(ctx context.Context) ([]zhiui.InstalledPlugin, error) {
+	return c.Inner.ListInstalledPlugins(ctx)
+}
+
+func (c *ControllerAdapter) CheckUpdates(ctx context.Context) ([]zhiui.PluginUpdate, error) {
+	return c.Inner.CheckUpdates(ctx)
+}
+
+func (c *ControllerAdapter) UpdatePlugin(ctx context.Context, name string, version string) (*zhiui.InstallResult, error) {
+	return c.Inner.UpdatePlugin(ctx, name, version)
+}
+
+func (c *ControllerAdapter) RatePlugin(ctx context.Context, publisher, name string, rating zhiui.Rating) error {
+	return c.Inner.RatePlugin(ctx, publisher, name, rating)
+}

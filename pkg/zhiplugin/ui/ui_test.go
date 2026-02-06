@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 	"testing"
+	"time"
 
 	goplugin "github.com/hashicorp/go-plugin"
 
@@ -26,6 +27,16 @@ type testController struct {
 	enableCalls        []string
 	disableCalls       []string
 	workspaceNameCall  bool
+
+	// Marketplace calls.
+	searchCalls    []MarketplaceQuery
+	detailCalls    []string // "publisher/name"
+	installCalls   []string // refs
+	uninstallCalls []string // "name/type"
+	listInstalled  bool
+	checkUpdates   bool
+	updateCalls    []string // "name/version"
+	rateCalls      []string // "publisher/name"
 
 	// Responses
 	tree       *config.Tree
@@ -136,6 +147,137 @@ func (c *testController) WorkspaceName(_ context.Context) (string, error) {
 	defer c.mu.Unlock()
 	c.workspaceNameCall = true
 	return "test-workspace", nil
+}
+
+func (c *testController) SearchMarketplace(_ context.Context, query MarketplaceQuery) (*MarketplaceResults, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.searchCalls = append(c.searchCalls, query)
+	return &MarketplaceResults{
+		Total: 1,
+		Results: []MarketplaceEntry{
+			{
+				Name:          "test-plugin",
+				Publisher:     "acme",
+				Type:          "config",
+				Description:   "A test plugin",
+				LatestVersion: "1.0.0",
+				Rating:        4.5,
+				RatingCount:   10,
+				Downloads:     100,
+				Verified:      true,
+				Platforms:     []string{"linux/amd64"},
+			},
+		},
+	}, nil
+}
+
+func (c *testController) GetMarketplaceDetail(_ context.Context, publisher, name string) (*MarketplaceDetail, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.detailCalls = append(c.detailCalls, publisher+"/"+name)
+	return &MarketplaceDetail{
+		MarketplaceEntry: MarketplaceEntry{
+			Name:          name,
+			Publisher:     publisher,
+			Type:          "config",
+			Description:   "A test plugin",
+			LatestVersion: "1.0.0",
+			Rating:        4.5,
+			RatingCount:   10,
+			Downloads:     100,
+			Verified:      true,
+		},
+		LongDescription: "Long description",
+		License:         "MIT",
+		Homepage:        "https://example.com",
+		Repository:      "https://github.com/acme/test",
+		Keywords:        []string{"config", "test"},
+		Versions: []VersionEntry{
+			{Version: "1.0.0", CreatedAt: time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC), Digest: "sha256:abc", Platforms: []string{"linux/amd64"}},
+		},
+		Ratings: []RatingEntry{
+			{Score: 5, Comment: "Great!", Author: "user1", CreatedAt: time.Date(2025, 6, 15, 0, 0, 0, 0, time.UTC)},
+		},
+		Dependencies: []DependencyEntry{
+			{Name: "dep-plugin", Type: "config", Publisher: "acme", Required: true},
+		},
+	}, nil
+}
+
+func (c *testController) InstallPlugin(_ context.Context, ref string) (*InstallResult, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.installCalls = append(c.installCalls, ref)
+	return &InstallResult{
+		Name:        "test-plugin",
+		Type:        "config",
+		Version:     "1.0.0",
+		Digest:      "sha256:abc",
+		Verified:    true,
+		RuntimeDeps: []string{"dep-plugin"},
+	}, nil
+}
+
+func (c *testController) UninstallPlugin(_ context.Context, name string, pluginType string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.uninstallCalls = append(c.uninstallCalls, name+"/"+pluginType)
+	return nil
+}
+
+func (c *testController) ListInstalledPlugins(_ context.Context) ([]InstalledPlugin, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.listInstalled = true
+	return []InstalledPlugin{
+		{
+			Name:        "test-plugin",
+			Type:        "config",
+			Version:     "1.0.0",
+			Source:      "registry.example.com/acme/test-plugin:1.0.0",
+			InstalledAt: time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC),
+			Digest:      "sha256:abc",
+			Verified:    true,
+			UpdateAvail: "1.1.0",
+		},
+	}, nil
+}
+
+func (c *testController) CheckUpdates(_ context.Context) ([]PluginUpdate, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.checkUpdates = true
+	return []PluginUpdate{
+		{
+			Name:           "test-plugin",
+			Type:           "config",
+			CurrentVersion: "1.0.0",
+			LatestVersion:  "1.1.0",
+			Verified:       true,
+		},
+	}, nil
+}
+
+func (c *testController) UpdatePlugin(_ context.Context, name string, version string) (*InstallResult, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.updateCalls = append(c.updateCalls, name+"/"+version)
+	return &InstallResult{
+		Name:        name,
+		Type:        "config",
+		Version:     "1.1.0",
+		PrevVersion: "1.0.0",
+		Digest:      "sha256:def",
+		Verified:    true,
+	}, nil
+}
+
+func (c *testController) RatePlugin(_ context.Context, publisher, name string, _ Rating) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.rateCalls = append(c.rateCalls, publisher+"/"+name)
+	return nil
 }
 
 // --- testUIPlugin: exercises the Controller during Run --------------------
@@ -475,6 +617,255 @@ func TestRunEnableDisableComponent(t *testing.T) {
 	}
 	if len(ctrl.disableCalls) != 1 || ctrl.disableCalls[0] != "db" {
 		t.Errorf("Disable calls = %v, want [db]", ctrl.disableCalls)
+	}
+}
+
+func TestRunSearchMarketplace(t *testing.T) {
+	ctrl := newTestController()
+	impl := &testUIPlugin{
+		actions: func(ctx context.Context, c Controller) error {
+			results, err := c.SearchMarketplace(ctx, MarketplaceQuery{
+				Query:   "test",
+				Type:    "config",
+				Sort:    "downloads",
+				Page:    1,
+				PerPage: 10,
+			})
+			if err != nil {
+				return err
+			}
+			if results.Total != 1 {
+				t.Errorf("SearchMarketplace total = %d, want 1", results.Total)
+			}
+			if len(results.Results) != 1 {
+				t.Fatalf("SearchMarketplace returned %d results, want 1", len(results.Results))
+			}
+			r := results.Results[0]
+			if r.Name != "test-plugin" {
+				t.Errorf("result name = %q, want test-plugin", r.Name)
+			}
+			if r.Publisher != "acme" {
+				t.Errorf("result publisher = %q, want acme", r.Publisher)
+			}
+			if r.Rating != 4.5 {
+				t.Errorf("result rating = %v, want 4.5", r.Rating)
+			}
+			if !r.Verified {
+				t.Error("expected result to be verified")
+			}
+			return nil
+		},
+	}
+
+	p := dispense(t, impl)
+	if err := p.Run(context.Background(), ctrl); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if len(ctrl.searchCalls) != 1 {
+		t.Fatalf("expected 1 search call, got %d", len(ctrl.searchCalls))
+	}
+	if ctrl.searchCalls[0].Query != "test" {
+		t.Errorf("search query = %q, want test", ctrl.searchCalls[0].Query)
+	}
+}
+
+func TestRunGetMarketplaceDetail(t *testing.T) {
+	ctrl := newTestController()
+	impl := &testUIPlugin{
+		actions: func(ctx context.Context, c Controller) error {
+			detail, err := c.GetMarketplaceDetail(ctx, "acme", "test-plugin")
+			if err != nil {
+				return err
+			}
+			if detail.Name != "test-plugin" {
+				t.Errorf("detail name = %q, want test-plugin", detail.Name)
+			}
+			if detail.LongDescription != "Long description" {
+				t.Errorf("long desc = %q, want 'Long description'", detail.LongDescription)
+			}
+			if detail.License != "MIT" {
+				t.Errorf("license = %q, want MIT", detail.License)
+			}
+			if len(detail.Versions) != 1 {
+				t.Fatalf("versions = %d, want 1", len(detail.Versions))
+			}
+			if detail.Versions[0].Version != "1.0.0" {
+				t.Errorf("version = %q, want 1.0.0", detail.Versions[0].Version)
+			}
+			if len(detail.Ratings) != 1 || detail.Ratings[0].Score != 5 {
+				t.Errorf("ratings = %+v, want [score=5]", detail.Ratings)
+			}
+			if len(detail.Dependencies) != 1 || detail.Dependencies[0].Name != "dep-plugin" {
+				t.Errorf("deps = %+v, want [dep-plugin]", detail.Dependencies)
+			}
+			if len(detail.Keywords) != 2 {
+				t.Errorf("keywords = %v, want [config test]", detail.Keywords)
+			}
+			return nil
+		},
+	}
+
+	p := dispense(t, impl)
+	if err := p.Run(context.Background(), ctrl); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+}
+
+func TestRunInstallPlugin(t *testing.T) {
+	ctrl := newTestController()
+	impl := &testUIPlugin{
+		actions: func(ctx context.Context, c Controller) error {
+			result, err := c.InstallPlugin(ctx, "acme/test-plugin")
+			if err != nil {
+				return err
+			}
+			if result.Name != "test-plugin" {
+				t.Errorf("install name = %q, want test-plugin", result.Name)
+			}
+			if result.Version != "1.0.0" {
+				t.Errorf("install version = %q, want 1.0.0", result.Version)
+			}
+			if !result.Verified {
+				t.Error("expected install result to be verified")
+			}
+			if len(result.RuntimeDeps) != 1 || result.RuntimeDeps[0] != "dep-plugin" {
+				t.Errorf("runtime deps = %v, want [dep-plugin]", result.RuntimeDeps)
+			}
+			return nil
+		},
+	}
+
+	p := dispense(t, impl)
+	if err := p.Run(context.Background(), ctrl); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if len(ctrl.installCalls) != 1 || ctrl.installCalls[0] != "acme/test-plugin" {
+		t.Errorf("install calls = %v, want [acme/test-plugin]", ctrl.installCalls)
+	}
+}
+
+func TestRunUninstallPlugin(t *testing.T) {
+	ctrl := newTestController()
+	impl := &testUIPlugin{
+		actions: func(ctx context.Context, c Controller) error {
+			return c.UninstallPlugin(ctx, "test-plugin", "config")
+		},
+	}
+
+	p := dispense(t, impl)
+	if err := p.Run(context.Background(), ctrl); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if len(ctrl.uninstallCalls) != 1 || ctrl.uninstallCalls[0] != "test-plugin/config" {
+		t.Errorf("uninstall calls = %v, want [test-plugin/config]", ctrl.uninstallCalls)
+	}
+}
+
+func TestRunListInstalledPlugins(t *testing.T) {
+	ctrl := newTestController()
+	impl := &testUIPlugin{
+		actions: func(ctx context.Context, c Controller) error {
+			plugins, err := c.ListInstalledPlugins(ctx)
+			if err != nil {
+				return err
+			}
+			if len(plugins) != 1 {
+				t.Fatalf("listed %d plugins, want 1", len(plugins))
+			}
+			p := plugins[0]
+			if p.Name != "test-plugin" {
+				t.Errorf("plugin name = %q, want test-plugin", p.Name)
+			}
+			if p.Version != "1.0.0" {
+				t.Errorf("plugin version = %q, want 1.0.0", p.Version)
+			}
+			if p.UpdateAvail != "1.1.0" {
+				t.Errorf("update avail = %q, want 1.1.0", p.UpdateAvail)
+			}
+			return nil
+		},
+	}
+
+	p := dispense(t, impl)
+	if err := p.Run(context.Background(), ctrl); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if !ctrl.listInstalled {
+		t.Error("expected ListInstalledPlugins to be called")
+	}
+}
+
+func TestRunCheckUpdates(t *testing.T) {
+	ctrl := newTestController()
+	impl := &testUIPlugin{
+		actions: func(ctx context.Context, c Controller) error {
+			updates, err := c.CheckUpdates(ctx)
+			if err != nil {
+				return err
+			}
+			if len(updates) != 1 {
+				t.Fatalf("got %d updates, want 1", len(updates))
+			}
+			if updates[0].Name != "test-plugin" {
+				t.Errorf("update name = %q, want test-plugin", updates[0].Name)
+			}
+			if updates[0].LatestVersion != "1.1.0" {
+				t.Errorf("latest version = %q, want 1.1.0", updates[0].LatestVersion)
+			}
+			return nil
+		},
+	}
+
+	p := dispense(t, impl)
+	if err := p.Run(context.Background(), ctrl); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if !ctrl.checkUpdates {
+		t.Error("expected CheckUpdates to be called")
+	}
+}
+
+func TestRunUpdatePlugin(t *testing.T) {
+	ctrl := newTestController()
+	impl := &testUIPlugin{
+		actions: func(ctx context.Context, c Controller) error {
+			result, err := c.UpdatePlugin(ctx, "test-plugin", "1.1.0")
+			if err != nil {
+				return err
+			}
+			if result.Version != "1.1.0" {
+				t.Errorf("update version = %q, want 1.1.0", result.Version)
+			}
+			if result.PrevVersion != "1.0.0" {
+				t.Errorf("prev version = %q, want 1.0.0", result.PrevVersion)
+			}
+			return nil
+		},
+	}
+
+	p := dispense(t, impl)
+	if err := p.Run(context.Background(), ctrl); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if len(ctrl.updateCalls) != 1 || ctrl.updateCalls[0] != "test-plugin/1.1.0" {
+		t.Errorf("update calls = %v, want [test-plugin/1.1.0]", ctrl.updateCalls)
+	}
+}
+
+func TestRunRatePlugin(t *testing.T) {
+	ctrl := newTestController()
+	impl := &testUIPlugin{
+		actions: func(ctx context.Context, c Controller) error {
+			return c.RatePlugin(ctx, "acme", "test-plugin", Rating{Score: 5, Comment: "Great!"})
+		},
+	}
+
+	p := dispense(t, impl)
+	if err := p.Run(context.Background(), ctrl); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if len(ctrl.rateCalls) != 1 || ctrl.rateCalls[0] != "acme/test-plugin" {
+		t.Errorf("rate calls = %v, want [acme/test-plugin]", ctrl.rateCalls)
 	}
 }
 

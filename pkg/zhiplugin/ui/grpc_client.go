@@ -53,6 +53,7 @@ func (c *GRPCClient) Capabilities(ctx context.Context) (Capabilities, error) {
 		return Capabilities{}, fmt.Errorf("querying UI capabilities: %w", err)
 	}
 	return Capabilities{
-		RequiresTTY: resp.GetRequiresTty(),
+		RequiresTTY:         resp.GetRequiresTty(),
+		SupportsMarketplace: resp.GetSupportsMarketplace(),
 	}, nil
 }

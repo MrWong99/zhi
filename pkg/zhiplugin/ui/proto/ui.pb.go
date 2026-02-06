@@ -147,9 +147,11 @@ func (*CapabilitiesRequest) Descriptor() ([]byte, []int) {
 type CapabilitiesResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Whether this UI requires direct TTY access (must run as a builtin plugin).
-	RequiresTty   bool `protobuf:"varint,1,opt,name=requires_tty,json=requiresTty,proto3" json:"requires_tty,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	RequiresTty bool `protobuf:"varint,1,opt,name=requires_tty,json=requiresTty,proto3" json:"requires_tty,omitempty"`
+	// Whether this UI provides marketplace browsing and plugin management.
+	SupportsMarketplace bool `protobuf:"varint,2,opt,name=supports_marketplace,json=supportsMarketplace,proto3" json:"supports_marketplace,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *CapabilitiesResponse) Reset() {
@@ -185,6 +187,13 @@ func (*CapabilitiesResponse) Descriptor() ([]byte, []int) {
 func (x *CapabilitiesResponse) GetRequiresTty() bool {
 	if x != nil {
 		return x.RequiresTty
+	}
+	return false
+}
+
+func (x *CapabilitiesResponse) GetSupportsMarketplace() bool {
+	if x != nil {
+		return x.SupportsMarketplace
 	}
 	return false
 }
@@ -1363,6 +1372,1458 @@ func (x *CtrlWorkspaceNameResponse) GetName() string {
 	return ""
 }
 
+type CtrlSearchMarketplaceRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Query         string                 `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
+	Type          string                 `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"` // "config", "transform", "store", "ui", "workspace"
+	Sort          string                 `protobuf:"bytes,3,opt,name=sort,proto3" json:"sort,omitempty"` // "relevance", "downloads", "rating", "updated"
+	Verified      bool                   `protobuf:"varint,4,opt,name=verified,proto3" json:"verified,omitempty"`
+	Page          int32                  `protobuf:"varint,5,opt,name=page,proto3" json:"page,omitempty"`
+	PerPage       int32                  `protobuf:"varint,6,opt,name=per_page,json=perPage,proto3" json:"per_page,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CtrlSearchMarketplaceRequest) Reset() {
+	*x = CtrlSearchMarketplaceRequest{}
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CtrlSearchMarketplaceRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CtrlSearchMarketplaceRequest) ProtoMessage() {}
+
+func (x *CtrlSearchMarketplaceRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CtrlSearchMarketplaceRequest.ProtoReflect.Descriptor instead.
+func (*CtrlSearchMarketplaceRequest) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *CtrlSearchMarketplaceRequest) GetQuery() string {
+	if x != nil {
+		return x.Query
+	}
+	return ""
+}
+
+func (x *CtrlSearchMarketplaceRequest) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *CtrlSearchMarketplaceRequest) GetSort() string {
+	if x != nil {
+		return x.Sort
+	}
+	return ""
+}
+
+func (x *CtrlSearchMarketplaceRequest) GetVerified() bool {
+	if x != nil {
+		return x.Verified
+	}
+	return false
+}
+
+func (x *CtrlSearchMarketplaceRequest) GetPage() int32 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *CtrlSearchMarketplaceRequest) GetPerPage() int32 {
+	if x != nil {
+		return x.PerPage
+	}
+	return 0
+}
+
+type CtrlMarketplaceEntryMsg struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Publisher     string                 `protobuf:"bytes,2,opt,name=publisher,proto3" json:"publisher,omitempty"`
+	Type          string                 `protobuf:"bytes,3,opt,name=type,proto3" json:"type,omitempty"`
+	Description   string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
+	LatestVersion string                 `protobuf:"bytes,5,opt,name=latest_version,json=latestVersion,proto3" json:"latest_version,omitempty"`
+	Rating        float64                `protobuf:"fixed64,6,opt,name=rating,proto3" json:"rating,omitempty"`
+	RatingCount   int32                  `protobuf:"varint,7,opt,name=rating_count,json=ratingCount,proto3" json:"rating_count,omitempty"`
+	Downloads     int32                  `protobuf:"varint,8,opt,name=downloads,proto3" json:"downloads,omitempty"`
+	Verified      bool                   `protobuf:"varint,9,opt,name=verified,proto3" json:"verified,omitempty"`
+	Installed     bool                   `protobuf:"varint,10,opt,name=installed,proto3" json:"installed,omitempty"`
+	InstalledVer  string                 `protobuf:"bytes,11,opt,name=installed_ver,json=installedVer,proto3" json:"installed_ver,omitempty"`
+	UpdateAvail   bool                   `protobuf:"varint,12,opt,name=update_avail,json=updateAvail,proto3" json:"update_avail,omitempty"`
+	Platforms     []string               `protobuf:"bytes,13,rep,name=platforms,proto3" json:"platforms,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CtrlMarketplaceEntryMsg) Reset() {
+	*x = CtrlMarketplaceEntryMsg{}
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CtrlMarketplaceEntryMsg) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CtrlMarketplaceEntryMsg) ProtoMessage() {}
+
+func (x *CtrlMarketplaceEntryMsg) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CtrlMarketplaceEntryMsg.ProtoReflect.Descriptor instead.
+func (*CtrlMarketplaceEntryMsg) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *CtrlMarketplaceEntryMsg) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CtrlMarketplaceEntryMsg) GetPublisher() string {
+	if x != nil {
+		return x.Publisher
+	}
+	return ""
+}
+
+func (x *CtrlMarketplaceEntryMsg) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *CtrlMarketplaceEntryMsg) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *CtrlMarketplaceEntryMsg) GetLatestVersion() string {
+	if x != nil {
+		return x.LatestVersion
+	}
+	return ""
+}
+
+func (x *CtrlMarketplaceEntryMsg) GetRating() float64 {
+	if x != nil {
+		return x.Rating
+	}
+	return 0
+}
+
+func (x *CtrlMarketplaceEntryMsg) GetRatingCount() int32 {
+	if x != nil {
+		return x.RatingCount
+	}
+	return 0
+}
+
+func (x *CtrlMarketplaceEntryMsg) GetDownloads() int32 {
+	if x != nil {
+		return x.Downloads
+	}
+	return 0
+}
+
+func (x *CtrlMarketplaceEntryMsg) GetVerified() bool {
+	if x != nil {
+		return x.Verified
+	}
+	return false
+}
+
+func (x *CtrlMarketplaceEntryMsg) GetInstalled() bool {
+	if x != nil {
+		return x.Installed
+	}
+	return false
+}
+
+func (x *CtrlMarketplaceEntryMsg) GetInstalledVer() string {
+	if x != nil {
+		return x.InstalledVer
+	}
+	return ""
+}
+
+func (x *CtrlMarketplaceEntryMsg) GetUpdateAvail() bool {
+	if x != nil {
+		return x.UpdateAvail
+	}
+	return false
+}
+
+func (x *CtrlMarketplaceEntryMsg) GetPlatforms() []string {
+	if x != nil {
+		return x.Platforms
+	}
+	return nil
+}
+
+type CtrlSearchMarketplaceResponse struct {
+	state         protoimpl.MessageState     `protogen:"open.v1"`
+	Total         int32                      `protobuf:"varint,1,opt,name=total,proto3" json:"total,omitempty"`
+	Results       []*CtrlMarketplaceEntryMsg `protobuf:"bytes,2,rep,name=results,proto3" json:"results,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CtrlSearchMarketplaceResponse) Reset() {
+	*x = CtrlSearchMarketplaceResponse{}
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CtrlSearchMarketplaceResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CtrlSearchMarketplaceResponse) ProtoMessage() {}
+
+func (x *CtrlSearchMarketplaceResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CtrlSearchMarketplaceResponse.ProtoReflect.Descriptor instead.
+func (*CtrlSearchMarketplaceResponse) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *CtrlSearchMarketplaceResponse) GetTotal() int32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+func (x *CtrlSearchMarketplaceResponse) GetResults() []*CtrlMarketplaceEntryMsg {
+	if x != nil {
+		return x.Results
+	}
+	return nil
+}
+
+type CtrlGetMarketplaceDetailRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Publisher     string                 `protobuf:"bytes,1,opt,name=publisher,proto3" json:"publisher,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CtrlGetMarketplaceDetailRequest) Reset() {
+	*x = CtrlGetMarketplaceDetailRequest{}
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CtrlGetMarketplaceDetailRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CtrlGetMarketplaceDetailRequest) ProtoMessage() {}
+
+func (x *CtrlGetMarketplaceDetailRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CtrlGetMarketplaceDetailRequest.ProtoReflect.Descriptor instead.
+func (*CtrlGetMarketplaceDetailRequest) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *CtrlGetMarketplaceDetailRequest) GetPublisher() string {
+	if x != nil {
+		return x.Publisher
+	}
+	return ""
+}
+
+func (x *CtrlGetMarketplaceDetailRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type CtrlVersionEntryMsg struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Version       string                 `protobuf:"bytes,1,opt,name=version,proto3" json:"version,omitempty"`
+	CreatedAtUnix int64                  `protobuf:"varint,2,opt,name=created_at_unix,json=createdAtUnix,proto3" json:"created_at_unix,omitempty"`
+	Digest        string                 `protobuf:"bytes,3,opt,name=digest,proto3" json:"digest,omitempty"`
+	Platforms     []string               `protobuf:"bytes,4,rep,name=platforms,proto3" json:"platforms,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CtrlVersionEntryMsg) Reset() {
+	*x = CtrlVersionEntryMsg{}
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CtrlVersionEntryMsg) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CtrlVersionEntryMsg) ProtoMessage() {}
+
+func (x *CtrlVersionEntryMsg) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CtrlVersionEntryMsg.ProtoReflect.Descriptor instead.
+func (*CtrlVersionEntryMsg) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *CtrlVersionEntryMsg) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+func (x *CtrlVersionEntryMsg) GetCreatedAtUnix() int64 {
+	if x != nil {
+		return x.CreatedAtUnix
+	}
+	return 0
+}
+
+func (x *CtrlVersionEntryMsg) GetDigest() string {
+	if x != nil {
+		return x.Digest
+	}
+	return ""
+}
+
+func (x *CtrlVersionEntryMsg) GetPlatforms() []string {
+	if x != nil {
+		return x.Platforms
+	}
+	return nil
+}
+
+type CtrlRatingEntryMsg struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Score         int32                  `protobuf:"varint,1,opt,name=score,proto3" json:"score,omitempty"`
+	Comment       string                 `protobuf:"bytes,2,opt,name=comment,proto3" json:"comment,omitempty"`
+	Author        string                 `protobuf:"bytes,3,opt,name=author,proto3" json:"author,omitempty"`
+	CreatedAtUnix int64                  `protobuf:"varint,4,opt,name=created_at_unix,json=createdAtUnix,proto3" json:"created_at_unix,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CtrlRatingEntryMsg) Reset() {
+	*x = CtrlRatingEntryMsg{}
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CtrlRatingEntryMsg) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CtrlRatingEntryMsg) ProtoMessage() {}
+
+func (x *CtrlRatingEntryMsg) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CtrlRatingEntryMsg.ProtoReflect.Descriptor instead.
+func (*CtrlRatingEntryMsg) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *CtrlRatingEntryMsg) GetScore() int32 {
+	if x != nil {
+		return x.Score
+	}
+	return 0
+}
+
+func (x *CtrlRatingEntryMsg) GetComment() string {
+	if x != nil {
+		return x.Comment
+	}
+	return ""
+}
+
+func (x *CtrlRatingEntryMsg) GetAuthor() string {
+	if x != nil {
+		return x.Author
+	}
+	return ""
+}
+
+func (x *CtrlRatingEntryMsg) GetCreatedAtUnix() int64 {
+	if x != nil {
+		return x.CreatedAtUnix
+	}
+	return 0
+}
+
+type CtrlDependencyEntryMsg struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Type          string                 `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
+	Publisher     string                 `protobuf:"bytes,3,opt,name=publisher,proto3" json:"publisher,omitempty"`
+	Required      bool                   `protobuf:"varint,4,opt,name=required,proto3" json:"required,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CtrlDependencyEntryMsg) Reset() {
+	*x = CtrlDependencyEntryMsg{}
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CtrlDependencyEntryMsg) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CtrlDependencyEntryMsg) ProtoMessage() {}
+
+func (x *CtrlDependencyEntryMsg) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CtrlDependencyEntryMsg.ProtoReflect.Descriptor instead.
+func (*CtrlDependencyEntryMsg) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *CtrlDependencyEntryMsg) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CtrlDependencyEntryMsg) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *CtrlDependencyEntryMsg) GetPublisher() string {
+	if x != nil {
+		return x.Publisher
+	}
+	return ""
+}
+
+func (x *CtrlDependencyEntryMsg) GetRequired() bool {
+	if x != nil {
+		return x.Required
+	}
+	return false
+}
+
+type CtrlGetMarketplaceDetailResponse struct {
+	state           protoimpl.MessageState    `protogen:"open.v1"`
+	Entry           *CtrlMarketplaceEntryMsg  `protobuf:"bytes,1,opt,name=entry,proto3" json:"entry,omitempty"`
+	LongDescription string                    `protobuf:"bytes,2,opt,name=long_description,json=longDescription,proto3" json:"long_description,omitempty"`
+	License         string                    `protobuf:"bytes,3,opt,name=license,proto3" json:"license,omitempty"`
+	Homepage        string                    `protobuf:"bytes,4,opt,name=homepage,proto3" json:"homepage,omitempty"`
+	Repository      string                    `protobuf:"bytes,5,opt,name=repository,proto3" json:"repository,omitempty"`
+	Versions        []*CtrlVersionEntryMsg    `protobuf:"bytes,6,rep,name=versions,proto3" json:"versions,omitempty"`
+	Ratings         []*CtrlRatingEntryMsg     `protobuf:"bytes,7,rep,name=ratings,proto3" json:"ratings,omitempty"`
+	Dependencies    []*CtrlDependencyEntryMsg `protobuf:"bytes,8,rep,name=dependencies,proto3" json:"dependencies,omitempty"`
+	Keywords        []string                  `protobuf:"bytes,9,rep,name=keywords,proto3" json:"keywords,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *CtrlGetMarketplaceDetailResponse) Reset() {
+	*x = CtrlGetMarketplaceDetailResponse{}
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CtrlGetMarketplaceDetailResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CtrlGetMarketplaceDetailResponse) ProtoMessage() {}
+
+func (x *CtrlGetMarketplaceDetailResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CtrlGetMarketplaceDetailResponse.ProtoReflect.Descriptor instead.
+func (*CtrlGetMarketplaceDetailResponse) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *CtrlGetMarketplaceDetailResponse) GetEntry() *CtrlMarketplaceEntryMsg {
+	if x != nil {
+		return x.Entry
+	}
+	return nil
+}
+
+func (x *CtrlGetMarketplaceDetailResponse) GetLongDescription() string {
+	if x != nil {
+		return x.LongDescription
+	}
+	return ""
+}
+
+func (x *CtrlGetMarketplaceDetailResponse) GetLicense() string {
+	if x != nil {
+		return x.License
+	}
+	return ""
+}
+
+func (x *CtrlGetMarketplaceDetailResponse) GetHomepage() string {
+	if x != nil {
+		return x.Homepage
+	}
+	return ""
+}
+
+func (x *CtrlGetMarketplaceDetailResponse) GetRepository() string {
+	if x != nil {
+		return x.Repository
+	}
+	return ""
+}
+
+func (x *CtrlGetMarketplaceDetailResponse) GetVersions() []*CtrlVersionEntryMsg {
+	if x != nil {
+		return x.Versions
+	}
+	return nil
+}
+
+func (x *CtrlGetMarketplaceDetailResponse) GetRatings() []*CtrlRatingEntryMsg {
+	if x != nil {
+		return x.Ratings
+	}
+	return nil
+}
+
+func (x *CtrlGetMarketplaceDetailResponse) GetDependencies() []*CtrlDependencyEntryMsg {
+	if x != nil {
+		return x.Dependencies
+	}
+	return nil
+}
+
+func (x *CtrlGetMarketplaceDetailResponse) GetKeywords() []string {
+	if x != nil {
+		return x.Keywords
+	}
+	return nil
+}
+
+type CtrlInstallPluginRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ref           string                 `protobuf:"bytes,1,opt,name=ref,proto3" json:"ref,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CtrlInstallPluginRequest) Reset() {
+	*x = CtrlInstallPluginRequest{}
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CtrlInstallPluginRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CtrlInstallPluginRequest) ProtoMessage() {}
+
+func (x *CtrlInstallPluginRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CtrlInstallPluginRequest.ProtoReflect.Descriptor instead.
+func (*CtrlInstallPluginRequest) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *CtrlInstallPluginRequest) GetRef() string {
+	if x != nil {
+		return x.Ref
+	}
+	return ""
+}
+
+type CtrlInstallPluginResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Type          string                 `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
+	Version       string                 `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
+	PrevVersion   string                 `protobuf:"bytes,4,opt,name=prev_version,json=prevVersion,proto3" json:"prev_version,omitempty"`
+	Digest        string                 `protobuf:"bytes,5,opt,name=digest,proto3" json:"digest,omitempty"`
+	Verified      bool                   `protobuf:"varint,6,opt,name=verified,proto3" json:"verified,omitempty"`
+	RuntimeDeps   []string               `protobuf:"bytes,7,rep,name=runtime_deps,json=runtimeDeps,proto3" json:"runtime_deps,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CtrlInstallPluginResponse) Reset() {
+	*x = CtrlInstallPluginResponse{}
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CtrlInstallPluginResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CtrlInstallPluginResponse) ProtoMessage() {}
+
+func (x *CtrlInstallPluginResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CtrlInstallPluginResponse.ProtoReflect.Descriptor instead.
+func (*CtrlInstallPluginResponse) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *CtrlInstallPluginResponse) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CtrlInstallPluginResponse) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *CtrlInstallPluginResponse) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+func (x *CtrlInstallPluginResponse) GetPrevVersion() string {
+	if x != nil {
+		return x.PrevVersion
+	}
+	return ""
+}
+
+func (x *CtrlInstallPluginResponse) GetDigest() string {
+	if x != nil {
+		return x.Digest
+	}
+	return ""
+}
+
+func (x *CtrlInstallPluginResponse) GetVerified() bool {
+	if x != nil {
+		return x.Verified
+	}
+	return false
+}
+
+func (x *CtrlInstallPluginResponse) GetRuntimeDeps() []string {
+	if x != nil {
+		return x.RuntimeDeps
+	}
+	return nil
+}
+
+type CtrlUninstallPluginRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	PluginType    string                 `protobuf:"bytes,2,opt,name=plugin_type,json=pluginType,proto3" json:"plugin_type,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CtrlUninstallPluginRequest) Reset() {
+	*x = CtrlUninstallPluginRequest{}
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CtrlUninstallPluginRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CtrlUninstallPluginRequest) ProtoMessage() {}
+
+func (x *CtrlUninstallPluginRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CtrlUninstallPluginRequest.ProtoReflect.Descriptor instead.
+func (*CtrlUninstallPluginRequest) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{38}
+}
+
+func (x *CtrlUninstallPluginRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CtrlUninstallPluginRequest) GetPluginType() string {
+	if x != nil {
+		return x.PluginType
+	}
+	return ""
+}
+
+// CtrlUninstallPluginResponse is intentionally empty.
+type CtrlUninstallPluginResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CtrlUninstallPluginResponse) Reset() {
+	*x = CtrlUninstallPluginResponse{}
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[39]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CtrlUninstallPluginResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CtrlUninstallPluginResponse) ProtoMessage() {}
+
+func (x *CtrlUninstallPluginResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[39]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CtrlUninstallPluginResponse.ProtoReflect.Descriptor instead.
+func (*CtrlUninstallPluginResponse) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{39}
+}
+
+// CtrlListInstalledPluginsRequest is intentionally empty.
+type CtrlListInstalledPluginsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CtrlListInstalledPluginsRequest) Reset() {
+	*x = CtrlListInstalledPluginsRequest{}
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[40]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CtrlListInstalledPluginsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CtrlListInstalledPluginsRequest) ProtoMessage() {}
+
+func (x *CtrlListInstalledPluginsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[40]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CtrlListInstalledPluginsRequest.ProtoReflect.Descriptor instead.
+func (*CtrlListInstalledPluginsRequest) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{40}
+}
+
+type CtrlInstalledPluginMsg struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Name            string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Type            string                 `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
+	Version         string                 `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
+	Source          string                 `protobuf:"bytes,4,opt,name=source,proto3" json:"source,omitempty"`
+	InstalledAtUnix int64                  `protobuf:"varint,5,opt,name=installed_at_unix,json=installedAtUnix,proto3" json:"installed_at_unix,omitempty"`
+	Digest          string                 `protobuf:"bytes,6,opt,name=digest,proto3" json:"digest,omitempty"`
+	Verified        bool                   `protobuf:"varint,7,opt,name=verified,proto3" json:"verified,omitempty"`
+	UpdateAvail     string                 `protobuf:"bytes,8,opt,name=update_avail,json=updateAvail,proto3" json:"update_avail,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *CtrlInstalledPluginMsg) Reset() {
+	*x = CtrlInstalledPluginMsg{}
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[41]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CtrlInstalledPluginMsg) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CtrlInstalledPluginMsg) ProtoMessage() {}
+
+func (x *CtrlInstalledPluginMsg) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[41]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CtrlInstalledPluginMsg.ProtoReflect.Descriptor instead.
+func (*CtrlInstalledPluginMsg) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{41}
+}
+
+func (x *CtrlInstalledPluginMsg) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CtrlInstalledPluginMsg) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *CtrlInstalledPluginMsg) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+func (x *CtrlInstalledPluginMsg) GetSource() string {
+	if x != nil {
+		return x.Source
+	}
+	return ""
+}
+
+func (x *CtrlInstalledPluginMsg) GetInstalledAtUnix() int64 {
+	if x != nil {
+		return x.InstalledAtUnix
+	}
+	return 0
+}
+
+func (x *CtrlInstalledPluginMsg) GetDigest() string {
+	if x != nil {
+		return x.Digest
+	}
+	return ""
+}
+
+func (x *CtrlInstalledPluginMsg) GetVerified() bool {
+	if x != nil {
+		return x.Verified
+	}
+	return false
+}
+
+func (x *CtrlInstalledPluginMsg) GetUpdateAvail() string {
+	if x != nil {
+		return x.UpdateAvail
+	}
+	return ""
+}
+
+type CtrlListInstalledPluginsResponse struct {
+	state         protoimpl.MessageState    `protogen:"open.v1"`
+	Plugins       []*CtrlInstalledPluginMsg `protobuf:"bytes,1,rep,name=plugins,proto3" json:"plugins,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CtrlListInstalledPluginsResponse) Reset() {
+	*x = CtrlListInstalledPluginsResponse{}
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[42]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CtrlListInstalledPluginsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CtrlListInstalledPluginsResponse) ProtoMessage() {}
+
+func (x *CtrlListInstalledPluginsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[42]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CtrlListInstalledPluginsResponse.ProtoReflect.Descriptor instead.
+func (*CtrlListInstalledPluginsResponse) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{42}
+}
+
+func (x *CtrlListInstalledPluginsResponse) GetPlugins() []*CtrlInstalledPluginMsg {
+	if x != nil {
+		return x.Plugins
+	}
+	return nil
+}
+
+// CtrlCheckUpdatesRequest is intentionally empty.
+type CtrlCheckUpdatesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CtrlCheckUpdatesRequest) Reset() {
+	*x = CtrlCheckUpdatesRequest{}
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[43]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CtrlCheckUpdatesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CtrlCheckUpdatesRequest) ProtoMessage() {}
+
+func (x *CtrlCheckUpdatesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[43]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CtrlCheckUpdatesRequest.ProtoReflect.Descriptor instead.
+func (*CtrlCheckUpdatesRequest) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{43}
+}
+
+type CtrlPluginUpdateMsg struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Name           string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Type           string                 `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
+	CurrentVersion string                 `protobuf:"bytes,3,opt,name=current_version,json=currentVersion,proto3" json:"current_version,omitempty"`
+	LatestVersion  string                 `protobuf:"bytes,4,opt,name=latest_version,json=latestVersion,proto3" json:"latest_version,omitempty"`
+	Verified       bool                   `protobuf:"varint,5,opt,name=verified,proto3" json:"verified,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *CtrlPluginUpdateMsg) Reset() {
+	*x = CtrlPluginUpdateMsg{}
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[44]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CtrlPluginUpdateMsg) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CtrlPluginUpdateMsg) ProtoMessage() {}
+
+func (x *CtrlPluginUpdateMsg) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[44]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CtrlPluginUpdateMsg.ProtoReflect.Descriptor instead.
+func (*CtrlPluginUpdateMsg) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{44}
+}
+
+func (x *CtrlPluginUpdateMsg) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CtrlPluginUpdateMsg) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *CtrlPluginUpdateMsg) GetCurrentVersion() string {
+	if x != nil {
+		return x.CurrentVersion
+	}
+	return ""
+}
+
+func (x *CtrlPluginUpdateMsg) GetLatestVersion() string {
+	if x != nil {
+		return x.LatestVersion
+	}
+	return ""
+}
+
+func (x *CtrlPluginUpdateMsg) GetVerified() bool {
+	if x != nil {
+		return x.Verified
+	}
+	return false
+}
+
+type CtrlCheckUpdatesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Updates       []*CtrlPluginUpdateMsg `protobuf:"bytes,1,rep,name=updates,proto3" json:"updates,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CtrlCheckUpdatesResponse) Reset() {
+	*x = CtrlCheckUpdatesResponse{}
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[45]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CtrlCheckUpdatesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CtrlCheckUpdatesResponse) ProtoMessage() {}
+
+func (x *CtrlCheckUpdatesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[45]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CtrlCheckUpdatesResponse.ProtoReflect.Descriptor instead.
+func (*CtrlCheckUpdatesResponse) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{45}
+}
+
+func (x *CtrlCheckUpdatesResponse) GetUpdates() []*CtrlPluginUpdateMsg {
+	if x != nil {
+		return x.Updates
+	}
+	return nil
+}
+
+type CtrlUpdatePluginRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Version       string                 `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CtrlUpdatePluginRequest) Reset() {
+	*x = CtrlUpdatePluginRequest{}
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[46]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CtrlUpdatePluginRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CtrlUpdatePluginRequest) ProtoMessage() {}
+
+func (x *CtrlUpdatePluginRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[46]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CtrlUpdatePluginRequest.ProtoReflect.Descriptor instead.
+func (*CtrlUpdatePluginRequest) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{46}
+}
+
+func (x *CtrlUpdatePluginRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CtrlUpdatePluginRequest) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+type CtrlUpdatePluginResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Type          string                 `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
+	Version       string                 `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
+	PrevVersion   string                 `protobuf:"bytes,4,opt,name=prev_version,json=prevVersion,proto3" json:"prev_version,omitempty"`
+	Digest        string                 `protobuf:"bytes,5,opt,name=digest,proto3" json:"digest,omitempty"`
+	Verified      bool                   `protobuf:"varint,6,opt,name=verified,proto3" json:"verified,omitempty"`
+	RuntimeDeps   []string               `protobuf:"bytes,7,rep,name=runtime_deps,json=runtimeDeps,proto3" json:"runtime_deps,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CtrlUpdatePluginResponse) Reset() {
+	*x = CtrlUpdatePluginResponse{}
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[47]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CtrlUpdatePluginResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CtrlUpdatePluginResponse) ProtoMessage() {}
+
+func (x *CtrlUpdatePluginResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[47]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CtrlUpdatePluginResponse.ProtoReflect.Descriptor instead.
+func (*CtrlUpdatePluginResponse) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{47}
+}
+
+func (x *CtrlUpdatePluginResponse) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CtrlUpdatePluginResponse) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *CtrlUpdatePluginResponse) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+func (x *CtrlUpdatePluginResponse) GetPrevVersion() string {
+	if x != nil {
+		return x.PrevVersion
+	}
+	return ""
+}
+
+func (x *CtrlUpdatePluginResponse) GetDigest() string {
+	if x != nil {
+		return x.Digest
+	}
+	return ""
+}
+
+func (x *CtrlUpdatePluginResponse) GetVerified() bool {
+	if x != nil {
+		return x.Verified
+	}
+	return false
+}
+
+func (x *CtrlUpdatePluginResponse) GetRuntimeDeps() []string {
+	if x != nil {
+		return x.RuntimeDeps
+	}
+	return nil
+}
+
+type CtrlRatePluginRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Publisher     string                 `protobuf:"bytes,1,opt,name=publisher,proto3" json:"publisher,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Score         int32                  `protobuf:"varint,3,opt,name=score,proto3" json:"score,omitempty"`
+	Comment       string                 `protobuf:"bytes,4,opt,name=comment,proto3" json:"comment,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CtrlRatePluginRequest) Reset() {
+	*x = CtrlRatePluginRequest{}
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[48]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CtrlRatePluginRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CtrlRatePluginRequest) ProtoMessage() {}
+
+func (x *CtrlRatePluginRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[48]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CtrlRatePluginRequest.ProtoReflect.Descriptor instead.
+func (*CtrlRatePluginRequest) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{48}
+}
+
+func (x *CtrlRatePluginRequest) GetPublisher() string {
+	if x != nil {
+		return x.Publisher
+	}
+	return ""
+}
+
+func (x *CtrlRatePluginRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CtrlRatePluginRequest) GetScore() int32 {
+	if x != nil {
+		return x.Score
+	}
+	return 0
+}
+
+func (x *CtrlRatePluginRequest) GetComment() string {
+	if x != nil {
+		return x.Comment
+	}
+	return ""
+}
+
+// CtrlRatePluginResponse is intentionally empty.
+type CtrlRatePluginResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CtrlRatePluginResponse) Reset() {
+	*x = CtrlRatePluginResponse{}
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[49]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CtrlRatePluginResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CtrlRatePluginResponse) ProtoMessage() {}
+
+func (x *CtrlRatePluginResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[49]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CtrlRatePluginResponse.ProtoReflect.Descriptor instead.
+func (*CtrlRatePluginResponse) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{49}
+}
+
 var File_zhiplugin_v1_ui_proto protoreflect.FileDescriptor
 
 const file_zhiplugin_v1_ui_proto_rawDesc = "" +
@@ -1372,9 +2833,10 @@ const file_zhiplugin_v1_ui_proto_rawDesc = "" +
 	"RunRequest\x120\n" +
 	"\x14controller_broker_id\x18\x01 \x01(\rR\x12controllerBrokerId\"\r\n" +
 	"\vRunResponse\"\x15\n" +
-	"\x13CapabilitiesRequest\"9\n" +
+	"\x13CapabilitiesRequest\"l\n" +
 	"\x14CapabilitiesResponse\x12!\n" +
-	"\frequires_tty\x18\x01 \x01(\bR\vrequiresTty\"\x15\n" +
+	"\frequires_tty\x18\x01 \x01(\bR\vrequiresTty\x121\n" +
+	"\x14supports_marketplace\x18\x02 \x01(\bR\x13supportsMarketplace\"\x15\n" +
 	"\x13CtrlLoadTreeRequest\"C\n" +
 	"\x14CtrlLoadTreeResponse\x12+\n" +
 	"\x04tree\x18\x01 \x03(\v2\x17.zhiplugin.v1.TreeEntryR\x04tree\"m\n" +
@@ -1440,10 +2902,118 @@ const file_zhiplugin_v1_ui_proto_rawDesc = "" +
 	"\x1cCtrlDisableComponentResponse\"\x1a\n" +
 	"\x18CtrlWorkspaceNameRequest\"/\n" +
 	"\x19CtrlWorkspaceNameResponse\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name2\x9e\x01\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\"\xa7\x01\n" +
+	"\x1cCtrlSearchMarketplaceRequest\x12\x14\n" +
+	"\x05query\x18\x01 \x01(\tR\x05query\x12\x12\n" +
+	"\x04type\x18\x02 \x01(\tR\x04type\x12\x12\n" +
+	"\x04sort\x18\x03 \x01(\tR\x04sort\x12\x1a\n" +
+	"\bverified\x18\x04 \x01(\bR\bverified\x12\x12\n" +
+	"\x04page\x18\x05 \x01(\x05R\x04page\x12\x19\n" +
+	"\bper_page\x18\x06 \x01(\x05R\aperPage\"\xa1\x03\n" +
+	"\x17CtrlMarketplaceEntryMsg\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1c\n" +
+	"\tpublisher\x18\x02 \x01(\tR\tpublisher\x12\x12\n" +
+	"\x04type\x18\x03 \x01(\tR\x04type\x12 \n" +
+	"\vdescription\x18\x04 \x01(\tR\vdescription\x12%\n" +
+	"\x0elatest_version\x18\x05 \x01(\tR\rlatestVersion\x12\x16\n" +
+	"\x06rating\x18\x06 \x01(\x01R\x06rating\x12!\n" +
+	"\frating_count\x18\a \x01(\x05R\vratingCount\x12\x1c\n" +
+	"\tdownloads\x18\b \x01(\x05R\tdownloads\x12\x1a\n" +
+	"\bverified\x18\t \x01(\bR\bverified\x12\x1c\n" +
+	"\tinstalled\x18\n" +
+	" \x01(\bR\tinstalled\x12#\n" +
+	"\rinstalled_ver\x18\v \x01(\tR\finstalledVer\x12!\n" +
+	"\fupdate_avail\x18\f \x01(\bR\vupdateAvail\x12\x1c\n" +
+	"\tplatforms\x18\r \x03(\tR\tplatforms\"v\n" +
+	"\x1dCtrlSearchMarketplaceResponse\x12\x14\n" +
+	"\x05total\x18\x01 \x01(\x05R\x05total\x12?\n" +
+	"\aresults\x18\x02 \x03(\v2%.zhiplugin.v1.CtrlMarketplaceEntryMsgR\aresults\"S\n" +
+	"\x1fCtrlGetMarketplaceDetailRequest\x12\x1c\n" +
+	"\tpublisher\x18\x01 \x01(\tR\tpublisher\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\"\x8d\x01\n" +
+	"\x13CtrlVersionEntryMsg\x12\x18\n" +
+	"\aversion\x18\x01 \x01(\tR\aversion\x12&\n" +
+	"\x0fcreated_at_unix\x18\x02 \x01(\x03R\rcreatedAtUnix\x12\x16\n" +
+	"\x06digest\x18\x03 \x01(\tR\x06digest\x12\x1c\n" +
+	"\tplatforms\x18\x04 \x03(\tR\tplatforms\"\x84\x01\n" +
+	"\x12CtrlRatingEntryMsg\x12\x14\n" +
+	"\x05score\x18\x01 \x01(\x05R\x05score\x12\x18\n" +
+	"\acomment\x18\x02 \x01(\tR\acomment\x12\x16\n" +
+	"\x06author\x18\x03 \x01(\tR\x06author\x12&\n" +
+	"\x0fcreated_at_unix\x18\x04 \x01(\x03R\rcreatedAtUnix\"z\n" +
+	"\x16CtrlDependencyEntryMsg\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
+	"\x04type\x18\x02 \x01(\tR\x04type\x12\x1c\n" +
+	"\tpublisher\x18\x03 \x01(\tR\tpublisher\x12\x1a\n" +
+	"\brequired\x18\x04 \x01(\bR\brequired\"\xc1\x03\n" +
+	" CtrlGetMarketplaceDetailResponse\x12;\n" +
+	"\x05entry\x18\x01 \x01(\v2%.zhiplugin.v1.CtrlMarketplaceEntryMsgR\x05entry\x12)\n" +
+	"\x10long_description\x18\x02 \x01(\tR\x0flongDescription\x12\x18\n" +
+	"\alicense\x18\x03 \x01(\tR\alicense\x12\x1a\n" +
+	"\bhomepage\x18\x04 \x01(\tR\bhomepage\x12\x1e\n" +
+	"\n" +
+	"repository\x18\x05 \x01(\tR\n" +
+	"repository\x12=\n" +
+	"\bversions\x18\x06 \x03(\v2!.zhiplugin.v1.CtrlVersionEntryMsgR\bversions\x12:\n" +
+	"\aratings\x18\a \x03(\v2 .zhiplugin.v1.CtrlRatingEntryMsgR\aratings\x12H\n" +
+	"\fdependencies\x18\b \x03(\v2$.zhiplugin.v1.CtrlDependencyEntryMsgR\fdependencies\x12\x1a\n" +
+	"\bkeywords\x18\t \x03(\tR\bkeywords\",\n" +
+	"\x18CtrlInstallPluginRequest\x12\x10\n" +
+	"\x03ref\x18\x01 \x01(\tR\x03ref\"\xd7\x01\n" +
+	"\x19CtrlInstallPluginResponse\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
+	"\x04type\x18\x02 \x01(\tR\x04type\x12\x18\n" +
+	"\aversion\x18\x03 \x01(\tR\aversion\x12!\n" +
+	"\fprev_version\x18\x04 \x01(\tR\vprevVersion\x12\x16\n" +
+	"\x06digest\x18\x05 \x01(\tR\x06digest\x12\x1a\n" +
+	"\bverified\x18\x06 \x01(\bR\bverified\x12!\n" +
+	"\fruntime_deps\x18\a \x03(\tR\vruntimeDeps\"Q\n" +
+	"\x1aCtrlUninstallPluginRequest\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1f\n" +
+	"\vplugin_type\x18\x02 \x01(\tR\n" +
+	"pluginType\"\x1d\n" +
+	"\x1bCtrlUninstallPluginResponse\"!\n" +
+	"\x1fCtrlListInstalledPluginsRequest\"\xf5\x01\n" +
+	"\x16CtrlInstalledPluginMsg\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
+	"\x04type\x18\x02 \x01(\tR\x04type\x12\x18\n" +
+	"\aversion\x18\x03 \x01(\tR\aversion\x12\x16\n" +
+	"\x06source\x18\x04 \x01(\tR\x06source\x12*\n" +
+	"\x11installed_at_unix\x18\x05 \x01(\x03R\x0finstalledAtUnix\x12\x16\n" +
+	"\x06digest\x18\x06 \x01(\tR\x06digest\x12\x1a\n" +
+	"\bverified\x18\a \x01(\bR\bverified\x12!\n" +
+	"\fupdate_avail\x18\b \x01(\tR\vupdateAvail\"b\n" +
+	" CtrlListInstalledPluginsResponse\x12>\n" +
+	"\aplugins\x18\x01 \x03(\v2$.zhiplugin.v1.CtrlInstalledPluginMsgR\aplugins\"\x19\n" +
+	"\x17CtrlCheckUpdatesRequest\"\xa9\x01\n" +
+	"\x13CtrlPluginUpdateMsg\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
+	"\x04type\x18\x02 \x01(\tR\x04type\x12'\n" +
+	"\x0fcurrent_version\x18\x03 \x01(\tR\x0ecurrentVersion\x12%\n" +
+	"\x0elatest_version\x18\x04 \x01(\tR\rlatestVersion\x12\x1a\n" +
+	"\bverified\x18\x05 \x01(\bR\bverified\"W\n" +
+	"\x18CtrlCheckUpdatesResponse\x12;\n" +
+	"\aupdates\x18\x01 \x03(\v2!.zhiplugin.v1.CtrlPluginUpdateMsgR\aupdates\"G\n" +
+	"\x17CtrlUpdatePluginRequest\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
+	"\aversion\x18\x02 \x01(\tR\aversion\"\xd6\x01\n" +
+	"\x18CtrlUpdatePluginResponse\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
+	"\x04type\x18\x02 \x01(\tR\x04type\x12\x18\n" +
+	"\aversion\x18\x03 \x01(\tR\aversion\x12!\n" +
+	"\fprev_version\x18\x04 \x01(\tR\vprevVersion\x12\x16\n" +
+	"\x06digest\x18\x05 \x01(\tR\x06digest\x12\x1a\n" +
+	"\bverified\x18\x06 \x01(\bR\bverified\x12!\n" +
+	"\fruntime_deps\x18\a \x03(\tR\vruntimeDeps\"y\n" +
+	"\x15CtrlRatePluginRequest\x12\x1c\n" +
+	"\tpublisher\x18\x01 \x01(\tR\tpublisher\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
+	"\x05score\x18\x03 \x01(\x05R\x05score\x12\x18\n" +
+	"\acomment\x18\x04 \x01(\tR\acomment\"\x18\n" +
+	"\x16CtrlRatePluginResponse2\x9e\x01\n" +
 	"\tUIService\x12:\n" +
 	"\x03Run\x12\x18.zhiplugin.v1.RunRequest\x1a\x19.zhiplugin.v1.RunResponse\x12U\n" +
-	"\fCapabilities\x12!.zhiplugin.v1.CapabilitiesRequest\x1a\".zhiplugin.v1.CapabilitiesResponse2\xfc\a\n" +
+	"\fCapabilities\x12!.zhiplugin.v1.CapabilitiesRequest\x1a\".zhiplugin.v1.CapabilitiesResponse2\xb9\x0e\n" +
 	"\x13UIControllerService\x12Q\n" +
 	"\bLoadTree\x12!.zhiplugin.v1.CtrlLoadTreeRequest\x1a\".zhiplugin.v1.CtrlLoadTreeResponse\x12Q\n" +
 	"\bSetValue\x12!.zhiplugin.v1.CtrlSetValueRequest\x1a\".zhiplugin.v1.CtrlSetValueResponse\x12Q\n" +
@@ -1455,7 +3025,16 @@ const file_zhiplugin_v1_ui_proto_rawDesc = "" +
 	"\x0eListComponents\x12'.zhiplugin.v1.CtrlListComponentsRequest\x1a(.zhiplugin.v1.CtrlListComponentsResponse\x12f\n" +
 	"\x0fEnableComponent\x12(.zhiplugin.v1.CtrlEnableComponentRequest\x1a).zhiplugin.v1.CtrlEnableComponentResponse\x12i\n" +
 	"\x10DisableComponent\x12).zhiplugin.v1.CtrlDisableComponentRequest\x1a*.zhiplugin.v1.CtrlDisableComponentResponse\x12`\n" +
-	"\rWorkspaceName\x12&.zhiplugin.v1.CtrlWorkspaceNameRequest\x1a'.zhiplugin.v1.CtrlWorkspaceNameResponseB0Z.github.com/MrWong99/zhi/pkg/zhiplugin/ui/protob\x06proto3"
+	"\rWorkspaceName\x12&.zhiplugin.v1.CtrlWorkspaceNameRequest\x1a'.zhiplugin.v1.CtrlWorkspaceNameResponse\x12l\n" +
+	"\x11SearchMarketplace\x12*.zhiplugin.v1.CtrlSearchMarketplaceRequest\x1a+.zhiplugin.v1.CtrlSearchMarketplaceResponse\x12u\n" +
+	"\x14GetMarketplaceDetail\x12-.zhiplugin.v1.CtrlGetMarketplaceDetailRequest\x1a..zhiplugin.v1.CtrlGetMarketplaceDetailResponse\x12`\n" +
+	"\rInstallPlugin\x12&.zhiplugin.v1.CtrlInstallPluginRequest\x1a'.zhiplugin.v1.CtrlInstallPluginResponse\x12f\n" +
+	"\x0fUninstallPlugin\x12(.zhiplugin.v1.CtrlUninstallPluginRequest\x1a).zhiplugin.v1.CtrlUninstallPluginResponse\x12u\n" +
+	"\x14ListInstalledPlugins\x12-.zhiplugin.v1.CtrlListInstalledPluginsRequest\x1a..zhiplugin.v1.CtrlListInstalledPluginsResponse\x12]\n" +
+	"\fCheckUpdates\x12%.zhiplugin.v1.CtrlCheckUpdatesRequest\x1a&.zhiplugin.v1.CtrlCheckUpdatesResponse\x12]\n" +
+	"\fUpdatePlugin\x12%.zhiplugin.v1.CtrlUpdatePluginRequest\x1a&.zhiplugin.v1.CtrlUpdatePluginResponse\x12W\n" +
+	"\n" +
+	"RatePlugin\x12#.zhiplugin.v1.CtrlRatePluginRequest\x1a$.zhiplugin.v1.CtrlRatePluginResponseB0Z.github.com/MrWong99/zhi/pkg/zhiplugin/ui/protob\x06proto3"
 
 var (
 	file_zhiplugin_v1_ui_proto_rawDescOnce sync.Once
@@ -1469,75 +3048,120 @@ func file_zhiplugin_v1_ui_proto_rawDescGZIP() []byte {
 	return file_zhiplugin_v1_ui_proto_rawDescData
 }
 
-var file_zhiplugin_v1_ui_proto_msgTypes = make([]protoimpl.MessageInfo, 28)
+var file_zhiplugin_v1_ui_proto_msgTypes = make([]protoimpl.MessageInfo, 50)
 var file_zhiplugin_v1_ui_proto_goTypes = []any{
-	(*RunRequest)(nil),                   // 0: zhiplugin.v1.RunRequest
-	(*RunResponse)(nil),                  // 1: zhiplugin.v1.RunResponse
-	(*CapabilitiesRequest)(nil),          // 2: zhiplugin.v1.CapabilitiesRequest
-	(*CapabilitiesResponse)(nil),         // 3: zhiplugin.v1.CapabilitiesResponse
-	(*CtrlLoadTreeRequest)(nil),          // 4: zhiplugin.v1.CtrlLoadTreeRequest
-	(*CtrlLoadTreeResponse)(nil),         // 5: zhiplugin.v1.CtrlLoadTreeResponse
-	(*CtrlSetValueRequest)(nil),          // 6: zhiplugin.v1.CtrlSetValueRequest
-	(*CtrlSetValueResponse)(nil),         // 7: zhiplugin.v1.CtrlSetValueResponse
-	(*CtrlValidateRequest)(nil),          // 8: zhiplugin.v1.CtrlValidateRequest
-	(*CtrlValidateResponse)(nil),         // 9: zhiplugin.v1.CtrlValidateResponse
-	(*CtrlSaveTreeRequest)(nil),          // 10: zhiplugin.v1.CtrlSaveTreeRequest
-	(*CtrlSaveTreeResponse)(nil),         // 11: zhiplugin.v1.CtrlSaveTreeResponse
-	(*CtrlExportTemplatesRequest)(nil),   // 12: zhiplugin.v1.CtrlExportTemplatesRequest
-	(*CtrlExportTemplateMsg)(nil),        // 13: zhiplugin.v1.CtrlExportTemplateMsg
-	(*CtrlExportTemplatesResponse)(nil),  // 14: zhiplugin.v1.CtrlExportTemplatesResponse
-	(*CtrlExportRequest)(nil),            // 15: zhiplugin.v1.CtrlExportRequest
-	(*CtrlExportResponse)(nil),           // 16: zhiplugin.v1.CtrlExportResponse
-	(*CtrlApplyRequest)(nil),             // 17: zhiplugin.v1.CtrlApplyRequest
-	(*CtrlApplyResponse)(nil),            // 18: zhiplugin.v1.CtrlApplyResponse
-	(*CtrlListComponentsRequest)(nil),    // 19: zhiplugin.v1.CtrlListComponentsRequest
-	(*CtrlComponentInfoMsg)(nil),         // 20: zhiplugin.v1.CtrlComponentInfoMsg
-	(*CtrlListComponentsResponse)(nil),   // 21: zhiplugin.v1.CtrlListComponentsResponse
-	(*CtrlEnableComponentRequest)(nil),   // 22: zhiplugin.v1.CtrlEnableComponentRequest
-	(*CtrlEnableComponentResponse)(nil),  // 23: zhiplugin.v1.CtrlEnableComponentResponse
-	(*CtrlDisableComponentRequest)(nil),  // 24: zhiplugin.v1.CtrlDisableComponentRequest
-	(*CtrlDisableComponentResponse)(nil), // 25: zhiplugin.v1.CtrlDisableComponentResponse
-	(*CtrlWorkspaceNameRequest)(nil),     // 26: zhiplugin.v1.CtrlWorkspaceNameRequest
-	(*CtrlWorkspaceNameResponse)(nil),    // 27: zhiplugin.v1.CtrlWorkspaceNameResponse
-	(*proto.TreeEntry)(nil),              // 28: zhiplugin.v1.TreeEntry
-	(*proto.ValidationResultMsg)(nil),    // 29: zhiplugin.v1.ValidationResultMsg
+	(*RunRequest)(nil),                       // 0: zhiplugin.v1.RunRequest
+	(*RunResponse)(nil),                      // 1: zhiplugin.v1.RunResponse
+	(*CapabilitiesRequest)(nil),              // 2: zhiplugin.v1.CapabilitiesRequest
+	(*CapabilitiesResponse)(nil),             // 3: zhiplugin.v1.CapabilitiesResponse
+	(*CtrlLoadTreeRequest)(nil),              // 4: zhiplugin.v1.CtrlLoadTreeRequest
+	(*CtrlLoadTreeResponse)(nil),             // 5: zhiplugin.v1.CtrlLoadTreeResponse
+	(*CtrlSetValueRequest)(nil),              // 6: zhiplugin.v1.CtrlSetValueRequest
+	(*CtrlSetValueResponse)(nil),             // 7: zhiplugin.v1.CtrlSetValueResponse
+	(*CtrlValidateRequest)(nil),              // 8: zhiplugin.v1.CtrlValidateRequest
+	(*CtrlValidateResponse)(nil),             // 9: zhiplugin.v1.CtrlValidateResponse
+	(*CtrlSaveTreeRequest)(nil),              // 10: zhiplugin.v1.CtrlSaveTreeRequest
+	(*CtrlSaveTreeResponse)(nil),             // 11: zhiplugin.v1.CtrlSaveTreeResponse
+	(*CtrlExportTemplatesRequest)(nil),       // 12: zhiplugin.v1.CtrlExportTemplatesRequest
+	(*CtrlExportTemplateMsg)(nil),            // 13: zhiplugin.v1.CtrlExportTemplateMsg
+	(*CtrlExportTemplatesResponse)(nil),      // 14: zhiplugin.v1.CtrlExportTemplatesResponse
+	(*CtrlExportRequest)(nil),                // 15: zhiplugin.v1.CtrlExportRequest
+	(*CtrlExportResponse)(nil),               // 16: zhiplugin.v1.CtrlExportResponse
+	(*CtrlApplyRequest)(nil),                 // 17: zhiplugin.v1.CtrlApplyRequest
+	(*CtrlApplyResponse)(nil),                // 18: zhiplugin.v1.CtrlApplyResponse
+	(*CtrlListComponentsRequest)(nil),        // 19: zhiplugin.v1.CtrlListComponentsRequest
+	(*CtrlComponentInfoMsg)(nil),             // 20: zhiplugin.v1.CtrlComponentInfoMsg
+	(*CtrlListComponentsResponse)(nil),       // 21: zhiplugin.v1.CtrlListComponentsResponse
+	(*CtrlEnableComponentRequest)(nil),       // 22: zhiplugin.v1.CtrlEnableComponentRequest
+	(*CtrlEnableComponentResponse)(nil),      // 23: zhiplugin.v1.CtrlEnableComponentResponse
+	(*CtrlDisableComponentRequest)(nil),      // 24: zhiplugin.v1.CtrlDisableComponentRequest
+	(*CtrlDisableComponentResponse)(nil),     // 25: zhiplugin.v1.CtrlDisableComponentResponse
+	(*CtrlWorkspaceNameRequest)(nil),         // 26: zhiplugin.v1.CtrlWorkspaceNameRequest
+	(*CtrlWorkspaceNameResponse)(nil),        // 27: zhiplugin.v1.CtrlWorkspaceNameResponse
+	(*CtrlSearchMarketplaceRequest)(nil),     // 28: zhiplugin.v1.CtrlSearchMarketplaceRequest
+	(*CtrlMarketplaceEntryMsg)(nil),          // 29: zhiplugin.v1.CtrlMarketplaceEntryMsg
+	(*CtrlSearchMarketplaceResponse)(nil),    // 30: zhiplugin.v1.CtrlSearchMarketplaceResponse
+	(*CtrlGetMarketplaceDetailRequest)(nil),  // 31: zhiplugin.v1.CtrlGetMarketplaceDetailRequest
+	(*CtrlVersionEntryMsg)(nil),              // 32: zhiplugin.v1.CtrlVersionEntryMsg
+	(*CtrlRatingEntryMsg)(nil),               // 33: zhiplugin.v1.CtrlRatingEntryMsg
+	(*CtrlDependencyEntryMsg)(nil),           // 34: zhiplugin.v1.CtrlDependencyEntryMsg
+	(*CtrlGetMarketplaceDetailResponse)(nil), // 35: zhiplugin.v1.CtrlGetMarketplaceDetailResponse
+	(*CtrlInstallPluginRequest)(nil),         // 36: zhiplugin.v1.CtrlInstallPluginRequest
+	(*CtrlInstallPluginResponse)(nil),        // 37: zhiplugin.v1.CtrlInstallPluginResponse
+	(*CtrlUninstallPluginRequest)(nil),       // 38: zhiplugin.v1.CtrlUninstallPluginRequest
+	(*CtrlUninstallPluginResponse)(nil),      // 39: zhiplugin.v1.CtrlUninstallPluginResponse
+	(*CtrlListInstalledPluginsRequest)(nil),  // 40: zhiplugin.v1.CtrlListInstalledPluginsRequest
+	(*CtrlInstalledPluginMsg)(nil),           // 41: zhiplugin.v1.CtrlInstalledPluginMsg
+	(*CtrlListInstalledPluginsResponse)(nil), // 42: zhiplugin.v1.CtrlListInstalledPluginsResponse
+	(*CtrlCheckUpdatesRequest)(nil),          // 43: zhiplugin.v1.CtrlCheckUpdatesRequest
+	(*CtrlPluginUpdateMsg)(nil),              // 44: zhiplugin.v1.CtrlPluginUpdateMsg
+	(*CtrlCheckUpdatesResponse)(nil),         // 45: zhiplugin.v1.CtrlCheckUpdatesResponse
+	(*CtrlUpdatePluginRequest)(nil),          // 46: zhiplugin.v1.CtrlUpdatePluginRequest
+	(*CtrlUpdatePluginResponse)(nil),         // 47: zhiplugin.v1.CtrlUpdatePluginResponse
+	(*CtrlRatePluginRequest)(nil),            // 48: zhiplugin.v1.CtrlRatePluginRequest
+	(*CtrlRatePluginResponse)(nil),           // 49: zhiplugin.v1.CtrlRatePluginResponse
+	(*proto.TreeEntry)(nil),                  // 50: zhiplugin.v1.TreeEntry
+	(*proto.ValidationResultMsg)(nil),        // 51: zhiplugin.v1.ValidationResultMsg
 }
 var file_zhiplugin_v1_ui_proto_depIdxs = []int32{
-	28, // 0: zhiplugin.v1.CtrlLoadTreeResponse.tree:type_name -> zhiplugin.v1.TreeEntry
-	29, // 1: zhiplugin.v1.CtrlValidateResponse.results:type_name -> zhiplugin.v1.ValidationResultMsg
+	50, // 0: zhiplugin.v1.CtrlLoadTreeResponse.tree:type_name -> zhiplugin.v1.TreeEntry
+	51, // 1: zhiplugin.v1.CtrlValidateResponse.results:type_name -> zhiplugin.v1.ValidationResultMsg
 	13, // 2: zhiplugin.v1.CtrlExportTemplatesResponse.templates:type_name -> zhiplugin.v1.CtrlExportTemplateMsg
 	20, // 3: zhiplugin.v1.CtrlListComponentsResponse.components:type_name -> zhiplugin.v1.CtrlComponentInfoMsg
-	0,  // 4: zhiplugin.v1.UIService.Run:input_type -> zhiplugin.v1.RunRequest
-	2,  // 5: zhiplugin.v1.UIService.Capabilities:input_type -> zhiplugin.v1.CapabilitiesRequest
-	4,  // 6: zhiplugin.v1.UIControllerService.LoadTree:input_type -> zhiplugin.v1.CtrlLoadTreeRequest
-	6,  // 7: zhiplugin.v1.UIControllerService.SetValue:input_type -> zhiplugin.v1.CtrlSetValueRequest
-	8,  // 8: zhiplugin.v1.UIControllerService.Validate:input_type -> zhiplugin.v1.CtrlValidateRequest
-	10, // 9: zhiplugin.v1.UIControllerService.SaveTree:input_type -> zhiplugin.v1.CtrlSaveTreeRequest
-	12, // 10: zhiplugin.v1.UIControllerService.ExportTemplates:input_type -> zhiplugin.v1.CtrlExportTemplatesRequest
-	15, // 11: zhiplugin.v1.UIControllerService.Export:input_type -> zhiplugin.v1.CtrlExportRequest
-	17, // 12: zhiplugin.v1.UIControllerService.Apply:input_type -> zhiplugin.v1.CtrlApplyRequest
-	19, // 13: zhiplugin.v1.UIControllerService.ListComponents:input_type -> zhiplugin.v1.CtrlListComponentsRequest
-	22, // 14: zhiplugin.v1.UIControllerService.EnableComponent:input_type -> zhiplugin.v1.CtrlEnableComponentRequest
-	24, // 15: zhiplugin.v1.UIControllerService.DisableComponent:input_type -> zhiplugin.v1.CtrlDisableComponentRequest
-	26, // 16: zhiplugin.v1.UIControllerService.WorkspaceName:input_type -> zhiplugin.v1.CtrlWorkspaceNameRequest
-	1,  // 17: zhiplugin.v1.UIService.Run:output_type -> zhiplugin.v1.RunResponse
-	3,  // 18: zhiplugin.v1.UIService.Capabilities:output_type -> zhiplugin.v1.CapabilitiesResponse
-	5,  // 19: zhiplugin.v1.UIControllerService.LoadTree:output_type -> zhiplugin.v1.CtrlLoadTreeResponse
-	7,  // 20: zhiplugin.v1.UIControllerService.SetValue:output_type -> zhiplugin.v1.CtrlSetValueResponse
-	9,  // 21: zhiplugin.v1.UIControllerService.Validate:output_type -> zhiplugin.v1.CtrlValidateResponse
-	11, // 22: zhiplugin.v1.UIControllerService.SaveTree:output_type -> zhiplugin.v1.CtrlSaveTreeResponse
-	14, // 23: zhiplugin.v1.UIControllerService.ExportTemplates:output_type -> zhiplugin.v1.CtrlExportTemplatesResponse
-	16, // 24: zhiplugin.v1.UIControllerService.Export:output_type -> zhiplugin.v1.CtrlExportResponse
-	18, // 25: zhiplugin.v1.UIControllerService.Apply:output_type -> zhiplugin.v1.CtrlApplyResponse
-	21, // 26: zhiplugin.v1.UIControllerService.ListComponents:output_type -> zhiplugin.v1.CtrlListComponentsResponse
-	23, // 27: zhiplugin.v1.UIControllerService.EnableComponent:output_type -> zhiplugin.v1.CtrlEnableComponentResponse
-	25, // 28: zhiplugin.v1.UIControllerService.DisableComponent:output_type -> zhiplugin.v1.CtrlDisableComponentResponse
-	27, // 29: zhiplugin.v1.UIControllerService.WorkspaceName:output_type -> zhiplugin.v1.CtrlWorkspaceNameResponse
-	17, // [17:30] is the sub-list for method output_type
-	4,  // [4:17] is the sub-list for method input_type
-	4,  // [4:4] is the sub-list for extension type_name
-	4,  // [4:4] is the sub-list for extension extendee
-	0,  // [0:4] is the sub-list for field type_name
+	29, // 4: zhiplugin.v1.CtrlSearchMarketplaceResponse.results:type_name -> zhiplugin.v1.CtrlMarketplaceEntryMsg
+	29, // 5: zhiplugin.v1.CtrlGetMarketplaceDetailResponse.entry:type_name -> zhiplugin.v1.CtrlMarketplaceEntryMsg
+	32, // 6: zhiplugin.v1.CtrlGetMarketplaceDetailResponse.versions:type_name -> zhiplugin.v1.CtrlVersionEntryMsg
+	33, // 7: zhiplugin.v1.CtrlGetMarketplaceDetailResponse.ratings:type_name -> zhiplugin.v1.CtrlRatingEntryMsg
+	34, // 8: zhiplugin.v1.CtrlGetMarketplaceDetailResponse.dependencies:type_name -> zhiplugin.v1.CtrlDependencyEntryMsg
+	41, // 9: zhiplugin.v1.CtrlListInstalledPluginsResponse.plugins:type_name -> zhiplugin.v1.CtrlInstalledPluginMsg
+	44, // 10: zhiplugin.v1.CtrlCheckUpdatesResponse.updates:type_name -> zhiplugin.v1.CtrlPluginUpdateMsg
+	0,  // 11: zhiplugin.v1.UIService.Run:input_type -> zhiplugin.v1.RunRequest
+	2,  // 12: zhiplugin.v1.UIService.Capabilities:input_type -> zhiplugin.v1.CapabilitiesRequest
+	4,  // 13: zhiplugin.v1.UIControllerService.LoadTree:input_type -> zhiplugin.v1.CtrlLoadTreeRequest
+	6,  // 14: zhiplugin.v1.UIControllerService.SetValue:input_type -> zhiplugin.v1.CtrlSetValueRequest
+	8,  // 15: zhiplugin.v1.UIControllerService.Validate:input_type -> zhiplugin.v1.CtrlValidateRequest
+	10, // 16: zhiplugin.v1.UIControllerService.SaveTree:input_type -> zhiplugin.v1.CtrlSaveTreeRequest
+	12, // 17: zhiplugin.v1.UIControllerService.ExportTemplates:input_type -> zhiplugin.v1.CtrlExportTemplatesRequest
+	15, // 18: zhiplugin.v1.UIControllerService.Export:input_type -> zhiplugin.v1.CtrlExportRequest
+	17, // 19: zhiplugin.v1.UIControllerService.Apply:input_type -> zhiplugin.v1.CtrlApplyRequest
+	19, // 20: zhiplugin.v1.UIControllerService.ListComponents:input_type -> zhiplugin.v1.CtrlListComponentsRequest
+	22, // 21: zhiplugin.v1.UIControllerService.EnableComponent:input_type -> zhiplugin.v1.CtrlEnableComponentRequest
+	24, // 22: zhiplugin.v1.UIControllerService.DisableComponent:input_type -> zhiplugin.v1.CtrlDisableComponentRequest
+	26, // 23: zhiplugin.v1.UIControllerService.WorkspaceName:input_type -> zhiplugin.v1.CtrlWorkspaceNameRequest
+	28, // 24: zhiplugin.v1.UIControllerService.SearchMarketplace:input_type -> zhiplugin.v1.CtrlSearchMarketplaceRequest
+	31, // 25: zhiplugin.v1.UIControllerService.GetMarketplaceDetail:input_type -> zhiplugin.v1.CtrlGetMarketplaceDetailRequest
+	36, // 26: zhiplugin.v1.UIControllerService.InstallPlugin:input_type -> zhiplugin.v1.CtrlInstallPluginRequest
+	38, // 27: zhiplugin.v1.UIControllerService.UninstallPlugin:input_type -> zhiplugin.v1.CtrlUninstallPluginRequest
+	40, // 28: zhiplugin.v1.UIControllerService.ListInstalledPlugins:input_type -> zhiplugin.v1.CtrlListInstalledPluginsRequest
+	43, // 29: zhiplugin.v1.UIControllerService.CheckUpdates:input_type -> zhiplugin.v1.CtrlCheckUpdatesRequest
+	46, // 30: zhiplugin.v1.UIControllerService.UpdatePlugin:input_type -> zhiplugin.v1.CtrlUpdatePluginRequest
+	48, // 31: zhiplugin.v1.UIControllerService.RatePlugin:input_type -> zhiplugin.v1.CtrlRatePluginRequest
+	1,  // 32: zhiplugin.v1.UIService.Run:output_type -> zhiplugin.v1.RunResponse
+	3,  // 33: zhiplugin.v1.UIService.Capabilities:output_type -> zhiplugin.v1.CapabilitiesResponse
+	5,  // 34: zhiplugin.v1.UIControllerService.LoadTree:output_type -> zhiplugin.v1.CtrlLoadTreeResponse
+	7,  // 35: zhiplugin.v1.UIControllerService.SetValue:output_type -> zhiplugin.v1.CtrlSetValueResponse
+	9,  // 36: zhiplugin.v1.UIControllerService.Validate:output_type -> zhiplugin.v1.CtrlValidateResponse
+	11, // 37: zhiplugin.v1.UIControllerService.SaveTree:output_type -> zhiplugin.v1.CtrlSaveTreeResponse
+	14, // 38: zhiplugin.v1.UIControllerService.ExportTemplates:output_type -> zhiplugin.v1.CtrlExportTemplatesResponse
+	16, // 39: zhiplugin.v1.UIControllerService.Export:output_type -> zhiplugin.v1.CtrlExportResponse
+	18, // 40: zhiplugin.v1.UIControllerService.Apply:output_type -> zhiplugin.v1.CtrlApplyResponse
+	21, // 41: zhiplugin.v1.UIControllerService.ListComponents:output_type -> zhiplugin.v1.CtrlListComponentsResponse
+	23, // 42: zhiplugin.v1.UIControllerService.EnableComponent:output_type -> zhiplugin.v1.CtrlEnableComponentResponse
+	25, // 43: zhiplugin.v1.UIControllerService.DisableComponent:output_type -> zhiplugin.v1.CtrlDisableComponentResponse
+	27, // 44: zhiplugin.v1.UIControllerService.WorkspaceName:output_type -> zhiplugin.v1.CtrlWorkspaceNameResponse
+	30, // 45: zhiplugin.v1.UIControllerService.SearchMarketplace:output_type -> zhiplugin.v1.CtrlSearchMarketplaceResponse
+	35, // 46: zhiplugin.v1.UIControllerService.GetMarketplaceDetail:output_type -> zhiplugin.v1.CtrlGetMarketplaceDetailResponse
+	37, // 47: zhiplugin.v1.UIControllerService.InstallPlugin:output_type -> zhiplugin.v1.CtrlInstallPluginResponse
+	39, // 48: zhiplugin.v1.UIControllerService.UninstallPlugin:output_type -> zhiplugin.v1.CtrlUninstallPluginResponse
+	42, // 49: zhiplugin.v1.UIControllerService.ListInstalledPlugins:output_type -> zhiplugin.v1.CtrlListInstalledPluginsResponse
+	45, // 50: zhiplugin.v1.UIControllerService.CheckUpdates:output_type -> zhiplugin.v1.CtrlCheckUpdatesResponse
+	47, // 51: zhiplugin.v1.UIControllerService.UpdatePlugin:output_type -> zhiplugin.v1.CtrlUpdatePluginResponse
+	49, // 52: zhiplugin.v1.UIControllerService.RatePlugin:output_type -> zhiplugin.v1.CtrlRatePluginResponse
+	32, // [32:53] is the sub-list for method output_type
+	11, // [11:32] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_zhiplugin_v1_ui_proto_init() }
@@ -1551,7 +3175,7 @@ func file_zhiplugin_v1_ui_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_zhiplugin_v1_ui_proto_rawDesc), len(file_zhiplugin_v1_ui_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   28,
+			NumMessages:   50,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

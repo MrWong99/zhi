@@ -5,11 +5,13 @@ package ui
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 
 	"github.com/MrWong99/zhi/internal/core"
 	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
+	zhiui "github.com/MrWong99/zhi/pkg/zhiplugin/ui"
 )
 
 // UIDriver is the interface that all UI frontends must implement.
@@ -249,4 +251,51 @@ func (c *UIController) SaveComponentState() map[string]bool {
 
 func (c *UIController) prepareTreeData(ctx context.Context, allComponents bool, prefix string) (*core.TreeData, error) {
 	return core.PrepareTreeData(ctx, c.engine, allComponents, prefix)
+}
+
+// ErrMarketplaceNotConfigured is returned when marketplace operations are
+// attempted but no marketplace backend has been configured.
+var ErrMarketplaceNotConfigured = errors.New("marketplace not configured")
+
+// SearchMarketplace queries the marketplace for plugins or workspaces.
+// Returns ErrMarketplaceNotConfigured until the marketplace client is
+// available (Phase 4).
+func (c *UIController) SearchMarketplace(_ context.Context, _ zhiui.MarketplaceQuery) (*zhiui.MarketplaceResults, error) {
+	return nil, ErrMarketplaceNotConfigured
+}
+
+// GetMarketplaceDetail returns detailed information about a marketplace artifact.
+func (c *UIController) GetMarketplaceDetail(_ context.Context, _, _ string) (*zhiui.MarketplaceDetail, error) {
+	return nil, ErrMarketplaceNotConfigured
+}
+
+// InstallPlugin downloads and installs a plugin from an OCI reference.
+func (c *UIController) InstallPlugin(_ context.Context, _ string) (*zhiui.InstallResult, error) {
+	return nil, ErrMarketplaceNotConfigured
+}
+
+// UninstallPlugin removes an installed plugin.
+func (c *UIController) UninstallPlugin(_ context.Context, _, _ string) error {
+	return ErrMarketplaceNotConfigured
+}
+
+// ListInstalledPlugins returns all installed plugins with their metadata.
+// For now, returns built-in plugins only.
+func (c *UIController) ListInstalledPlugins(_ context.Context) ([]zhiui.InstalledPlugin, error) {
+	return nil, nil
+}
+
+// CheckUpdates returns available updates for installed plugins.
+func (c *UIController) CheckUpdates(_ context.Context) ([]zhiui.PluginUpdate, error) {
+	return nil, nil
+}
+
+// UpdatePlugin updates a specific plugin to the latest (or specified) version.
+func (c *UIController) UpdatePlugin(_ context.Context, _, _ string) (*zhiui.InstallResult, error) {
+	return nil, ErrMarketplaceNotConfigured
+}
+
+// RatePlugin submits a rating for a marketplace plugin.
+func (c *UIController) RatePlugin(_ context.Context, _, _ string, _ zhiui.Rating) error {
+	return ErrMarketplaceNotConfigured
 }

@@ -167,3 +167,134 @@ func (s *controllerGRPCServer) WorkspaceName(ctx context.Context, _ *pb.CtrlWork
 	}
 	return &pb.CtrlWorkspaceNameResponse{Name: name}, nil
 }
+
+func (s *controllerGRPCServer) SearchMarketplace(ctx context.Context, req *pb.CtrlSearchMarketplaceRequest) (*pb.CtrlSearchMarketplaceResponse, error) {
+	results, err := s.impl.SearchMarketplace(ctx, MarketplaceQuery{
+		Query:    req.GetQuery(),
+		Type:     req.GetType(),
+		Sort:     req.GetSort(),
+		Verified: req.GetVerified(),
+		Page:     int(req.GetPage()),
+		PerPage:  int(req.GetPerPage()),
+	})
+	if err != nil {
+		return nil, err
+	}
+	msgs := make([]*pb.CtrlMarketplaceEntryMsg, 0, len(results.Results))
+	for _, e := range results.Results {
+		msgs = append(msgs, marketplaceEntryToProto(e))
+	}
+	return &pb.CtrlSearchMarketplaceResponse{
+		Total:   int32(results.Total),
+		Results: msgs,
+	}, nil
+}
+
+func (s *controllerGRPCServer) GetMarketplaceDetail(ctx context.Context, req *pb.CtrlGetMarketplaceDetailRequest) (*pb.CtrlGetMarketplaceDetailResponse, error) {
+	detail, err := s.impl.GetMarketplaceDetail(ctx, req.GetPublisher(), req.GetName())
+	if err != nil {
+		return nil, err
+	}
+	resp := &pb.CtrlGetMarketplaceDetailResponse{
+		Entry:           marketplaceEntryToProto(detail.MarketplaceEntry),
+		LongDescription: detail.LongDescription,
+		License:         detail.License,
+		Homepage:        detail.Homepage,
+		Repository:      detail.Repository,
+		Keywords:        detail.Keywords,
+	}
+	for _, v := range detail.Versions {
+		resp.Versions = append(resp.Versions, versionEntryToProto(v))
+	}
+	for _, r := range detail.Ratings {
+		resp.Ratings = append(resp.Ratings, ratingEntryToProto(r))
+	}
+	for _, d := range detail.Dependencies {
+		resp.Dependencies = append(resp.Dependencies, &pb.CtrlDependencyEntryMsg{
+			Name:      d.Name,
+			Type:      d.Type,
+			Publisher: d.Publisher,
+			Required:  d.Required,
+		})
+	}
+	return resp, nil
+}
+
+func (s *controllerGRPCServer) InstallPlugin(ctx context.Context, req *pb.CtrlInstallPluginRequest) (*pb.CtrlInstallPluginResponse, error) {
+	result, err := s.impl.InstallPlugin(ctx, req.GetRef())
+	if err != nil {
+		return nil, err
+	}
+	return &pb.CtrlInstallPluginResponse{
+		Name:        result.Name,
+		Type:        result.Type,
+		Version:     result.Version,
+		PrevVersion: result.PrevVersion,
+		Digest:      result.Digest,
+		Verified:    result.Verified,
+		RuntimeDeps: result.RuntimeDeps,
+	}, nil
+}
+
+func (s *controllerGRPCServer) UninstallPlugin(ctx context.Context, req *pb.CtrlUninstallPluginRequest) (*pb.CtrlUninstallPluginResponse, error) {
+	if err := s.impl.UninstallPlugin(ctx, req.GetName(), req.GetPluginType()); err != nil {
+		return nil, err
+	}
+	return &pb.CtrlUninstallPluginResponse{}, nil
+}
+
+func (s *controllerGRPCServer) ListInstalledPlugins(ctx context.Context, _ *pb.CtrlListInstalledPluginsRequest) (*pb.CtrlListInstalledPluginsResponse, error) {
+	plugins, err := s.impl.ListInstalledPlugins(ctx)
+	if err != nil {
+		return nil, err
+	}
+	msgs := make([]*pb.CtrlInstalledPluginMsg, 0, len(plugins))
+	for _, p := range plugins {
+		msgs = append(msgs, installedPluginToProto(p))
+	}
+	return &pb.CtrlListInstalledPluginsResponse{Plugins: msgs}, nil
+}
+
+func (s *controllerGRPCServer) CheckUpdates(ctx context.Context, _ *pb.CtrlCheckUpdatesRequest) (*pb.CtrlCheckUpdatesResponse, error) {
+	updates, err := s.impl.CheckUpdates(ctx)
+	if err != nil {
+		return nil, err
+	}
+	msgs := make([]*pb.CtrlPluginUpdateMsg, 0, len(updates))
+	for _, u := range updates {
+		msgs = append(msgs, &pb.CtrlPluginUpdateMsg{
+			Name:           u.Name,
+			Type:           u.Type,
+			CurrentVersion: u.CurrentVersion,
+			LatestVersion:  u.LatestVersion,
+			Verified:       u.Verified,
+		})
+	}
+	return &pb.CtrlCheckUpdatesResponse{Updates: msgs}, nil
+}
+
+func (s *controllerGRPCServer) UpdatePlugin(ctx context.Context, req *pb.CtrlUpdatePluginRequest) (*pb.CtrlUpdatePluginResponse, error) {
+	result, err := s.impl.UpdatePlugin(ctx, req.GetName(), req.GetVersion())
+	if err != nil {
+		return nil, err
+	}
+	return &pb.CtrlUpdatePluginResponse{
+		Name:        result.Name,
+		Type:        result.Type,
+		Version:     result.Version,
+		PrevVersion: result.PrevVersion,
+		Digest:      result.Digest,
+		Verified:    result.Verified,
+		RuntimeDeps: result.RuntimeDeps,
+	}, nil
+}
+
+func (s *controllerGRPCServer) RatePlugin(ctx context.Context, req *pb.CtrlRatePluginRequest) (*pb.CtrlRatePluginResponse, error) {
+	if err := s.impl.RatePlugin(ctx, req.GetPublisher(), req.GetName(), Rating{
+		Score:   int(req.GetScore()),
+		Comment: req.GetComment(),
+	}); err != nil {
+		return nil, err
+	}
+	return &pb.CtrlRatePluginResponse{}, nil
+}

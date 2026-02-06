@@ -116,6 +116,38 @@ func (m *mockController) DisableComponent(_ context.Context, name string) error 
 	return nil
 }
 
+func (m *mockController) SearchMarketplace(_ context.Context, _ ui.MarketplaceQuery) (*ui.MarketplaceResults, error) {
+	return &ui.MarketplaceResults{}, nil
+}
+
+func (m *mockController) GetMarketplaceDetail(_ context.Context, _, _ string) (*ui.MarketplaceDetail, error) {
+	return &ui.MarketplaceDetail{}, nil
+}
+
+func (m *mockController) InstallPlugin(_ context.Context, _ string) (*ui.InstallResult, error) {
+	return &ui.InstallResult{}, nil
+}
+
+func (m *mockController) UninstallPlugin(_ context.Context, _, _ string) error {
+	return nil
+}
+
+func (m *mockController) ListInstalledPlugins(_ context.Context) ([]ui.InstalledPlugin, error) {
+	return nil, nil
+}
+
+func (m *mockController) CheckUpdates(_ context.Context) ([]ui.PluginUpdate, error) {
+	return nil, nil
+}
+
+func (m *mockController) UpdatePlugin(_ context.Context, _, _ string) (*ui.InstallResult, error) {
+	return &ui.InstallResult{}, nil
+}
+
+func (m *mockController) RatePlugin(_ context.Context, _, _ string, _ ui.Rating) error {
+	return nil
+}
+
 // ---------- test helpers ----------
 
 // startTestServer starts the HTTP UI plugin directly (no gRPC) and
