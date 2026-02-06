@@ -26,8 +26,9 @@ Core principles:
 - **Component model** -- group configuration into toggleable bundles with dependencies
 - **Template-based exports** -- render configuration to JSON, YAML, TOML, dotenv, or custom templates
 - **Provisioning** -- trigger external commands (Docker Compose, kubectl, Ansible, etc.) with exported configuration
-- **Plugin sharing** -- install, update, and publish plugins via OCI registries with signature verification, version pinning, rollback, and binary integrity checks
-- **Enterprise mirror** -- `zhi-mirror` provides a local OCI pull-through cache with policy controls, audit logging, and air-gapped export/import
+- **Plugin sharing** -- [install, update, and publish](docs/user-guide/sharing-and-registries.md) plugins via OCI registries with signature verification, version pinning, rollback, and binary integrity checks
+- **Marketplace** -- search and rate plugins, verified publisher program, vulnerability advisories
+- **Enterprise mirror** -- [`zhi-mirror`](docs/user-guide/enterprise-mirror.md) provides a local OCI pull-through cache with policy controls, audit logging, and air-gapped export/import
 
 ---
 
@@ -129,7 +130,9 @@ Detailed documentation for using zhi:
 - [Components](docs/user-guide/components.md) -- grouping and toggling configuration bundles
 - [Export and Templates](docs/user-guide/export-and-templates.md) -- template syntax and format helpers
 - [Apply](docs/user-guide/apply.md) -- running provisioning commands
-- [Plugin Discovery](docs/user-guide/plugin-discovery.md) -- installing and using external plugins
+- [Plugin Discovery](docs/user-guide/plugin-discovery.md) -- discovering and using external plugins
+- [Sharing and Registries](docs/user-guide/sharing-and-registries.md) -- installing, publishing, and updating plugins via OCI registries
+- [Enterprise Mirror](docs/user-guide/enterprise-mirror.md) -- local OCI mirror for air-gapped environments
 
 ---
 
@@ -154,7 +157,9 @@ The [`examples/`](examples/) directory contains fully working plugins you can bu
 | [zhi-transform-pokedex](examples/zhi-transform-pokedex/) | Transform | Tree mutation, value mapping |
 | [zhi-store-json](examples/zhi-store-json/) | Store | File-based persistence |
 | [zhi-store-memory](examples/zhi-store-memory/) | Store | Minimal in-memory store |
+| [zhi-store-vault](examples/zhi-store-vault/) | Store | HashiCorp Vault KV v2 backend |
 | [zhi-ui-httpapi](examples/zhi-ui-httpapi/) | UI | HTTP/JSON API with SSE streaming |
+| [zhi-config-javabean](examples/zhi-config-javabean/) | Config | Java plugin with Bean Validation and GraalVM native-image |
 
 Build everything with:
 
@@ -188,7 +193,7 @@ zhi-mirror export --artifacts zhi-project/zhi-config-ansible:v1.2.0 --output bun
 zhi-mirror import --input bundle.tar
 ```
 
-Clients point to the mirror by setting `sharing.defaultRegistry` in `~/.zhi/config.yaml` or via the `ZHI_REGISTRY` environment variable. See the [Local Proxy](plans/sharing/local-proxy.md) design document for the full architecture.
+Clients point to the mirror by setting `sharing.defaultRegistry` in `~/.zhi/config.yaml` or via the `ZHI_REGISTRY` environment variable. See the [Enterprise Mirror guide](docs/user-guide/enterprise-mirror.md) for the full documentation.
 
 ---
 

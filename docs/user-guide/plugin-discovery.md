@@ -94,23 +94,28 @@ chmod +x ~/.zhi/plugins/zhi-config-myplugin
 
 ## Sharing and Installing from OCI Registries
 
-Plugins can be installed directly from OCI registries:
+Plugins can be installed directly from OCI registries. For the full guide on installing, publishing, searching, updating, and securing shared plugins, see [Sharing and Registries](sharing-and-registries.md).
+
+Quick reference:
 
 ```sh
 # Install a plugin from an OCI reference
 zhi plugin install oci://ghcr.io/zhi-project/zhi-config-ansible:v1.2.0
 
+# Install from marketplace short name
+zhi plugin install ansible-config
+
 # List installed shared plugins (includes signing status)
 zhi plugin list
+
+# Search the marketplace
+zhi plugin search ansible --type config
 
 # Show detailed plugin info including ratings, downloads, and verification status
 zhi plugin info ansible-config
 
-# Rate a plugin (1-5 stars with optional comment)
-zhi plugin rate zhi-project/ansible-config 5 --comment "Works great!"
-
-# Verify a plugin's signature without installing
-zhi plugin verify oci://ghcr.io/zhi-project/zhi-config-ansible:v1.2.0
+# Check for updates
+zhi plugin update --check
 
 # Uninstall a shared plugin
 zhi plugin uninstall ansible-config
@@ -126,6 +131,12 @@ zhi plugin uninstall ansible-config
 - World-writable plugin binaries produce a warning
 - Plugins run as separate processes communicating over stdio (local process boundary)
 - The [hashicorp/go-plugin](https://github.com/hashicorp/go-plugin) handshake provides basic identity verification
+
+## See Also
+
+- [Sharing and Registries](sharing-and-registries.md) -- installing, publishing, and updating plugins via OCI registries
+- [Enterprise Mirror](enterprise-mirror.md) -- local OCI mirror for air-gapped environments
+- [CLI Reference](cli-reference.md) -- full `zhi plugin` command reference
 
 ## Troubleshooting
 

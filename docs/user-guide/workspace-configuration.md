@@ -135,6 +135,39 @@ plugins:
     - ./plugins
 ```
 
+### `sharing` (global)
+
+Sharing configuration is set in `~/.zhi/config.yaml` (not in the workspace `zhi.yaml`). It controls registry defaults, marketplace settings, verification policy, and update behavior:
+
+```yaml
+# ~/.zhi/config.yaml
+sharing:
+  defaultRegistry: ghcr.io
+  marketplace:
+    url: https://marketplace.zhi.dev
+    apiKey: zhk_abc123...
+  verification:
+    requireSignatures: false
+    trustedPublishers:
+      - zhi-project
+  updates:
+    checkInterval: 24h
+    autoCheck: true
+    autoInstall: false
+```
+
+See [Sharing and Registries](sharing-and-registries.md) for details.
+
+### Lock Files
+
+Workspaces can include a `zhi-plugins.lock` file that pins plugin dependencies to exact OCI digests for reproducible installations. Generate or update it with:
+
+```sh
+zhi workspace lock
+```
+
+See [Sharing and Registries](sharing-and-registries.md#lock-files) for details.
+
 ## Workspace Discovery
 
 When you run any zhi command, it looks for `zhi.yaml` in the current directory, then walks up to parent directories until it finds one. You can override this with the `--workspace` flag:

@@ -356,6 +356,115 @@ zhi plugin rollback ansible-config
 
 If no backup exists, use `zhi plugin install <name>@<version> --force` to install a specific version.
 
+### `zhi plugin search`
+
+Search the marketplace for plugins.
+
+```sh
+zhi plugin search ansible
+zhi plugin search "vault store" --type store
+zhi plugin search --type ui --sort rating --verified
+```
+
+| Flag | Description |
+|------|-------------|
+| `--type` | Filter by plugin type (config, transform, store, ui) |
+| `--sort` | Sort by: relevance, downloads, rating, updated (default: relevance) |
+| `--verified` | Show only verified plugins |
+| `--json` | Output as JSON |
+| `--limit` | Maximum results (default: 20) |
+
+#### `zhi plugin register`
+
+Register a published plugin with the central marketplace.
+
+```sh
+zhi plugin register ghcr.io/myorg/zhi-config-custom:v1.0.0
+```
+
+### `zhi workspace`
+
+Manage shareable workspaces.
+
+#### `zhi workspace install`
+
+Install a workspace and its plugin dependencies from an OCI registry or marketplace.
+
+```sh
+zhi workspace install k8s-cluster
+zhi workspace install oci://ghcr.io/org/zhi-workspace-k8s:v1.0 ./my-cluster
+```
+
+| Flag | Description |
+|------|-------------|
+| `--skip-plugins` | Don't install plugin dependencies |
+| `--skip-tools-check` | Don't check for required external tools |
+| `--dry-run` | Show what would be installed |
+
+#### `zhi workspace publish`
+
+Publish the current workspace as a shareable OCI artifact.
+
+```sh
+zhi workspace publish --registry ghcr.io/myorg
+zhi workspace publish --registry ghcr.io/myorg --sign
+```
+
+| Flag | Description |
+|------|-------------|
+| `--registry` | Target OCI registry (required) |
+| `--sign` | Sign the artifact with cosign |
+| `--tag` | OCI tag (default: from workspace version) |
+
+#### `zhi workspace lock`
+
+Generate or update `zhi-plugins.lock` by resolving all plugin references to exact OCI digests.
+
+```sh
+zhi workspace lock              # Lock current versions
+zhi workspace lock --update     # Update and re-lock
+```
+
+| Flag | Description |
+|------|-------------|
+| `--update` | Update all plugins to latest matching versions |
+| `--update-plugin` | Update a specific plugin |
+
+### `zhi registry`
+
+Manage OCI registry authentication.
+
+#### `zhi registry login`
+
+Authenticate with an OCI registry.
+
+```sh
+zhi registry login ghcr.io --username myuser
+echo $GHCR_TOKEN | zhi registry login ghcr.io --username myuser --password-stdin
+```
+
+| Flag | Description |
+|------|-------------|
+| `--username` | Registry username |
+| `--password` | Registry password |
+| `--password-stdin` | Read password from stdin |
+
+#### `zhi registry logout`
+
+Remove stored credentials for a registry.
+
+```sh
+zhi registry logout ghcr.io
+```
+
+#### `zhi registry list`
+
+List configured registries and their authentication status.
+
+```sh
+zhi registry list
+```
+
 ### `zhi version`
 
 Print version, commit hash, and build date.
