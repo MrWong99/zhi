@@ -41,6 +41,23 @@ type Controller interface {
 	DisableComponent(ctx context.Context, name string) error
 	// WorkspaceName returns the workspace display name.
 	WorkspaceName(ctx context.Context) (string, error)
+
+	// SearchMarketplace queries the marketplace for plugins or workspaces.
+	SearchMarketplace(ctx context.Context, query MarketplaceQuery) (*MarketplaceResults, error)
+	// GetMarketplaceDetail returns detailed information about a marketplace artifact.
+	GetMarketplaceDetail(ctx context.Context, publisher, name string) (*MarketplaceDetail, error)
+	// InstallPlugin downloads and installs a plugin from an OCI reference.
+	InstallPlugin(ctx context.Context, ref string) (*InstallResult, error)
+	// UninstallPlugin removes an installed plugin.
+	UninstallPlugin(ctx context.Context, name string, pluginType string) error
+	// ListInstalledPlugins returns all installed plugins with their metadata.
+	ListInstalledPlugins(ctx context.Context) ([]InstalledPlugin, error)
+	// CheckUpdates returns available updates for installed plugins.
+	CheckUpdates(ctx context.Context) ([]PluginUpdate, error)
+	// UpdatePlugin updates a specific plugin to the latest (or specified) version.
+	UpdatePlugin(ctx context.Context, name string, version string) (*InstallResult, error)
+	// RatePlugin submits a rating for a marketplace plugin.
+	RatePlugin(ctx context.Context, publisher, name string, rating Rating) error
 }
 
 // Plugin is the interface every zhi UI plugin must implement.

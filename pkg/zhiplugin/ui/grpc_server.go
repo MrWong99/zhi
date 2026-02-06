@@ -45,6 +45,7 @@ func (s *GRPCServer) Capabilities(ctx context.Context, _ *pb.CapabilitiesRequest
 		return nil, err
 	}
 	return &pb.CapabilitiesResponse{
-		RequiresTty: caps.RequiresTTY,
+		RequiresTty:         caps.RequiresTTY,
+		SupportsMarketplace: caps.SupportsMarketplace,
 	}, nil
 }

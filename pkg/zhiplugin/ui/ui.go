@@ -16,6 +16,8 @@
 package ui
 
 import (
+	"time"
+
 	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
 )
 
@@ -71,6 +73,117 @@ type Capabilities struct {
 	// RequiresTTY indicates this UI needs direct terminal access and must
 	// run as a builtin plugin (not over gRPC).
 	RequiresTTY bool
+	// SupportsMarketplace indicates this UI provides marketplace browsing
+	// and plugin management features.
+	SupportsMarketplace bool
+}
+
+// MarketplaceQuery represents a search request.
+type MarketplaceQuery struct {
+	Query    string // free-text search
+	Type     string // filter: "config", "transform", "store", "ui", "workspace"
+	Sort     string // "relevance", "downloads", "rating", "updated"
+	Verified bool   // only verified publishers
+	Page     int
+	PerPage  int
+}
+
+// MarketplaceResults holds search results.
+type MarketplaceResults struct {
+	Total   int
+	Results []MarketplaceEntry
+}
+
+// MarketplaceEntry is a single search result.
+type MarketplaceEntry struct {
+	Name          string
+	Publisher     string
+	Type          string
+	Description   string
+	LatestVersion string
+	Rating        float64
+	RatingCount   int
+	Downloads     int
+	Verified      bool
+	Installed     bool   // true if already installed locally
+	InstalledVer  string // installed version (empty if not installed)
+	UpdateAvail   bool   // true if newer version exists
+	Platforms     []string
+}
+
+// MarketplaceDetail holds full information for a single artifact.
+type MarketplaceDetail struct {
+	MarketplaceEntry
+	LongDescription string
+	License         string
+	Homepage        string
+	Repository      string
+	Versions        []VersionEntry
+	Ratings         []RatingEntry
+	Dependencies    []DependencyEntry
+	Keywords        []string
+}
+
+// VersionEntry describes a single version of a marketplace artifact.
+type VersionEntry struct {
+	Version   string
+	CreatedAt time.Time
+	Digest    string
+	Platforms []string
+}
+
+// RatingEntry describes a single rating submission.
+type RatingEntry struct {
+	Score     int
+	Comment   string
+	Author    string
+	CreatedAt time.Time
+}
+
+// DependencyEntry describes a dependency of a workspace.
+type DependencyEntry struct {
+	Name      string
+	Type      string
+	Publisher string
+	Required  bool
+}
+
+// InstalledPlugin describes a locally installed plugin.
+type InstalledPlugin struct {
+	Name        string
+	Type        string
+	Version     string
+	Source      string // "built-in", OCI ref, or local path
+	InstalledAt time.Time
+	Digest      string
+	Verified    bool
+	UpdateAvail string // latest available version, empty if up to date
+}
+
+// InstallResult describes the outcome of an install/update operation.
+type InstallResult struct {
+	Name        string
+	Type        string
+	Version     string
+	PrevVersion string // empty for fresh installs
+	Digest      string
+	Verified    bool
+	RuntimeDeps []string
+}
+
+// PluginUpdate describes an available update for an installed plugin.
+type PluginUpdate struct {
+	Name           string
+	Type           string
+	CurrentVersion string
+	LatestVersion  string
+	Verified       bool
+}
+
+// Rating is a user-submitted review.
+type Rating struct {
+	Score   int // 1-5
+	Comment string
 }
 
 // TreeFromEntries reconstructs a [config.Tree] from a list of path/value

@@ -46,6 +46,25 @@ service UIControllerService {
   rpc DisableComponent(CtrlDisableComponentRequest) returns (CtrlDisableComponentResponse);
   // WorkspaceName returns the workspace display name.
   rpc WorkspaceName(CtrlWorkspaceNameRequest) returns (CtrlWorkspaceNameResponse);
+
+  // --- Marketplace operations -----------------------------------------------
+
+  // SearchMarketplace queries the marketplace for plugins or workspaces.
+  rpc SearchMarketplace(CtrlSearchMarketplaceRequest) returns (CtrlSearchMarketplaceResponse);
+  // GetMarketplaceDetail returns detailed information about a marketplace artifact.
+  rpc GetMarketplaceDetail(CtrlGetMarketplaceDetailRequest) returns (CtrlGetMarketplaceDetailResponse);
+  // InstallPlugin downloads and installs a plugin from an OCI reference.
+  rpc InstallPlugin(CtrlInstallPluginRequest) returns (CtrlInstallPluginResponse);
+  // UninstallPlugin removes an installed plugin.
+  rpc UninstallPlugin(CtrlUninstallPluginRequest) returns (CtrlUninstallPluginResponse);
+  // ListInstalledPlugins returns all installed plugins with their metadata.
+  rpc ListInstalledPlugins(CtrlListInstalledPluginsRequest) returns (CtrlListInstalledPluginsResponse);
+  // CheckUpdates returns available updates for installed plugins.
+  rpc CheckUpdates(CtrlCheckUpdatesRequest) returns (CtrlCheckUpdatesResponse);
+  // UpdatePlugin updates a specific plugin to the latest (or specified) version.
+  rpc UpdatePlugin(CtrlUpdatePluginRequest) returns (CtrlUpdatePluginResponse);
+  // RatePlugin submits a rating for a marketplace plugin.
+  rpc RatePlugin(CtrlRatePluginRequest) returns (CtrlRatePluginResponse);
 }
 
 // ---------------------------------------------------------------------------
@@ -66,6 +85,8 @@ message CapabilitiesRequest {}
 message CapabilitiesResponse {
   // Whether this UI requires direct TTY access (must run as a builtin plugin).
   bool requires_tty = 1;
+  // Whether this UI provides marketplace browsing and plugin management.
+  bool supports_marketplace = 2;
 }
 
 // ---------------------------------------------------------------------------
@@ -208,3 +229,171 @@ message CtrlWorkspaceNameRequest {}
 message CtrlWorkspaceNameResponse {
   string name = 1;
 }
+
+// ---------------------------------------------------------------------------
+// Marketplace messages
+// ---------------------------------------------------------------------------
+
+// -- SearchMarketplace ------------------------------------------------------
+
+message CtrlSearchMarketplaceRequest {
+  string query = 1;
+  string type = 2;     // "config", "transform", "store", "ui", "workspace"
+  string sort = 3;     // "relevance", "downloads", "rating", "updated"
+  bool verified = 4;
+  int32 page = 5;
+  int32 per_page = 6;
+}
+
+message CtrlMarketplaceEntryMsg {
+  string name = 1;
+  string publisher = 2;
+  string type = 3;
+  string description = 4;
+  string latest_version = 5;
+  double rating = 6;
+  int32 rating_count = 7;
+  int32 downloads = 8;
+  bool verified = 9;
+  bool installed = 10;
+  string installed_ver = 11;
+  bool update_avail = 12;
+  repeated string platforms = 13;
+}
+
+message CtrlSearchMarketplaceResponse {
+  int32 total = 1;
+  repeated CtrlMarketplaceEntryMsg results = 2;
+}
+
+// -- GetMarketplaceDetail ---------------------------------------------------
+
+message CtrlGetMarketplaceDetailRequest {
+  string publisher = 1;
+  string name = 2;
+}
+
+message CtrlVersionEntryMsg {
+  string version = 1;
+  int64 created_at_unix = 2;
+  string digest = 3;
+  repeated string platforms = 4;
+}
+
+message CtrlRatingEntryMsg {
+  int32 score = 1;
+  string comment = 2;
+  string author = 3;
+  int64 created_at_unix = 4;
+}
+
+message CtrlDependencyEntryMsg {
+  string name = 1;
+  string type = 2;
+  string publisher = 3;
+  bool required = 4;
+}
+
+message CtrlGetMarketplaceDetailResponse {
+  CtrlMarketplaceEntryMsg entry = 1;
+  string long_description = 2;
+  string license = 3;
+  string homepage = 4;
+  string repository = 5;
+  repeated CtrlVersionEntryMsg versions = 6;
+  repeated CtrlRatingEntryMsg ratings = 7;
+  repeated CtrlDependencyEntryMsg dependencies = 8;
+  repeated string keywords = 9;
+}
+
+// -- InstallPlugin ----------------------------------------------------------
+
+message CtrlInstallPluginRequest {
+  string ref = 1;
+}
+
+message CtrlInstallPluginResponse {
+  string name = 1;
+  string type = 2;
+  string version = 3;
+  string prev_version = 4;
+  string digest = 5;
+  bool verified = 6;
+  repeated string runtime_deps = 7;
+}
+
+// -- UninstallPlugin --------------------------------------------------------
+
+message CtrlUninstallPluginRequest {
+  string name = 1;
+  string plugin_type = 2;
+}
+
+// CtrlUninstallPluginResponse is intentionally empty.
+message CtrlUninstallPluginResponse {}
+
+// -- ListInstalledPlugins ---------------------------------------------------
+
+// CtrlListInstalledPluginsRequest is intentionally empty.
+message CtrlListInstalledPluginsRequest {}
+
+message CtrlInstalledPluginMsg {
+  string name = 1;
+  string type = 2;
+  string version = 3;
+  string source = 4;
+  int64 installed_at_unix = 5;
+  string digest = 6;
+  bool verified = 7;
+  string update_avail = 8;
+}
+
+message CtrlListInstalledPluginsResponse {
+  repeated CtrlInstalledPluginMsg plugins = 1;
+}
+
+// -- CheckUpdates -----------------------------------------------------------
+
+// CtrlCheckUpdatesRequest is intentionally empty.
+message CtrlCheckUpdatesRequest {}
+
+message CtrlPluginUpdateMsg {
+  string name = 1;
+  string type = 2;
+  string current_version = 3;
+  string latest_version = 4;
+  bool verified = 5;
+}
+
+message CtrlCheckUpdatesResponse {
+  repeated CtrlPluginUpdateMsg updates = 1;
+}
+
+// -- UpdatePlugin -----------------------------------------------------------
+
+message CtrlUpdatePluginRequest {
+  string name = 1;
+  string version = 2;
+}
+
+message CtrlUpdatePluginResponse {
+  string name = 1;
+  string type = 2;
+  string version = 3;
+  string prev_version = 4;
+  string digest = 5;
+  bool verified = 6;
+  repeated string runtime_deps = 7;
+}
+
+// -- RatePlugin -------------------------------------------------------------
+
+message CtrlRatePluginRequest {
+  string publisher = 1;
+  string name = 2;
+  int32 score = 3;
+  string comment = 4;
+}
+
+// CtrlRatePluginResponse is intentionally empty.
+message CtrlRatePluginResponse {}

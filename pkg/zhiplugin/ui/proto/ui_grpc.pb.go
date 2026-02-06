@@ -178,17 +178,25 @@ var UIService_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
-	UIControllerService_LoadTree_FullMethodName         = "/zhiplugin.v1.UIControllerService/LoadTree"
-	UIControllerService_SetValue_FullMethodName         = "/zhiplugin.v1.UIControllerService/SetValue"
-	UIControllerService_Validate_FullMethodName         = "/zhiplugin.v1.UIControllerService/Validate"
-	UIControllerService_SaveTree_FullMethodName         = "/zhiplugin.v1.UIControllerService/SaveTree"
-	UIControllerService_ExportTemplates_FullMethodName  = "/zhiplugin.v1.UIControllerService/ExportTemplates"
-	UIControllerService_Export_FullMethodName           = "/zhiplugin.v1.UIControllerService/Export"
-	UIControllerService_Apply_FullMethodName            = "/zhiplugin.v1.UIControllerService/Apply"
-	UIControllerService_ListComponents_FullMethodName   = "/zhiplugin.v1.UIControllerService/ListComponents"
-	UIControllerService_EnableComponent_FullMethodName  = "/zhiplugin.v1.UIControllerService/EnableComponent"
-	UIControllerService_DisableComponent_FullMethodName = "/zhiplugin.v1.UIControllerService/DisableComponent"
-	UIControllerService_WorkspaceName_FullMethodName    = "/zhiplugin.v1.UIControllerService/WorkspaceName"
+	UIControllerService_LoadTree_FullMethodName             = "/zhiplugin.v1.UIControllerService/LoadTree"
+	UIControllerService_SetValue_FullMethodName             = "/zhiplugin.v1.UIControllerService/SetValue"
+	UIControllerService_Validate_FullMethodName             = "/zhiplugin.v1.UIControllerService/Validate"
+	UIControllerService_SaveTree_FullMethodName             = "/zhiplugin.v1.UIControllerService/SaveTree"
+	UIControllerService_ExportTemplates_FullMethodName      = "/zhiplugin.v1.UIControllerService/ExportTemplates"
+	UIControllerService_Export_FullMethodName               = "/zhiplugin.v1.UIControllerService/Export"
+	UIControllerService_Apply_FullMethodName                = "/zhiplugin.v1.UIControllerService/Apply"
+	UIControllerService_ListComponents_FullMethodName       = "/zhiplugin.v1.UIControllerService/ListComponents"
+	UIControllerService_EnableComponent_FullMethodName      = "/zhiplugin.v1.UIControllerService/EnableComponent"
+	UIControllerService_DisableComponent_FullMethodName     = "/zhiplugin.v1.UIControllerService/DisableComponent"
+	UIControllerService_WorkspaceName_FullMethodName        = "/zhiplugin.v1.UIControllerService/WorkspaceName"
+	UIControllerService_SearchMarketplace_FullMethodName    = "/zhiplugin.v1.UIControllerService/SearchMarketplace"
+	UIControllerService_GetMarketplaceDetail_FullMethodName = "/zhiplugin.v1.UIControllerService/GetMarketplaceDetail"
+	UIControllerService_InstallPlugin_FullMethodName        = "/zhiplugin.v1.UIControllerService/InstallPlugin"
+	UIControllerService_UninstallPlugin_FullMethodName      = "/zhiplugin.v1.UIControllerService/UninstallPlugin"
+	UIControllerService_ListInstalledPlugins_FullMethodName = "/zhiplugin.v1.UIControllerService/ListInstalledPlugins"
+	UIControllerService_CheckUpdates_FullMethodName         = "/zhiplugin.v1.UIControllerService/CheckUpdates"
+	UIControllerService_UpdatePlugin_FullMethodName         = "/zhiplugin.v1.UIControllerService/UpdatePlugin"
+	UIControllerService_RatePlugin_FullMethodName           = "/zhiplugin.v1.UIControllerService/RatePlugin"
 )
 
 // UIControllerServiceClient is the client API for UIControllerService service.
@@ -220,6 +228,22 @@ type UIControllerServiceClient interface {
 	DisableComponent(ctx context.Context, in *CtrlDisableComponentRequest, opts ...grpc.CallOption) (*CtrlDisableComponentResponse, error)
 	// WorkspaceName returns the workspace display name.
 	WorkspaceName(ctx context.Context, in *CtrlWorkspaceNameRequest, opts ...grpc.CallOption) (*CtrlWorkspaceNameResponse, error)
+	// SearchMarketplace queries the marketplace for plugins or workspaces.
+	SearchMarketplace(ctx context.Context, in *CtrlSearchMarketplaceRequest, opts ...grpc.CallOption) (*CtrlSearchMarketplaceResponse, error)
+	// GetMarketplaceDetail returns detailed information about a marketplace artifact.
+	GetMarketplaceDetail(ctx context.Context, in *CtrlGetMarketplaceDetailRequest, opts ...grpc.CallOption) (*CtrlGetMarketplaceDetailResponse, error)
+	// InstallPlugin downloads and installs a plugin from an OCI reference.
+	InstallPlugin(ctx context.Context, in *CtrlInstallPluginRequest, opts ...grpc.CallOption) (*CtrlInstallPluginResponse, error)
+	// UninstallPlugin removes an installed plugin.
+	UninstallPlugin(ctx context.Context, in *CtrlUninstallPluginRequest, opts ...grpc.CallOption) (*CtrlUninstallPluginResponse, error)
+	// ListInstalledPlugins returns all installed plugins with their metadata.
+	ListInstalledPlugins(ctx context.Context, in *CtrlListInstalledPluginsRequest, opts ...grpc.CallOption) (*CtrlListInstalledPluginsResponse, error)
+	// CheckUpdates returns available updates for installed plugins.
+	CheckUpdates(ctx context.Context, in *CtrlCheckUpdatesRequest, opts ...grpc.CallOption) (*CtrlCheckUpdatesResponse, error)
+	// UpdatePlugin updates a specific plugin to the latest (or specified) version.
+	UpdatePlugin(ctx context.Context, in *CtrlUpdatePluginRequest, opts ...grpc.CallOption) (*CtrlUpdatePluginResponse, error)
+	// RatePlugin submits a rating for a marketplace plugin.
+	RatePlugin(ctx context.Context, in *CtrlRatePluginRequest, opts ...grpc.CallOption) (*CtrlRatePluginResponse, error)
 }
 
 type uIControllerServiceClient struct {
@@ -349,6 +373,86 @@ func (c *uIControllerServiceClient) WorkspaceName(ctx context.Context, in *CtrlW
 	return out, nil
 }
 
+func (c *uIControllerServiceClient) SearchMarketplace(ctx context.Context, in *CtrlSearchMarketplaceRequest, opts ...grpc.CallOption) (*CtrlSearchMarketplaceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CtrlSearchMarketplaceResponse)
+	err := c.cc.Invoke(ctx, UIControllerService_SearchMarketplace_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *uIControllerServiceClient) GetMarketplaceDetail(ctx context.Context, in *CtrlGetMarketplaceDetailRequest, opts ...grpc.CallOption) (*CtrlGetMarketplaceDetailResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CtrlGetMarketplaceDetailResponse)
+	err := c.cc.Invoke(ctx, UIControllerService_GetMarketplaceDetail_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *uIControllerServiceClient) InstallPlugin(ctx context.Context, in *CtrlInstallPluginRequest, opts ...grpc.CallOption) (*CtrlInstallPluginResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CtrlInstallPluginResponse)
+	err := c.cc.Invoke(ctx, UIControllerService_InstallPlugin_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *uIControllerServiceClient) UninstallPlugin(ctx context.Context, in *CtrlUninstallPluginRequest, opts ...grpc.CallOption) (*CtrlUninstallPluginResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CtrlUninstallPluginResponse)
+	err := c.cc.Invoke(ctx, UIControllerService_UninstallPlugin_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *uIControllerServiceClient) ListInstalledPlugins(ctx context.Context, in *CtrlListInstalledPluginsRequest, opts ...grpc.CallOption) (*CtrlListInstalledPluginsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CtrlListInstalledPluginsResponse)
+	err := c.cc.Invoke(ctx, UIControllerService_ListInstalledPlugins_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *uIControllerServiceClient) CheckUpdates(ctx context.Context, in *CtrlCheckUpdatesRequest, opts ...grpc.CallOption) (*CtrlCheckUpdatesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CtrlCheckUpdatesResponse)
+	err := c.cc.Invoke(ctx, UIControllerService_CheckUpdates_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *uIControllerServiceClient) UpdatePlugin(ctx context.Context, in *CtrlUpdatePluginRequest, opts ...grpc.CallOption) (*CtrlUpdatePluginResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CtrlUpdatePluginResponse)
+	err := c.cc.Invoke(ctx, UIControllerService_UpdatePlugin_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *uIControllerServiceClient) RatePlugin(ctx context.Context, in *CtrlRatePluginRequest, opts ...grpc.CallOption) (*CtrlRatePluginResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CtrlRatePluginResponse)
+	err := c.cc.Invoke(ctx, UIControllerService_RatePlugin_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UIControllerServiceServer is the server API for UIControllerService service.
 // All implementations must embed UnimplementedUIControllerServiceServer
 // for forward compatibility.
@@ -378,6 +482,22 @@ type UIControllerServiceServer interface {
 	DisableComponent(context.Context, *CtrlDisableComponentRequest) (*CtrlDisableComponentResponse, error)
 	// WorkspaceName returns the workspace display name.
 	WorkspaceName(context.Context, *CtrlWorkspaceNameRequest) (*CtrlWorkspaceNameResponse, error)
+	// SearchMarketplace queries the marketplace for plugins or workspaces.
+	SearchMarketplace(context.Context, *CtrlSearchMarketplaceRequest) (*CtrlSearchMarketplaceResponse, error)
+	// GetMarketplaceDetail returns detailed information about a marketplace artifact.
+	GetMarketplaceDetail(context.Context, *CtrlGetMarketplaceDetailRequest) (*CtrlGetMarketplaceDetailResponse, error)
+	// InstallPlugin downloads and installs a plugin from an OCI reference.
+	InstallPlugin(context.Context, *CtrlInstallPluginRequest) (*CtrlInstallPluginResponse, error)
+	// UninstallPlugin removes an installed plugin.
+	UninstallPlugin(context.Context, *CtrlUninstallPluginRequest) (*CtrlUninstallPluginResponse, error)
+	// ListInstalledPlugins returns all installed plugins with their metadata.
+	ListInstalledPlugins(context.Context, *CtrlListInstalledPluginsRequest) (*CtrlListInstalledPluginsResponse, error)
+	// CheckUpdates returns available updates for installed plugins.
+	CheckUpdates(context.Context, *CtrlCheckUpdatesRequest) (*CtrlCheckUpdatesResponse, error)
+	// UpdatePlugin updates a specific plugin to the latest (or specified) version.
+	UpdatePlugin(context.Context, *CtrlUpdatePluginRequest) (*CtrlUpdatePluginResponse, error)
+	// RatePlugin submits a rating for a marketplace plugin.
+	RatePlugin(context.Context, *CtrlRatePluginRequest) (*CtrlRatePluginResponse, error)
 	mustEmbedUnimplementedUIControllerServiceServer()
 }
 
@@ -420,6 +540,30 @@ func (UnimplementedUIControllerServiceServer) DisableComponent(context.Context, 
 }
 func (UnimplementedUIControllerServiceServer) WorkspaceName(context.Context, *CtrlWorkspaceNameRequest) (*CtrlWorkspaceNameResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method WorkspaceName not implemented")
+}
+func (UnimplementedUIControllerServiceServer) SearchMarketplace(context.Context, *CtrlSearchMarketplaceRequest) (*CtrlSearchMarketplaceResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SearchMarketplace not implemented")
+}
+func (UnimplementedUIControllerServiceServer) GetMarketplaceDetail(context.Context, *CtrlGetMarketplaceDetailRequest) (*CtrlGetMarketplaceDetailResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetMarketplaceDetail not implemented")
+}
+func (UnimplementedUIControllerServiceServer) InstallPlugin(context.Context, *CtrlInstallPluginRequest) (*CtrlInstallPluginResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method InstallPlugin not implemented")
+}
+func (UnimplementedUIControllerServiceServer) UninstallPlugin(context.Context, *CtrlUninstallPluginRequest) (*CtrlUninstallPluginResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UninstallPlugin not implemented")
+}
+func (UnimplementedUIControllerServiceServer) ListInstalledPlugins(context.Context, *CtrlListInstalledPluginsRequest) (*CtrlListInstalledPluginsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListInstalledPlugins not implemented")
+}
+func (UnimplementedUIControllerServiceServer) CheckUpdates(context.Context, *CtrlCheckUpdatesRequest) (*CtrlCheckUpdatesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CheckUpdates not implemented")
+}
+func (UnimplementedUIControllerServiceServer) UpdatePlugin(context.Context, *CtrlUpdatePluginRequest) (*CtrlUpdatePluginResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdatePlugin not implemented")
+}
+func (UnimplementedUIControllerServiceServer) RatePlugin(context.Context, *CtrlRatePluginRequest) (*CtrlRatePluginResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RatePlugin not implemented")
 }
 func (UnimplementedUIControllerServiceServer) mustEmbedUnimplementedUIControllerServiceServer() {}
 func (UnimplementedUIControllerServiceServer) testEmbeddedByValue()                             {}
@@ -633,6 +777,150 @@ func _UIControllerService_WorkspaceName_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UIControllerService_SearchMarketplace_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CtrlSearchMarketplaceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UIControllerServiceServer).SearchMarketplace(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UIControllerService_SearchMarketplace_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UIControllerServiceServer).SearchMarketplace(ctx, req.(*CtrlSearchMarketplaceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UIControllerService_GetMarketplaceDetail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CtrlGetMarketplaceDetailRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UIControllerServiceServer).GetMarketplaceDetail(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UIControllerService_GetMarketplaceDetail_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UIControllerServiceServer).GetMarketplaceDetail(ctx, req.(*CtrlGetMarketplaceDetailRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UIControllerService_InstallPlugin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CtrlInstallPluginRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UIControllerServiceServer).InstallPlugin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UIControllerService_InstallPlugin_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UIControllerServiceServer).InstallPlugin(ctx, req.(*CtrlInstallPluginRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UIControllerService_UninstallPlugin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CtrlUninstallPluginRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UIControllerServiceServer).UninstallPlugin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UIControllerService_UninstallPlugin_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UIControllerServiceServer).UninstallPlugin(ctx, req.(*CtrlUninstallPluginRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UIControllerService_ListInstalledPlugins_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CtrlListInstalledPluginsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UIControllerServiceServer).ListInstalledPlugins(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UIControllerService_ListInstalledPlugins_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UIControllerServiceServer).ListInstalledPlugins(ctx, req.(*CtrlListInstalledPluginsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UIControllerService_CheckUpdates_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CtrlCheckUpdatesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UIControllerServiceServer).CheckUpdates(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UIControllerService_CheckUpdates_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UIControllerServiceServer).CheckUpdates(ctx, req.(*CtrlCheckUpdatesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UIControllerService_UpdatePlugin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CtrlUpdatePluginRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UIControllerServiceServer).UpdatePlugin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UIControllerService_UpdatePlugin_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UIControllerServiceServer).UpdatePlugin(ctx, req.(*CtrlUpdatePluginRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UIControllerService_RatePlugin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CtrlRatePluginRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UIControllerServiceServer).RatePlugin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UIControllerService_RatePlugin_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UIControllerServiceServer).RatePlugin(ctx, req.(*CtrlRatePluginRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UIControllerService_ServiceDesc is the grpc.ServiceDesc for UIControllerService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -679,6 +967,38 @@ var UIControllerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "WorkspaceName",
 			Handler:    _UIControllerService_WorkspaceName_Handler,
+		},
+		{
+			MethodName: "SearchMarketplace",
+			Handler:    _UIControllerService_SearchMarketplace_Handler,
+		},
+		{
+			MethodName: "GetMarketplaceDetail",
+			Handler:    _UIControllerService_GetMarketplaceDetail_Handler,
+		},
+		{
+			MethodName: "InstallPlugin",
+			Handler:    _UIControllerService_InstallPlugin_Handler,
+		},
+		{
+			MethodName: "UninstallPlugin",
+			Handler:    _UIControllerService_UninstallPlugin_Handler,
+		},
+		{
+			MethodName: "ListInstalledPlugins",
+			Handler:    _UIControllerService_ListInstalledPlugins_Handler,
+		},
+		{
+			MethodName: "CheckUpdates",
+			Handler:    _UIControllerService_CheckUpdates_Handler,
+		},
+		{
+			MethodName: "UpdatePlugin",
+			Handler:    _UIControllerService_UpdatePlugin_Handler,
+		},
+		{
+			MethodName: "RatePlugin",
+			Handler:    _UIControllerService_RatePlugin_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

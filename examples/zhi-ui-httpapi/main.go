@@ -130,6 +130,14 @@ func (s *server) registerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/components", s.handleListComponents)
 	mux.HandleFunc("POST /api/components/{name}/enable", s.handleEnableComponent)
 	mux.HandleFunc("POST /api/components/{name}/disable", s.handleDisableComponent)
+	mux.HandleFunc("POST /api/marketplace/search", s.handleSearchMarketplace)
+	mux.HandleFunc("GET /api/marketplace/detail/{publisher}/{name}", s.handleGetMarketplaceDetail)
+	mux.HandleFunc("POST /api/plugins/install", s.handleInstallPlugin)
+	mux.HandleFunc("DELETE /api/plugins/{name}", s.handleUninstallPlugin)
+	mux.HandleFunc("GET /api/plugins", s.handleListInstalledPlugins)
+	mux.HandleFunc("GET /api/plugins/updates", s.handleCheckUpdates)
+	mux.HandleFunc("POST /api/plugins/{name}/update", s.handleUpdatePlugin)
+	mux.HandleFunc("POST /api/marketplace/{publisher}/{name}/rate", s.handleRatePlugin)
 }
 
 // ---------- handlers ----------
@@ -368,6 +376,129 @@ func (s *server) handleEnableComponent(w http.ResponseWriter, r *http.Request) {
 func (s *server) handleDisableComponent(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	if err := s.ctrl.DisableComponent(r.Context(), name); err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// ---------- marketplace handlers ----------
+
+func (s *server) handleSearchMarketplace(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Query    string `json:"query"`
+		Type     string `json:"type"`
+		Sort     string `json:"sort"`
+		Verified bool   `json:"verified"`
+		Page     int    `json:"page"`
+		PerPage  int    `json:"per_page"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, fmt.Errorf("invalid JSON: %w", err))
+		return
+	}
+	results, err := s.ctrl.SearchMarketplace(r.Context(), ui.MarketplaceQuery{
+		Query:    body.Query,
+		Type:     body.Type,
+		Sort:     body.Sort,
+		Verified: body.Verified,
+		Page:     body.Page,
+		PerPage:  body.PerPage,
+	})
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, results)
+}
+
+func (s *server) handleGetMarketplaceDetail(w http.ResponseWriter, r *http.Request) {
+	publisher := r.PathValue("publisher")
+	name := r.PathValue("name")
+	detail, err := s.ctrl.GetMarketplaceDetail(r.Context(), publisher, name)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, detail)
+}
+
+func (s *server) handleInstallPlugin(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Ref string `json:"ref"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, fmt.Errorf("invalid JSON: %w", err))
+		return
+	}
+	result, err := s.ctrl.InstallPlugin(r.Context(), body.Ref)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, result)
+}
+
+func (s *server) handleUninstallPlugin(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	pluginType := r.URL.Query().Get("type")
+	if err := s.ctrl.UninstallPlugin(r.Context(), name, pluginType); err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *server) handleListInstalledPlugins(w http.ResponseWriter, r *http.Request) {
+	plugins, err := s.ctrl.ListInstalledPlugins(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, plugins)
+}
+
+func (s *server) handleCheckUpdates(w http.ResponseWriter, r *http.Request) {
+	updates, err := s.ctrl.CheckUpdates(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, updates)
+}
+
+func (s *server) handleUpdatePlugin(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	var body struct {
+		Version string `json:"version"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, fmt.Errorf("invalid JSON: %w", err))
+		return
+	}
+	result, err := s.ctrl.UpdatePlugin(r.Context(), name, body.Version)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, result)
+}
+
+func (s *server) handleRatePlugin(w http.ResponseWriter, r *http.Request) {
+	publisher := r.PathValue("publisher")
+	name := r.PathValue("name")
+	var body struct {
+		Score   int    `json:"score"`
+		Comment string `json:"comment"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, fmt.Errorf("invalid JSON: %w", err))
+		return
+	}
+	if err := s.ctrl.RatePlugin(r.Context(), publisher, name, ui.Rating{
+		Score:   body.Score,
+		Comment: body.Comment,
+	}); err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}

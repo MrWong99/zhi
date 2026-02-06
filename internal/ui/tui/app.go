@@ -22,6 +22,9 @@ const (
 	viewValidation
 	viewApply
 	viewExport
+	viewMarketplace
+	viewInstalled
+	viewPluginDetail
 )
 
 // TUIDriver implements ui.UIDriver using Bubbletea.
@@ -55,21 +58,25 @@ func (e errMsg) Error() string { return e.err.Error() }
 
 // App is the root Bubbletea model managing the TUI state and view routing.
 type App struct {
-	controller     *ui.UIController
-	ctx            context.Context
-	tree           *config.Tree
-	activeView     viewType
-	treeView       TreeView
-	editorView     ValueEditor
-	componentView  ComponentView
-	validationView ValidationView
-	applyView      ApplyView
-	exportView     ExportView
-	statusMsg      string
-	err            error
-	width          int
-	height         int
-	showHelp       bool
+	controller       *ui.UIController
+	ctx              context.Context
+	tree             *config.Tree
+	activeView       viewType
+	treeView         TreeView
+	editorView       ValueEditor
+	componentView    ComponentView
+	validationView   ValidationView
+	applyView        ApplyView
+	exportView       ExportView
+	marketplaceView  MarketplaceView
+	installedView    InstalledView
+	pluginDetailView PluginDetailView
+	notification     Notification
+	statusMsg        string
+	err              error
+	width            int
+	height           int
+	showHelp         bool
 }
 
 // NewApp creates a new App and performs the initial tree load.
@@ -94,6 +101,9 @@ func NewApp(ctx context.Context, controller *ui.UIController) (*App, error) {
 	app.validationView = NewValidationView()
 	app.applyView = NewApplyView()
 	app.exportView = NewExportView(controller)
+	app.marketplaceView = NewMarketplaceView(ctx, controller)
+	app.installedView = NewInstalledView(ctx, controller)
+	app.notification = NewNotification()
 
 	return app, nil
 }
@@ -117,6 +127,10 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.applyView.SetSize(a.width, a.contentHeight())
 		a.exportView.SetSize(a.width, a.contentHeight())
 		a.componentView.SetSize(a.width, a.contentHeight())
+		a.marketplaceView.SetSize(a.width, a.contentHeight())
+		a.installedView.SetSize(a.width, a.contentHeight())
+		a.pluginDetailView.SetSize(a.width, a.contentHeight())
+		a.notification.SetWidth(a.width)
 		return a, nil
 
 	case tea.KeyMsg:
@@ -202,6 +216,12 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a.updateApplyView(msg)
 	case viewExport:
 		return a.updateExportView(msg)
+	case viewMarketplace:
+		return a.updateMarketplaceView(msg)
+	case viewInstalled:
+		return a.updateInstalledView(msg)
+	case viewPluginDetail:
+		return a.updatePluginDetailView(msg)
 	}
 
 	return a, nil
@@ -273,6 +293,18 @@ func (a *App) updateTreeView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				tree, err := a.controller.LoadTree(a.ctx)
 				return treeLoadedMsg{tree: tree, err: err}
 			}
+
+		case "m":
+			a.marketplaceView = NewMarketplaceView(a.ctx, a.controller)
+			a.marketplaceView.SetSize(a.width, a.contentHeight())
+			a.activeView = viewMarketplace
+			return a, a.marketplaceView.Init()
+
+		case "p":
+			a.installedView = NewInstalledView(a.ctx, a.controller)
+			a.installedView.SetSize(a.width, a.contentHeight())
+			a.activeView = viewInstalled
+			return a, a.installedView.Init()
 		}
 	}
 
@@ -382,6 +414,63 @@ func (a *App) updateApplyView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return a, cmd
 }
 
+func (a *App) updateMarketplaceView(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if keyMsg, ok := msg.(tea.KeyMsg); ok {
+		switch keyMsg.String() {
+		case "esc":
+			if a.marketplaceView.searching {
+				// Let the marketplace view handle esc during search.
+				break
+			}
+			a.activeView = viewTree
+			a.statusMsg = ""
+			return a, nil
+		case "i":
+			// Open detail view for selected entry.
+			if entry, ok := a.marketplaceView.SelectedEntry(); ok {
+				a.pluginDetailView = NewPluginDetailView(a.ctx, a.controller, entry.Publisher, entry.Name)
+				a.pluginDetailView.SetSize(a.width, a.contentHeight())
+				a.activeView = viewPluginDetail
+				return a, a.pluginDetailView.Init()
+			}
+		}
+	}
+
+	var cmd tea.Cmd
+	a.marketplaceView, cmd = a.marketplaceView.UpdateMarketplace(msg)
+	return a, cmd
+}
+
+func (a *App) updateInstalledView(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if keyMsg, ok := msg.(tea.KeyMsg); ok {
+		switch keyMsg.String() {
+		case "esc":
+			a.activeView = viewTree
+			a.statusMsg = ""
+			return a, nil
+		}
+	}
+
+	var cmd tea.Cmd
+	a.installedView, cmd = a.installedView.UpdateInstalled(msg)
+	return a, cmd
+}
+
+func (a *App) updatePluginDetailView(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if keyMsg, ok := msg.(tea.KeyMsg); ok {
+		switch keyMsg.String() {
+		case "esc":
+			a.activeView = viewMarketplace
+			a.statusMsg = ""
+			return a, nil
+		}
+	}
+
+	var cmd tea.Cmd
+	a.pluginDetailView, cmd = a.pluginDetailView.UpdateDetail(msg)
+	return a, cmd
+}
+
 func (a *App) updateExportView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if keyMsg, ok := msg.(tea.KeyMsg); ok {
 		switch keyMsg.String() {
@@ -426,6 +515,12 @@ func (a *App) renderHeader() string {
 		viewName = "Apply"
 	case viewExport:
 		viewName = "Export"
+	case viewMarketplace:
+		viewName = "Marketplace"
+	case viewInstalled:
+		viewName = "Installed"
+	case viewPluginDetail:
+		viewName = "Plugin Detail"
 	}
 
 	left := HeaderStyle.Render(title)
@@ -449,6 +544,12 @@ func (a *App) renderContent() string {
 		return a.applyView.View()
 	case viewExport:
 		return a.exportView.View()
+	case viewMarketplace:
+		return a.marketplaceView.View()
+	case viewInstalled:
+		return a.installedView.View()
+	case viewPluginDetail:
+		return a.pluginDetailView.View()
 	default:
 		return ""
 	}
@@ -458,7 +559,7 @@ func (a *App) renderStatusBar() string {
 	var hints string
 	switch a.activeView {
 	case viewTree:
-		hints = "j/k:navigate  enter:edit  s:save  v:validate  a:apply  e:export  c:components  r:reload  ?:help  q:quit"
+		hints = "j/k:navigate  enter:edit  s:save  v:validate  a:apply  e:export  c:components  m:marketplace  p:plugins  r:reload  ?:help  q:quit"
 	case viewEditor:
 		hints = "enter:save  esc:cancel"
 	case viewComponent:
@@ -473,6 +574,12 @@ func (a *App) renderStatusBar() string {
 		}
 	case viewExport:
 		hints = "j/k:navigate  enter:export  p:preview  esc:back"
+	case viewMarketplace:
+		hints = "j/k:navigate  /:search  enter:install  i:detail  t:type  o:sort  esc:back"
+	case viewInstalled:
+		hints = "j/k:navigate  u:update  d:uninstall  r:refresh  esc:back"
+	case viewPluginDetail:
+		hints = "j/k:scroll  enter:install  esc:back"
 	}
 
 	left := StatusBarStyle.Render(a.statusMsg)
@@ -499,6 +606,8 @@ func (a *App) renderHelp() string {
 			helpLine("e", "Open export view"),
 			helpLine("c", "Open component view"),
 			helpLine("r", "Reload tree from provider"),
+			helpLine("m", "Open marketplace"),
+			helpLine("p", "View installed plugins"),
 			helpLine("?", "Toggle this help"),
 			helpLine("q", "Quit"),
 			helpLine("Esc", "Clear filter / close help"),
