@@ -1,0 +1,22 @@
+{{define "title"}}Tree{{end}}
+
+{{define "content"}}
+<div class="tree-filter">
+  <input
+    type="search"
+    class="input"
+    name="filter"
+    placeholder="Filter paths..."
+    value="{{.Filter}}"
+    hx-get="/tree"
+    hx-trigger="input changed delay:300ms, search"
+    hx-target="#tree-content"
+    hx-select="#tree-content"
+    hx-push-url="true"
+  >
+</div>
+
+<div id="tree-content">
+  {{template "tree_content" .}}
+</div>
+{{end}}

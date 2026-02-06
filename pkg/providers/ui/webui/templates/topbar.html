@@ -1,0 +1,14 @@
+{{define "topbar"}}
+<div class="topbar">
+  <nav class="breadcrumb">
+    {{if .Breadcrumbs}}
+      {{range $i, $b := .Breadcrumbs}}
+        {{if $i}}<span>/</span>{{end}}
+        <a href="{{$b.Href}}">{{$b.Label}}</a>
+      {{end}}
+    {{else}}
+      <span>Configuration Tree</span>
+    {{end}}
+  </nav>
+</div>
+{{end}}

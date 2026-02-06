@@ -1,11 +1,13 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/spf13/cobra"
 
 	"github.com/MrWong99/zhi/internal/ui"
+	"github.com/MrWong99/zhi/pkg/providers/ui/webui"
 
 	// Register the TUI driver.
 	_ "github.com/MrWong99/zhi/internal/ui/tui"
@@ -23,10 +25,14 @@ The UI provider can be configured in the workspace file (ui.provider) or
 overridden with the --ui flag. If neither is set, the default "tui" driver
 is used.
 
+Available built-in UI providers:
+  tui     Terminal UI using Bubbletea (default, requires TTY)
+  webui   Browser-based UI served on localhost
+
 Examples:
   zhi edit                    # launch the default UI (tui)
   zhi edit --ui tui           # explicitly select the TUI driver
-  zhi edit --ui web           # use a web-based UI plugin
+  zhi edit --ui webui         # launch the web UI in your browser
   zhi edit myconfig           # edit a specific stored tree`,
 	Args:              cobra.MaximumNArgs(1),
 	PersistentPreRunE: withEngine,
@@ -51,7 +57,7 @@ func runEdit(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	// Register builtin UI drivers (e.g. TUI) into the plugin registry.
+	// Register builtin UI drivers (e.g. TUI, webui) into the plugin registry.
 	ui.RegisterBuiltins(reg)
 
 	// Determine which UI provider to use. Priority:
@@ -84,5 +90,36 @@ func runEdit(cmd *cobra.Command, _ []string) error {
 	adapter := &ui.ControllerAdapter{Inner: controller}
 	ctx := cmd.Context()
 
+	// For the web UI, display the URL and open the browser.
+	if w, ok := plugin.(*webui.WebUI); ok {
+		return runWebUI(ctx, w, adapter, cmd)
+	}
+
 	return plugin.Run(ctx, adapter)
+}
+
+// runWebUI starts the web UI server, prints the URL, and blocks until
+// the context is cancelled.
+func runWebUI(ctx context.Context, w *webui.WebUI, adapter *ui.ControllerAdapter, cmd *cobra.Command) error {
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- w.Run(ctx, adapter)
+	}()
+
+	// Wait for the server to be ready and print the URL.
+	addr, err := w.Addr(ctx)
+	if err != nil {
+		// If Addr fails, Run might have already returned with an error.
+		select {
+		case runErr := <-errCh:
+			return runErr
+		default:
+			return err
+		}
+	}
+
+	url := "http://" + addr
+	fmt.Fprintf(cmd.ErrOrStderr(), "zhi webui: open %s in your browser (press Ctrl+C to stop)\n", url)
+
+	return <-errCh
 }
