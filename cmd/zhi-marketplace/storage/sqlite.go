@@ -24,13 +24,19 @@ type JSONFileStore struct {
 	publishers map[string]*Publisher // id -> Publisher
 	artifacts  map[string]*Artifact  // id -> Artifact
 	versions   map[string][]*Version // artifactID -> []Version
+	ratings    map[string][]*Rating  // artifactID -> []Rating
+	advisories []*Advisory
+	downloads  []*DownloadEvent
 }
 
 // storeData is the on-disk JSON format.
 type storeData struct {
-	Publishers []*Publisher `json:"publishers"`
-	Artifacts  []*Artifact  `json:"artifacts"`
-	Versions   []*Version   `json:"versions"`
+	Publishers []*Publisher     `json:"publishers"`
+	Artifacts  []*Artifact      `json:"artifacts"`
+	Versions   []*Version       `json:"versions"`
+	Ratings    []*Rating        `json:"ratings,omitempty"`
+	Advisories []*Advisory      `json:"advisories,omitempty"`
+	Downloads  []*DownloadEvent `json:"downloads,omitempty"`
 }
 
 // NewSQLiteStore creates a JSONFileStore backed by a JSON file at the
@@ -48,6 +54,7 @@ func NewSQLiteStore(dsn string) (*JSONFileStore, error) {
 		publishers: make(map[string]*Publisher),
 		artifacts:  make(map[string]*Artifact),
 		versions:   make(map[string][]*Version),
+		ratings:    make(map[string][]*Rating),
 	}
 
 	// Load existing data if present.
@@ -64,6 +71,11 @@ func NewSQLiteStore(dsn string) (*JSONFileStore, error) {
 			for _, v := range sd.Versions {
 				s.versions[v.ArtifactID] = append(s.versions[v.ArtifactID], v)
 			}
+			for _, r := range sd.Ratings {
+				s.ratings[r.ArtifactID] = append(s.ratings[r.ArtifactID], r)
+			}
+			s.advisories = sd.Advisories
+			s.downloads = sd.Downloads
 		}
 	}
 
@@ -81,6 +93,11 @@ func (s *JSONFileStore) flush() error {
 	for _, vv := range s.versions {
 		sd.Versions = append(sd.Versions, vv...)
 	}
+	for _, rr := range s.ratings {
+		sd.Ratings = append(sd.Ratings, rr...)
+	}
+	sd.Advisories = s.advisories
+	sd.Downloads = s.downloads
 
 	data, err := json.MarshalIndent(sd, "", "  ")
 	if err != nil {
@@ -251,6 +268,16 @@ func (s *JSONFileStore) Search(params SearchParams) ([]SearchResult, int, error)
 			}
 		}
 
+		// Populate rating aggregation from ratings store.
+		if rr := s.ratings[art.ID]; len(rr) > 0 {
+			var sum float64
+			for _, r := range rr {
+				sum += float64(r.Score)
+			}
+			sr.RatingCount = len(rr)
+			sr.Rating = (bayesianC*bayesianM + sum) / (bayesianC + float64(sr.RatingCount))
+		}
+
 		matches = append(matches, sr)
 	}
 
@@ -335,6 +362,213 @@ func (s *JSONFileStore) GetVersion(artifactID, version string) (*Version, error)
 		}
 	}
 	return nil, nil
+}
+
+func (s *JSONFileStore) UpdatePublisher(pub *Publisher) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.publishers[pub.ID] = pub
+	return s.flush()
+}
+
+func (s *JSONFileStore) CreateOrUpdateRating(r *Rating) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	now := time.Now().UTC()
+	if r.ID == "" {
+		r.ID = s.nextID()
+	}
+	if r.CreatedAt.IsZero() {
+		r.CreatedAt = now
+	}
+	r.UpdatedAt = now
+
+	// Check for existing rating by same user on same artifact.
+	ratings := s.ratings[r.ArtifactID]
+	for i, existing := range ratings {
+		if existing.UserID == r.UserID {
+			r.CreatedAt = existing.CreatedAt
+			r.Helpful = existing.Helpful
+			ratings[i] = r
+			return s.flush()
+		}
+	}
+
+	s.ratings[r.ArtifactID] = append(s.ratings[r.ArtifactID], r)
+	return s.flush()
+}
+
+func (s *JSONFileStore) ListRatings(artifactID string, page, perPage int, sortBy string) ([]Rating, int, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	if perPage <= 0 {
+		perPage = 20
+	}
+	if page <= 0 {
+		page = 1
+	}
+
+	rr := s.ratings[artifactID]
+	result := make([]Rating, len(rr))
+	for i, r := range rr {
+		result[i] = *r
+	}
+
+	switch sortBy {
+	case "helpful":
+		sort.Slice(result, func(i, j int) bool {
+			return result[i].Helpful > result[j].Helpful
+		})
+	default:
+		sort.Slice(result, func(i, j int) bool {
+			return result[i].CreatedAt.After(result[j].CreatedAt)
+		})
+	}
+
+	total := len(result)
+	offset := (page - 1) * perPage
+	if offset >= total {
+		return nil, total, nil
+	}
+	end := offset + perPage
+	if end > total {
+		end = total
+	}
+
+	return result[offset:end], total, nil
+}
+
+func (s *JSONFileStore) IncrementHelpful(ratingID string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for _, rr := range s.ratings {
+		for _, r := range rr {
+			if r.ID == ratingID {
+				r.Helpful++
+				return s.flush()
+			}
+		}
+	}
+	return fmt.Errorf("rating %q not found", ratingID)
+}
+
+// bayesianAverage computes a Bayesian weighted average.
+// C is the confidence threshold, m is the global prior mean.
+const bayesianC = 10
+const bayesianM = 4.0
+
+func (s *JSONFileStore) GetRatingAggregation(artifactID string) (float64, int, map[int]int, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	rr := s.ratings[artifactID]
+	count := len(rr)
+	dist := map[int]int{1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+
+	if count == 0 {
+		return 0, 0, dist, nil
+	}
+
+	var sum float64
+	for _, r := range rr {
+		sum += float64(r.Score)
+		dist[r.Score]++
+	}
+
+	avg := (bayesianC*bayesianM + sum) / (bayesianC + float64(count))
+	return avg, count, dist, nil
+}
+
+func (s *JSONFileStore) RecordDownload(versionID, platform string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	evt := &DownloadEvent{
+		ID:           s.nextID(),
+		VersionID:    versionID,
+		Platform:     platform,
+		DownloadedAt: time.Now().UTC(),
+	}
+	s.downloads = append(s.downloads, evt)
+
+	// Also increment version download counter.
+	for _, vv := range s.versions {
+		for _, v := range vv {
+			if v.ID == versionID {
+				v.Downloads++
+				break
+			}
+		}
+	}
+
+	return s.flush()
+}
+
+func (s *JSONFileStore) GetDownloadStats(artifactID string) (int64, int64, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	// Collect version IDs for this artifact.
+	versionIDs := make(map[string]bool)
+	for _, v := range s.versions[artifactID] {
+		versionIDs[v.ID] = true
+	}
+
+	var total int64
+	var monthly int64
+	monthAgo := time.Now().UTC().AddDate(0, -1, 0)
+
+	for _, d := range s.downloads {
+		if versionIDs[d.VersionID] {
+			total++
+			if d.DownloadedAt.After(monthAgo) {
+				monthly++
+			}
+		}
+	}
+
+	return total, monthly, nil
+}
+
+func (s *JSONFileStore) CreateAdvisory(a *Advisory) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if a.ID == "" {
+		a.ID = s.nextID()
+	}
+	if a.CreatedAt.IsZero() {
+		a.CreatedAt = time.Now().UTC()
+	}
+
+	s.advisories = append(s.advisories, a)
+	return s.flush()
+}
+
+func (s *JSONFileStore) ListAdvisories(artifactID, severity string) ([]Advisory, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	var result []Advisory
+	for _, a := range s.advisories {
+		if artifactID != "" && a.ArtifactID != artifactID {
+			continue
+		}
+		if severity != "" && a.Severity != severity {
+			continue
+		}
+		result = append(result, *a)
+	}
+
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].CreatedAt.After(result[j].CreatedAt)
+	})
+
+	return result, nil
 }
 
 func (s *JSONFileStore) Close() error {

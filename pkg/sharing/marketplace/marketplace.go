@@ -305,6 +305,135 @@ func (c *Client) RegisterVersion(ctx context.Context, publisher, name string, re
 	return nil
 }
 
+// RatingEntry is a single rating from the marketplace.
+type RatingEntry struct {
+	ID        string `json:"id"`
+	User      string `json:"user"`
+	Score     int    `json:"score"`
+	Comment   string `json:"comment,omitempty"`
+	Helpful   int    `json:"helpful"`
+	CreatedAt string `json:"createdAt"`
+}
+
+// RatingsResponse is the response from the ratings listing endpoint.
+type RatingsResponse struct {
+	Ratings []RatingEntry `json:"ratings"`
+	Total   int           `json:"total"`
+}
+
+// SubmitRatingRequest is the body for rating submission.
+type SubmitRatingRequest struct {
+	Score   int    `json:"score"`
+	Comment string `json:"comment,omitempty"`
+}
+
+// AdvisoryEntry is a single security advisory.
+type AdvisoryEntry struct {
+	ID               string `json:"id"`
+	PublisherName    string `json:"publisherName"`
+	PluginName       string `json:"pluginName"`
+	Severity         string `json:"severity"`
+	Title            string `json:"title"`
+	Description      string `json:"description"`
+	AffectedVersions string `json:"affectedVersions"`
+	FixedVersion     string `json:"fixedVersion,omitempty"`
+	CVE              string `json:"cve,omitempty"`
+	CreatedAt        string `json:"createdAt"`
+}
+
+// AdvisoriesResponse is the response from the advisories listing endpoint.
+type AdvisoriesResponse struct {
+	Advisories []AdvisoryEntry `json:"advisories"`
+}
+
+// PublisherProfile is the response from the publisher profile endpoint.
+type PublisherProfile struct {
+	Name             string `json:"name"`
+	Verified         bool   `json:"verified"`
+	VerificationTier int    `json:"verificationTier"`
+	PluginCount      int    `json:"pluginCount"`
+	MemberSince      string `json:"memberSince"`
+}
+
+// SubmitRating submits or updates a rating for a plugin. Requires API key.
+func (c *Client) SubmitRating(ctx context.Context, publisher, name string, req SubmitRatingRequest) error {
+	u := fmt.Sprintf("%s/api/v1/plugins/%s/%s/ratings",
+		c.baseURL,
+		url.PathEscape(publisher),
+		url.PathEscape(name),
+	)
+	if err := c.post(ctx, u, req, nil); err != nil {
+		return fmt.Errorf("submitting rating: %w", err)
+	}
+	return nil
+}
+
+// ListRatings lists ratings for a plugin.
+func (c *Client) ListRatings(ctx context.Context, publisher, name string, page int, sort string) (*RatingsResponse, error) {
+	params := url.Values{}
+	if page > 0 {
+		params.Set("page", strconv.Itoa(page))
+	}
+	if sort != "" {
+		params.Set("sort", sort)
+	}
+	u := fmt.Sprintf("%s/api/v1/plugins/%s/%s/ratings?%s",
+		c.baseURL,
+		url.PathEscape(publisher),
+		url.PathEscape(name),
+		params.Encode(),
+	)
+	var resp RatingsResponse
+	if err := c.get(ctx, u, &resp); err != nil {
+		return nil, fmt.Errorf("listing ratings: %w", err)
+	}
+	return &resp, nil
+}
+
+// MarkHelpful marks a rating as helpful.
+func (c *Client) MarkHelpful(ctx context.Context, publisher, name, ratingID string) error {
+	u := fmt.Sprintf("%s/api/v1/plugins/%s/%s/ratings/%s/helpful",
+		c.baseURL,
+		url.PathEscape(publisher),
+		url.PathEscape(name),
+		url.PathEscape(ratingID),
+	)
+	if err := c.post(ctx, u, nil, nil); err != nil {
+		return fmt.Errorf("marking helpful: %w", err)
+	}
+	return nil
+}
+
+// ListAdvisories lists security advisories, optionally filtered by plugin.
+func (c *Client) ListAdvisories(ctx context.Context, publisher, plugin, severity string) (*AdvisoriesResponse, error) {
+	params := url.Values{}
+	if publisher != "" {
+		params.Set("publisher", publisher)
+	}
+	if plugin != "" {
+		params.Set("plugin", plugin)
+	}
+	if severity != "" {
+		params.Set("severity", severity)
+	}
+	u := c.baseURL + "/api/v1/advisories?" + params.Encode()
+	var resp AdvisoriesResponse
+	if err := c.get(ctx, u, &resp); err != nil {
+		return nil, fmt.Errorf("listing advisories: %w", err)
+	}
+	return &resp, nil
+}
+
+// GetPublisherProfile fetches a publisher's profile.
+func (c *Client) GetPublisherProfile(ctx context.Context, name string) (*PublisherProfile, error) {
+	u := fmt.Sprintf("%s/api/v1/publishers/%s", c.baseURL, url.PathEscape(name))
+	var resp PublisherProfile
+	if err := c.get(ctx, u, &resp); err != nil {
+		return nil, fmt.Errorf("getting publisher profile: %w", err)
+	}
+	return &resp, nil
+}
+
 // ResolveShortName attempts to resolve a short plugin name (e.g. "ansible-config")
 // to a full OCI reference via the marketplace. It searches for the exact name
 // and returns the OCI reference of the best match.

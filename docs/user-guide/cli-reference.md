@@ -244,7 +244,7 @@ zhi plugin list --json
 
 #### `zhi plugin info`
 
-Show detailed information about an installed plugin including signer identity, binary digest, and trust level.
+Show detailed information about a plugin including signer identity, binary digest, trust level, ratings, and download statistics. If the plugin is not installed locally, the marketplace is queried.
 
 ```sh
 zhi plugin info ansible-config
@@ -254,6 +254,19 @@ zhi plugin info ansible-config --json
 | Flag | Description |
 |------|-------------|
 | `--json` | Output as JSON |
+
+#### `zhi plugin rate`
+
+Rate a plugin on the marketplace (1-5 stars with optional review comment). Requires a marketplace API key in `~/.zhi/config.yaml`.
+
+```sh
+zhi plugin rate zhi-project/ansible-config 5
+zhi plugin rate zhi-project/ansible-config 4 --comment "Works well but missing docs"
+```
+
+| Flag | Description |
+|------|-------------|
+| `--comment` | Optional review text (max 2000 characters) |
 
 #### `zhi plugin verify`
 

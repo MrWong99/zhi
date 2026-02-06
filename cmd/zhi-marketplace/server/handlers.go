@@ -168,6 +168,15 @@ func (h *Handler) HandleGetPlugin(w http.ResponseWriter, r *http.Request) {
 		totalDl += v.Downloads
 	}
 
+	// Build rating aggregation.
+	avg, ratingCount, dist, _ := h.store.GetRatingAggregation(art.ID)
+
+	// Get download stats.
+	dlTotal, dlMonthly, _ := h.store.GetDownloadStats(art.ID)
+	if dlTotal == 0 {
+		dlTotal = totalDl // fall back to version-level counters
+	}
+
 	resp := map[string]any{
 		"name":        art.Name,
 		"type":        art.Type,
@@ -179,8 +188,14 @@ func (h *Handler) HandleGetPlugin(w http.ResponseWriter, r *http.Request) {
 		"repository":  art.Repository,
 		"ociRef":      art.OCIRef,
 		"versions":    vEntries,
+		"rating": map[string]any{
+			"average":      avg,
+			"count":        ratingCount,
+			"distribution": dist,
+		},
 		"statistics": map[string]any{
-			"totalDownloads": totalDl,
+			"totalDownloads":   dlTotal,
+			"monthlyDownloads": dlMonthly,
 		},
 	}
 	if art.LongDescription != "" {
