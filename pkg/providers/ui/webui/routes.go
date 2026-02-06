@@ -24,6 +24,28 @@ func (s *Server) registerRoutes() {
 	// Tree view.
 	s.mux.HandleFunc("GET /tree", s.handleTree)
 
+	// Value editor (Phase 2).
+	s.mux.HandleFunc("GET /tree/edit/{path...}", s.handleEditForm)
+	s.mux.HandleFunc("POST /tree/values/{path...}", s.handleSaveValue)
+	s.mux.HandleFunc("GET /tree/display/{path...}", s.handleDisplayValue)
+
+	// Inline validation (Phase 2).
+	s.mux.HandleFunc("POST /validate/inline/{path...}", s.handleInlineValidation)
+
+	// Full validation (Phase 2).
+	s.mux.HandleFunc("GET /validation", s.handleValidationPage)
+	s.mux.HandleFunc("POST /validate", s.handleFullValidation)
+
+	// Save tree (Phase 2).
+	s.mux.HandleFunc("POST /tree/save", s.handleSaveTree)
+
+	// Components (Phase 2).
+	s.mux.HandleFunc("GET /components", s.handleComponentsPage)
+	s.mux.HandleFunc("POST /components/{name}/toggle", s.handleComponentToggle)
+
+	// Keyboard shortcuts (Phase 2).
+	s.mux.HandleFunc("GET /shortcuts", s.handleShortcutsPage)
+
 	// 404 catch-all. The standard mux routes unmatched paths to the
 	// longest matching pattern. With Go 1.22+ patterns, we register a
 	// wildcard that catches everything else.
@@ -83,6 +105,26 @@ func (s *Server) handleTree(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.engine.renderPage(w, "tree", data); err != nil {
+		s.renderError(w, r, http.StatusInternalServerError, err.Error())
+	}
+}
+
+// handleShortcutsPage renders the keyboard shortcuts page.
+func (s *Server) handleShortcutsPage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	wsName, _ := s.ctrl.WorkspaceName(ctx)
+
+	data := pageData{
+		WorkspaceName: wsName,
+		ActiveNav:     "shortcuts",
+		Nonce:         nonceFromCtx(ctx),
+		CSRFToken:     csrfFromCtx(ctx),
+		Breadcrumbs: []breadcrumb{
+			{Label: "Keyboard Shortcuts", Href: "/shortcuts"},
+		},
+	}
+
+	if err := s.engine.renderPage(w, "shortcuts", data); err != nil {
 		s.renderError(w, r, http.StatusInternalServerError, err.Error())
 	}
 }

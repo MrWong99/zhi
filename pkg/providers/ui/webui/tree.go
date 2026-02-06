@@ -13,6 +13,7 @@ import (
 type treeNode struct {
 	Name             string
 	Path             string
+	PathID           string
 	IsLeaf           bool
 	Children         []*treeNode
 	DisplayValue     string
@@ -92,6 +93,7 @@ func insertTreeNode(parent *treeNode, segments []string, fullPath string, value 
 		leaf := &treeNode{
 			Name:         name,
 			Path:         fullPath,
+			PathID:       pathToID(fullPath),
 			IsLeaf:       true,
 			DisplayValue: formatValue(value.Val),
 			ValueType:    valueType(value.Val),

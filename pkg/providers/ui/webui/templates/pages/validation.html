@@ -1,0 +1,19 @@
+{{define "title"}}Validation{{end}}
+
+{{define "content"}}
+<div class="page-header">
+  <h2>Validation Results</h2>
+  <div class="page-actions">
+    <button class="btn btn-primary"
+            hx-post="/validate"
+            hx-target="#validation-content"
+            hx-swap="innerHTML">
+      Re-validate
+    </button>
+  </div>
+</div>
+
+<div id="validation-content">
+  {{template "validation_content" .}}
+</div>
+{{end}}

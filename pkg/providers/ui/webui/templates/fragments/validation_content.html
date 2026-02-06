@@ -1,0 +1,29 @@
+{{define "validation_content"}}
+{{if .ValidationGroups}}
+  {{range .ValidationGroups}}
+    <div class="validation-group">
+      <h3 class="validation-group-header validation-{{.CSSClass}}">
+        <span class="validation-severity-icon">
+          {{if eq .CSSClass "danger"}}&#9888;{{else if eq .CSSClass "warning"}}&#9888;{{else}}&#8505;{{end}}
+        </span>
+        {{.Severity}}
+        <span class="badge badge-{{.CSSClass}}">{{len .Results}}</span>
+      </h3>
+      <div class="validation-results">
+        {{range .Results}}
+          <div class="validation-result">
+            {{if .Path}}
+              <a href="/tree?filter={{.Path}}" class="validation-path mono">{{.Path}}</a>
+            {{end}}
+            <span class="validation-message">{{.Message}}</span>
+          </div>
+        {{end}}
+      </div>
+    </div>
+  {{end}}
+{{else}}
+  <div class="validation-empty">
+    <p>No validation issues found.</p>
+  </div>
+{{end}}
+{{end}}

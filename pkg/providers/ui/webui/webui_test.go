@@ -477,6 +477,472 @@ func TestGenerateNonce(t *testing.T) {
 	}
 }
 
+// ---------- Phase 2: editor tests ----------
+
+// getCSRFToken fetches a page and extracts the CSRF cookie.
+func getCSRFToken(t *testing.T, base string) (string, []*http.Cookie) {
+	t.Helper()
+	resp := get(t, base+"/tree")
+	resp.Body.Close()
+	token := ""
+	for _, c := range resp.Cookies() {
+		if c.Name == "_csrf" {
+			token = c.Value
+		}
+	}
+	if token == "" {
+		t.Fatal("no CSRF cookie found")
+	}
+	return token, resp.Cookies()
+}
+
+func postWithCSRF(t *testing.T, url, body, csrfToken string, cookies []*http.Cookie) *http.Response {
+	t.Helper()
+	req, err := http.NewRequest("POST", url, strings.NewReader(body))
+	if err != nil {
+		t.Fatalf("NewRequest: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("X-CSRF-Token", csrfToken)
+	for _, c := range cookies {
+		req.AddCookie(c)
+	}
+	client := &http.Client{CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
+		return http.ErrUseLastResponse
+	}}
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatalf("POST %s: %v", url, err)
+	}
+	return resp
+}
+
+func TestEditForm(t *testing.T) {
+	base, _ := startTestServer(t)
+	resp := get(t, base+"/tree/edit/db/host")
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body = %s", resp.StatusCode, body)
+	}
+	// Should contain a form with the current value.
+	if !strings.Contains(body, "localhost") {
+		t.Error("edit form should contain current value 'localhost'")
+	}
+	if !strings.Contains(body, `name="value"`) || !strings.Contains(body, `name="value_type"`) {
+		t.Error("edit form should contain value and value_type inputs")
+	}
+	if !strings.Contains(body, "editor-form") {
+		t.Error("edit form should have editor-form class")
+	}
+}
+
+func TestEditFormNotFound(t *testing.T) {
+	base, _ := startTestServer(t)
+	resp := get(t, base+"/tree/edit/nonexistent/path")
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusNotFound {
+		t.Errorf("status = %d, want 404", resp.StatusCode)
+	}
+}
+
+func TestSaveValue(t *testing.T) {
+	base, _ := startTestServer(t)
+	token, cookies := getCSRFToken(t, base)
+
+	resp := postWithCSRF(t, base+"/tree/values/db/host", "value=newhost&value_type=string", token, cookies)
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body = %s", resp.StatusCode, body)
+	}
+	// Should return the display fragment with the new value.
+	if !strings.Contains(body, "newhost") {
+		t.Error("save response should contain updated value 'newhost'")
+	}
+	// Should trigger unsaved changes.
+	trigger := resp.Header.Get("HX-Trigger")
+	if !strings.Contains(trigger, "markUnsaved") {
+		t.Error("save response should trigger markUnsaved")
+	}
+}
+
+func TestSaveValueNumber(t *testing.T) {
+	base, _ := startTestServer(t)
+	token, cookies := getCSRFToken(t, base)
+
+	resp := postWithCSRF(t, base+"/tree/values/db/port", "value=3306&value_type=number", token, cookies)
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if !strings.Contains(body, "3306") {
+		t.Error("save response should contain updated number value '3306'")
+	}
+}
+
+func TestDisplayValue(t *testing.T) {
+	base, _ := startTestServer(t)
+	resp := get(t, base+"/tree/display/db/host")
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if !strings.Contains(body, "localhost") {
+		t.Error("display should contain 'localhost'")
+	}
+	if !strings.Contains(body, "tree-value") {
+		t.Error("display should contain tree-value class")
+	}
+}
+
+func TestDisplayValueNotFound(t *testing.T) {
+	base, _ := startTestServer(t)
+	resp := get(t, base+"/tree/display/nonexistent/path")
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusNotFound {
+		t.Errorf("status = %d, want 404", resp.StatusCode)
+	}
+}
+
+// ---------- Phase 2: validation tests ----------
+
+func TestValidationPage(t *testing.T) {
+	base, _ := startTestServer(t)
+	resp := get(t, base+"/validation")
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if !strings.Contains(body, "Validation") {
+		t.Error("validation page should contain 'Validation'")
+	}
+}
+
+func TestFullValidation(t *testing.T) {
+	base, _ := startTestServer(t)
+	token, cookies := getCSRFToken(t, base)
+
+	resp := postWithCSRF(t, base+"/validate", "", token, cookies)
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body = %s", resp.StatusCode, body)
+	}
+	// Mock controller returns no validation results.
+	if !strings.Contains(body, "No validation issues") {
+		t.Error("validation results should show no issues when controller returns empty results")
+	}
+}
+
+func TestInlineValidation(t *testing.T) {
+	base, _ := startTestServer(t)
+	token, cookies := getCSRFToken(t, base)
+
+	resp := postWithCSRF(t, base+"/validate/inline/db/host", "value=testval&value_type=string", token, cookies)
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body = %s", resp.StatusCode, body)
+	}
+	// Mock returns no validation results, so badge should be empty.
+	_ = body // No error means success.
+}
+
+// ---------- Phase 2: save tests ----------
+
+func TestSaveTree(t *testing.T) {
+	base, _ := startTestServer(t)
+	token, cookies := getCSRFToken(t, base)
+
+	resp := postWithCSRF(t, base+"/tree/save", "", token, cookies)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("status = %d, want 200", resp.StatusCode)
+	}
+	trigger := resp.Header.Get("HX-Trigger")
+	if !strings.Contains(trigger, "showNotification") {
+		t.Error("save should trigger showNotification")
+	}
+	if !strings.Contains(trigger, "markSaved") {
+		t.Error("save should trigger markSaved")
+	}
+	if !strings.Contains(trigger, "success") {
+		t.Error("save should show success notification")
+	}
+}
+
+// ---------- Phase 2: component tests ----------
+
+func TestComponentsPage(t *testing.T) {
+	base, _ := startTestServer(t)
+	resp := get(t, base+"/components")
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if !strings.Contains(body, "database") {
+		t.Error("components page should contain 'database' component")
+	}
+	if !strings.Contains(body, "application") {
+		t.Error("components page should contain 'application' component")
+	}
+	if !strings.Contains(body, "Mandatory") {
+		t.Error("components page should show mandatory badge for database")
+	}
+}
+
+func TestComponentToggle(t *testing.T) {
+	base, _ := startTestServer(t)
+	token, cookies := getCSRFToken(t, base)
+
+	// Toggle the non-mandatory 'application' component.
+	resp := postWithCSRF(t, base+"/components/application/toggle", "", token, cookies)
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body = %s", resp.StatusCode, body)
+	}
+	if !strings.Contains(body, "component-card") {
+		t.Error("toggle response should contain component card")
+	}
+}
+
+func TestComponentToggleMandatory(t *testing.T) {
+	base, _ := startTestServer(t)
+	token, cookies := getCSRFToken(t, base)
+
+	// Try to toggle the mandatory 'database' component.
+	resp := postWithCSRF(t, base+"/components/database/toggle", "", token, cookies)
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body = %s", resp.StatusCode, body)
+	}
+	if !strings.Contains(body, "Cannot toggle mandatory") {
+		t.Error("toggling mandatory component should show error")
+	}
+}
+
+func TestComponentToggleNotFound(t *testing.T) {
+	base, _ := startTestServer(t)
+	token, cookies := getCSRFToken(t, base)
+
+	resp := postWithCSRF(t, base+"/components/nonexistent/toggle", "", token, cookies)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusNotFound {
+		t.Errorf("status = %d, want 404", resp.StatusCode)
+	}
+}
+
+// ---------- Phase 2: shortcuts page test ----------
+
+func TestShortcutsPage(t *testing.T) {
+	base, _ := startTestServer(t)
+	resp := get(t, base+"/shortcuts")
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if !strings.Contains(body, "Keyboard Shortcuts") {
+		t.Error("shortcuts page should contain 'Keyboard Shortcuts'")
+	}
+	if !strings.Contains(body, "Ctrl") {
+		t.Error("shortcuts page should document Ctrl+S shortcut")
+	}
+}
+
+// ---------- Phase 2: tree node has edit button ----------
+
+func TestTreePageHasEditButtons(t *testing.T) {
+	base, _ := startTestServer(t)
+	resp := get(t, base+"/tree")
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if !strings.Contains(body, "edit-btn") {
+		t.Error("tree page should contain edit buttons")
+	}
+	if !strings.Contains(body, "tree-value") {
+		t.Error("tree page should contain tree-value containers")
+	}
+}
+
+// ---------- Phase 2: sidebar navigation ----------
+
+func TestSidebarNavigation(t *testing.T) {
+	base, _ := startTestServer(t)
+	resp := get(t, base+"/tree")
+	body := bodyString(t, resp)
+
+	for _, link := range []string{"/tree", "/components", "/validation", "/shortcuts"} {
+		if !strings.Contains(body, link) {
+			t.Errorf("sidebar should contain link to %s", link)
+		}
+	}
+}
+
+// ---------- Phase 2: topbar save button ----------
+
+func TestTopbarHasSaveButton(t *testing.T) {
+	base, _ := startTestServer(t)
+	resp := get(t, base+"/tree")
+	body := bodyString(t, resp)
+	if !strings.Contains(body, "save-tree-btn") {
+		t.Error("topbar should contain save button")
+	}
+	if !strings.Contains(body, "unsaved-indicator") {
+		t.Error("topbar should contain unsaved changes indicator")
+	}
+}
+
+// ---------- Phase 2: unit tests for editor helpers ----------
+
+func TestParseFormValue(t *testing.T) {
+	tests := []struct {
+		raw      string
+		valType  string
+		expected any
+	}{
+		{"hello", "string", "hello"},
+		{"42", "number", float64(42)},
+		{"3.14", "number", float64(3.14)},
+		{"invalid", "number", "invalid"},
+		{"true", "bool", true},
+		{"false", "bool", false},
+		{"on", "bool", true},
+		{"", "bool", false},
+	}
+	for _, tt := range tests {
+		got := parseFormValue(tt.raw, tt.valType)
+		if got != tt.expected {
+			t.Errorf("parseFormValue(%q, %q) = %v (%T), want %v (%T)",
+				tt.raw, tt.valType, got, got, tt.expected, tt.expected)
+		}
+	}
+}
+
+func TestFormatEditValue(t *testing.T) {
+	tests := []struct {
+		input    any
+		expected string
+	}{
+		{"hello", "hello"},
+		{float64(42), "42"},
+		{float64(3.14), "3.14"},
+		{true, "true"},
+		{false, "false"},
+		{nil, ""},
+	}
+	for _, tt := range tests {
+		got := formatEditValue(tt.input)
+		if got != tt.expected {
+			t.Errorf("formatEditValue(%v) = %q, want %q", tt.input, got, tt.expected)
+		}
+	}
+}
+
+func TestPathToID(t *testing.T) {
+	tests := []struct {
+		path     string
+		expected string
+	}{
+		{"db/host", "db--host"},
+		{"app/tls/cert.pem", "app--tls--cert.pem"},
+		{"simple", "simple"},
+	}
+	for _, tt := range tests {
+		got := pathToID(tt.path)
+		if got != tt.expected {
+			t.Errorf("pathToID(%q) = %q, want %q", tt.path, got, tt.expected)
+		}
+	}
+}
+
+func TestGroupValidationResults(t *testing.T) {
+	results := []config.ValidationResult{
+		{Severity: config.Blocking, Message: "blocking error", Metadata: map[string]any{"path": "db/host"}},
+		{Severity: config.Warning, Message: "a warning", Metadata: map[string]any{"path": "db/port"}},
+		{Severity: config.Info, Message: "info message"},
+		{Severity: config.Blocking, Message: "another blocking"},
+	}
+
+	groups := groupValidationResults(results)
+	if len(groups) != 3 {
+		t.Fatalf("got %d groups, want 3", len(groups))
+	}
+	// Should be in order: Blocking, Warning, Info.
+	if groups[0].Severity != "Blocking" || len(groups[0].Results) != 2 {
+		t.Errorf("first group: severity=%s count=%d, want Blocking/2", groups[0].Severity, len(groups[0].Results))
+	}
+	if groups[1].Severity != "Warning" || len(groups[1].Results) != 1 {
+		t.Errorf("second group: severity=%s count=%d, want Warning/1", groups[1].Severity, len(groups[1].Results))
+	}
+	if groups[2].Severity != "Info" || len(groups[2].Results) != 1 {
+		t.Errorf("third group: severity=%s count=%d, want Info/1", groups[2].Severity, len(groups[2].Results))
+	}
+}
+
+func TestFilterValidationForPath(t *testing.T) {
+	results := []config.ValidationResult{
+		{Severity: config.Blocking, Message: "error on db/host", Metadata: map[string]any{"path": "db/host"}},
+		{Severity: config.Warning, Message: "warning on db/port", Metadata: map[string]any{"path": "db/port"}},
+		{Severity: config.Info, Message: "info on app/name", Metadata: map[string]any{"path": "app/name"}},
+		{Severity: config.Info, Message: "no path metadata"},
+	}
+
+	filtered := filterValidationForPath(results, "db/host")
+	if len(filtered) != 1 {
+		t.Fatalf("got %d results, want 1", len(filtered))
+	}
+	if filtered[0].Message != "error on db/host" {
+		t.Errorf("filtered message = %q, want 'error on db/host'", filtered[0].Message)
+	}
+}
+
+func TestHasBlockingResults(t *testing.T) {
+	noBlocking := []config.ValidationResult{
+		{Severity: config.Warning, Message: "warn"},
+		{Severity: config.Info, Message: "info"},
+	}
+	if hasBlockingResults(noBlocking) {
+		t.Error("should not have blocking results")
+	}
+
+	withBlocking := []config.ValidationResult{
+		{Severity: config.Warning, Message: "warn"},
+		{Severity: config.Blocking, Message: "block"},
+	}
+	if !hasBlockingResults(withBlocking) {
+		t.Error("should have blocking results")
+	}
+}
+
+func TestToComponentViewData(t *testing.T) {
+	components := []ui.ComponentInfo{
+		{Name: "db", Description: "Database", Enabled: true, Mandatory: true, Paths: []string{"db"}, Dependencies: []string{"core"}},
+		{Name: "app", Description: "App", Enabled: false},
+	}
+	result := toComponentViewData(components)
+	if len(result) != 2 {
+		t.Fatalf("got %d items, want 2", len(result))
+	}
+	if result[0].Name != "db" || !result[0].Mandatory || !result[0].Enabled {
+		t.Error("first component should be db, mandatory, enabled")
+	}
+	if result[1].Name != "app" || result[1].Enabled {
+		t.Error("second component should be app, disabled")
+	}
+}
+
+// ---------- Phase 2: tree node PathID ----------
+
+func TestTreeNodeHasPathID(t *testing.T) {
+	tree := config.NewTree()
+	_ = tree.Set("db/host", &config.Value{Val: "localhost"})
+
+	nodes := buildNestedTree(tree, nil)
+	leaf := nodes[0].Children[0]
+	if leaf.PathID != "db--host" {
+		t.Errorf("PathID = %q, want 'db--host'", leaf.PathID)
+	}
+}
+
 // ---------- compile-time interface checks ----------
 
 var _ ui.Plugin = (*WebUI)(nil)

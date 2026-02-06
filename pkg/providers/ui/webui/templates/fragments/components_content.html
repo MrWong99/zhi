@@ -1,0 +1,13 @@
+{{define "components_content"}}
+{{if .Components}}
+  <div class="component-grid">
+    {{range .Components}}
+      {{template "component_card" .}}
+    {{end}}
+  </div>
+{{else}}
+  <div class="components-empty">
+    <p>No components configured.</p>
+  </div>
+{{end}}
+{{end}}

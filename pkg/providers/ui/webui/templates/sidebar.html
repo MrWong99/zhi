@@ -8,8 +8,17 @@
     <a href="/tree" class="{{activeNav . "tree"}}">
       {{icon "folder"}} Configuration
     </a>
+    <a href="/components" class="{{activeNav . "components"}}">
+      {{icon "grid"}} Components
+    </a>
+    <a href="/validation" class="{{activeNav . "validation"}}">
+      {{icon "check"}} Validation
+    </a>
+    <a href="/shortcuts" class="{{activeNav . "shortcuts"}}">
+      {{icon "keyboard"}} Shortcuts
+    </a>
   </nav>
-  <div class="sidebar-nav" style="border-top: 1px solid var(--color-border-light); padding-top: var(--space-2);">
+  <div class="sidebar-footer">
     <a href="#" onclick="toggleTheme(); return false;">
       {{icon "sun"}} Toggle Theme
     </a>

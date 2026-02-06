@@ -1,0 +1,47 @@
+{{define "component_card"}}
+<div class="component-card {{if .Enabled}}enabled{{end}} {{if .Mandatory}}mandatory{{end}}"
+     id="component-{{.Name}}">
+  <div class="component-header">
+    <h3>{{.Name}}</h3>
+    <div class="component-status">
+      {{if .Mandatory}}
+        <span class="badge badge-info">Mandatory</span>
+      {{else}}
+        <form hx-post="/components/{{.Name}}/toggle"
+              hx-target="#component-{{.Name}}"
+              hx-swap="outerHTML">
+          <button type="submit" class="toggle-btn {{if .Enabled}}active{{end}}">
+            {{if .Enabled}}Disable{{else}}Enable{{end}}
+          </button>
+        </form>
+      {{end}}
+      {{if .Enabled}}
+        <span class="badge badge-success">Enabled</span>
+      {{else}}
+        <span class="badge badge-muted">Disabled</span>
+      {{end}}
+    </div>
+  </div>
+  {{if .Description}}
+    <p class="component-desc">{{.Description}}</p>
+  {{end}}
+  {{if .Error}}
+    <div class="component-error">{{.Error}}</div>
+  {{end}}
+  {{if .Info}}
+    <div class="component-info">{{.Info}}</div>
+  {{end}}
+  {{if .Paths}}
+    <div class="component-paths">
+      <strong>Paths:</strong>
+      {{range .Paths}}<code>{{.}}</code> {{end}}
+    </div>
+  {{end}}
+  {{if .Dependencies}}
+    <div class="component-deps">
+      <strong>Depends on:</strong>
+      {{range .Dependencies}}<a href="#component-{{.}}">{{.}}</a> {{end}}
+    </div>
+  {{end}}
+</div>
+{{end}}

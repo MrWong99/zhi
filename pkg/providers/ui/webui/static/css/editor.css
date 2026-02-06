@@ -1,0 +1,161 @@
+/* Inline value editor */
+.tree-value {
+  position: relative;
+}
+
+.tree-value .edit-btn {
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+  margin-left: var(--space-2);
+  flex-shrink: 0;
+}
+
+.tree-value:hover .edit-btn {
+  opacity: 1;
+}
+
+.tree-value-editing {
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  margin: var(--space-1) 0 var(--space-1) var(--space-4);
+}
+
+.editor-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.editor-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
+}
+
+.editor-header .leaf-name {
+  font-weight: var(--font-semibold);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+
+.value-input {
+  font-family: var(--font-mono);
+}
+
+.value-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.editor-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.meta-type {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  background: var(--color-bg-tertiary);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+}
+
+.meta-tag {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
+.editor-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.editor-error {
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+  padding: var(--space-1) var(--space-2);
+  background: var(--color-danger-bg);
+  border-radius: var(--radius-sm);
+}
+
+/* Validation inline messages */
+.validation-inline {
+  min-height: 0;
+}
+
+.validation-msg {
+  font-size: var(--text-xs);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  margin-top: var(--space-1);
+}
+
+.validation-blocking {
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+}
+
+.validation-warning {
+  color: #856404;
+  background: var(--color-warning-bg);
+}
+
+.validation-info {
+  color: var(--color-info);
+  background: var(--color-info-bg);
+}
+
+/* Toggle switch for booleans */
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+
+.toggle-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-switch {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-full);
+  transition: background var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.toggle-switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: var(--color-bg);
+  border-radius: var(--radius-full);
+  transition: transform var(--transition-fast);
+}
+
+.toggle-input:checked + .toggle-switch {
+  background: var(--color-primary);
+}
+
+.toggle-input:checked + .toggle-switch::after {
+  transform: translateX(16px);
+}
+
+.toggle-text {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
