@@ -18,8 +18,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"net/http"
 	"os"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -339,9 +341,7 @@ func (s *Store) processAuthResponse(resp *vaultResponse) (*store.Credential, err
 		Token:    resp.Auth.ClientToken,
 		Metadata: make(map[string]string),
 	}
-	for k, v := range resp.Auth.Metadata {
-		cred.Metadata[k] = v
-	}
+	maps.Copy(cred.Metadata, resp.Auth.Metadata)
 	if resp.Auth.LeaseDuration > 0 {
 		expiry := time.Now().Add(time.Duration(resp.Auth.LeaseDuration) * time.Second)
 		cred.ExpiresAt = expiry.Format(time.RFC3339)
@@ -368,10 +368,7 @@ func (s *Store) startRenewal(leaseDuration int) {
 	stop := make(chan struct{})
 	s.stopRenew = stop
 
-	renewInterval := time.Duration(leaseDuration) * time.Second / 2
-	if renewInterval < time.Second {
-		renewInterval = time.Second
-	}
+	renewInterval := max(time.Duration(leaseDuration)*time.Second/2, time.Second)
 
 	go func() {
 		timer := time.NewTimer(renewInterval)
@@ -1030,8 +1027,7 @@ func parsePolicyPermissions(policy, mount, prefix, treeID string) []store.Permis
 			end := strings.LastIndex(line, `"`)
 			if start >= 0 && end > start {
 				vaultPath := line[start+1 : end]
-				if strings.HasPrefix(vaultPath, dataPrefix) {
-					p := strings.TrimPrefix(vaultPath, dataPrefix)
+				if p, ok := strings.CutPrefix(vaultPath, dataPrefix); ok {
 					p = strings.TrimSuffix(p, "*") // keep trailing /
 					currentPath = p
 				} else {
@@ -1056,7 +1052,7 @@ func parsePolicyPermissions(policy, mount, prefix, treeID string) []store.Permis
 		for a := range actionSet {
 			actions = append(actions, a)
 		}
-		sort.Slice(actions, func(i, j int) bool { return actions[i] < actions[j] })
+		slices.Sort(actions)
 		perms = append(perms, store.Permission{Path: path, Actions: actions})
 	}
 	sort.Slice(perms, func(i, j int) bool { return perms[i].Path < perms[j].Path })
@@ -1105,7 +1101,7 @@ func mergePermissions(existing, incoming []store.Permission) []store.Permission 
 		for a := range actionSet {
 			actions = append(actions, a)
 		}
-		sort.Slice(actions, func(i, j int) bool { return actions[i] < actions[j] })
+		slices.Sort(actions)
 		result = append(result, store.Permission{Path: path, Actions: actions})
 	}
 	sort.Slice(result, func(i, j int) bool { return result[i].Path < result[j].Path })

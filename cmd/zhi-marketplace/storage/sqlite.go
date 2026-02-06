@@ -45,8 +45,8 @@ type storeData struct {
 // the suffix is replaced with ".json".
 func NewSQLiteStore(dsn string) (*JSONFileStore, error) {
 	path := dsn
-	if strings.HasSuffix(path, ".db") {
-		path = strings.TrimSuffix(path, ".db") + ".json"
+	if before, ok := strings.CutSuffix(path, ".db"); ok {
+		path = before + ".json"
 	}
 
 	s := &JSONFileStore{
@@ -301,10 +301,7 @@ func (s *JSONFileStore) Search(params SearchParams) ([]SearchResult, int, error)
 	if offset >= len(matches) {
 		return nil, total, nil
 	}
-	end := offset + params.PerPage
-	if end > len(matches) {
-		end = len(matches)
-	}
+	end := min(offset+params.PerPage, len(matches))
 
 	return matches[offset:end], total, nil
 }
@@ -433,10 +430,7 @@ func (s *JSONFileStore) ListRatings(artifactID string, page, perPage int, sortBy
 	if offset >= total {
 		return nil, total, nil
 	}
-	end := offset + perPage
-	if end > total {
-		end = total
-	}
+	end := min(offset+perPage, total)
 
 	return result[offset:end], total, nil
 }

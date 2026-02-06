@@ -107,13 +107,11 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	}
 
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		if err := s.httpSrv.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Printf("http server error: %v", err)
 		}
-	}()
+	})
 
 	// Block until context is cancelled.
 	<-ctx.Done()

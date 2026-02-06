@@ -18,6 +18,7 @@ LDFLAGS := -s -w -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.dat
 # Go tool flags
 GOFLAGS  ?=
 GOTESTFLAGS ?= -race -count=1
+GOPATH ?= $(shell go env GOPATH)
 
 # Proto
 PROTO_DIR     := api/proto
@@ -194,6 +195,14 @@ lint: ## Run golangci-lint (install with: go install github.com/golangci/golangc
 lint-fix: ## Run golangci-lint with auto-fix
 	golangci-lint run --fix ./...
 
+.PHONY: modernize
+modernize: ## Check for modern Go code
+	modernize ./...
+
+.PHONY: modernize-fix
+modernize-fix: ## Write modern Go code
+	modernize -fix -test ./...
+
 .PHONY: check
 check: fmt vet lint test ## Run all checks: format, vet, lint, test
 
@@ -213,7 +222,8 @@ deps: ## Download module dependencies
 tools: ## Install required development tools
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-	curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.8.0
+	go install golang.org/x/tools/go/analysis/passes/modernize/cmd/modernize@latest
+	curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(GOPATH)/bin v2.8.0
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Release

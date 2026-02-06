@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"sync"
 	"testing"
 
@@ -81,9 +82,7 @@ func (t *testPlugin) PutValues(_ context.Context, id string, values map[string]c
 		tree = make(map[string]config.Value)
 		t.trees[id] = tree
 	}
-	for path, v := range values {
-		tree[path] = v
-	}
+	maps.Copy(tree, values)
 	return nil
 }
 
@@ -482,14 +481,10 @@ func (v *versionedTreePlugin) PutValues(_ context.Context, id string, values map
 	}
 	// Snapshot current state before writing.
 	snap := make(map[string]config.Value, len(tree))
-	for k, val := range tree {
-		snap[k] = val
-	}
+	maps.Copy(snap, tree)
 	v.versions[id] = append(v.versions[id], snap)
 
-	for path, val := range values {
-		tree[path] = val
-	}
+	maps.Copy(tree, values)
 	return nil
 }
 
@@ -532,9 +527,7 @@ func (v *versionedTreePlugin) RollbackTree(_ context.Context, id string, version
 	}
 	snap := v.versions[id][idx]
 	tree := make(map[string]config.Value, len(snap))
-	for k, val := range snap {
-		tree[k] = val
-	}
+	maps.Copy(tree, snap)
 	v.trees[id] = tree
 	return nil
 }
@@ -654,9 +647,7 @@ func (c *casPlugin) PutValues(_ context.Context, id string, values map[string]co
 		tree = make(map[string]config.Value)
 		c.trees[id] = tree
 	}
-	for path, v := range values {
-		tree[path] = v
-	}
+	maps.Copy(tree, values)
 	// Bump version.
 	c.version = fmt.Sprintf("v%d", len(tree))
 	return nil

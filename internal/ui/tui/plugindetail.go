@@ -173,7 +173,7 @@ func (v PluginDetailView) View() string {
 	if desc == "" {
 		desc = d.Description
 	}
-	for _, line := range strings.Split(desc, "\n") {
+	for line := range strings.SplitSeq(desc, "\n") {
 		lines = append(lines, "  "+line)
 	}
 	lines = append(lines, "")

@@ -77,12 +77,12 @@ func ParseReference(ref string) (*ParsedRef, error) {
 	}
 
 	// Split host from repository.
-	slashIdx := strings.Index(raw, "/")
-	if slashIdx < 0 {
+	before, after, ok := strings.Cut(raw, "/")
+	if !ok {
 		return nil, fmt.Errorf("invalid OCI reference %q: missing repository path", ref)
 	}
-	parsed.Host = raw[:slashIdx]
-	parsed.Repository = raw[slashIdx+1:]
+	parsed.Host = before
+	parsed.Repository = after
 
 	if parsed.Host == "" {
 		return nil, fmt.Errorf("invalid OCI reference %q: empty host", ref)

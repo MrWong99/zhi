@@ -91,13 +91,11 @@ func (h *httpUI) Run(ctx context.Context, controller ui.Controller) error {
 	close(h.ready)
 
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		if err := srv.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Printf("http server error: %v", err)
 		}
-	}()
+	})
 
 	log.Printf("zhi HTTP API listening on %s", actual)
 

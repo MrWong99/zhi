@@ -1,6 +1,7 @@
 package labels
 
 import (
+	"maps"
 	"strconv"
 	"strings"
 )
@@ -299,9 +300,7 @@ func NewBuilder() *Builder {
 // FromMetadata creates a builder starting from existing metadata.
 func FromMetadata(m map[string]any) *Builder {
 	b := NewBuilder()
-	for k, v := range m {
-		b.metadata[k] = v
-	}
+	maps.Copy(b.metadata, m)
 	return b
 }
 
@@ -449,8 +448,6 @@ func (b *Builder) Placeholder(text string) *Builder {
 // Build returns the constructed metadata map.
 func (b *Builder) Build() map[string]any {
 	result := make(map[string]any, len(b.metadata))
-	for k, v := range b.metadata {
-		result[k] = v
-	}
+	maps.Copy(result, b.metadata)
 	return result
 }

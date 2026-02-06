@@ -9,6 +9,7 @@ package main
 import (
 	"context"
 	"errors"
+	"maps"
 	"sync"
 
 	goplugin "github.com/hashicorp/go-plugin"
@@ -93,9 +94,7 @@ func (m *memoryStore) PutValues(_ context.Context, id string, values map[string]
 		tree = make(map[string]config.Value, len(values))
 		m.trees[id] = tree
 	}
-	for p, v := range values {
-		tree[p] = v
-	}
+	maps.Copy(tree, values)
 	return nil
 }
 

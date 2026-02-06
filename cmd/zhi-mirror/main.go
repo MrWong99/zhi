@@ -190,7 +190,7 @@ func runExport(args []string) error {
 	}
 
 	var refs []string
-	for _, a := range strings.Split(artifacts, ",") {
+	for a := range strings.SplitSeq(artifacts, ",") {
 		a = strings.TrimSpace(a)
 		if a != "" {
 			refs = append(refs, a)

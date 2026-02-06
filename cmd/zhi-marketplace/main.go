@@ -52,7 +52,7 @@ func main() {
 
 	// Parse registries.
 	var regList []string
-	for _, r := range strings.Split(registries, ",") {
+	for r := range strings.SplitSeq(registries, ",") {
 		r = strings.TrimSpace(r)
 		if r != "" {
 			regList = append(regList, r)
@@ -95,7 +95,7 @@ func parseAPIKeys(s string) map[string]string {
 	if s == "" {
 		return keys
 	}
-	for _, pair := range strings.Split(s, ",") {
+	for pair := range strings.SplitSeq(s, ",") {
 		parts := strings.SplitN(strings.TrimSpace(pair), "=", 2)
 		if len(parts) == 2 {
 			keys[parts[0]] = parts[1]

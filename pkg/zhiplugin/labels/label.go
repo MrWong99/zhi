@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -163,13 +164,7 @@ func (l *Label) validateString(s string) error {
 	}
 
 	if len(c.Enum) > 0 {
-		found := false
-		for _, allowed := range c.Enum {
-			if s == allowed {
-				found = true
-				break
-			}
-		}
+		found := slices.Contains(c.Enum, s)
 		if !found {
 			return &ValidationError{
 				Label:   l.Name,

@@ -28,7 +28,7 @@ type Policy struct {
 	// Sync defines artifacts to pre-populate into the cache on a schedule.
 	Sync []SyncRule `yaml:"sync,omitempty" json:"sync,omitempty"`
 	// Retention controls automatic cleanup of cached artifacts.
-	Retention RetentionPolicy `yaml:"retention,omitempty" json:"retention,omitempty"`
+	Retention RetentionPolicy `yaml:"retention,omitempty" json:"retention"`
 }
 
 // SyncRule defines an artifact reference pattern and a cron schedule for

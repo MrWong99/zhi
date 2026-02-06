@@ -125,7 +125,7 @@ type WorkspaceConfig struct {
 	Config     ProviderRef    `yaml:"config" json:"config"`
 	Transform  []ProviderRef  `yaml:"transform,omitempty" json:"transform,omitempty"`
 	Store      ProviderRef    `yaml:"store,omitempty" json:"store"`
-	UI         ProviderRef    `yaml:"ui,omitempty" json:"ui,omitempty"`
+	UI         ProviderRef    `yaml:"ui,omitempty" json:"ui"`
 	Components []ComponentDef `yaml:"components,omitempty" json:"components,omitempty"`
 	Export     ExportConfig   `yaml:"export,omitempty" json:"export"`
 	Apply      ApplyConfig    `yaml:"apply,omitempty" json:"apply"`

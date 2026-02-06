@@ -19,7 +19,7 @@ type Config struct {
 	// Registries maps host names to per-registry configuration.
 	Registries map[string]Entry `yaml:"registries,omitempty" json:"registries,omitempty"`
 	// Marketplace holds marketplace connection settings.
-	Marketplace MarketplaceConfig `yaml:"marketplace,omitempty" json:"marketplace,omitempty"`
+	Marketplace MarketplaceConfig `yaml:"marketplace,omitempty" json:"marketplace"`
 }
 
 // MarketplaceConfig holds configuration for connecting to a marketplace server.

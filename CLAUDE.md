@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-zhi is a security-first platform for configuration management and provisioning, built in Go 1.24. It uses an extensible plugin system over gRPC (via hashicorp/go-plugin) with four plugin types: **config**, **transform**, **store**, and **ui**. Plugins run as separate processes communicating over stdio with gRPC transport.
+zhi is a security-first platform for configuration management and provisioning, built in Go 1.25. It uses an extensible plugin system over gRPC (via hashicorp/go-plugin) with four plugin types: **config**, **transform**, **store**, and **ui**. Plugins run as separate processes communicating over stdio with gRPC transport.
 
 The platform follows a Vault-style architecture: built-in providers are compiled Go types registered at startup, while external plugins are separate binaries discovered from `~/.zhi/plugins/`. It includes a plugin marketplace with OCI-based distribution and an enterprise air-gapped mirror.
 
@@ -198,4 +198,4 @@ A workspace is defined by `zhi.yaml` containing: config provider, transform prov
 
 ## Prerequisites
 
-Go 1.24+, golangci-lint. Install Go tools with `make tools`. Protoc is downloaded automatically by `make proto` (no system install required).
+Go 1.25+, golangci-lint. Install Go tools with `make tools`. Protoc is downloaded automatically by `make proto` (no system install required).

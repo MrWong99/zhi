@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -503,31 +504,31 @@ func printRatingDistribution(w io.Writer, rating marketplace.PluginRating) {
 
 	barWidth := 20
 	for i, c := range dist {
-		bar := ""
+		var bar strings.Builder
 		if maxCount > 0 {
 			width := c * barWidth / maxCount
-			for j := 0; j < width; j++ {
-				bar += "#"
+			for range width {
+				bar.WriteString("#")
 			}
 		}
 		pct := 0
 		if rating.Count > 0 {
 			pct = c * 100 / rating.Count
 		}
-		fmt.Fprintf(w, "  %s star  %-20s  %d (%d%%)\n", labels[i], bar, c, pct)
+		fmt.Fprintf(w, "  %s star  %-20s  %d (%d%%)\n", labels[i], bar.String(), c, pct)
 	}
 }
 
 // joinPlatforms joins a slice of platform strings with ", ".
 func joinPlatforms(platforms []string) string {
-	result := ""
+	var result strings.Builder
 	for i, p := range platforms {
 		if i > 0 {
-			result += ", "
+			result.WriteString(", ")
 		}
-		result += p
+		result.WriteString(p)
 	}
-	return result
+	return result.String()
 }
 
 // --- plugin verify ---

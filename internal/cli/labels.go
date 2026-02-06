@@ -3,6 +3,7 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -86,13 +87,7 @@ func runLabelsList(cmd *cobra.Command, _ []string) error {
 		labelList = registry.ListByNamespace(labelsNamespace)
 		if len(labelList) == 0 {
 			// Check if namespace exists
-			found := false
-			for _, ns := range registry.Namespaces() {
-				if ns == labelsNamespace {
-					found = true
-					break
-				}
-			}
+			found := slices.Contains(registry.Namespaces(), labelsNamespace)
 			if !found {
 				fmt.Fprintf(w, "Unknown namespace: %s\n", labelsNamespace)
 				fmt.Fprintf(w, "Available namespaces: %s\n", strings.Join(registry.Namespaces(), ", "))

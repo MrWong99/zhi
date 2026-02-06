@@ -227,8 +227,8 @@ func (s *OCILayout) ListTags(repo string) ([]string, error) {
 			continue
 		}
 		name := e.Name()
-		if strings.HasSuffix(name, ".json") {
-			tags = append(tags, strings.TrimSuffix(name, ".json"))
+		if before, ok := strings.CutSuffix(name, ".json"); ok {
+			tags = append(tags, before)
 		}
 	}
 	return tags, nil

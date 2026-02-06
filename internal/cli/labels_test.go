@@ -2,6 +2,7 @@ package cli
 
 import (
 	"encoding/json"
+	"slices"
 	"strings"
 	"testing"
 
@@ -238,11 +239,9 @@ func TestFindSimilarLabels(t *testing.T) {
 			if len(tt.wantAny) > 0 {
 				foundAny := false
 				for _, want := range tt.wantAny {
-					for _, s := range suggestions {
-						if s == want {
-							foundAny = true
-							break
-						}
+					if slices.Contains(suggestions, want) {
+						foundAny = true
+						break
 					}
 				}
 				if !foundAny {

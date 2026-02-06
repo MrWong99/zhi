@@ -2,6 +2,7 @@ package ui_test
 
 import (
 	"context"
+	"maps"
 	"sort"
 	"testing"
 
@@ -102,9 +103,7 @@ func (m *mockStore) PutValues(_ context.Context, id string, values map[string]co
 	if m.trees[id] == nil {
 		m.trees[id] = make(map[string]config.Value)
 	}
-	for p, v := range values {
-		m.trees[id][p] = v
-	}
+	maps.Copy(m.trees[id], values)
 	return nil
 }
 

@@ -9,7 +9,7 @@ to set up a local development environment, run common tasks, and submit changes.
 
 | Tool | Purpose | Install |
 |------|---------|---------|
-| **Go 1.24+** | Build & test | [go.dev/dl](https://go.dev/dl/) |
+| **Go 1.25+** | Build & test | [go.dev/dl](https://go.dev/dl/) |
 | **protoc** | Compile `.proto` files | [protobuf releases](https://github.com/protocolbuffers/protobuf/releases) |
 | **protoc-gen-go** | Go code generation for protobuf | `go install google.golang.org/protobuf/cmd/protoc-gen-go@latest` |
 | **protoc-gen-go-grpc** | Go gRPC stub generation | `go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest` |

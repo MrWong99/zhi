@@ -46,11 +46,8 @@ func (s *SyncScheduler) Start(ctx context.Context) {
 	// into a fixed interval. Full cron parsing would require an external
 	// dependency.
 	for _, rule := range s.rules {
-		rule := rule
 		interval := parseSyncInterval(rule.Schedule)
-		s.wg.Add(1)
-		go func() {
-			defer s.wg.Done()
+		s.wg.Go(func() {
 			ticker := time.NewTicker(interval)
 			defer ticker.Stop()
 			for {
@@ -61,7 +58,7 @@ func (s *SyncScheduler) Start(ctx context.Context) {
 					s.syncRule(ctx, rule)
 				}
 			}
-		}()
+		})
 	}
 }
 
@@ -167,8 +164,7 @@ func parseSyncInterval(schedule string) time.Duration {
 	}
 
 	// Check for hour interval patterns like "0 */6 * * *".
-	if strings.HasPrefix(parts[1], "*/") {
-		hours := strings.TrimPrefix(parts[1], "*/")
+	if hours, ok := strings.CutPrefix(parts[1], "*/"); ok {
 		var h int
 		if _, err := fmt.Sscanf(hours, "%d", &h); err == nil && h > 0 {
 			return time.Duration(h) * time.Hour
@@ -176,8 +172,7 @@ func parseSyncInterval(schedule string) time.Duration {
 	}
 
 	// Check for minute interval patterns like "*/30 * * * *".
-	if strings.HasPrefix(parts[0], "*/") {
-		mins := strings.TrimPrefix(parts[0], "*/")
+	if mins, ok := strings.CutPrefix(parts[0], "*/"); ok {
 		var m int
 		if _, err := fmt.Sscanf(mins, "%d", &m); err == nil && m > 0 {
 			return time.Duration(m) * time.Minute

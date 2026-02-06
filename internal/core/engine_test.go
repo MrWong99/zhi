@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"fmt"
+	"maps"
 	"path/filepath"
 	"slices"
 	"sort"
@@ -129,9 +130,7 @@ func (m *mockStore) PutValues(_ context.Context, id string, values map[string]co
 	if m.trees[id] == nil {
 		m.trees[id] = make(map[string]config.Value)
 	}
-	for p, v := range values {
-		m.trees[id][p] = v
-	}
+	maps.Copy(m.trees[id], values)
 	return nil
 }
 
@@ -693,14 +692,10 @@ func (m *versionedMockStore) PutValues(_ context.Context, id string, values map[
 	}
 	// Snapshot before writing.
 	snap := make(map[string]config.Value, len(m.trees[id]))
-	for k, v := range m.trees[id] {
-		snap[k] = v
-	}
+	maps.Copy(snap, m.trees[id])
 	m.versions[id] = append(m.versions[id], snap)
 
-	for p, v := range values {
-		m.trees[id][p] = v
-	}
+	maps.Copy(m.trees[id], values)
 	return nil
 }
 
@@ -734,9 +729,7 @@ func (m *versionedMockStore) RollbackTree(_ context.Context, id string, version 
 	for i := range snaps {
 		if fmt.Sprintf("v%d", i+1) == version {
 			tree := make(map[string]config.Value, len(snaps[i]))
-			for k, v := range snaps[i] {
-				tree[k] = v
-			}
+			maps.Copy(tree, snaps[i])
 			m.trees[id] = tree
 			return nil
 		}

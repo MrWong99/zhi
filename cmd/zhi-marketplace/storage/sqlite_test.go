@@ -274,7 +274,7 @@ func TestSearchPagination(t *testing.T) {
 	pub := &Publisher{ID: "pub-1", Name: "org", Email: "a@b.com"}
 	s.CreatePublisher(pub)
 
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		art := &Artifact{
 			ID:          s.nextID(),
 			PublisherID: "pub-1",
