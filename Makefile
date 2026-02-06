@@ -77,8 +77,13 @@ build-examples: ## Build all Go example plugins
 		fi; \
 	done
 
+.PHONY: build-mirror
+build-mirror: ## Build the zhi-mirror binary
+	@mkdir -p $(BIN_DIR)
+	go build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/zhi-mirror ./cmd/zhi-mirror
+
 .PHONY: build-all
-build-all: build build-examples ## Build the main binary and all examples
+build-all: build build-mirror build-examples ## Build the main binary, mirror, and all examples
 
 .PHONY: install
 install: ## Install the zhi binary into GOPATH/bin
