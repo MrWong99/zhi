@@ -1,0 +1,15 @@
+{{define "export_preview"}}
+<div class="export-preview">
+  {{if .Error}}
+  <div class="export-preview-error">
+    <span class="icon">&#10007;</span>
+    <span>{{.Error}}</span>
+  </div>
+  {{else}}
+  <div class="preview-header">
+    <span class="preview-title">Preview: {{.Name}}</span>
+  </div>
+  <pre class="code-block format-{{.Format}}"><code>{{.Content}}</code></pre>
+  {{end}}
+</div>
+{{end}}
