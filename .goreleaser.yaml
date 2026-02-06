@@ -54,10 +54,32 @@ builds:
       - -s -w
 
 archives:
-  - id: default
+  - id: zhi
+    builds:
+      - zhi
     formats:
       - tar.gz
-    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    name_template: "zhi_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - README.md
+
+  - id: zhi-marketplace
+    builds:
+      - zhi-marketplace
+    formats:
+      - tar.gz
+    name_template: "zhi-marketplace_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - README.md
+
+  - id: zhi-mirror
+    builds:
+      - zhi-mirror
+    formats:
+      - tar.gz
+    name_template: "zhi-mirror_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     files:
       - LICENSE
       - README.md
