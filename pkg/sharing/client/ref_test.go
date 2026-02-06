@@ -98,6 +98,29 @@ func TestParseReference(t *testing.T) {
 	}
 }
 
+func TestIsShortName(t *testing.T) {
+	tests := []struct {
+		input string
+		want  bool
+	}{
+		{"ansible-config", true},
+		{"ansible-config@1.2.0", true},
+		{"vault-store", true},
+		{"oci://ghcr.io/org/repo:v1.0", false},
+		{"ghcr.io/org/repo:v1.0", false},
+		{"ghcr.io/org/repo", false},
+		{"localhost:5000/myrepo:v1.0.0", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			got := IsShortName(tt.input)
+			if got != tt.want {
+				t.Errorf("IsShortName(%q) = %v, want %v", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestParsedRefReference(t *testing.T) {
 	tests := []struct {
 		name string

@@ -167,6 +167,48 @@ func TestDefaultRegistry(t *testing.T) {
 	}
 }
 
+func TestMarketplaceConfig(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.yaml")
+
+	data := []byte(`marketplace:
+  url: https://marketplace.example.com
+  apiKey: zhk_test123
+`)
+	if err := os.WriteFile(path, data, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	s, err := NewStore(path)
+	if err != nil {
+		t.Fatalf("NewStore: %v", err)
+	}
+
+	if got := s.MarketplaceURL(); got != "https://marketplace.example.com" {
+		t.Errorf("MarketplaceURL() = %q", got)
+	}
+	if got := s.MarketplaceAPIKey(); got != "zhk_test123" {
+		t.Errorf("MarketplaceAPIKey() = %q", got)
+	}
+}
+
+func TestMarketplaceConfigEmpty(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.yaml")
+
+	s, err := NewStore(path)
+	if err != nil {
+		t.Fatalf("NewStore: %v", err)
+	}
+
+	if got := s.MarketplaceURL(); got != "" {
+		t.Errorf("MarketplaceURL() = %q, want empty", got)
+	}
+	if got := s.MarketplaceAPIKey(); got != "" {
+		t.Errorf("MarketplaceAPIKey() = %q, want empty", got)
+	}
+}
+
 func TestFilePermissions(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "subdir", "config.yaml")

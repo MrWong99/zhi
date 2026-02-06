@@ -11,6 +11,7 @@ import (
 
 	"github.com/MrWong99/zhi/internal/core"
 	"github.com/MrWong99/zhi/pkg/sharing/client"
+	"github.com/MrWong99/zhi/pkg/sharing/marketplace"
 	"github.com/MrWong99/zhi/pkg/sharing/metadata"
 	"github.com/MrWong99/zhi/pkg/sharing/registry"
 	"github.com/MrWong99/zhi/pkg/sharing/verify"
@@ -19,40 +20,48 @@ import (
 var pluginCmd = &cobra.Command{
 	Use:   "plugin",
 	Short: "Manage shared plugins",
-	Long: `Install, uninstall, publish, and manage shared plugins from OCI registries.
+	Long: `Install, uninstall, publish, search, and manage shared plugins from OCI registries
+and the zhi marketplace.
 
 Subcommands:
-  install      Install a plugin from an OCI reference
+  install      Install a plugin from an OCI reference or short name
   uninstall    Remove an installed plugin
   list         List installed shared plugins
-  info         Show detailed information about an installed plugin
+  search       Search the marketplace for plugins
+  info         Show detailed information about a plugin
   verify       Verify a plugin artifact's signature without installing
   init         Generate a zhi-plugin.yaml manifest for a new plugin
-  publish      Publish a plugin to an OCI registry`,
-	Example: `  zhi plugin install oci://ghcr.io/zhi-project/zhi-config-ansible:v1.2.0
-  zhi plugin uninstall ansible-config
-  zhi plugin list
+  publish      Publish a plugin to an OCI registry
+  register     Register a plugin with the marketplace`,
+	Example: `  zhi plugin install ansible-config
+  zhi plugin install oci://ghcr.io/zhi-project/zhi-config-ansible:v1.2.0
+  zhi plugin search ansible
   zhi plugin info ansible-config
-  zhi plugin verify oci://ghcr.io/zhi-project/zhi-config-ansible:v1.2.0
-  zhi plugin init --name my-config --type config --version 1.0.0
-  zhi plugin publish --registry ghcr.io/myorg`,
+  zhi plugin uninstall ansible-config
+  zhi plugin register`,
 }
 
 // --- plugin install ---
 
 var pluginInstallCmd = &cobra.Command{
 	Use:   "install <reference>",
-	Short: "Install a plugin from an OCI reference",
+	Short: "Install a plugin from an OCI reference or short name",
 	Long: `Download and install a plugin from an OCI registry.
 
-The reference can be a full OCI reference or a short name:
-  oci://ghcr.io/org/plugin:v1.0
-  ghcr.io/org/plugin:v1.0
+The reference can be a full OCI reference or a marketplace short name:
+  oci://ghcr.io/org/plugin:v1.0     Full OCI reference
+  ghcr.io/org/plugin:v1.0           OCI reference without scheme
+  ansible-config                    Short name (resolved via marketplace)
+  ansible-config@1.2.0              Short name with version
+
+When a short name is given, the marketplace is queried to resolve it
+to a full OCI reference before pulling.
 
 Signature verification is performed by default. Use --skip-verify to disable.`,
-	Example: `  zhi plugin install oci://ghcr.io/zhi-project/zhi-config-ansible:v1.2.0
-  zhi plugin install ghcr.io/org/zhi-config-custom:v1.0.0 --force
-  zhi plugin install ghcr.io/org/zhi-config-custom:v1.0.0 --skip-verify`,
+	Example: `  zhi plugin install ansible-config
+  zhi plugin install ansible-config@1.2.0
+  zhi plugin install oci://ghcr.io/zhi-project/zhi-config-ansible:v1.2.0
+  zhi plugin install ghcr.io/org/zhi-config-custom:v1.0.0 --force`,
 	Args: cobra.ExactArgs(1),
 	RunE: runPluginInstall,
 }
@@ -81,6 +90,21 @@ func init() {
 func runPluginInstall(cmd *cobra.Command, args []string) error {
 	ref := args[0]
 	w := cmd.OutOrStdout()
+
+	// Resolve short name via marketplace if necessary.
+	if client.IsShortName(ref) {
+		fmt.Fprintf(w, "Resolving %s via marketplace...\n", ref)
+		mc, err := newMarketplaceClient()
+		if err != nil {
+			return fmt.Errorf("creating marketplace client: %w", err)
+		}
+		resolved, err := mc.ResolveShortName(cmd.Context(), ref)
+		if err != nil {
+			return fmt.Errorf("resolving short name %q: %w", ref, err)
+		}
+		fmt.Fprintf(w, "  -> %s\n", resolved)
+		ref = resolved
+	}
 
 	// Load verification policy.
 	policy, err := verify.LoadPolicyFile(verify.DefaultPolicyPath())
@@ -271,9 +295,12 @@ func runPluginList(cmd *cobra.Command, _ []string) error {
 
 var pluginInfoCmd = &cobra.Command{
 	Use:   "info <name>",
-	Short: "Show detailed information about an installed plugin",
-	Long: `Display full metadata for an installed plugin including version, source,
-platform, signer identity, signing method, trust level, and binary digest.`,
+	Short: "Show detailed information about a plugin",
+	Long: `Display metadata for a plugin. If the plugin is installed locally, local
+metadata is shown. Otherwise, the marketplace is queried for plugin details.
+
+When marketplace data is available, additional fields like rating, downloads,
+and available versions are displayed.`,
 	Example: `  zhi plugin info ansible-config
   zhi plugin info ansible-config --json`,
 	Args: cobra.ExactArgs(1),
@@ -311,8 +338,10 @@ func runPluginInfo(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("loading plugin metadata: %w", err)
 	}
+
+	// If not installed locally, try the marketplace.
 	if meta == nil {
-		return fmt.Errorf("plugin %q is not installed", name)
+		return runPluginInfoFromMarketplace(cmd, name)
 	}
 
 	if pluginInfoJSON {
@@ -362,6 +391,78 @@ func runPluginInfo(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+// runPluginInfoFromMarketplace queries the marketplace for plugin details
+// when the plugin is not installed locally.
+func runPluginInfoFromMarketplace(cmd *cobra.Command, name string) error {
+	w := cmd.OutOrStdout()
+
+	mc, err := newMarketplaceClient()
+	if err != nil {
+		return fmt.Errorf("plugin %q is not installed and marketplace is not available: %w", name, err)
+	}
+
+	// Search for the plugin by name to find publisher/name.
+	resp, err := mc.Search(cmd.Context(), name, marketplace.SearchOptions{Limit: 10})
+	if err != nil {
+		return fmt.Errorf("plugin %q is not installed and marketplace search failed: %w", name, err)
+	}
+
+	// Find exact match.
+	var match *marketplace.SearchResult
+	for i := range resp.Results {
+		if resp.Results[i].Name == name {
+			match = &resp.Results[i]
+			break
+		}
+	}
+	if match == nil {
+		return fmt.Errorf("plugin %q is not installed and not found in marketplace", name)
+	}
+
+	if pluginInfoJSON {
+		data, err := json.MarshalIndent(match, "", "  ")
+		if err != nil {
+			return err
+		}
+		fmt.Fprintln(w, string(data))
+		return nil
+	}
+
+	fmt.Fprintf(w, "Name:             %s\n", match.Name)
+	fmt.Fprintf(w, "Type:             %s\n", match.Type)
+	fmt.Fprintf(w, "Version:          %s (latest)\n", match.LatestVersion)
+	author := match.Author
+	if match.Verified {
+		author += " (verified)"
+	}
+	fmt.Fprintf(w, "Author:           %s\n", author)
+	fmt.Fprintf(w, "Rating:           %.1f (%d ratings)\n", match.Rating, match.RatingCount)
+	fmt.Fprintf(w, "Downloads:        %s\n", formatDownloads(match.Downloads))
+	fmt.Fprintf(w, "OCI Reference:    %s\n", match.OCIRef)
+	if len(match.Platforms) > 0 {
+		fmt.Fprintf(w, "Platforms:        %s\n", joinPlatforms(match.Platforms))
+	}
+	fmt.Fprintf(w, "Installed:        no\n")
+	if match.Description != "" {
+		fmt.Fprintf(w, "\nDescription:\n  %s\n", match.Description)
+	}
+	fmt.Fprintf(w, "\nInstall with: zhi plugin install %s\n", match.Name)
+
+	return nil
+}
+
+// joinPlatforms joins a slice of platform strings with ", ".
+func joinPlatforms(platforms []string) string {
+	result := ""
+	for i, p := range platforms {
+		if i > 0 {
+			result += ", "
+		}
+		result += p
+	}
+	return result
 }
 
 // --- plugin verify ---
