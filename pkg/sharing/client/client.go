@@ -16,6 +16,7 @@ import (
 
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 
+	"github.com/MrWong99/zhi/internal/core"
 	"github.com/MrWong99/zhi/pkg/sharing/manifest"
 	"github.com/MrWong99/zhi/pkg/sharing/metadata"
 	"github.com/MrWong99/zhi/pkg/sharing/registry"
@@ -94,6 +95,7 @@ func (c *Client) PullPlugin(ctx context.Context, ref string, opts PullOptions) (
 	}
 
 	// Set up remote repository.
+	core.Logger().Debug("repository config", "host", parsed.Host, "repository", parsed.Repository, "tag", parsed.Tag)
 	repo, err := c.newRepository(parsed)
 	if err != nil {
 		return nil, fmt.Errorf("connecting to registry: %w", err)

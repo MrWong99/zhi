@@ -19,6 +19,7 @@ import (
 	"oras.land/oras-go/v2"
 	"oras.land/oras-go/v2/content/memory"
 
+	"github.com/MrWong99/zhi/internal/core"
 	"github.com/MrWong99/zhi/pkg/sharing/manifest"
 )
 
@@ -63,6 +64,7 @@ func (c *Client) PushPlugin(ctx context.Context, m *manifest.PluginManifest, bin
 		return nil, fmt.Errorf("parsing target reference: %w", err)
 	}
 
+	core.Logger().Debug("repository config", "host", parsed.Host, "repository", parsed.Repository, "tag", parsed.Tag)
 	remote, err := c.newRepository(parsed)
 	if err != nil {
 		return nil, fmt.Errorf("connecting to registry: %w", err)
@@ -264,6 +266,7 @@ func (c *Client) PushWorkspace(ctx context.Context, m *manifest.WorkspaceManifes
 		return nil, fmt.Errorf("parsing target reference: %w", err)
 	}
 
+	core.Logger().Debug("repository config", "host", parsed.Host, "repository", parsed.Repository, "tag", parsed.Tag)
 	remote, err := c.newRepository(parsed)
 	if err != nil {
 		return nil, fmt.Errorf("connecting to registry: %w", err)
@@ -325,6 +328,7 @@ func (c *Client) PullWorkspace(ctx context.Context, ref, targetDir string, opts 
 		return nil, fmt.Errorf("parsing reference: %w", err)
 	}
 
+	core.Logger().Debug("repository config", "host", parsed.Host, "repository", parsed.Repository, "tag", parsed.Tag)
 	repo, err := c.newRepository(parsed)
 	if err != nil {
 		return nil, fmt.Errorf("connecting to registry: %w", err)
