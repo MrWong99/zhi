@@ -310,6 +310,52 @@ zhi plugin init --name my-config --type config --version 1.0.0
 | `--author` | Author name |
 | `--license` | SPDX license identifier |
 
+#### `zhi plugin update`
+
+Check for and install plugin updates from the marketplace.
+
+```sh
+zhi plugin update --check              # Check for available updates
+zhi plugin update --check --changelog  # Show changelogs for available updates
+zhi plugin update ansible-config       # Update a specific plugin
+zhi plugin update --all                # Update all plugins
+```
+
+| Flag | Description |
+|------|-------------|
+| `--check` | Only check for updates, don't install |
+| `--all` | Update all plugins with available updates |
+| `--changelog` | Show changelogs for available updates |
+| `--json` | Output as JSON |
+
+Pinned plugins are skipped during `--all` updates but can still be updated explicitly by name.
+
+#### `zhi plugin pin`
+
+Pin a plugin at its current version to prevent it from being updated during `zhi plugin update --all`.
+
+```sh
+zhi plugin pin ansible-config
+```
+
+#### `zhi plugin unpin`
+
+Remove the version pin from a plugin, making it eligible for updates again.
+
+```sh
+zhi plugin unpin ansible-config
+```
+
+#### `zhi plugin rollback`
+
+Restore a plugin to the version that was installed before the most recent update. The previous binary is kept as a backup during each update.
+
+```sh
+zhi plugin rollback ansible-config
+```
+
+If no backup exists, use `zhi plugin install <name>@<version> --force` to install a specific version.
+
 ### `zhi version`
 
 Print version, commit hash, and build date.

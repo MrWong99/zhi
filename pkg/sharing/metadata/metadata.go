@@ -37,6 +37,8 @@ type InstalledPlugin struct {
 	Signed bool `json:"signed,omitempty"`
 	// SigningIdentity is the signer identity (e.g. email, OIDC subject).
 	SigningIdentity string `json:"signingIdentity,omitempty"`
+	// Pinned prevents automatic updates for this plugin.
+	Pinned bool `json:"pinned,omitempty"`
 }
 
 // Store manages plugin metadata files on disk.
@@ -132,6 +134,76 @@ func (s *Store) List() ([]*InstalledPlugin, error) {
 		return plugins[i].Name < plugins[j].Name
 	})
 	return plugins, nil
+}
+
+// SetPinned sets the pinned state for a plugin.
+func (s *Store) SetPinned(name string, pinned bool) error {
+	p, err := s.Load(name)
+	if err != nil {
+		return err
+	}
+	if p == nil {
+		return fmt.Errorf("plugin %q is not installed", name)
+	}
+	p.Pinned = pinned
+	return s.Save(p)
+}
+
+// BackupBinary moves the current plugin binary to the backup directory.
+// The backup is named <binary>.{version} and stored in a .backup/
+// subdirectory of pluginDir. Only the most recent backup is kept.
+func BackupBinary(pluginDir, binaryName, version string) error {
+	src := filepath.Join(pluginDir, binaryName)
+	if _, err := os.Stat(src); os.IsNotExist(err) {
+		return nil // nothing to back up
+	}
+
+	backupDir := filepath.Join(pluginDir, ".backup")
+	if err := os.MkdirAll(backupDir, 0o755); err != nil {
+		return fmt.Errorf("creating backup directory: %w", err)
+	}
+
+	dst := filepath.Join(backupDir, binaryName+"."+version)
+	// Remove existing backup if present (only keep one).
+	_ = os.Remove(dst)
+
+	if err := os.Rename(src, dst); err != nil {
+		return fmt.Errorf("backing up binary: %w", err)
+	}
+	return nil
+}
+
+// RestoreBackup moves a backed-up binary back to the plugin directory.
+// Returns the version string of the restored backup, or an error if no
+// backup exists.
+func RestoreBackup(pluginDir, binaryName string) (string, error) {
+	backupDir := filepath.Join(pluginDir, ".backup")
+	entries, err := os.ReadDir(backupDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", fmt.Errorf("no backup found for %s", binaryName)
+		}
+		return "", fmt.Errorf("reading backup directory: %w", err)
+	}
+
+	prefix := binaryName + "."
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		if len(name) > len(prefix) && name[:len(prefix)] == prefix {
+			version := name[len(prefix):]
+			src := filepath.Join(backupDir, name)
+			dst := filepath.Join(pluginDir, binaryName)
+			if err := os.Rename(src, dst); err != nil {
+				return "", fmt.Errorf("restoring backup: %w", err)
+			}
+			return version, nil
+		}
+	}
+
+	return "", fmt.Errorf("no backup found for %s", binaryName)
 }
 
 // pluginPath returns the file path for a plugin's metadata.
