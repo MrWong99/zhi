@@ -103,8 +103,11 @@ zhi plugin install oci://ghcr.io/zhi-project/zhi-config-ansible:v1.2.0
 # List installed shared plugins (includes signing status)
 zhi plugin list
 
-# Show detailed plugin info including signer identity and binary digest
+# Show detailed plugin info including ratings, downloads, and verification status
 zhi plugin info ansible-config
+
+# Rate a plugin (1-5 stars with optional comment)
+zhi plugin rate zhi-project/ansible-config 5 --comment "Works great!"
 
 # Verify a plugin's signature without installing
 zhi plugin verify oci://ghcr.io/zhi-project/zhi-config-ansible:v1.2.0

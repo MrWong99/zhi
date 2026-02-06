@@ -3,6 +3,7 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"time"
@@ -20,8 +21,8 @@ import (
 var pluginCmd = &cobra.Command{
 	Use:   "plugin",
 	Short: "Manage shared plugins",
-	Long: `Install, uninstall, publish, search, and manage shared plugins from OCI registries
-and the zhi marketplace.
+	Long: `Install, uninstall, publish, search, rate, and manage shared plugins from OCI
+registries and the zhi marketplace.
 
 Subcommands:
   install      Install a plugin from an OCI reference or short name
@@ -29,6 +30,7 @@ Subcommands:
   list         List installed shared plugins
   search       Search the marketplace for plugins
   info         Show detailed information about a plugin
+  rate         Rate a plugin on the marketplace (1-5 stars)
   verify       Verify a plugin artifact's signature without installing
   init         Generate a zhi-plugin.yaml manifest for a new plugin
   publish      Publish a plugin to an OCI registry
@@ -37,6 +39,7 @@ Subcommands:
   zhi plugin install oci://ghcr.io/zhi-project/zhi-config-ansible:v1.2.0
   zhi plugin search ansible
   zhi plugin info ansible-config
+  zhi plugin rate zhi-project/ansible-config 5
   zhi plugin uninstall ansible-config
   zhi plugin register`,
 }
@@ -421,7 +424,18 @@ func runPluginInfoFromMarketplace(cmd *cobra.Command, name string) error {
 		return fmt.Errorf("plugin %q is not installed and not found in marketplace", name)
 	}
 
+	// Try to get full plugin detail from marketplace for richer output.
+	detail, detailErr := mc.GetPlugin(cmd.Context(), match.Author, match.Name)
+
 	if pluginInfoJSON {
+		if detailErr == nil && detail != nil {
+			data, err := json.MarshalIndent(detail, "", "  ")
+			if err != nil {
+				return err
+			}
+			fmt.Fprintln(w, string(data))
+			return nil
+		}
 		data, err := json.MarshalIndent(match, "", "  ")
 		if err != nil {
 			return err
@@ -435,11 +449,24 @@ func runPluginInfoFromMarketplace(cmd *cobra.Command, name string) error {
 	fmt.Fprintf(w, "Version:          %s (latest)\n", match.LatestVersion)
 	author := match.Author
 	if match.Verified {
-		author += " (verified)"
+		author += " \u2713 (verified)"
 	}
 	fmt.Fprintf(w, "Author:           %s\n", author)
-	fmt.Fprintf(w, "Rating:           %.1f (%d ratings)\n", match.Rating, match.RatingCount)
-	fmt.Fprintf(w, "Downloads:        %s\n", formatDownloads(match.Downloads))
+
+	// Show rating info from detail if available.
+	if detailErr == nil && detail != nil && detail.Rating.Count > 0 {
+		fmt.Fprintf(w, "Rating:           %.1f (%d ratings)\n", detail.Rating.Average, detail.Rating.Count)
+		printRatingDistribution(w, detail.Rating)
+		fmt.Fprintf(w, "Downloads:        %s total", formatDownloads(detail.Statistics.TotalDownloads))
+		if detail.Statistics.MonthlyDownloads > 0 {
+			fmt.Fprintf(w, "  |  %s this month", formatDownloads(detail.Statistics.MonthlyDownloads))
+		}
+		fmt.Fprintln(w)
+	} else {
+		fmt.Fprintf(w, "Rating:           %.1f (%d ratings)\n", match.Rating, match.RatingCount)
+		fmt.Fprintf(w, "Downloads:        %s\n", formatDownloads(match.Downloads))
+	}
+
 	fmt.Fprintf(w, "OCI Reference:    %s\n", match.OCIRef)
 	if len(match.Platforms) > 0 {
 		fmt.Fprintf(w, "Platforms:        %s\n", joinPlatforms(match.Platforms))
@@ -451,6 +478,44 @@ func runPluginInfoFromMarketplace(cmd *cobra.Command, name string) error {
 	fmt.Fprintf(w, "\nInstall with: zhi plugin install %s\n", match.Name)
 
 	return nil
+}
+
+// printRatingDistribution renders a star distribution histogram.
+func printRatingDistribution(w io.Writer, rating marketplace.PluginRating) {
+	dist := []int{
+		rating.Distribution.Five,
+		rating.Distribution.Four,
+		rating.Distribution.Three,
+		rating.Distribution.Two,
+		rating.Distribution.One,
+	}
+	labels := []string{"5", "4", "3", "2", "1"}
+
+	maxCount := 0
+	for _, c := range dist {
+		if c > maxCount {
+			maxCount = c
+		}
+	}
+	if maxCount == 0 {
+		return
+	}
+
+	barWidth := 20
+	for i, c := range dist {
+		bar := ""
+		if maxCount > 0 {
+			width := c * barWidth / maxCount
+			for j := 0; j < width; j++ {
+				bar += "#"
+			}
+		}
+		pct := 0
+		if rating.Count > 0 {
+			pct = c * 100 / rating.Count
+		}
+		fmt.Fprintf(w, "  %s star  %-20s  %d (%d%%)\n", labels[i], bar, c, pct)
+	}
 }
 
 // joinPlatforms joins a slice of platform strings with ", ".

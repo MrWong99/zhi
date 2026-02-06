@@ -87,19 +87,23 @@ func runPluginSearch(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	headers := []string{"NAME", "TYPE", "VERSION", "RATING", "DOWNLOADS", "DESCRIPTION"}
+	headers := []string{"NAME", "TYPE", "VERSION", "RATING", "DOWNLOADS", "VERIFIED", "DESCRIPTION"}
 	var rows [][]string
 	for _, r := range resp.Results {
-		ratingStr := fmt.Sprintf("%.1f", r.Rating)
+		ratingStr := "-"
+		if r.RatingCount > 0 {
+			ratingStr = fmt.Sprintf("%.1f (%d)", r.Rating, r.RatingCount)
+		}
 		dlStr := formatDownloads(r.Downloads)
+		verifiedStr := ""
+		if r.Verified {
+			verifiedStr = "\u2713"
+		}
 		desc := r.Description
 		if len(desc) > 50 {
 			desc = desc[:47] + "..."
 		}
-		if r.Verified {
-			desc += " \u2713"
-		}
-		rows = append(rows, []string{r.Name, r.Type, r.LatestVersion, ratingStr, dlStr, desc})
+		rows = append(rows, []string{r.Name, r.Type, r.LatestVersion, ratingStr, dlStr, verifiedStr, desc})
 	}
 	fprintTable(w, headers, rows)
 	return nil
