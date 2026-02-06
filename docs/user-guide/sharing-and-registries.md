@@ -30,23 +30,23 @@ Installed plugins are placed in `~/.zhi/plugins/` and are immediately available 
 To publish a plugin, create a `zhi-plugin.yaml` manifest in your project root:
 
 ```yaml
-name: my-config-plugin
+schemaVersion: "1"
+name: pokedex
 type: config
-version: 1.0.0
-description: My custom configuration provider
-author: myorg
-license: Apache-2.0
-homepage: https://github.com/myorg/zhi-config-myplugin
+version: 0.0.1
+zhiProtocolVersion: "1"
+description: The zhi example pokedex plugin
+author: MrWong99
+license: MIT
+homepage: https://mrwong99.github.io/zhi/docs/plugin-development/overview.html
 keywords:
-  - custom
+  - example
   - config
+  - pokedex
 
 # Build artifacts (paths relative to project root)
 binaries:
-  linux/amd64: dist/zhi-config-myplugin_linux_amd64
-  linux/arm64: dist/zhi-config-myplugin_linux_arm64
-  darwin/amd64: dist/zhi-config-myplugin_darwin_amd64
-  darwin/arm64: dist/zhi-config-myplugin_darwin_arm64
+  linux/amd64: dist/zhi-config-pokedex
 ```
 
 Generate a manifest interactively:
@@ -230,19 +230,16 @@ Credentials are stored in `~/.zhi/config.yaml` or delegated to Docker credential
 Configure sharing defaults in `~/.zhi/config.yaml`:
 
 ```yaml
-sharing:
-  defaultRegistry: ghcr.io
-  marketplace:
-    url: https://marketplace.zhi.dev
-    apiKey: zhk_abc123...
-  verification:
-    requireSignatures: false
-    trustedPublishers:
-      - zhi-project
-  updates:
-    checkInterval: 24h
-    autoCheck: true
-    autoInstall: false
+default: ghcr.io
+marketplace:
+  url: https://marketplace.zhi.dev
+  apiKey: zhk_abc123...
+
+# use the zhi registry login command to create this section
+registries:
+  ghcr.io:
+    username: myuser
+    password: ghp_aRS...
 ```
 
 ## See Also
