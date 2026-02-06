@@ -177,6 +177,46 @@ func TestDefaultMetadataDir(t *testing.T) {
 	}
 }
 
+func TestSecurityFieldsRoundTrip(t *testing.T) {
+	dir := t.TempDir()
+	s := NewStore(dir)
+
+	p := &InstalledPlugin{
+		Name:            "secure-plugin",
+		Type:            "config",
+		Version:         "2.0.0",
+		Ref:             "oci://ghcr.io/zhi-project/zhi-config-secure:v2.0.0",
+		Digest:          "sha256:abc123",
+		Platform:        "linux/amd64",
+		InstalledAt:     time.Date(2026, 2, 1, 12, 0, 0, 0, time.UTC),
+		Publisher:       "zhi-project",
+		BinaryDigest:    "sha256:def456",
+		Signed:          true,
+		SigningIdentity: "release@zhi.dev",
+	}
+
+	if err := s.Save(p); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	loaded, err := s.Load("secure-plugin")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if loaded == nil {
+		t.Fatal("Load returned nil")
+	}
+	if loaded.BinaryDigest != "sha256:def456" {
+		t.Errorf("BinaryDigest = %q, want %q", loaded.BinaryDigest, "sha256:def456")
+	}
+	if !loaded.Signed {
+		t.Error("expected Signed to be true")
+	}
+	if loaded.SigningIdentity != "release@zhi.dev" {
+		t.Errorf("SigningIdentity = %q, want %q", loaded.SigningIdentity, "release@zhi.dev")
+	}
+}
+
 func TestSaveCreatesDirectory(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "nested", "metadata")
 	s := NewStore(dir)

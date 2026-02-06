@@ -132,6 +132,127 @@ func TestPluginListJSON(t *testing.T) {
 	}
 }
 
+func TestPluginListJSONWithSigning(t *testing.T) {
+	dir := t.TempDir()
+	metaStore := metadata.NewStore(dir)
+
+	now := time.Date(2026, 2, 1, 12, 0, 0, 0, time.UTC)
+	plugins := []*metadata.InstalledPlugin{
+		{
+			Name:            "signed-plugin",
+			Type:            "config",
+			Version:         "1.0.0",
+			Ref:             "oci://ghcr.io/org/signed:v1.0.0",
+			Platform:        "linux/amd64",
+			InstalledAt:     now,
+			Signed:          true,
+			SigningIdentity: "release@zhi.dev",
+		},
+		{
+			Name:        "unsigned-plugin",
+			Type:        "store",
+			Version:     "2.0.0",
+			Ref:         "oci://ghcr.io/org/unsigned:v2.0.0",
+			Platform:    "linux/amd64",
+			InstalledAt: now,
+		},
+	}
+	for _, p := range plugins {
+		if err := metaStore.Save(p); err != nil {
+			t.Fatalf("Save: %v", err)
+		}
+	}
+
+	list, err := metaStore.List()
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+
+	entries := make([]pluginListEntry, len(list))
+	for i, p := range list {
+		entries[i] = pluginListEntry{
+			Name:            p.Name,
+			Type:            p.Type,
+			Version:         p.Version,
+			Ref:             p.Ref,
+			Platform:        p.Platform,
+			Installed:       p.InstalledAt.Format(time.RFC3339),
+			Signed:          p.Signed,
+			SigningIdentity: p.SigningIdentity,
+		}
+	}
+
+	if len(entries) != 2 {
+		t.Fatalf("expected 2 entries, got %d", len(entries))
+	}
+	// Entries are sorted by name.
+	if entries[0].Name != "signed-plugin" {
+		t.Errorf("first entry name = %q, want signed-plugin", entries[0].Name)
+	}
+	if !entries[0].Signed {
+		t.Error("expected signed-plugin to have Signed=true")
+	}
+	if entries[0].SigningIdentity != "release@zhi.dev" {
+		t.Errorf("SigningIdentity = %q, want release@zhi.dev", entries[0].SigningIdentity)
+	}
+	if entries[1].Signed {
+		t.Error("expected unsigned-plugin to have Signed=false")
+	}
+}
+
+func TestPluginInfoOutput(t *testing.T) {
+	dir := t.TempDir()
+	metaStore := metadata.NewStore(dir)
+
+	p := &metadata.InstalledPlugin{
+		Name:            "test-info",
+		Type:            "config",
+		Version:         "1.0.0",
+		Ref:             "oci://ghcr.io/org/test:v1.0.0",
+		Digest:          "sha256:abc123",
+		BinaryDigest:    "sha256:def456",
+		Platform:        "linux/amd64",
+		Publisher:       "test-org",
+		Signed:          true,
+		SigningIdentity: "ci@test.org",
+		InstalledAt:     time.Date(2026, 2, 1, 12, 0, 0, 0, time.UTC),
+	}
+	if err := metaStore.Save(p); err != nil {
+		t.Fatal(err)
+	}
+
+	loaded, err := metaStore.Load("test-info")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	// Verify the info output struct can be populated.
+	out := pluginInfoOutput{
+		Name:            loaded.Name,
+		Type:            loaded.Type,
+		Version:         loaded.Version,
+		Ref:             loaded.Ref,
+		Digest:          loaded.Digest,
+		BinaryDigest:    loaded.BinaryDigest,
+		Platform:        loaded.Platform,
+		Publisher:       loaded.Publisher,
+		Signed:          loaded.Signed,
+		SigningIdentity: loaded.SigningIdentity,
+		InstalledAt:     loaded.InstalledAt.Format(time.RFC3339),
+	}
+
+	data, err := json.MarshalIndent(out, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(data) == 0 {
+		t.Error("expected non-empty JSON output")
+	}
+	if out.BinaryDigest != "sha256:def456" {
+		t.Errorf("BinaryDigest = %q, want sha256:def456", out.BinaryDigest)
+	}
+}
+
 func TestNewSharingClientPlatform(t *testing.T) {
 	p := client.CurrentPlatform()
 	if p.OS == "" || p.Arch == "" {

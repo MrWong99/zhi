@@ -92,9 +92,34 @@ cp zhi-config-myplugin ~/.zhi/plugins/
 chmod +x ~/.zhi/plugins/zhi-config-myplugin
 ```
 
+## Sharing and Installing from OCI Registries
+
+Plugins can be installed directly from OCI registries:
+
+```sh
+# Install a plugin from an OCI reference
+zhi plugin install oci://ghcr.io/zhi-project/zhi-config-ansible:v1.2.0
+
+# List installed shared plugins (includes signing status)
+zhi plugin list
+
+# Show detailed plugin info including signer identity and binary digest
+zhi plugin info ansible-config
+
+# Verify a plugin's signature without installing
+zhi plugin verify oci://ghcr.io/zhi-project/zhi-config-ansible:v1.2.0
+
+# Uninstall a shared plugin
+zhi plugin uninstall ansible-config
+```
+
 ## Security
 
 - zhi logs the full path and SHA-256 hash of each launched plugin for audit purposes
+- **Binary integrity verification**: At launch time, the binary's SHA-256 digest is compared against the digest recorded during installation. A mismatch indicates post-install tampering and is logged as an error
+- **Signature verification**: During `zhi plugin install`, artifact signatures are checked against the security policy. Use `--skip-verify` to bypass (not recommended)
+- **Security policy**: Configure `~/.zhi/policy.yaml` to require signatures (`requireSignatures: true`), restrict allowed registries, and block specific plugins
+- **Trust store**: Trusted signing keys are managed in `~/.zhi/keys/`
 - World-writable plugin binaries produce a warning
 - Plugins run as separate processes communicating over stdio (local process boundary)
 - The [hashicorp/go-plugin](https://github.com/hashicorp/go-plugin) handshake provides basic identity verification
