@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -238,5 +239,149 @@ func TestSaveCreatesDirectory(t *testing.T) {
 	}
 	if loaded == nil {
 		t.Fatal("expected non-nil after save to nested directory")
+	}
+}
+
+func TestSetPinned(t *testing.T) {
+	dir := t.TempDir()
+	s := NewStore(dir)
+
+	p := &InstalledPlugin{
+		Name:        "pin-test",
+		Type:        "config",
+		Version:     "1.0.0",
+		InstalledAt: time.Now(),
+	}
+	if err := s.Save(p); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	// Pin the plugin.
+	if err := s.SetPinned("pin-test", true); err != nil {
+		t.Fatalf("SetPinned(true): %v", err)
+	}
+	loaded, err := s.Load("pin-test")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if !loaded.Pinned {
+		t.Error("expected Pinned to be true")
+	}
+
+	// Unpin the plugin.
+	if err := s.SetPinned("pin-test", false); err != nil {
+		t.Fatalf("SetPinned(false): %v", err)
+	}
+	loaded, err = s.Load("pin-test")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if loaded.Pinned {
+		t.Error("expected Pinned to be false")
+	}
+}
+
+func TestSetPinnedNotInstalled(t *testing.T) {
+	dir := t.TempDir()
+	s := NewStore(dir)
+
+	err := s.SetPinned("nonexistent", true)
+	if err == nil {
+		t.Error("expected error for nonexistent plugin")
+	}
+}
+
+func TestBackupAndRestoreBinary(t *testing.T) {
+	pluginDir := t.TempDir()
+	binaryName := "zhi-config-test"
+
+	// Create a fake binary.
+	binaryPath := filepath.Join(pluginDir, binaryName)
+	if err := os.WriteFile(binaryPath, []byte("binary-v1"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Back up.
+	if err := BackupBinary(pluginDir, binaryName, "1.0.0"); err != nil {
+		t.Fatalf("BackupBinary: %v", err)
+	}
+
+	// Original should be gone.
+	if _, err := os.Stat(binaryPath); !os.IsNotExist(err) {
+		t.Error("expected original binary to be removed after backup")
+	}
+
+	// Backup should exist.
+	backupPath := filepath.Join(pluginDir, ".backup", binaryName+".1.0.0")
+	if _, err := os.Stat(backupPath); err != nil {
+		t.Errorf("expected backup at %s: %v", backupPath, err)
+	}
+
+	// Write a new version as the current binary.
+	if err := os.WriteFile(binaryPath, []byte("binary-v2"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Restore backup.
+	version, err := RestoreBackup(pluginDir, binaryName)
+	if err != nil {
+		t.Fatalf("RestoreBackup: %v", err)
+	}
+	if version != "1.0.0" {
+		t.Errorf("restored version = %q, want %q", version, "1.0.0")
+	}
+
+	// Restored binary should contain the old data.
+	data, err := os.ReadFile(binaryPath)
+	if err != nil {
+		t.Fatalf("reading restored binary: %v", err)
+	}
+	if string(data) != "binary-v1" {
+		t.Errorf("restored binary content = %q, want %q", string(data), "binary-v1")
+	}
+}
+
+func TestBackupNonexistentBinary(t *testing.T) {
+	pluginDir := t.TempDir()
+	// Should not error when the binary doesn't exist.
+	if err := BackupBinary(pluginDir, "nonexistent", "1.0.0"); err != nil {
+		t.Errorf("BackupBinary for nonexistent: %v", err)
+	}
+}
+
+func TestRestoreBackupNotFound(t *testing.T) {
+	pluginDir := t.TempDir()
+	_, err := RestoreBackup(pluginDir, "nonexistent")
+	if err == nil {
+		t.Error("expected error for missing backup")
+	}
+}
+
+func TestPinnedFieldRoundTrip(t *testing.T) {
+	dir := t.TempDir()
+	s := NewStore(dir)
+
+	p := &InstalledPlugin{
+		Name:        "pinned-plugin",
+		Type:        "config",
+		Version:     "1.0.0",
+		Ref:         "oci://example.com/test:v1.0.0",
+		InstalledAt: time.Now(),
+		Pinned:      true,
+	}
+
+	if err := s.Save(p); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+
+	loaded, err := s.Load("pinned-plugin")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if loaded == nil {
+		t.Fatal("Load returned nil")
+	}
+	if !loaded.Pinned {
+		t.Error("expected Pinned to be true after round-trip")
 	}
 }
