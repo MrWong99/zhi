@@ -12,12 +12,10 @@ The platform follows a Vault-style architecture: built-in providers are compiled
 
 ```bash
 # Build
-make build              # Build zhi binary to bin/
-make build-marketplace  # Build the zhi-marketplace binary to bin/
+make build              # Build all cmd/ binaries to bin/
 make build-examples     # Build all Go example plugins to bin/examples/
-make build-mirror       # Build the zhi-mirror binary to bin/
 make build-all          # Build zhi + marketplace + mirror + examples
-make install            # Install zhi to $GOPATH/bin
+make install            # Install cmd/ binaries to $GOPATH/bin
 
 # Test
 make test               # Run all tests (race detection, -count=1)

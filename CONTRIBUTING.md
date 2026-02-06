@@ -44,10 +44,10 @@ below.
 
 | Target | Description |
 |--------|-------------|
-| `make build` | Build the `zhi` binary into `bin/` |
+| `make build` | Build all `cmd/` binaries to `bin/` |
 | `make build-examples` | Build all example plugins into `bin/examples/` |
 | `make build-all` | Build the main binary and all examples |
-| `make install` | Install the `zhi` binary into `$GOPATH/bin` |
+| `make install` | Install the `cmd/` binaries into `$GOPATH/bin` |
 
 ### Test
 

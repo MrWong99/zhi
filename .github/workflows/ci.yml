@@ -86,26 +86,12 @@ jobs:
         with:
           go-version-file: "go.mod"
 
-      - name: Build binary
+      - name: Build binaries
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: "0"
         run: make build
-
-      - name: Build marketplace
-        env:
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
-          CGO_ENABLED: "0"
-        run: make build-marketplace
-
-      - name: Build mirror
-        env:
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
-          CGO_ENABLED: "0"
-        run: make build-mirror
 
       - name: Verify binaries (native only)
         if: matrix.goos == 'linux' && matrix.goarch == 'amd64'

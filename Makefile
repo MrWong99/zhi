@@ -7,7 +7,7 @@
 MODULE   := github.com/MrWong99/zhi
 BIN_NAME := zhi
 BIN_DIR  := bin
-CMD_DIR  := ./cmd/zhi
+CMD_DIR  := ./cmd
 
 # Version info (injected via ldflags)
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
@@ -61,9 +61,13 @@ PROTOC_URL := https://github.com/protocolbuffers/protobuf/releases/download/v$(P
 # ──────────────────────────────────────────────────────────────────────────────
 
 .PHONY: build
-build: ## Build the zhi binary
+build: ## Build the cmd/ binaries
 	@mkdir -p $(BIN_DIR)
-	go build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/$(BIN_NAME) $(CMD_DIR)
+	@for dir in $(CMD_DIR)/*/; do \
+		name=$$(basename "$$dir"); \
+		echo "Building cmd: $$name"; \
+	    go build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/$$name ./$$dir; \
+	done
 
 .PHONY: build-examples
 build-examples: ## Build all Go example plugins
@@ -78,27 +82,16 @@ build-examples: ## Build all Go example plugins
 		fi; \
 	done
 
-.PHONY: build-marketplace
-build-marketplace: ## Build the zhi-marketplace binary
-	@mkdir -p $(BIN_DIR)
-	go build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/zhi-marketplace ./cmd/zhi-marketplace
-
-.PHONY: build-mirror
-build-mirror: ## Build the zhi-mirror binary
-	@mkdir -p $(BIN_DIR)
-	go build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/zhi-mirror ./cmd/zhi-mirror
-
-.PHONY: build-webui
-build-webui: ## Build the zhi-ui-webui example plugin
-	@mkdir -p $(BIN_DIR)/examples
-	go build $(GOFLAGS) -o $(BIN_DIR)/examples/zhi-ui-webui ./examples/zhi-ui-webui
-
 .PHONY: build-all
-build-all: build build-marketplace build-mirror build-examples build-webui ## Build all binaries: zhi, marketplace, mirror, and examples
+build-all: build build-examples ## Build all binaries: zhi, marketplace, mirror, and examples
 
 .PHONY: install
-install: ## Install the zhi binary into GOPATH/bin
-	go install $(GOFLAGS) -ldflags "$(LDFLAGS)" $(CMD_DIR)
+install: ## Install the cmd/ binaries into GOPATH/bin
+	@for dir in $(CMD_DIR)/*/; do \
+		name=$$(basename "$$dir"); \
+		echo "Installing cmd: $$name"; \
+	    go install $(GOFLAGS) -ldflags "$(LDFLAGS)" ./$$dir; \
+	done
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Test
@@ -223,6 +216,7 @@ tools: ## Install required development tools
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 	go install golang.org/x/tools/go/analysis/passes/modernize/cmd/modernize@latest
+	go install github.com/goreleaser/goreleaser/v2@latest
 	curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(GOPATH)/bin v2.8.0
 
 # ──────────────────────────────────────────────────────────────────────────────
