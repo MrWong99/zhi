@@ -140,6 +140,26 @@ Plugins communicate over gRPC, so any language with gRPC support can implement a
 
 - [Structured File Provider](structuredfile-provider.md) -- loads configuration from JSON and YAML files
 
+## Publishing Plugins
+
+Once your plugin is built and tested, you can share it via OCI registries.
+
+1. Create a `zhi-plugin.yaml` manifest:
+
+```sh
+zhi plugin init --name my-config --type config --version 1.0.0
+```
+
+2. Build binaries for your target platforms (e.g. using GoReleaser or `GOOS`/`GOARCH` cross-compilation).
+
+3. Publish to a registry:
+
+```sh
+zhi plugin publish --registry ghcr.io/myorg --sign
+```
+
+See the [Sharing and Registries guide](../user-guide/sharing-and-registries.md) for the full publishing workflow, including signing, marketplace registration, and version management.
+
 ## Further Reading
 
 - [Config Plugin API](config-plugin.md)
@@ -147,3 +167,4 @@ Plugins communicate over gRPC, so any language with gRPC support can implement a
 - [Store Plugin API](store-plugin.md)
 - [UI Plugin API](ui-plugin.md)
 - [Java Plugin Development](java-plugin.md)
+- [Sharing and Registries](../user-guide/sharing-and-registries.md)

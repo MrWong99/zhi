@@ -74,6 +74,23 @@ zhi export --format json
 zhi edit
 ```
 
+## Installing Plugins
+
+Install community or third-party plugins directly from OCI registries:
+
+```sh
+# Install from the marketplace
+zhi plugin install ansible-config
+
+# Install a specific version from an OCI reference
+zhi plugin install oci://ghcr.io/zhi-project/zhi-config-ansible:v1.2.0
+
+# Search for available plugins
+zhi plugin search --type config
+```
+
+See [Sharing and Registries](sharing-and-registries.md) for the full guide.
+
 ## What's Next
 
 - [Workspace Configuration](workspace-configuration.md) -- learn about `zhi.yaml`
@@ -81,3 +98,5 @@ zhi edit
 - [Components](components.md) -- group and toggle configuration bundles
 - [Export and Templates](export-and-templates.md) -- render configuration to files
 - [Apply](apply.md) -- run provisioning commands
+- [Plugin Discovery](plugin-discovery.md) -- discovering and using external plugins
+- [Sharing and Registries](sharing-and-registries.md) -- installing, publishing, and updating plugins via OCI registries

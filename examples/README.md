@@ -49,6 +49,29 @@ This example does not support versioning or encryption.
 See [zhi-store-memory/main.go](zhi-store-memory/main.go) and the
 [Store Plugin docs](../docs/plugin-development/store-plugin.md) for details.
 
+## zhi-store-vault
+
+A store plugin backed by HashiCorp Vault's KV v2 secrets engine. Demonstrates:
+
+- Using the Vault store provider as an external plugin binary
+- Configuration via environment variables (`VAULT_ADDR`, `VAULT_TOKEN`, `ZHI_VAULT_MOUNT`, `ZHI_VAULT_PREFIX`)
+- Value-level versioning, authentication, encryption, and access control via Vault
+
+See [zhi-store-vault/main.go](zhi-store-vault/main.go) and the
+[Store Plugin docs](../docs/plugin-development/store-plugin.md) for details.
+
+## zhi-config-javabean
+
+A config plugin written in Java using Bean Validation and GraalVM native-image. Demonstrates:
+
+- Implementing the gRPC ConfigService in Java
+- Mapping Java beans to zhi configuration paths with annotations (`@ConfigPrefix`, `@ConfigProperty`)
+- Using Jakarta Bean Validation for single-value and cross-value validation
+- Building a native binary with GraalVM `native-image`
+
+See [zhi-config-javabean/](zhi-config-javabean/) and the
+[Java Plugin Development docs](../docs/plugin-development/java-plugin.md) for details.
+
 ## zhi-ui-httpapi
 
 A UI plugin that exposes the zhi configuration engine as an HTTP/JSON API. Demonstrates:
