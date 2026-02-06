@@ -15,9 +15,10 @@ import (
 // ---------- mock controller ----------
 
 type mockController struct {
-	workspaceName string
-	tree          *config.Tree
-	components    []ui.ComponentInfo
+	workspaceName   string
+	tree            *config.Tree
+	components      []ui.ComponentInfo
+	exportTemplates []ui.ExportTemplate
 }
 
 func newMockController() *mockController {
@@ -31,6 +32,10 @@ func newMockController() *mockController {
 		components: []ui.ComponentInfo{
 			{Name: "database", Description: "Database config", Enabled: true, Mandatory: true, Paths: []string{"db"}},
 			{Name: "application", Description: "App config", Enabled: false, Paths: []string{"app"}},
+		},
+		exportTemplates: []ui.ExportTemplate{
+			{Name: "docker-compose", Format: "yaml", Output: "./docker-compose.override.yml"},
+			{Name: "env-file", Format: "dotenv", Output: "./.env", Prefix: "app/env"},
 		},
 	}
 }
@@ -56,15 +61,26 @@ func (m *mockController) SaveTree(_ context.Context, _ string) error {
 }
 
 func (m *mockController) ExportTemplates(_ context.Context) ([]ui.ExportTemplate, error) {
-	return nil, nil
+	return m.exportTemplates, nil
 }
 
-func (m *mockController) Export(_ context.Context, _ ui.ExportRequest) (*ui.ExportResult, error) {
-	return &ui.ExportResult{}, nil
+func (m *mockController) Export(_ context.Context, req ui.ExportRequest) (*ui.ExportResult, error) {
+	name := req.Format
+	if name == "" {
+		name = "custom"
+	}
+	content := "exported-content-" + name
+	return &ui.ExportResult{
+		Name:       name,
+		Content:    content,
+		OutputPath: req.OutputPath,
+	}, nil
 }
 
-func (m *mockController) Apply(_ context.Context, _ string, _ func(ui.ApplyEvent)) (*ui.ApplyResult, error) {
-	return &ui.ApplyResult{}, nil
+func (m *mockController) Apply(_ context.Context, target string, handler func(ui.ApplyEvent)) (*ui.ApplyResult, error) {
+	handler(ui.ApplyEvent{Line: "running " + target, Stream: "stdout"})
+	handler(ui.ApplyEvent{Line: "done", Stream: "stdout"})
+	return &ui.ApplyResult{ExitCode: 0}, nil
 }
 
 func (m *mockController) ListComponents(_ context.Context) ([]ui.ComponentInfo, error) {
@@ -940,6 +956,263 @@ func TestTreeNodeHasPathID(t *testing.T) {
 	leaf := nodes[0].Children[0]
 	if leaf.PathID != "db--host" {
 		t.Errorf("PathID = %q, want 'db--host'", leaf.PathID)
+	}
+}
+
+// ---------- Phase 3: export tests ----------
+
+func TestExportPage(t *testing.T) {
+	base, _ := startTestServer(t)
+	resp := get(t, base+"/export")
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if !strings.Contains(body, "Export") {
+		t.Error("export page should contain 'Export'")
+	}
+	if !strings.Contains(body, "docker-compose") {
+		t.Error("export page should contain 'docker-compose' template")
+	}
+	if !strings.Contains(body, "env-file") {
+		t.Error("export page should contain 'env-file' template")
+	}
+	if !strings.Contains(body, "JSON") {
+		t.Error("export page should contain quick export JSON button")
+	}
+	if !strings.Contains(body, "YAML") {
+		t.Error("export page should contain quick export YAML button")
+	}
+}
+
+func TestExportPageHasExportAllButton(t *testing.T) {
+	base, _ := startTestServer(t)
+	resp := get(t, base+"/export")
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if !strings.Contains(body, "Export All") {
+		t.Error("export page should contain 'Export All' button when templates exist")
+	}
+}
+
+func TestExportPreview(t *testing.T) {
+	base, _ := startTestServer(t)
+	token, cookies := getCSRFToken(t, base)
+
+	resp := postWithCSRF(t, base+"/export/preview", "format=yaml", token, cookies)
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body = %s", resp.StatusCode, body)
+	}
+	if !strings.Contains(body, "export-preview") {
+		t.Error("preview response should contain export-preview class")
+	}
+	if !strings.Contains(body, "exported-content-yaml") {
+		t.Error("preview response should contain exported content")
+	}
+}
+
+func TestExportExecution(t *testing.T) {
+	base, _ := startTestServer(t)
+	token, cookies := getCSRFToken(t, base)
+
+	resp := postWithCSRF(t, base+"/export", "format=json&output=/tmp/test.json", token, cookies)
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body = %s", resp.StatusCode, body)
+	}
+	if !strings.Contains(body, "export-result") {
+		t.Error("export response should contain export-result class")
+	}
+	if !strings.Contains(body, "success") {
+		t.Error("export result should indicate success")
+	}
+}
+
+func TestExportAll(t *testing.T) {
+	base, _ := startTestServer(t)
+	token, cookies := getCSRFToken(t, base)
+
+	resp := postWithCSRF(t, base+"/export/all", "", token, cookies)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("status = %d, want 200", resp.StatusCode)
+	}
+	trigger := resp.Header.Get("HX-Trigger")
+	if !strings.Contains(trigger, "showNotification") {
+		t.Error("export all should trigger showNotification")
+	}
+	if !strings.Contains(trigger, "Exported all") {
+		t.Error("export all should show success message")
+	}
+}
+
+func TestExportHTMXFragment(t *testing.T) {
+	base, _ := startTestServer(t)
+	req, err := http.NewRequest("GET", base+"/export", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("HX-Request", "true")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	// Fragment should not contain the full layout.
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX fragment should not contain full HTML document")
+	}
+	if !strings.Contains(body, "docker-compose") {
+		t.Error("fragment should contain template names")
+	}
+}
+
+// ---------- Phase 3: apply tests ----------
+
+func TestApplyPage(t *testing.T) {
+	base, _ := startTestServer(t)
+	resp := get(t, base+"/apply")
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if !strings.Contains(body, "Apply") {
+		t.Error("apply page should contain 'Apply'")
+	}
+	if !strings.Contains(body, "apply-terminal") {
+		t.Error("apply page should contain terminal element")
+	}
+	if !strings.Contains(body, "default") {
+		t.Error("apply page should contain default target")
+	}
+}
+
+func TestApplyRunSSE(t *testing.T) {
+	base, _ := startTestServer(t)
+	token, cookies := getCSRFToken(t, base)
+
+	resp := postWithCSRF(t, base+"/apply/run", "target=default", token, cookies)
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body = %s", resp.StatusCode, body)
+	}
+
+	// Verify SSE content type.
+	ct := resp.Header.Get("Content-Type")
+	if !strings.Contains(ct, "text/event-stream") {
+		t.Errorf("Content-Type = %q, want text/event-stream", ct)
+	}
+
+	// Verify SSE format: should contain event: output and event: done.
+	if !strings.Contains(body, "event: output") {
+		t.Error("SSE stream should contain 'event: output'")
+	}
+	if !strings.Contains(body, "event: done") {
+		t.Error("SSE stream should contain 'event: done'")
+	}
+	if !strings.Contains(body, "running default") {
+		t.Error("SSE stream should contain mock output 'running default'")
+	}
+	if !strings.Contains(body, `"exit_code":0`) {
+		t.Error("SSE done event should contain exit_code 0")
+	}
+}
+
+func TestApplyRunPreExport(t *testing.T) {
+	base, _ := startTestServer(t)
+	token, cookies := getCSRFToken(t, base)
+
+	resp := postWithCSRF(t, base+"/apply/run", "target=default&pre_export=true", token, cookies)
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body = %s", resp.StatusCode, body)
+	}
+	// Should still produce the SSE stream after pre-export.
+	if !strings.Contains(body, "event: done") {
+		t.Error("SSE stream should complete after pre-export")
+	}
+}
+
+// ---------- Phase 3: sidebar navigation ----------
+
+func TestSidebarHasExportAndApplyLinks(t *testing.T) {
+	base, _ := startTestServer(t)
+	resp := get(t, base+"/tree")
+	body := bodyString(t, resp)
+	if !strings.Contains(body, "/export") {
+		t.Error("sidebar should contain link to /export")
+	}
+	if !strings.Contains(body, "/apply") {
+		t.Error("sidebar should contain link to /apply")
+	}
+}
+
+// ---------- Phase 3: shortcuts page ----------
+
+func TestShortcutsPageHasExportAndApply(t *testing.T) {
+	base, _ := startTestServer(t)
+	resp := get(t, base+"/shortcuts")
+	body := bodyString(t, resp)
+	if !strings.Contains(body, "Export") {
+		t.Error("shortcuts page should document Export shortcut")
+	}
+	if !strings.Contains(body, "Apply") {
+		t.Error("shortcuts page should document Apply shortcut")
+	}
+}
+
+// ---------- Phase 3: unit tests ----------
+
+func TestToExportTemplateData(t *testing.T) {
+	templates := []ui.ExportTemplate{
+		{Name: "t1", Format: "yaml", Output: "out.yaml"},
+		{Name: "t2", Template: "tmpl.txt", Output: "out.txt", Prefix: "app"},
+	}
+	result := toExportTemplateData(templates)
+	if len(result) != 2 {
+		t.Fatalf("got %d items, want 2", len(result))
+	}
+	if result[0].Name != "t1" || result[0].Format != "yaml" {
+		t.Error("first template should be t1/yaml")
+	}
+	if result[1].Name != "t2" || result[1].Template != "tmpl.txt" || result[1].Prefix != "app" {
+		t.Error("second template should be t2 with template and prefix")
+	}
+}
+
+func TestFormatForCSS(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"json", "json"},
+		{"yaml", "yaml"},
+		{"toml", "toml"},
+		{"dotenv", "dotenv"},
+		{"custom", "text"},
+		{"", "text"},
+	}
+	for _, tt := range tests {
+		got := formatForCSS(tt.input)
+		if got != tt.expected {
+			t.Errorf("formatForCSS(%q) = %q, want %q", tt.input, got, tt.expected)
+		}
+	}
+}
+
+func TestToApplyTargetData(t *testing.T) {
+	targets := toApplyTargetData(nil)
+	if len(targets) != 1 {
+		t.Fatalf("got %d targets, want 1", len(targets))
+	}
+	if targets[0].Name != "default" {
+		t.Errorf("target name = %q, want 'default'", targets[0].Name)
 	}
 }
 

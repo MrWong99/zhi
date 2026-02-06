@@ -198,6 +198,16 @@
       window.location.href = "/validation";
       return;
     }
+    if (sequence === "ge") {
+      sequence = "";
+      window.location.href = "/export";
+      return;
+    }
+    if (sequence === "ga") {
+      sequence = "";
+      window.location.href = "/apply";
+      return;
+    }
 
     // Reset sequence after timeout.
     if (sequence.length > 0) {
@@ -222,6 +232,8 @@
   registerShortcut("g t", "Navigate to Tree", function () {});
   registerShortcut("g c", "Navigate to Components", function () {});
   registerShortcut("g v", "Navigate to Validation", function () {});
+  registerShortcut("g e", "Navigate to Export", function () {});
+  registerShortcut("g a", "Navigate to Apply", function () {});
   registerShortcut("Ctrl+S", "Save tree", function () {});
   registerShortcut("Esc", "Close edit form / Cancel", function () {});
   registerShortcut("?", "Show shortcut overlay", function () {});

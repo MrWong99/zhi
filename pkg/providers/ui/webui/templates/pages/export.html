@@ -1,0 +1,21 @@
+{{define "title"}}Export{{end}}
+
+{{define "content"}}
+<div class="export-page">
+  <div class="export-header">
+    <h2>Export</h2>
+    {{if .ExportTemplates}}
+    <button class="btn btn-primary btn-sm"
+            hx-post="/export/all"
+            hx-swap="none">
+      Export All
+    </button>
+    {{end}}
+  </div>
+
+  {{template "export_content" .}}
+
+  <div id="export-preview"></div>
+  <div id="export-result"></div>
+</div>
+{{end}}

@@ -1,0 +1,11 @@
+{{define "export_result"}}
+<div class="export-result {{if .Error}}error{{else}}success{{end}}">
+  {{if .Error}}
+  <span class="icon">&#10007;</span>
+  <span>Export failed: {{.Error}}</span>
+  {{else}}
+  <span class="icon">&#10003;</span>
+  <span>Exported <strong>{{.Name}}</strong> to <code>{{.OutputPath}}</code></span>
+  {{end}}
+</div>
+{{end}}

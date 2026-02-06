@@ -43,6 +43,16 @@ func (s *Server) registerRoutes() {
 	s.mux.HandleFunc("GET /components", s.handleComponentsPage)
 	s.mux.HandleFunc("POST /components/{name}/toggle", s.handleComponentToggle)
 
+	// Export (Phase 3).
+	s.mux.HandleFunc("GET /export", s.handleExportPage)
+	s.mux.HandleFunc("POST /export/preview", s.handleExportPreview)
+	s.mux.HandleFunc("POST /export", s.handleExport)
+	s.mux.HandleFunc("POST /export/all", s.handleExportAll)
+
+	// Apply (Phase 3).
+	s.mux.HandleFunc("GET /apply", s.handleApplyPage)
+	s.mux.HandleFunc("POST /apply/run", s.handleApplyRun)
+
 	// Keyboard shortcuts (Phase 2).
 	s.mux.HandleFunc("GET /shortcuts", s.handleShortcutsPage)
 

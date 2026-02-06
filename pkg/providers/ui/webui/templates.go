@@ -186,6 +186,7 @@ func iconFunc(name string) template.HTML {
 		"grid":     `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>`,
 		"save":     `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>`,
 		"keyboard": `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"/><path d="M6 8h.001M10 8h.001M14 8h.001M18 8h.001M8 12h.001M12 12h.001M16 12h.001M7 16h10"/></svg>`,
+		"play":     `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>`,
 	}
 	if svg, ok := icons[name]; ok {
 		//nolint:gosec // SVG icons are static, developer-controlled content.
@@ -230,6 +231,14 @@ type pageData struct {
 
 	// Components page data.
 	Components []componentViewData
+
+	// Export page data.
+	ExportTemplates []exportTemplateData
+	ExportPreview   *exportPreviewData
+	ExportResult    *exportResultData
+
+	// Apply page data.
+	ApplyTargets []applyTargetData
 
 	// Error page data.
 	StatusCode int

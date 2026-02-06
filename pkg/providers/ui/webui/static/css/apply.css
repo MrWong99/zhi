@@ -1,0 +1,156 @@
+/* Apply page styles */
+
+.apply-page {
+  max-width: 900px;
+}
+
+.apply-page h2 {
+  margin-bottom: var(--space-4);
+}
+
+/* Apply controls */
+
+.apply-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.apply-target-selector {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.apply-target-selector label {
+  font-weight: 600;
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+
+.apply-target-selector select {
+  min-width: 200px;
+}
+
+.apply-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* Terminal display */
+
+.apply-terminal {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: #1e1e2e;
+  color: #cdd6f4;
+  font-family: var(--font-mono);
+}
+
+.terminal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  background: #181825;
+  border-bottom: 1px solid #313244;
+}
+
+.terminal-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: #bac2de;
+}
+
+.terminal-status {
+  font-size: var(--text-xs);
+  padding: 0.15em 0.5em;
+  border-radius: var(--radius-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.status-ready {
+  color: #bac2de;
+}
+
+.status-running {
+  color: #89b4fa;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.status-success {
+  color: #a6e3a1;
+}
+
+.status-failed {
+  color: #f38ba8;
+}
+
+.status-error {
+  color: #f38ba8;
+}
+
+.status-cancelled {
+  color: #fab387;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.terminal-output {
+  min-height: 200px;
+  max-height: 500px;
+  overflow-y: auto;
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  line-height: 1.4;
+}
+
+.terminal-line {
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.line-stdout {
+  color: #cdd6f4;
+}
+
+.line-stderr {
+  color: #f38ba8;
+}
+
+.terminal-footer {
+  padding: var(--space-2) var(--space-3);
+  border-top: 1px solid #313244;
+  background: #181825;
+  font-size: var(--text-sm);
+  display: none;
+}
+
+.terminal-footer.visible {
+  display: block;
+}
+
+/* Scrollbar styling for the terminal */
+.terminal-output::-webkit-scrollbar {
+  width: 8px;
+}
+
+.terminal-output::-webkit-scrollbar-track {
+  background: #181825;
+}
+
+.terminal-output::-webkit-scrollbar-thumb {
+  background: #45475a;
+  border-radius: 4px;
+}
+
+.terminal-output::-webkit-scrollbar-thumb:hover {
+  background: #585b70;
+}

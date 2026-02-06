@@ -1,0 +1,82 @@
+{{define "export_content"}}
+<div class="export-templates" id="export-templates">
+  {{if .ExportTemplates}}
+  <h3>Templates</h3>
+  <div class="export-template-list">
+    {{range .ExportTemplates}}
+    <div class="export-template-card">
+      <div class="export-template-header">
+        <span class="export-template-name">{{.Name}}</span>
+        {{if .Format}}
+        <span class="badge badge-info">{{.Format}}</span>
+        {{else}}
+        <span class="badge badge-muted">template</span>
+        {{end}}
+      </div>
+      {{if .Output}}
+      <div class="export-template-detail">
+        Output: <code>{{.Output}}</code>
+      </div>
+      {{end}}
+      {{if .Prefix}}
+      <div class="export-template-detail">
+        Prefix: <code>{{.Prefix}}</code>
+      </div>
+      {{end}}
+      <div class="export-template-actions">
+        <button class="btn btn-sm btn-outline"
+                hx-post="/export/preview"
+                hx-vals='{"template": "{{.Template}}", "format": "{{.Format}}", "output": "{{.Output}}", "prefix": "{{.Prefix}}"}'
+                hx-target="#export-preview"
+                hx-swap="innerHTML">
+          Preview
+        </button>
+        <button class="btn btn-sm btn-primary"
+                hx-post="/export"
+                hx-vals='{"template": "{{.Template}}", "format": "{{.Format}}", "output": "{{.Output}}", "prefix": "{{.Prefix}}"}'
+                hx-target="#export-result"
+                hx-swap="innerHTML">
+          Export
+        </button>
+      </div>
+    </div>
+    {{end}}
+  </div>
+  {{else}}
+  <p class="empty-state">No export templates configured in workspace.</p>
+  {{end}}
+
+  <h3>Quick Export</h3>
+  <p class="export-description">Export the full configuration tree in a built-in format.</p>
+  <div class="quick-export-buttons">
+    <button class="btn btn-outline"
+            hx-post="/export/preview"
+            hx-vals='{"format": "json"}'
+            hx-target="#export-preview"
+            hx-swap="innerHTML">
+      JSON
+    </button>
+    <button class="btn btn-outline"
+            hx-post="/export/preview"
+            hx-vals='{"format": "yaml"}'
+            hx-target="#export-preview"
+            hx-swap="innerHTML">
+      YAML
+    </button>
+    <button class="btn btn-outline"
+            hx-post="/export/preview"
+            hx-vals='{"format": "toml"}'
+            hx-target="#export-preview"
+            hx-swap="innerHTML">
+      TOML
+    </button>
+    <button class="btn btn-outline"
+            hx-post="/export/preview"
+            hx-vals='{"format": "dotenv"}'
+            hx-target="#export-preview"
+            hx-swap="innerHTML">
+      dotenv
+    </button>
+  </div>
+</div>
+{{end}}

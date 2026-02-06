@@ -8,7 +8,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"runtime/debug"
@@ -189,6 +188,8 @@ func (c *csrfMiddleware) middleware(next http.Handler) http.Handler {
 }
 
 // compressMiddleware applies gzip compression for text responses.
+// It skips compression for text/event-stream (SSE) responses, which
+// require unbuffered delivery for real-time streaming.
 func compressMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
@@ -201,25 +202,65 @@ func compressMiddleware(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		defer gz.Close()
 
-		w.Header().Set("Content-Encoding", "gzip")
-		w.Header().Del("Content-Length")
-
-		next.ServeHTTP(&gzipResponseWriter{ResponseWriter: w, writer: gz}, r)
+		gw := &gzipResponseWriter{ResponseWriter: w, gz: gz, headerWritten: false}
+		defer gw.finish()
+		next.ServeHTTP(gw, r)
 	})
 }
 
 type gzipResponseWriter struct {
 	http.ResponseWriter
-	writer io.Writer
+	gz            *gzip.Writer
+	headerWritten bool
+	skipGzip      bool
+}
+
+func (w *gzipResponseWriter) WriteHeader(code int) {
+	if !w.headerWritten {
+		w.headerWritten = true
+		ct := w.Header().Get("Content-Type")
+		if strings.HasPrefix(ct, "text/event-stream") {
+			w.skipGzip = true
+		} else {
+			w.Header().Set("Content-Encoding", "gzip")
+			w.Header().Del("Content-Length")
+		}
+	}
+	w.ResponseWriter.WriteHeader(code)
 }
 
 func (w *gzipResponseWriter) Write(b []byte) (int, error) {
-	return w.writer.Write(b)
+	if !w.headerWritten {
+		w.WriteHeader(http.StatusOK)
+	}
+	if w.skipGzip {
+		return w.ResponseWriter.Write(b)
+	}
+	return w.gz.Write(b)
+}
+
+func (w *gzipResponseWriter) finish() {
+	if !w.skipGzip {
+		_ = w.gz.Close()
+	}
 }
 
 // Unwrap returns the underlying ResponseWriter for http.ResponseController.
 func (w *gzipResponseWriter) Unwrap() http.ResponseWriter {
 	return w.ResponseWriter
+}
+
+// Flush implements http.Flusher for SSE and streaming responses.
+func (w *gzipResponseWriter) Flush() {
+	if w.skipGzip {
+		if f, ok := w.ResponseWriter.(http.Flusher); ok {
+			f.Flush()
+		}
+	} else {
+		_ = w.gz.Flush()
+		if f, ok := w.ResponseWriter.(http.Flusher); ok {
+			f.Flush()
+		}
+	}
 }
