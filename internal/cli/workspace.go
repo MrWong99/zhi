@@ -230,10 +230,12 @@ func runWorkspaceLock(cmd *cobra.Command, _ []string) error {
 
 	for _, p := range plugins {
 		entry := lockfile.LockedPlugin{
-			Name:   p.Name,
-			Type:   p.Type,
-			Ref:    p.Ref,
-			Digest: p.Digest,
+			Name:            p.Name,
+			Type:            p.Type,
+			Ref:             p.Ref,
+			Digest:          p.Digest,
+			Signed:          p.Signed,
+			SigningIdentity: p.SigningIdentity,
 		}
 		if p.Platform != "" {
 			entry.Platforms = map[string]string{

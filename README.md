@@ -26,6 +26,7 @@ Core principles:
 - **Component model** -- group configuration into toggleable bundles with dependencies
 - **Template-based exports** -- render configuration to JSON, YAML, TOML, dotenv, or custom templates
 - **Provisioning** -- trigger external commands (Docker Compose, kubectl, Ansible, etc.) with exported configuration
+- **Plugin sharing** -- install and publish plugins via OCI registries with signature verification and binary integrity checks
 
 ---
 

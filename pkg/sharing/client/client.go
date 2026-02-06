@@ -19,6 +19,7 @@ import (
 	"github.com/MrWong99/zhi/pkg/sharing/manifest"
 	"github.com/MrWong99/zhi/pkg/sharing/metadata"
 	"github.com/MrWong99/zhi/pkg/sharing/registry"
+	"github.com/MrWong99/zhi/pkg/sharing/verify"
 )
 
 // Platform represents an OS/architecture combination.
@@ -59,6 +60,8 @@ type PullResult struct {
 	Digest string
 	// Platform is the resolved platform.
 	Platform string
+	// Verification holds the signature verification result.
+	Verification *verify.Result
 }
 
 // Client manages OCI artifact operations for zhi plugins.
@@ -165,16 +168,23 @@ func (c *Client) PullPlugin(ctx context.Context, ref string, opts PullOptions) (
 		return nil, fmt.Errorf("installing binary: %w", err)
 	}
 
-	// Save metadata.
+	// Compute binary digest for integrity verification at launch time.
+	binaryDigest, err := verify.ComputeBinaryDigest(binaryPath)
+	if err != nil {
+		return nil, fmt.Errorf("computing binary digest: %w", err)
+	}
+
+	// Save metadata including binary digest for launch-time integrity checks.
 	platform := c.effectivePlatform(opts.Platform)
 	meta := &metadata.InstalledPlugin{
-		Name:      pluginManifest.Name,
-		Type:      pluginManifest.Type,
-		Version:   pluginManifest.Version,
-		Ref:       ref,
-		Digest:    string(desc.Digest),
-		Platform:  platform.String(),
-		Publisher: pluginManifest.Author,
+		Name:         pluginManifest.Name,
+		Type:         pluginManifest.Type,
+		Version:      pluginManifest.Version,
+		Ref:          ref,
+		Digest:       string(desc.Digest),
+		Platform:     platform.String(),
+		Publisher:    pluginManifest.Author,
+		BinaryDigest: binaryDigest,
 	}
 	if err := c.metadataStore.Save(meta); err != nil {
 		return nil, fmt.Errorf("saving metadata: %w", err)

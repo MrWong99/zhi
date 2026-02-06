@@ -169,6 +169,30 @@ func TestLaunchStoreInvalidPath(t *testing.T) {
 	}
 }
 
+func TestPluginNameFromPath(t *testing.T) {
+	tests := []struct {
+		path string
+		want string
+	}{
+		{"/home/user/.zhi/plugins/zhi-config-ansible", "ansible"},
+		{"/home/user/.zhi/plugins/zhi-transform-encrypt", "encrypt"},
+		{"/home/user/.zhi/plugins/zhi-store-vault", "vault"},
+		{"/home/user/.zhi/plugins/zhi-ui-web", "web"},
+		{"/home/user/.zhi/plugins/zhi-config-my-plugin", "my-plugin"},
+		{"/home/user/.zhi/plugins/some-other-binary", ""},
+		{"/home/user/.zhi/plugins/zhi", ""},
+		{"", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			got := pluginNameFromPath(tt.path)
+			if got != tt.want {
+				t.Errorf("pluginNameFromPath(%q) = %q, want %q", tt.path, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestCleanupKillsProcess(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping launcher test in short mode")

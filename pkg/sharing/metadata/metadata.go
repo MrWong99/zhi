@@ -30,6 +30,13 @@ type InstalledPlugin struct {
 	InstalledAt time.Time `json:"installedAt"`
 	// Publisher is the plugin author or organisation.
 	Publisher string `json:"publisher,omitempty"`
+	// BinaryDigest is the SHA-256 digest of the installed binary, used
+	// to detect post-install tampering at launch time.
+	BinaryDigest string `json:"binaryDigest,omitempty"`
+	// Signed indicates whether the artifact had a valid signature at install time.
+	Signed bool `json:"signed,omitempty"`
+	// SigningIdentity is the signer identity (e.g. email, OIDC subject).
+	SigningIdentity string `json:"signingIdentity,omitempty"`
 }
 
 // Store manages plugin metadata files on disk.

@@ -4,11 +4,16 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 
 	goplugin "github.com/hashicorp/go-plugin"
 
+	"github.com/MrWong99/zhi/pkg/sharing/metadata"
+	"github.com/MrWong99/zhi/pkg/sharing/verify"
 	"github.com/MrWong99/zhi/pkg/zhiplugin"
 	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
 	"github.com/MrWong99/zhi/pkg/zhiplugin/store"
@@ -17,8 +22,9 @@ import (
 )
 
 // auditPluginBinary logs the SHA-256 hash of the plugin binary and warns
-// if the file is world-writable. This helps with audit trailing and
-// detecting potentially tampered binaries.
+// if the file is world-writable. It also verifies the binary digest
+// against the stored digest from installation time, catching post-install
+// tampering.
 func auditPluginBinary(path string) {
 	log := Logger()
 
@@ -47,7 +53,63 @@ func auditPluginBinary(path string) {
 		return
 	}
 
-	log.Info("launching plugin", "path", path, "sha256", fmt.Sprintf("%x", h.Sum(nil)))
+	sha := fmt.Sprintf("%x", h.Sum(nil))
+	log.Info("launching plugin", "path", path, "sha256", sha)
+
+	// Verify binary integrity against stored digest from install time.
+	verifyBinaryIntegrity(log, path, sha)
+}
+
+// verifyBinaryIntegrity checks the binary's SHA-256 against the digest
+// stored in metadata during installation. This detects post-install
+// tampering.
+func verifyBinaryIntegrity(log *slog.Logger, path, computedHex string) {
+	name := pluginNameFromPath(path)
+	if name == "" {
+		return // Not an installed shared plugin.
+	}
+
+	metaDir := metadata.DefaultMetadataDir()
+	if metaDir == "" {
+		return
+	}
+
+	metaStore := metadata.NewStore(metaDir)
+	meta, err := metaStore.Load(name)
+	if err != nil || meta == nil {
+		return // No metadata — not a shared plugin or never installed via sharing.
+	}
+
+	if meta.BinaryDigest == "" {
+		return // No stored digest to compare (legacy metadata).
+	}
+
+	actualDigest := "sha256:" + computedHex
+	if err := verify.VerifyBinaryDigest(path, meta.BinaryDigest); err != nil {
+		// Log as error — this is a security-relevant event.
+		log.Error("binary integrity check failed",
+			"plugin", name,
+			"expected", meta.BinaryDigest,
+			"actual", actualDigest,
+			"remediation", "reinstall with: zhi plugin install "+meta.Ref+" --force",
+		)
+	} else {
+		log.Info("binary integrity verified", "plugin", name, "digest", actualDigest)
+	}
+}
+
+// pluginNameFromPath extracts the plugin short name from a binary path.
+// For example, "/home/user/.zhi/plugins/zhi-config-ansible" returns "ansible".
+// Returns empty string if the path doesn't follow the naming convention.
+func pluginNameFromPath(path string) string {
+	base := filepath.Base(path)
+	// Binary names follow: zhi-{type}-{name}
+	for _, prefix := range []string{"zhi-config-", "zhi-transform-", "zhi-store-", "zhi-ui-"} {
+		if strings.HasPrefix(base, prefix) {
+			return base[len(prefix):]
+		}
+	}
+	return ""
 }
 
 // LaunchConfig launches an external config plugin binary and returns the

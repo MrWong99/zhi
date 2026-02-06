@@ -201,6 +201,102 @@ zhi apply --dry-run    # Show command without executing
 
 See [Apply](apply.md) for details.
 
+### `zhi plugin`
+
+Manage shared plugins from OCI registries.
+
+#### `zhi plugin install`
+
+Download and install a plugin from an OCI registry.
+
+```sh
+zhi plugin install oci://ghcr.io/zhi-project/zhi-config-ansible:v1.2.0
+zhi plugin install ghcr.io/org/zhi-config-custom:v1.0.0 --force
+zhi plugin install ghcr.io/org/zhi-config-custom:v1.0.0 --skip-verify
+```
+
+| Flag | Description |
+|------|-------------|
+| `--platform` | Override platform detection (e.g. `linux/amd64`) |
+| `--force` | Overwrite existing plugin even if same version |
+| `--skip-verify` | Skip signature verification (not recommended) |
+
+#### `zhi plugin uninstall`
+
+Remove an installed shared plugin binary and its metadata.
+
+```sh
+zhi plugin uninstall ansible-config
+```
+
+#### `zhi plugin list`
+
+List all installed shared plugins with version, signing status, and source.
+
+```sh
+zhi plugin list
+zhi plugin list --json
+```
+
+| Flag | Description |
+|------|-------------|
+| `--json` | Output as JSON |
+
+#### `zhi plugin info`
+
+Show detailed information about an installed plugin including signer identity, binary digest, and trust level.
+
+```sh
+zhi plugin info ansible-config
+zhi plugin info ansible-config --json
+```
+
+| Flag | Description |
+|------|-------------|
+| `--json` | Output as JSON |
+
+#### `zhi plugin verify`
+
+Verify a plugin artifact's signature without installing. Useful for auditing and compliance.
+
+```sh
+zhi plugin verify oci://ghcr.io/zhi-project/zhi-config-ansible:v1.2.0
+```
+
+#### `zhi plugin publish`
+
+Build an OCI artifact from a `zhi-plugin.yaml` manifest and push to a registry.
+
+```sh
+zhi plugin publish --registry ghcr.io/myorg
+zhi plugin publish --registry ghcr.io/myorg --sign
+zhi plugin publish --registry ghcr.io/myorg --sign --key cosign.key
+```
+
+| Flag | Description |
+|------|-------------|
+| `--registry` | Target OCI registry (required) |
+| `--tag` | OCI tag (default: `v{version}` from manifest) |
+| `--sign` | Sign the artifact with cosign after pushing |
+| `--key` | Path to cosign private key (default: keyless via Fulcio/OIDC) |
+
+#### `zhi plugin init`
+
+Generate a `zhi-plugin.yaml` manifest for a new plugin.
+
+```sh
+zhi plugin init --name my-config --type config --version 1.0.0
+```
+
+| Flag | Description |
+|------|-------------|
+| `--name` | Plugin name (required) |
+| `--type` | Plugin type: config, transform, store, ui (required) |
+| `--version` | Initial version (required) |
+| `--description` | Plugin description |
+| `--author` | Author name |
+| `--license` | SPDX license identifier |
+
 ### `zhi version`
 
 Print version, commit hash, and build date.
