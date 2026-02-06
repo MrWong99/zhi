@@ -1,0 +1,32 @@
+{{define "tree_node"}}
+{{if .IsLeaf}}
+  <div class="tree-leaf">
+    <span class="leaf-icon">&#9679;</span>
+    <span class="leaf-name">{{.Name}}</span>
+    {{if .Component}}
+      <span class="badge badge-primary tree-component-badge{{if not .ComponentEnabled}} disabled{{end}}">{{.Component}}</span>
+    {{end}}
+    <span class="leaf-value">
+      {{if eq .ValueType "string"}}<span class="value-string">"{{.DisplayValue}}"</span>
+      {{else if eq .ValueType "number"}}<span class="value-number">{{.DisplayValue}}</span>
+      {{else if eq .ValueType "bool"}}<span class="value-bool">{{.DisplayValue}}</span>
+      {{else}}<span>{{.DisplayValue}}</span>
+      {{end}}
+    </span>
+  </div>
+{{else}}
+  <div class="tree-node">
+    <details open>
+      <summary>
+        <span class="segment-name">{{.Name}}</span>
+        {{if .Component}}
+          <span class="badge badge-primary tree-component-badge{{if not .ComponentEnabled}} disabled{{end}}">{{.Component}}</span>
+        {{end}}
+      </summary>
+      {{range .Children}}
+        {{template "tree_node" .}}
+      {{end}}
+    </details>
+  </div>
+{{end}}
+{{end}}

@@ -1,0 +1,17 @@
+{{define "tree_content"}}
+{{if .TreeNodes}}
+<div class="tree">
+  {{range .TreeNodes}}
+    {{template "tree_node" .}}
+  {{end}}
+</div>
+{{else}}
+<div class="tree-empty">
+  {{if .Filter}}
+    No paths matching "{{.Filter}}"
+  {{else}}
+    No configuration values found
+  {{end}}
+</div>
+{{end}}
+{{end}}

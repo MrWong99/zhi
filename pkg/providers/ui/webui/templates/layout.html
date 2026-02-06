@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{block "title" .}}zhi{{end}} - zhi</title>
+  <meta name="csrf-token" content="{{csrfToken .}}">
+  <link rel="stylesheet" href="/static/css/reset.css" nonce="{{nonce .}}">
+  <link rel="stylesheet" href="/static/css/tokens.css" nonce="{{nonce .}}">
+  <link rel="stylesheet" href="/static/css/layout.css" nonce="{{nonce .}}">
+  <link rel="stylesheet" href="/static/css/components.css" nonce="{{nonce .}}">
+  <link rel="stylesheet" href="/static/css/tree.css" nonce="{{nonce .}}">
+  <link rel="stylesheet" href="/static/css/themes/light.css" nonce="{{nonce .}}">
+  <link rel="stylesheet" href="/static/css/themes/dark.css" nonce="{{nonce .}}">
+  <script src="/static/js/vendor/htmx.min.js" nonce="{{nonce .}}"></script>
+</head>
+<body hx-headers='{"X-CSRF-Token": "{{csrfToken .}}"}'>
+  <div class="app">
+    {{template "sidebar" .}}
+    <div class="main">
+      {{template "topbar" .}}
+      <div class="content">
+        {{block "content" .}}{{end}}
+      </div>
+    </div>
+  </div>
+  <script nonce="{{nonce .}}">
+    (function() {
+      var saved = localStorage.getItem('zhi-theme');
+      if (saved) document.documentElement.setAttribute('data-theme', saved);
+    })();
+  </script>
+</body>
+</html>

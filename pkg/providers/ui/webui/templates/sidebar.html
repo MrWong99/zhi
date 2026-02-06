@@ -1,0 +1,18 @@
+{{define "sidebar"}}
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <h1>zhi</h1>
+    <div class="workspace-name">{{.WorkspaceName}}</div>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="/tree" class="{{activeNav . "tree"}}">
+      {{icon "folder"}} Configuration
+    </a>
+  </nav>
+  <div class="sidebar-nav" style="border-top: 1px solid var(--color-border-light); padding-top: var(--space-2);">
+    <a href="#" onclick="toggleTheme(); return false;">
+      {{icon "sun"}} Toggle Theme
+    </a>
+  </div>
+</aside>
+{{end}}
