@@ -1,0 +1,49 @@
+version: "1"
+
+config:
+  provider: structuredfile
+  options:
+    directory: ./config
+
+components:
+  - name: zhi-marketplace
+    description: "zhi marketplace - host, browse and rate your favorite zhi plugins and workspaces"
+    paths:
+      - "zhi-marketplace/"
+    mandatory: false
+  - name: zhi-mirror
+    description: "zhi mirror - protected mirror for zhi plugins and workspaces"
+    paths:
+      - "zhi-mirror/"
+    mandatory: false
+  - name: zhi
+    description: "zhi general settings"
+    paths:
+      - "zhi/"
+    mandatory: true
+
+store:
+  provider: json
+
+ui:
+  provider: webui
+  options:
+    addr: "127.0.0.1:9090"
+    auto_open: true
+
+export:
+  templates:
+    - name: docker-compose
+      template: ./templates/docker-compose.yml.tmpl
+      output: ./docker-compose.yml
+    - name: zhi-mirror-policy
+      template: ./templates/zhi-mirror-policy.yml.tmpl
+      output: ./zhi-mirror-policy.yml
+
+apply:
+  command: "docker compose up -d"
+  workdir: "."
+  pre-export: true
+  env:
+    COMPOSE_PROJECT_NAME: "zhi"
+  timeout: 300

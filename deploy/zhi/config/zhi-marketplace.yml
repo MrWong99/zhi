@@ -1,0 +1,26 @@
+# Configuration for zhi marketplace
+zhi-marketplace:
+  version:
+    val: "latest"
+    metadata:
+      ui.section: "Marketplace"
+      ui.displayName: "Version"
+      ui.placeholder: "latest"
+      core.description: "Version of the zhi marketplace to use. Defaults to latest if not specified."
+  port:
+    val: 80
+    metadata:
+      ui.section: "Marketplace"
+      ui.displayName: "External Port"
+      ui.placeholder: "80"
+      config.required: true
+      core.description: "Port on which the zhi marketplace should listen externally."
+      core.type: int
+  api-keys:
+    val: ""
+    metadata:
+      ui.section: "Marketplace"
+      ui.displayName: "API Keys"
+      ui.placeholder: "zhk_aRas...=mrwong99,zhk_bRas...=mrwong99"
+      ui.pattern: "|^zhk_[a-zA-Z0-9_-]+=[a-zA-Z0-9_-]+(,zhk_[a-zA-Z0-9_-]+=[a-zA-Z0-9_-]+)*$"
+      core.description: "API keys mapped to their providers in a comma-separated list."

@@ -1,0 +1,54 @@
+services:
+  {{- if .ComponentEnabled "zhi-mirror" }}
+  zhi-mirror:
+    image: ghcr.io/mrwong99/zhi-mirror:{{ .Get "zhi-mirror/version" | default "latest" }}
+    ports:
+      - "{{ .Get "zhi-mirror/port" }}:80"
+    volumes:
+      - zhi-mirror-data:/var/zhi-mirror
+      - ./zhi-mirror-policy.yml:/etc/zhi-mirror/policy.yaml:ro
+    command: ["serve",
+     "--listen", "0.0.0.0:80",
+     "--policy", "/etc/zhi-mirror/policy.yaml",
+     "--storage", "/var/zhi-mirror/store",
+     {{- if .ComponentEnabled "zhi-marketplace" }}
+     "--upstream-marketplace", "http://zhi-marketplace",
+     {{- else }}
+        {{- with .Get "zhi-mirror/marketplace" -}}
+        "--upstream-marketplace", "{{ . }}",
+        {{- end }}
+     {{- end }}
+     "--upstream-registry", {{ .Get "zhi/registry" | quote }}]
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+  {{- end }}
+  {{- if .ComponentEnabled "zhi-marketplace" }}
+  zhi-marketplace:
+    image: ghcr.io/mrwong99/zhi-marketplace:{{ .Get "zhi-marketplace/version" | default "latest" }}
+    ports:
+      - "{{ .Get "zhi-marketplace/port" }}:80"
+    volumes:
+      - zhi-marketplace-data:/var/zhi-marketplace
+    command: [
+     "--listen", "0.0.0.0:80",
+     {{- with .Get "zhi-mirror/api-keys" }}
+     "--api-keys", "{{ . }}",
+     {{- end }}
+     "--db", "/var/zhi-marketplace/marketplace.db",
+     "--oci-registries",
+     {{- if .ComponentEnabled "zhi-mirror" -}}
+        "zhi-mirror:80,{{ .Get "zhi/registry" }}"
+     {{- else -}}
+        {{ .Get "zhi/registry" | quote }}
+     {{- end }}]
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+  {{- end }}
+
+volumes:
+  zhi-mirror-data:
+  zhi-marketplace-data:

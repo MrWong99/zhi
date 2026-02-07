@@ -1,0 +1,11 @@
+requireSignatures: {{ .Get "zhi-mirror/signatures"  }}
+retention:
+  unusedDays: {{ .Get "zhi-mirror/retention-days" | default "30" }}
+  maxStorage: {{ .Get "zhi-mirror/max-storage" | default "100GB" }}
+{{- with .Get "zhi-mirror/syncs" }}
+sync:
+  {{- range (splitList ";" .) }}{{ $parts := splitList "," . }}
+  - ref: {{ index $parts 0 | quote }}
+    schedule: {{ index $parts 1 | quote }}
+  {{- end }}
+{{ end }}

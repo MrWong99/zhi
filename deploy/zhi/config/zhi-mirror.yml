@@ -1,0 +1,59 @@
+# Configuration for zhi mirror
+zhi-mirror:
+  version:
+    val: "latest"
+    metadata:
+      ui.section: "Mirror"
+      ui.displayName: "Version"
+      ui.placeholder: "latest"
+      core.description: "Version of the zhi mirror to use. Defaults to latest if not specified."
+  port:
+    val: 8080
+    metadata:
+      ui.section: "Mirror"
+      ui.displayName: "External Port"
+      ui.placeholder: "8080"
+      config.required: true
+      core.description: "Port on which the zhi mirror should listen externally."
+      core.type: int
+  marketplace:
+    val: "https://marketplace.zhi.dev"
+    metadata:
+      ui.section: "Mirror"
+      ui.displayName: "External Marketplace"
+      ui.placeholder: "https://marketplace.zhi.dev"
+      ui.pattern: "^(http|https)://[a-zA-Z0-9.-]+(:[0-9]+)?(/[a-zA-Z0-9.-]+)*$"
+      core.description: "Marketplace URL for the zhi mirror. Will be overridden by the local zhi marketplace service if enabled."
+      core.type: url
+  signatures:
+    val: true
+    metadata:
+      ui.section: "Mirror"
+      ui.displayName: "Signatures"
+      ui.placeholder: "true"
+      core.description: "Enable signature verification for the zhi mirror."
+      core.type: bool
+  retention-days:
+    val: 30
+    metadata:
+      ui.section: "Mirror"
+      ui.displayName: "Retention Days"
+      ui.placeholder: "30"
+      core.description: "Number of days to retain mirror data."
+      core.type: int
+  max-storage:
+    val: "100GB"
+    metadata:
+      ui.section: "Mirror"
+      ui.displayName: "Max Storage"
+      ui.placeholder: "100GB"
+      ui.pattern: "^[0-9]+(TB|GB|MB|KB)$"
+      core.description: "Maximum storage capacity for the zhi mirror before data is deleted."
+  syncs:
+    val: ""
+    metadata:
+      ui.section: "Mirror"
+      ui.displayName: "Syncs"
+      ui.placeholder: "oci://ghcr.io/mrwong99/zhi-storage-vault:latest,*/30 * * * *;oci://ghcr.io/mrwong99/zhi-config-javabean:v.*,0 */6 * * *"
+      ui.pattern: "^(oci://[^,]+,((*/)?([0-9]+|*) ){4}(*/)?([0-9]+|*);?)*$"
+      core.description: "Synchronization schedules to periodically sync the zhi mirror with the upstream."

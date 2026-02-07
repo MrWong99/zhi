@@ -1,0 +1,25 @@
+zhi:
+  registry:
+    val: "ghcr.io"
+    metadata:
+      ui.section: "General"
+      ui.displayName: "External OCI Registry"
+      ui.placeholder: "ghcr.io"
+      core.description: "The external OCI registry to use for mirroring plugins or workspaces."
+    imports:
+      - strings
+    validation: |-
+      registry, ok := v.Val.(string)
+      if !ok {
+      	return []config.ValidationResult{{
+      		Severity: config.Blocking,
+      		Message:  "registry must be a string",
+      	}}, nil
+      }
+      if strings.HasPrefix(registry, "http://") || strings.HasPrefix(registry, "https://") {
+      	return []config.ValidationResult{{
+      		Severity: config.Blocking,
+      		Message:  "registry must not start with http:// or https://, they are set automatically.",
+      	}}, nil
+      }
+      return nil, nil
