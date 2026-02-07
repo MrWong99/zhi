@@ -89,9 +89,17 @@ zhi validate
 # Export as JSON
 zhi export --format json
 
-# Launch the interactive TUI editor
+# Launch an editor
 zhi edit
 ```
+
+### Interactive TUI Editor
+
+![zhi edit tui](assets/tui.gif)
+
+### Web UI Editor
+
+![zhi edit webui](assets/webui.png)
 
 ### Components
 
