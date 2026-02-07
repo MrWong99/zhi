@@ -1,27 +1,29 @@
 {{define "apply_targets"}}
 <div class="apply-targets" id="apply-targets">
-  <div class="apply-controls">
-    <div class="apply-target-selector">
-      <label for="apply-target">Target:</label>
-      <select id="apply-target" name="target" class="input">
-        {{range .ApplyTargets}}
-        <option value="{{.Name}}">{{.Name}}{{if .Description}} - {{.Description}}{{end}}</option>
-        {{end}}
-      </select>
+    <div class="apply-controls">
+        <div class="apply-target-selector">
+            <label for="apply-target">Target:</label>
+            <select id="apply-target" name="target" class="input">
+                {{range .ApplyTargets}}
+                <option value="{{.Name}}">
+                    {{.Name}}{{if .Description}} - {{.Description}}{{end}}
+                </option>
+                {{end}}
+            </select>
+        </div>
+        <div class="apply-actions">
+            {{if .ExportTemplates}}
+            <button class="btn btn-outline btn-sm" id="apply-export-btn">
+                Export &amp; Apply
+            </button>
+            {{end}}
+            <button class="btn btn-primary btn-sm" id="apply-run-btn">
+                Run
+            </button>
+            <button class="btn btn-outline btn-sm" id="apply-cancel-btn">
+                Cancel
+            </button>
+        </div>
     </div>
-    <div class="apply-actions">
-      {{if .ExportTemplates}}
-      <button class="btn btn-outline btn-sm" onclick="startApply(document.getElementById('apply-target').value, true); return false;">
-        Export &amp; Apply
-      </button>
-      {{end}}
-      <button class="btn btn-primary btn-sm" onclick="startApply(document.getElementById('apply-target').value, false); return false;">
-        Run
-      </button>
-      <button class="btn btn-outline btn-sm" onclick="cancelApply(); return false;">
-        Cancel
-      </button>
-    </div>
-  </div>
 </div>
 {{end}}

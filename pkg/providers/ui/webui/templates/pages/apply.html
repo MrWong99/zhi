@@ -1,149 +1,180 @@
-{{define "title"}}Apply{{end}}
-
-{{define "content"}}
+{{define "title"}}Apply{{end}} {{define "content"}}
 <div class="apply-page">
-  <h2>Apply</h2>
+    <h2>Apply</h2>
 
-  {{template "apply_targets" .}}
+    {{template "apply_targets" .}}
 
-  <div class="apply-terminal" id="apply-terminal">
-    <div class="terminal-header">
-      <span class="terminal-title">Output</span>
-      <span class="terminal-status" id="apply-status">Ready</span>
+    <div class="apply-terminal" id="apply-terminal">
+        <div class="terminal-header">
+            <span class="terminal-title">Output</span>
+            <span class="terminal-status" id="apply-status">Ready</span>
+        </div>
+        <div class="terminal-output" id="apply-output"></div>
+        <div class="terminal-footer" id="apply-footer">
+            <span id="apply-exit-code"></span>
+        </div>
     </div>
-    <div class="terminal-output" id="apply-output"></div>
-    <div class="terminal-footer" id="apply-footer">
-      <span id="apply-exit-code"></span>
-    </div>
-  </div>
 </div>
 <script nonce="{{nonce .}}">
-(function() {
-  "use strict";
+    (function () {
+        "use strict";
 
-  var source = null;
-  var output = document.getElementById("apply-output");
-  var status = document.getElementById("apply-status");
-  var exitCode = document.getElementById("apply-exit-code");
-  var footer = document.getElementById("apply-footer");
-  var terminal = document.getElementById("apply-terminal");
-  var userScrolled = false;
+        var source = null;
+        var output = document.getElementById("apply-output");
+        var status = document.getElementById("apply-status");
+        var exitCode = document.getElementById("apply-exit-code");
+        var footer = document.getElementById("apply-footer");
+        var terminal = document.getElementById("apply-terminal");
+        var userScrolled = false;
 
-  if (output) {
-    output.addEventListener("scroll", function() {
-      var atBottom = output.scrollHeight - output.scrollTop - output.clientHeight < 30;
-      userScrolled = !atBottom;
-    });
-  }
-
-  function autoScroll() {
-    if (!userScrolled && output) {
-      output.scrollTop = output.scrollHeight;
-    }
-  }
-
-  function setStatus(s) {
-    if (!status) return;
-    status.textContent = s.charAt(0).toUpperCase() + s.slice(1);
-    status.className = "terminal-status status-" + s;
-  }
-
-  function appendLine(line, stream) {
-    if (!output) return;
-    var el = document.createElement("div");
-    el.className = "terminal-line " + (stream === "stderr" ? "line-stderr" : "line-stdout");
-    el.textContent = line;
-    output.appendChild(el);
-    autoScroll();
-  }
-
-  function showExitCode(code, error) {
-    if (!exitCode) return;
-    if (error) {
-      exitCode.textContent = "Error: " + error;
-    } else {
-      exitCode.textContent = "Exit code: " + code;
-    }
-    footer.classList.add("visible");
-  }
-
-  window.startApply = function(target, preExport) {
-    if (source) {
-      source.close();
-    }
-    if (output) output.innerHTML = "";
-    if (exitCode) exitCode.textContent = "";
-    if (footer) footer.classList.remove("visible");
-    userScrolled = false;
-    setStatus("running");
-
-    if (terminal) terminal.classList.add("active");
-
-    var csrfToken = document.querySelector('meta[name="csrf-token"]');
-    var token = csrfToken ? csrfToken.getAttribute("content") : "";
-
-    var formData = new FormData();
-    formData.append("target", target);
-    formData.append("_csrf", token);
-    if (preExport) {
-      formData.append("pre_export", "true");
-    }
-
-    var xhr = new XMLHttpRequest();
-    xhr.open("POST", "/apply/run", true);
-    xhr.setRequestHeader("X-CSRF-Token", token);
-
-    var buf = "";
-    var lastIndex = 0;
-
-    xhr.onprogress = function() {
-      buf = xhr.responseText;
-      var lines = buf.substring(lastIndex).split("\n");
-      lastIndex = buf.length;
-
-      var currentEvent = "";
-      var currentData = "";
-      for (var i = 0; i < lines.length; i++) {
-        var line = lines[i];
-        if (line.indexOf("event: ") === 0) {
-          currentEvent = line.substring(7);
-        } else if (line.indexOf("data: ") === 0) {
-          currentData = line.substring(6);
-          try {
-            var parsed = JSON.parse(currentData);
-            if (currentEvent === "output") {
-              appendLine(parsed.line || "", parsed.stream || "stdout");
-            } else if (currentEvent === "done") {
-              var c = parsed.exit_code !== undefined ? parsed.exit_code : -1;
-              setStatus(c === 0 ? "success" : "failed");
-              showExitCode(c, parsed.error || "");
-            }
-          } catch(e) {}
-          currentEvent = "";
-          currentData = "";
+        if (output) {
+            output.addEventListener("scroll", function () {
+                var atBottom =
+                    output.scrollHeight -
+                        output.scrollTop -
+                        output.clientHeight <
+                    30;
+                userScrolled = !atBottom;
+            });
         }
-      }
-    };
 
-    xhr.onerror = function() {
-      setStatus("error");
-    };
+        function autoScroll() {
+            if (!userScrolled && output) {
+                output.scrollTop = output.scrollHeight;
+            }
+        }
 
-    xhr.onload = function() {
-      // Process any remaining data.
-      xhr.onprogress();
-    };
+        function setStatus(s) {
+            if (!status) return;
+            status.textContent = s.charAt(0).toUpperCase() + s.slice(1);
+            status.className = "terminal-status status-" + s;
+        }
 
-    xhr.send(formData);
-  };
+        function appendLine(line, stream) {
+            if (!output) return;
+            var el = document.createElement("div");
+            el.className =
+                "terminal-line " +
+                (stream === "stderr" ? "line-stderr" : "line-stdout");
+            el.textContent = line;
+            output.appendChild(el);
+            autoScroll();
+        }
 
-  window.cancelApply = function() {
-    if (source) {
-      source.close();
-      source = null;
-    }
-    setStatus("cancelled");
-  };
-})();
+        function showExitCode(code, error) {
+            if (!exitCode) return;
+            if (error) {
+                exitCode.textContent = "Error: " + error;
+            } else {
+                exitCode.textContent = "Exit code: " + code;
+            }
+            footer.classList.add("visible");
+        }
+
+        var targetSelect = document.getElementById("apply-target");
+        var exportBtn = document.getElementById("apply-export-btn");
+        var runBtn = document.getElementById("apply-run-btn");
+        var cancelBtn = document.getElementById("apply-cancel-btn");
+
+        if (exportBtn) {
+            exportBtn.addEventListener("click", function () {
+                startApply(targetSelect.value, true);
+            });
+        }
+        if (runBtn) {
+            runBtn.addEventListener("click", function () {
+                startApply(targetSelect.value, false);
+            });
+        }
+        if (cancelBtn) {
+            cancelBtn.addEventListener("click", function () {
+                cancelApply();
+            });
+        }
+
+        function startApply(target, preExport) {
+            if (source) {
+                source.close();
+            }
+            if (output) output.innerHTML = "";
+            if (exitCode) exitCode.textContent = "";
+            if (footer) footer.classList.remove("visible");
+            userScrolled = false;
+            setStatus("running");
+
+            if (terminal) terminal.classList.add("active");
+
+            var csrfToken = document.querySelector('meta[name="csrf-token"]');
+            var token = csrfToken ? csrfToken.getAttribute("content") : "";
+
+            var formData = new FormData();
+            formData.append("target", target);
+            formData.append("_csrf", token);
+            if (preExport) {
+                formData.append("pre_export", "true");
+            }
+
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "/apply/run", true);
+            xhr.setRequestHeader("X-CSRF-Token", token);
+
+            var buf = "";
+            var lastIndex = 0;
+
+            xhr.onprogress = function () {
+                buf = xhr.responseText;
+                var lines = buf.substring(lastIndex).split("\n");
+                lastIndex = buf.length;
+
+                var currentEvent = "";
+                var currentData = "";
+                for (var i = 0; i < lines.length; i++) {
+                    var line = lines[i];
+                    if (line.indexOf("event: ") === 0) {
+                        currentEvent = line.substring(7);
+                    } else if (line.indexOf("data: ") === 0) {
+                        currentData = line.substring(6);
+                        try {
+                            var parsed = JSON.parse(currentData);
+                            if (currentEvent === "output") {
+                                appendLine(
+                                    parsed.line || "",
+                                    parsed.stream || "stdout",
+                                );
+                            } else if (currentEvent === "done") {
+                                var c =
+                                    parsed.exit_code !== undefined
+                                        ? parsed.exit_code
+                                        : -1;
+                                setStatus(c === 0 ? "success" : "failed");
+                                showExitCode(c, parsed.error || "");
+                            }
+                        } catch (e) {}
+                        currentEvent = "";
+                        currentData = "";
+                    }
+                }
+            };
+
+            xhr.onerror = function () {
+                setStatus("error");
+            };
+
+            xhr.onload = function () {
+                // Process any remaining data.
+                xhr.onprogress();
+            };
+
+            xhr.send(formData);
+        }
+
+        function cancelApply() {
+            if (source) {
+                source.close();
+                source = null;
+            }
+            setStatus("cancelled");
+        }
+    })();
 </script>
 {{end}}

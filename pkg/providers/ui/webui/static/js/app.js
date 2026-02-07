@@ -22,14 +22,23 @@
     localStorage.setItem("zhi-theme", theme);
   }
 
-  // Expose globally for the sidebar toggle link.
-  window.toggleTheme = function () {
-    var current = document.documentElement.getAttribute("data-theme") || "light";
+  function toggleTheme() {
+    var current =
+      document.documentElement.getAttribute("data-theme") || "light";
     setTheme(current === "dark" ? "light" : "dark");
-  };
+  }
 
   // Apply saved theme on load.
   setTheme(getTheme());
+
+  // Bind theme toggle button (replaces inline onclick for CSP compliance).
+  var themeToggleBtn = document.getElementById("theme-toggle-btn");
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      toggleTheme();
+    });
+  }
 
   // ---------- Notifications ----------
 
@@ -133,7 +142,10 @@
     if (!el) return false;
     var tag = el.tagName.toLowerCase();
     return (
-      tag === "input" || tag === "textarea" || tag === "select" || el.isContentEditable
+      tag === "input" ||
+      tag === "textarea" ||
+      tag === "select" ||
+      el.isContentEditable
     );
   }
 
@@ -162,7 +174,9 @@
     // Single-key shortcuts.
     if (e.key === "/" && !e.ctrlKey && !e.metaKey) {
       e.preventDefault();
-      var filterInput = document.querySelector('.tree-filter input[type="search"]');
+      var filterInput = document.querySelector(
+        '.tree-filter input[type="search"]',
+      );
       if (filterInput) {
         filterInput.focus();
       }
