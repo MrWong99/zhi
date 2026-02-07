@@ -31,7 +31,7 @@ type Server struct {
 
 // NewServer creates a new Web UI server.
 func NewServer(ctrl ui.Controller, cfg Config) (*Server, error) {
-	engine, err := newTemplateEngine()
+	engine, err := newTemplateEngine(cfg.DevMode, cfg.TemplateDir)
 	if err != nil {
 		return nil, fmt.Errorf("initializing template engine: %w", err)
 	}
@@ -69,10 +69,12 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 
 	// Apply middleware in reverse order (outermost first).
 	h = compressMiddleware(h)
+	h = etagMiddleware(h)
 	h = csrf.middleware(h)
 	h = securityHeadersMiddleware(h)
 	h = recoveryMiddleware(s.engine)(h)
 	h = loggingMiddleware(h)
+	h = responseTimeMiddleware(h)
 	h = requestIDMiddleware(h)
 
 	s.httpSrv = &http.Server{
@@ -101,6 +103,13 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 
 	url := "http://" + actual
 	log.Printf("zhi webui: listening on %s", url)
+
+	if s.config.DevMode {
+		log.Printf("zhi webui: dev mode enabled")
+		if s.config.TemplateDir != "" {
+			log.Printf("zhi webui: template dir = %s", s.config.TemplateDir)
+		}
+	}
 
 	if s.config.AutoOpen {
 		go openBrowser(url)

@@ -2,8 +2,10 @@ package webui
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -1757,7 +1759,826 @@ func TestTriggerNotification(t *testing.T) {
 	}
 }
 
+// ---------- Phase 5: error mock controller ----------
+
+// errorMockController wraps mockController and allows configuring errors
+// for any method.
+type errorMockController struct {
+	mockController
+	loadTreeErr          error
+	listComponentsErr    error
+	validateErr          error
+	saveTreeErr          error
+	exportTemplatesErr   error
+	exportErr            error
+	applyErr             error
+	searchMarketplaceErr error
+	getDetailErr         error
+	installPluginErr     error
+	listPluginsErr       error
+	checkUpdatesErr      error
+	ratePluginErr        error
+}
+
+func (m *errorMockController) LoadTree(ctx context.Context) (*config.Tree, error) {
+	if m.loadTreeErr != nil {
+		return nil, m.loadTreeErr
+	}
+	return m.mockController.LoadTree(ctx)
+}
+
+func (m *errorMockController) ListComponents(ctx context.Context) ([]ui.ComponentInfo, error) {
+	if m.listComponentsErr != nil {
+		return nil, m.listComponentsErr
+	}
+	return m.mockController.ListComponents(ctx)
+}
+
+func (m *errorMockController) Validate(ctx context.Context) ([]config.ValidationResult, error) {
+	if m.validateErr != nil {
+		return nil, m.validateErr
+	}
+	return m.mockController.Validate(ctx)
+}
+
+func (m *errorMockController) SaveTree(ctx context.Context, treeID string) error {
+	if m.saveTreeErr != nil {
+		return m.saveTreeErr
+	}
+	return m.mockController.SaveTree(ctx, treeID)
+}
+
+func (m *errorMockController) ExportTemplates(ctx context.Context) ([]ui.ExportTemplate, error) {
+	if m.exportTemplatesErr != nil {
+		return nil, m.exportTemplatesErr
+	}
+	return m.mockController.ExportTemplates(ctx)
+}
+
+func (m *errorMockController) Export(ctx context.Context, req ui.ExportRequest) (*ui.ExportResult, error) {
+	if m.exportErr != nil {
+		return nil, m.exportErr
+	}
+	return m.mockController.Export(ctx, req)
+}
+
+func (m *errorMockController) Apply(ctx context.Context, target string, handler func(ui.ApplyEvent)) (*ui.ApplyResult, error) {
+	if m.applyErr != nil {
+		return nil, m.applyErr
+	}
+	return m.mockController.Apply(ctx, target, handler)
+}
+
+func (m *errorMockController) SearchMarketplace(ctx context.Context, q ui.MarketplaceQuery) (*ui.MarketplaceResults, error) {
+	if m.searchMarketplaceErr != nil {
+		return nil, m.searchMarketplaceErr
+	}
+	return m.mockController.SearchMarketplace(ctx, q)
+}
+
+func (m *errorMockController) GetMarketplaceDetail(ctx context.Context, publisher, name string) (*ui.MarketplaceDetail, error) {
+	if m.getDetailErr != nil {
+		return nil, m.getDetailErr
+	}
+	return m.mockController.GetMarketplaceDetail(ctx, publisher, name)
+}
+
+func (m *errorMockController) InstallPlugin(ctx context.Context, ref string) (*ui.InstallResult, error) {
+	if m.installPluginErr != nil {
+		return nil, m.installPluginErr
+	}
+	return m.mockController.InstallPlugin(ctx, ref)
+}
+
+func (m *errorMockController) ListInstalledPlugins(ctx context.Context) ([]ui.InstalledPlugin, error) {
+	if m.listPluginsErr != nil {
+		return nil, m.listPluginsErr
+	}
+	return m.mockController.ListInstalledPlugins(ctx)
+}
+
+func (m *errorMockController) CheckUpdates(ctx context.Context) ([]ui.PluginUpdate, error) {
+	if m.checkUpdatesErr != nil {
+		return nil, m.checkUpdatesErr
+	}
+	return m.mockController.CheckUpdates(ctx)
+}
+
+func (m *errorMockController) RatePlugin(ctx context.Context, pub, name string, r ui.Rating) error {
+	if m.ratePluginErr != nil {
+		return m.ratePluginErr
+	}
+	return m.mockController.RatePlugin(ctx, pub, name, r)
+}
+
+// startTestServerWithCtrl is like startTestServer but with a custom controller.
+func startTestServerWithCtrl(t *testing.T, ctrl ui.Controller) (string, context.CancelFunc) {
+	t.Helper()
+	ctx, cancel := context.WithCancel(context.Background())
+
+	cfg := Config{Addr: "127.0.0.1:0", AutoOpen: false}
+	srv, err := NewServer(ctrl, cfg)
+	if err != nil {
+		cancel()
+		t.Fatalf("NewServer: %v", err)
+	}
+
+	w := &WebUI{config: cfg, ready: make(chan struct{})}
+	w.server = srv
+	close(w.ready)
+
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- srv.ListenAndServe(ctx)
+	}()
+
+	waitCtx, waitCancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer waitCancel()
+	addr, err := srv.Addr(waitCtx)
+	if err != nil {
+		cancel()
+		t.Fatalf("server did not start: %v", err)
+	}
+
+	base := "http://" + addr
+	t.Cleanup(func() {
+		cancel()
+		<-errCh
+	})
+	return base, cancel
+}
+
+// ---------- Phase 5: error path tests ----------
+
+func TestLoadTreeError(t *testing.T) {
+	ctrl := &errorMockController{
+		mockController: *newMockController(),
+		loadTreeErr:    errors.New("tree unavailable"),
+	}
+	base, _ := startTestServerWithCtrl(t, ctrl)
+	resp := get(t, base+"/tree")
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Errorf("status = %d, want 500; body = %s", resp.StatusCode, body)
+	}
+	if !strings.Contains(body, "tree unavailable") {
+		t.Error("error page should contain error message")
+	}
+}
+
+func TestListComponentsError(t *testing.T) {
+	ctrl := &errorMockController{
+		mockController:    *newMockController(),
+		listComponentsErr: errors.New("components broken"),
+	}
+	base, _ := startTestServerWithCtrl(t, ctrl)
+	resp := get(t, base+"/components")
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Errorf("status = %d, want 500; body = %s", resp.StatusCode, body)
+	}
+	if !strings.Contains(body, "components broken") {
+		t.Error("error page should contain error message")
+	}
+}
+
+func TestValidateError(t *testing.T) {
+	ctrl := &errorMockController{
+		mockController: *newMockController(),
+		validateErr:    errors.New("validation boom"),
+	}
+	base, _ := startTestServerWithCtrl(t, ctrl)
+	resp := get(t, base+"/validation")
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Errorf("status = %d, want 500; body = %s", resp.StatusCode, body)
+	}
+	if !strings.Contains(body, "validation boom") {
+		t.Error("error page should contain error message")
+	}
+}
+
+func TestSaveTreeError(t *testing.T) {
+	ctrl := &errorMockController{
+		mockController: *newMockController(),
+		saveTreeErr:    errors.New("save failed"),
+	}
+	base, _ := startTestServerWithCtrl(t, ctrl)
+	token, cookies := getCSRFToken(t, base)
+	resp := postWithCSRF(t, base+"/tree/save", "", token, cookies)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Errorf("status = %d, want 500", resp.StatusCode)
+	}
+}
+
+func TestExportTemplatesError(t *testing.T) {
+	ctrl := &errorMockController{
+		mockController:     *newMockController(),
+		exportTemplatesErr: errors.New("templates broken"),
+	}
+	base, _ := startTestServerWithCtrl(t, ctrl)
+	resp := get(t, base+"/export")
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Errorf("status = %d, want 500; body = %s", resp.StatusCode, body)
+	}
+}
+
+func TestExportError(t *testing.T) {
+	ctrl := &errorMockController{
+		mockController: *newMockController(),
+		exportErr:      errors.New("export failed"),
+	}
+	base, _ := startTestServerWithCtrl(t, ctrl)
+	token, cookies := getCSRFToken(t, base)
+	resp := postWithCSRF(t, base+"/export", "format=json", token, cookies)
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if !strings.Contains(body, "export failed") {
+		t.Error("export result should contain error message")
+	}
+}
+
+func TestApplyError(t *testing.T) {
+	ctrl := &errorMockController{
+		mockController: *newMockController(),
+		applyErr:       errors.New("apply boom"),
+	}
+	base, _ := startTestServerWithCtrl(t, ctrl)
+	token, cookies := getCSRFToken(t, base)
+	resp := postWithCSRF(t, base+"/apply/run", "target=default", token, cookies)
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if !strings.Contains(body, "apply boom") {
+		t.Error("SSE stream should contain error message")
+	}
+}
+
+func TestSearchMarketplaceError(t *testing.T) {
+	ctrl := &errorMockController{
+		mockController:       *newMockController(),
+		searchMarketplaceErr: errors.New("marketplace down"),
+	}
+	base, _ := startTestServerWithCtrl(t, ctrl)
+	resp := get(t, base+"/marketplace")
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if !strings.Contains(body, "marketplace down") {
+		t.Error("marketplace page should show error message")
+	}
+}
+
+func TestPluginDetailError(t *testing.T) {
+	ctrl := &errorMockController{
+		mockController: *newMockController(),
+		getDetailErr:   errors.New("not found"),
+	}
+	base, _ := startTestServerWithCtrl(t, ctrl)
+	resp := get(t, base+"/marketplace/test/plugin")
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusNotFound {
+		t.Errorf("status = %d, want 404; body = %s", resp.StatusCode, body)
+	}
+}
+
+func TestInstallPluginError(t *testing.T) {
+	ctrl := &errorMockController{
+		mockController:   *newMockController(),
+		installPluginErr: errors.New("install failed"),
+	}
+	base, _ := startTestServerWithCtrl(t, ctrl)
+	token, cookies := getCSRFToken(t, base)
+	resp := postWithCSRF(t, base+"/plugins/install", "ref=test/plugin", token, cookies)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Errorf("status = %d, want 500", resp.StatusCode)
+	}
+}
+
+func TestListInstalledPluginsError(t *testing.T) {
+	ctrl := &errorMockController{
+		mockController: *newMockController(),
+		listPluginsErr: errors.New("list broken"),
+	}
+	base, _ := startTestServerWithCtrl(t, ctrl)
+	resp := get(t, base+"/plugins")
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Errorf("status = %d, want 500; body = %s", resp.StatusCode, body)
+	}
+}
+
+func TestRatePluginError(t *testing.T) {
+	ctrl := &errorMockController{
+		mockController: *newMockController(),
+		ratePluginErr:  errors.New("rating failed"),
+	}
+	base, _ := startTestServerWithCtrl(t, ctrl)
+	token, cookies := getCSRFToken(t, base)
+	resp := postWithCSRF(t, base+"/marketplace/test/plugin/rate", "score=5", token, cookies)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Errorf("status = %d, want 500", resp.StatusCode)
+	}
+}
+
+// ---------- Phase 5: CSRF rejection tests ----------
+
+func TestCSRFRejectionAllPOSTs(t *testing.T) {
+	base, _ := startTestServer(t)
+
+	endpoints := []string{
+		"/tree/values/db/host",
+		"/validate/inline/db/host",
+		"/validate",
+		"/tree/save",
+		"/components/database/toggle",
+		"/export/preview",
+		"/export",
+		"/export/all",
+		"/apply/run",
+		"/marketplace/hashicorp/zhi-store-vault/rate",
+		"/plugins/install",
+		"/plugins/zhi-store-vault/uninstall",
+		"/plugins/zhi-store-vault/update",
+		"/plugins/update-all",
+	}
+
+	for _, ep := range endpoints {
+		t.Run(ep, func(t *testing.T) {
+			req, err := http.NewRequest("POST", base+ep, strings.NewReader(""))
+			if err != nil {
+				t.Fatal(err)
+			}
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				t.Fatal(err)
+			}
+			resp.Body.Close()
+			if resp.StatusCode != http.StatusForbidden {
+				t.Errorf("POST %s without CSRF: status = %d, want 403", ep, resp.StatusCode)
+			}
+		})
+	}
+}
+
+// ---------- Phase 5: path traversal tests ----------
+
+func TestStaticPathTraversal(t *testing.T) {
+	base, _ := startTestServer(t)
+
+	// Table of path traversal attempts.
+	attacks := []string{
+		"/static/../embed.go",
+		"/static/%2e%2e/embed.go",
+		"/static/..%2f..%2f..%2fetc/passwd",
+		"/static/css/../../../embed.go",
+		"/static/css/%2e%2e/%2e%2e/embed.go",
+	}
+
+	for _, path := range attacks {
+		t.Run(path, func(t *testing.T) {
+			resp := get(t, base+path)
+			body := bodyString(t, resp)
+			if resp.StatusCode == http.StatusOK && strings.Contains(body, "package webui") {
+				t.Errorf("path traversal succeeded with %s", path)
+			}
+		})
+	}
+}
+
+// ---------- Phase 5: error page tests ----------
+
+func TestErrorPageNoStackTrace(t *testing.T) {
+	base, _ := startTestServer(t)
+	resp := get(t, base+"/nonexistent")
+	body := bodyString(t, resp)
+	// Verify no Go-internal stack trace leaks.
+	if strings.Contains(body, "goroutine") {
+		t.Error("error page should not contain goroutine stack traces")
+	}
+	if strings.Contains(body, "runtime/") {
+		t.Error("error page should not contain Go runtime paths")
+	}
+	if strings.Contains(body, ".go:") {
+		t.Error("error page should not contain Go file references")
+	}
+}
+
+func TestRecoveryMiddleware(t *testing.T) {
+	engine, err := newTemplateEngine(false, "")
+	if err != nil {
+		t.Fatalf("newTemplateEngine: %v", err)
+	}
+
+	panicHandler := http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+		panic("test panic")
+	})
+
+	handler := recoveryMiddleware(engine)(panicHandler)
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/", nil)
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusInternalServerError {
+		t.Errorf("status = %d, want 500", rec.Code)
+	}
+	body := rec.Body.String()
+	if strings.Contains(body, "test panic") {
+		t.Error("recovery response should not contain panic message")
+	}
+	if !strings.Contains(body, "unexpected error") {
+		t.Error("recovery response should contain generic error message")
+	}
+}
+
+// ---------- Phase 5: save with blocking validation ----------
+
+func TestSaveValueWithBlockingValidation(t *testing.T) {
+	ctrl := &blockingValidationController{
+		mockController: *newMockController(),
+	}
+	base, _ := startTestServerWithCtrl(t, ctrl)
+	token, cookies := getCSRFToken(t, base)
+
+	resp := postWithCSRF(t, base+"/tree/values/db/host", "value=bad&value_type=string", token, cookies)
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	// Should return the form (not the display) with validation errors.
+	if !strings.Contains(body, "Validation errors must be resolved") {
+		t.Error("response should contain validation error message")
+	}
+	if !strings.Contains(body, "value is blocked") {
+		t.Error("response should contain the blocking validation message")
+	}
+}
+
+// blockingValidationController returns blocking validation results.
+type blockingValidationController struct {
+	mockController
+}
+
+func (m *blockingValidationController) Validate(_ context.Context) ([]config.ValidationResult, error) {
+	return []config.ValidationResult{
+		{
+			Severity: config.Blocking,
+			Message:  "value is blocked",
+			Metadata: map[string]any{"path": "db/host"},
+		},
+	}, nil
+}
+
+// ---------- Phase 5: middleware unit tests ----------
+
+func TestResponseTimeHeader(t *testing.T) {
+	base, _ := startTestServer(t)
+	resp := get(t, base+"/tree")
+	resp.Body.Close()
+	rt := resp.Header.Get("X-Response-Time")
+	if rt == "" {
+		t.Error("X-Response-Time header should be set")
+	}
+}
+
+func TestETagHeaderStaticFile(t *testing.T) {
+	base, _ := startTestServer(t)
+
+	// Static files should get ETag headers (HTML pages don't because of
+	// per-request CSP nonces).
+	resp, err := http.Get(base + "/static/css/tokens.css")
+	if err != nil {
+		t.Fatal(err)
+	}
+	bodyString(t, resp)
+	etag := resp.Header.Get("ETag")
+	if etag == "" {
+		t.Fatal("ETag header should be set for static CSS responses")
+	}
+
+	// Second request with If-None-Match should return 304.
+	req, err := http.NewRequest("GET", base+"/static/css/tokens.css", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("If-None-Match", etag)
+	resp2, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp2.Body.Close()
+	if resp2.StatusCode != http.StatusNotModified {
+		t.Errorf("status = %d, want 304", resp2.StatusCode)
+	}
+}
+
+// ---------- Phase 5: asset manifest tests ----------
+
+func TestAssetManifestHasEntries(t *testing.T) {
+	m := newAssetManifest()
+	if len(m.hashed) == 0 {
+		t.Fatal("asset manifest should have entries")
+	}
+
+	// Check that tokens.css is hashed.
+	p := m.hashedPath("css/tokens.css")
+	if p == "/static/css/tokens.css" {
+		t.Error("tokens.css should have a hashed path")
+	}
+	if !strings.HasPrefix(p, "/static/css/tokens.") {
+		t.Errorf("hashed path = %q, want prefix /static/css/tokens.", p)
+	}
+}
+
+func TestIsHashedPath(t *testing.T) {
+	tests := []struct {
+		path   string
+		want   string
+		hashed bool
+	}{
+		{"css/tokens.a1b2c3d4.css", "css/tokens.css", true},
+		{"js/app.12345678.js", "js/app.js", true},
+		{"css/tokens.css", "css/tokens.css", false},
+		{"css/tokens.toolong123.css", "css/tokens.toolong123.css", false},
+		{"css/tokens.short.css", "css/tokens.short.css", false},
+		{"no-extension", "no-extension", false},
+	}
+	for _, tt := range tests {
+		got, hashed := isHashedPath(tt.path)
+		if got != tt.want || hashed != tt.hashed {
+			t.Errorf("isHashedPath(%q) = (%q, %v), want (%q, %v)",
+				tt.path, got, hashed, tt.want, tt.hashed)
+		}
+	}
+}
+
+func TestHashedStaticImmutableCache(t *testing.T) {
+	base, _ := startTestServer(t)
+	// Get a hashed path from the manifest.
+	m := newAssetManifest()
+	hashedPath := m.hashedPath("css/tokens.css")
+	resp := get(t, base+hashedPath)
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if !strings.Contains(body, "--color-bg") {
+		t.Error("hashed static file should serve correct content")
+	}
+	cc := resp.Header.Get("Cache-Control")
+	if !strings.Contains(cc, "immutable") {
+		t.Errorf("Cache-Control = %q, should contain 'immutable'", cc)
+	}
+}
+
+// ---------- Phase 5: config tests ----------
+
+func TestDevModeConfig(t *testing.T) {
+	t.Setenv("ZHI_WEBUI_DEV", "true")
+	t.Setenv("ZHI_WEBUI_TEMPLATE_DIR", "/tmp/templates")
+	cfg := DefaultConfig()
+	if !cfg.DevMode {
+		t.Error("DevMode should be true")
+	}
+	if cfg.TemplateDir != "/tmp/templates" {
+		t.Errorf("TemplateDir = %q, want /tmp/templates", cfg.TemplateDir)
+	}
+}
+
+// ---------- Phase 6: benchmarks ----------
+
+func BenchmarkTemplateRenderPage(b *testing.B) {
+	engine, err := newTemplateEngine(false, "")
+	if err != nil {
+		b.Fatalf("newTemplateEngine: %v", err)
+	}
+
+	tree := config.NewTree()
+	_ = tree.Set("db/host", &config.Value{Val: "localhost"})
+	_ = tree.Set("db/port", &config.Value{Val: float64(5432)})
+	_ = tree.Set("app/name", &config.Value{Val: "myapp"})
+	nodes := buildNestedTree(tree, nil)
+
+	data := pageData{
+		WorkspaceName: "bench",
+		ActiveNav:     "tree",
+		TreeNodes:     nodes,
+	}
+
+	b.ResetTimer()
+	for b.Loop() {
+		w := httptest.NewRecorder()
+		_ = engine.renderPage(w, "tree", data)
+	}
+}
+
+func BenchmarkTemplateRenderFragment(b *testing.B) {
+	engine, err := newTemplateEngine(false, "")
+	if err != nil {
+		b.Fatalf("newTemplateEngine: %v", err)
+	}
+
+	tree := config.NewTree()
+	_ = tree.Set("db/host", &config.Value{Val: "localhost"})
+	_ = tree.Set("db/port", &config.Value{Val: float64(5432)})
+	nodes := buildNestedTree(tree, nil)
+
+	data := pageData{
+		TreeNodes: nodes,
+	}
+
+	b.ResetTimer()
+	for b.Loop() {
+		w := httptest.NewRecorder()
+		_ = engine.renderFragment(w, "tree_content", data)
+	}
+}
+
+func BenchmarkBuildNestedTree(b *testing.B) {
+	tree := config.NewTree()
+	for i := range 100 {
+		path := "section" + strings.Repeat("/sub", i%5+1) + "/key"
+		_ = tree.Set(path+string(rune('a'+i%26)), &config.Value{Val: "value"})
+	}
+
+	b.ResetTimer()
+	for b.Loop() {
+		buildNestedTree(tree, nil)
+	}
+}
+
+// ---------- Phase 6: server lifecycle test ----------
+
+func TestServerLifecycle(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	ctrl := newMockController()
+
+	cfg := Config{Addr: "127.0.0.1:0", AutoOpen: false}
+	w := New(cfg)
+
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- w.Run(ctx, ctrl)
+	}()
+
+	// Wait for server to be ready.
+	waitCtx, waitCancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer waitCancel()
+	addr, err := w.Addr(waitCtx)
+	if err != nil {
+		cancel()
+		t.Fatalf("server did not start: %v", err)
+	}
+
+	base := "http://" + addr
+
+	// Make a request to verify the server is working.
+	resp := get(t, base+"/tree")
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if !strings.Contains(body, "db") {
+		t.Error("tree page should contain 'db'")
+	}
+
+	// Cancel context to trigger shutdown.
+	cancel()
+
+	// Wait for server to stop.
+	select {
+	case err := <-errCh:
+		if err != nil {
+			t.Errorf("server returned error: %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("server did not shut down within timeout")
+	}
+
+	// Verify the server is no longer accepting connections.
+	client := &http.Client{Timeout: 1 * time.Second}
+	_, err = client.Get(base + "/tree")
+	if err == nil {
+		t.Error("server should not be accepting connections after shutdown")
+	}
+}
+
+// ---------- Phase 5: template function unit tests ----------
+
+func TestCsrfFieldFunc(t *testing.T) {
+	got := csrfFieldFunc(pageData{CSRFToken: "testtoken123"})
+	if !strings.Contains(string(got), "testtoken123") {
+		t.Error("csrfFieldFunc should contain the token")
+	}
+	if !strings.Contains(string(got), `type="hidden"`) {
+		t.Error("csrfFieldFunc should produce a hidden input")
+	}
+	// Non-pageData should return an empty-value hidden field.
+	empty := csrfFieldFunc("not a pageData")
+	if !strings.Contains(string(empty), `value=""`) {
+		t.Error("csrfFieldFunc with non-pageData should have empty value")
+	}
+}
+
+func TestJsonFunc(t *testing.T) {
+	got := jsonFunc(map[string]string{"key": "value"})
+	if !strings.Contains(got, "key") || !strings.Contains(got, "value") {
+		t.Errorf("jsonFunc = %q, want JSON with key/value", got)
+	}
+}
+
+func TestPathSegmentsFunc(t *testing.T) {
+	got := pathSegmentsFunc("db/host/port")
+	if len(got) != 3 || got[0] != "db" || got[1] != "host" || got[2] != "port" {
+		t.Errorf("pathSegmentsFunc = %v, want [db host port]", got)
+	}
+}
+
+func TestFullValidationHTMXFragment(t *testing.T) {
+	base, _ := startTestServer(t)
+	token, cookies := getCSRFToken(t, base)
+
+	req, err := http.NewRequest("POST", base+"/validate", strings.NewReader(""))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("HX-Request", "true")
+	req.Header.Set("X-CSRF-Token", token)
+	for _, c := range cookies {
+		req.AddCookie(c)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("HTMX fragment should not contain full HTML document")
+	}
+}
+
+func TestExportPreviewError(t *testing.T) {
+	ctrl := &errorMockController{
+		mockController: *newMockController(),
+		exportErr:      errors.New("preview failed"),
+	}
+	base, _ := startTestServerWithCtrl(t, ctrl)
+	token, cookies := getCSRFToken(t, base)
+	resp := postWithCSRF(t, base+"/export/preview", "format=json", token, cookies)
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if !strings.Contains(body, "preview failed") {
+		t.Error("preview should contain error message")
+	}
+}
+
+func TestExportAllError(t *testing.T) {
+	ctrl := &errorMockController{
+		mockController:     *newMockController(),
+		exportTemplatesErr: errors.New("templates unavailable"),
+	}
+	base, _ := startTestServerWithCtrl(t, ctrl)
+	token, cookies := getCSRFToken(t, base)
+	resp := postWithCSRF(t, base+"/export/all", "", token, cookies)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Errorf("status = %d, want 500", resp.StatusCode)
+	}
+}
+
+func TestCheckUpdatesError(t *testing.T) {
+	ctrl := &errorMockController{
+		mockController:  *newMockController(),
+		checkUpdatesErr: errors.New("updates broken"),
+	}
+	base, _ := startTestServerWithCtrl(t, ctrl)
+	token, cookies := getCSRFToken(t, base)
+	resp := postWithCSRF(t, base+"/plugins/update-all", "", token, cookies)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Errorf("status = %d, want 500", resp.StatusCode)
+	}
+}
+
 // ---------- compile-time interface checks ----------
 
 var _ ui.Plugin = (*WebUI)(nil)
 var _ ui.Controller = (*mockController)(nil)
+var _ ui.Controller = (*errorMockController)(nil)
+var _ ui.Controller = (*blockingValidationController)(nil)

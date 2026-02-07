@@ -5,23 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{block "title" .}}zhi{{end}} - zhi</title>
   <meta name="csrf-token" content="{{csrfToken .}}">
-  <link rel="stylesheet" href="/static/css/reset.css" nonce="{{nonce .}}">
-  <link rel="stylesheet" href="/static/css/tokens.css" nonce="{{nonce .}}">
-  <link rel="stylesheet" href="/static/css/layout.css" nonce="{{nonce .}}">
-  <link rel="stylesheet" href="/static/css/components.css" nonce="{{nonce .}}">
-  <link rel="stylesheet" href="/static/css/tree.css" nonce="{{nonce .}}">
-  <link rel="stylesheet" href="/static/css/editor.css" nonce="{{nonce .}}">
-  <link rel="stylesheet" href="/static/css/validation.css" nonce="{{nonce .}}">
-  <link rel="stylesheet" href="/static/css/component-mgmt.css" nonce="{{nonce .}}">
-  <link rel="stylesheet" href="/static/css/notifications.css" nonce="{{nonce .}}">
-  <link rel="stylesheet" href="/static/css/export.css" nonce="{{nonce .}}">
-  <link rel="stylesheet" href="/static/css/apply.css" nonce="{{nonce .}}">
-  <link rel="stylesheet" href="/static/css/shortcuts.css" nonce="{{nonce .}}">
-  <link rel="stylesheet" href="/static/css/marketplace.css" nonce="{{nonce .}}">
-  <link rel="stylesheet" href="/static/css/polish.css" nonce="{{nonce .}}">
-  <link rel="stylesheet" href="/static/css/themes/light.css" nonce="{{nonce .}}">
-  <link rel="stylesheet" href="/static/css/themes/dark.css" nonce="{{nonce .}}">
-  <script src="/static/js/vendor/htmx.min.js" nonce="{{nonce .}}"></script>
+  <link rel="stylesheet" href="{{assetPath "css/reset.css"}}" nonce="{{nonce .}}">
+  <link rel="stylesheet" href="{{assetPath "css/tokens.css"}}" nonce="{{nonce .}}">
+  <link rel="stylesheet" href="{{assetPath "css/layout.css"}}" nonce="{{nonce .}}">
+  <link rel="stylesheet" href="{{assetPath "css/components.css"}}" nonce="{{nonce .}}">
+  <link rel="stylesheet" href="{{assetPath "css/tree.css"}}" nonce="{{nonce .}}">
+  <link rel="stylesheet" href="{{assetPath "css/editor.css"}}" nonce="{{nonce .}}">
+  <link rel="stylesheet" href="{{assetPath "css/validation.css"}}" nonce="{{nonce .}}">
+  <link rel="stylesheet" href="{{assetPath "css/component-mgmt.css"}}" nonce="{{nonce .}}">
+  <link rel="stylesheet" href="{{assetPath "css/notifications.css"}}" nonce="{{nonce .}}">
+  <link rel="stylesheet" href="{{assetPath "css/export.css"}}" nonce="{{nonce .}}">
+  <link rel="stylesheet" href="{{assetPath "css/apply.css"}}" nonce="{{nonce .}}">
+  <link rel="stylesheet" href="{{assetPath "css/shortcuts.css"}}" nonce="{{nonce .}}">
+  <link rel="stylesheet" href="{{assetPath "css/marketplace.css"}}" nonce="{{nonce .}}">
+  <link rel="stylesheet" href="{{assetPath "css/polish.css"}}" nonce="{{nonce .}}">
+  <link rel="stylesheet" href="{{assetPath "css/themes/light.css"}}" nonce="{{nonce .}}">
+  <link rel="stylesheet" href="{{assetPath "css/themes/dark.css"}}" nonce="{{nonce .}}">
+  <script src="{{assetPath "js/vendor/htmx.min.js"}}" nonce="{{nonce .}}"></script>
 </head>
 <body hx-headers='{"X-CSRF-Token": "{{csrfToken .}}"}'>
   <a href="#main-content" class="skip-link">Skip to content</a>
@@ -35,6 +35,6 @@
     </div>
   </div>
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
-  <script src="/static/js/app.js" nonce="{{nonce .}}"></script>
+  <script src="{{assetPath "js/app.js"}}" nonce="{{nonce .}}"></script>
 </body>
 </html>

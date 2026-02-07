@@ -36,8 +36,10 @@ func RegisterBuiltins(reg *core.Registry) {
 // configuration from the options map and environment variables.
 //
 // Supported options:
-//   - addr:      Listen address (default: ZHI_WEBUI_ADDR or "127.0.0.1:8080")
-//   - auto_open: Open browser automatically (default: true)
+//   - addr:         Listen address (default: ZHI_WEBUI_ADDR or "127.0.0.1:8080")
+//   - auto_open:    Open browser automatically (default: true)
+//   - dev_mode:     Enable development features (default: ZHI_WEBUI_DEV or false)
+//   - template_dir: Filesystem path for template reloading in dev mode
 func NewWebUIProvider(_ string, options map[string]any) (zhiui.Plugin, error) {
 	cfg := webui.DefaultConfig()
 	if options != nil {
@@ -46,6 +48,12 @@ func NewWebUIProvider(_ string, options map[string]any) (zhiui.Plugin, error) {
 		}
 		if v, ok := options["auto_open"].(bool); ok {
 			cfg.AutoOpen = v
+		}
+		if v, ok := options["dev_mode"].(bool); ok {
+			cfg.DevMode = v
+		}
+		if v, ok := options["template_dir"].(string); ok {
+			cfg.TemplateDir = v
 		}
 	}
 	return webui.New(cfg), nil

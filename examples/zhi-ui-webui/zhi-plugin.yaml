@@ -1,0 +1,18 @@
+schemaVersion: "1"
+name: zhi-ui-webui
+type: ui
+version: 0.0.1
+zhiProtocolVersion: "1"
+description: Browser-based Web UI for zhi configuration management
+author: MrWong99
+license: MIT
+homepage: https://mrwong99.github.io/zhi/docs/user-guide/web-ui.html
+keywords:
+  - ui
+  - web
+  - browser
+  - htmx
+
+# Build artifacts (paths relative to project root)
+binaries:
+  linux/amd64: dist/zhi-ui-webui

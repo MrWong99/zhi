@@ -10,6 +10,11 @@ type Config struct {
 	Addr string
 	// AutoOpen controls whether the browser is opened automatically.
 	AutoOpen bool
+	// DevMode enables development features like template reloading.
+	DevMode bool
+	// TemplateDir overrides the embedded template directory with a
+	// filesystem path. Only effective when DevMode is true.
+	TemplateDir string
 }
 
 // DefaultConfig returns a Config with sensible defaults, overridden by
@@ -24,6 +29,12 @@ func DefaultConfig() Config {
 	}
 	if v := os.Getenv("ZHI_WEBUI_AUTO_OPEN"); v == "false" || v == "0" {
 		cfg.AutoOpen = false
+	}
+	if v := os.Getenv("ZHI_WEBUI_DEV"); v == "true" || v == "1" {
+		cfg.DevMode = true
+	}
+	if v := os.Getenv("ZHI_WEBUI_TEMPLATE_DIR"); v != "" {
+		cfg.TemplateDir = v
 	}
 	return cfg
 }

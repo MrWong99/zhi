@@ -1,6 +1,7 @@
 package webui
 
 import (
+	"bytes"
 	"compress/gzip"
 	"context"
 	"crypto/hmac"
@@ -11,6 +12,7 @@ import (
 	"log"
 	"net/http"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -25,6 +27,114 @@ func requestIDMiddleware(next http.Handler) http.Handler {
 		w.Header().Set("X-Request-ID", id)
 		next.ServeHTTP(w, r)
 	})
+}
+
+// responseTimeMiddleware records the time taken to process a request and
+// sets the X-Response-Time header. Because it wraps the handler, it uses
+// a deferred-write wrapper to inject the header before the response body.
+func responseTimeMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		rw := &responseTimeWriter{ResponseWriter: w, start: start}
+		next.ServeHTTP(rw, r)
+		// If nothing was written yet, set it anyway for HEAD or empty responses.
+		if !rw.headerWritten {
+			w.Header().Set("X-Response-Time", time.Since(start).String())
+		}
+	})
+}
+
+type responseTimeWriter struct {
+	http.ResponseWriter
+	start         time.Time
+	headerWritten bool
+}
+
+func (w *responseTimeWriter) WriteHeader(code int) {
+	if !w.headerWritten {
+		w.headerWritten = true
+		w.Header().Set("X-Response-Time", time.Since(w.start).String())
+	}
+	w.ResponseWriter.WriteHeader(code)
+}
+
+func (w *responseTimeWriter) Write(b []byte) (int, error) {
+	if !w.headerWritten {
+		w.WriteHeader(http.StatusOK)
+	}
+	return w.ResponseWriter.Write(b)
+}
+
+// Unwrap returns the underlying ResponseWriter for http.ResponseController.
+func (w *responseTimeWriter) Unwrap() http.ResponseWriter {
+	return w.ResponseWriter
+}
+
+// etagMiddleware computes a weak ETag for bufferable GET responses and
+// returns 304 Not Modified when the client's If-None-Match header
+// matches. It skips text/event-stream (SSE) and text/html (which
+// contain per-request CSP nonces) to avoid unnecessary buffering.
+func etagMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		rec := &etagRecorder{
+			ResponseWriter: w,
+			buf:            &bytes.Buffer{},
+			statusCode:     http.StatusOK,
+		}
+		next.ServeHTTP(rec, r)
+
+		ct := rec.Header().Get("Content-Type")
+		// Skip SSE, HTML (dynamic nonces), and error responses.
+		if strings.HasPrefix(ct, "text/event-stream") ||
+			strings.Contains(ct, "text/html") ||
+			rec.statusCode >= 400 {
+			w.WriteHeader(rec.statusCode)
+			_, _ = w.Write(rec.buf.Bytes())
+			return
+		}
+
+		body := rec.buf.Bytes()
+		if len(body) == 0 {
+			w.WriteHeader(rec.statusCode)
+			return
+		}
+
+		hash := sha256.Sum256(body)
+		etag := `W/"` + fmt.Sprintf("%x", hash[:8]) + `"`
+
+		w.Header().Set("ETag", etag)
+
+		if match := r.Header.Get("If-None-Match"); match == etag {
+			w.WriteHeader(http.StatusNotModified)
+			return
+		}
+
+		w.Header().Set("Content-Length", strconv.Itoa(len(body)))
+		w.WriteHeader(rec.statusCode)
+		_, _ = w.Write(body)
+	})
+}
+
+// etagRecorder buffers the response body for ETag computation.
+type etagRecorder struct {
+	http.ResponseWriter
+	buf         *bytes.Buffer
+	statusCode  int
+	wroteHeader bool
+}
+
+func (r *etagRecorder) WriteHeader(code int) {
+	r.statusCode = code
+	r.wroteHeader = true
+}
+
+func (r *etagRecorder) Write(b []byte) (int, error) {
+	return r.buf.Write(b)
 }
 
 // loggingMiddleware logs method, path, status, and duration to stderr.

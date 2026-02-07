@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"io/fs"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -23,11 +24,16 @@ type templateEngine struct {
 	layout    *template.Template
 	pages     map[string]*template.Template
 	fragments map[string]*template.Template
+
+	// dev-mode fields: when both are set, templates are re-parsed on
+	// each request from the filesystem directory instead of the embed.
+	devMode     bool
+	templateDir string
 }
 
-// newTemplateEngine parses all templates from the embedded filesystem.
-func newTemplateEngine() (*templateEngine, error) {
-	funcMap := template.FuncMap{
+// templateFuncMap returns the shared template function map.
+func templateFuncMap() template.FuncMap {
+	return template.FuncMap{
 		"csrfToken":    csrfTokenFunc,
 		"csrfField":    csrfFieldFunc,
 		"nonce":        nonceFunc,
@@ -39,10 +45,28 @@ func newTemplateEngine() (*templateEngine, error) {
 		"seq":          seqFunc,
 		"sub":          func(a, b int) int { return a - b },
 		"add":          func(a, b int) int { return a + b },
+		"assetPath":    assetPathFunc,
 	}
+}
+
+// newTemplateEngine parses all templates. When devMode is true and
+// templateDir is non-empty, templates are re-parsed from that directory
+// on every render call instead of being cached at startup.
+func newTemplateEngine(devMode bool, templateDir string) (*templateEngine, error) {
+	e, err := parseTemplatesFromFS(templateFS)
+	if err != nil {
+		return nil, err
+	}
+	e.devMode = devMode
+	e.templateDir = templateDir
+	return e, nil
+}
+
+// parseTemplatesFromFS parses all templates from the given filesystem.
+func parseTemplatesFromFS(fsys fs.FS) (*templateEngine, error) {
+	funcMap := templateFuncMap()
 
 	// Parse shared templates (layout, sidebar, topbar) and all fragments.
-	// Fragment files are included here so page templates can reference them.
 	sharedFiles := []string{
 		"templates/layout.html",
 		"templates/sidebar.html",
@@ -50,7 +74,7 @@ func newTemplateEngine() (*templateEngine, error) {
 	}
 
 	// Discover all fragment files to include in the shared set.
-	fragFiles, err := fs.Glob(templateFS, "templates/fragments/*.html")
+	fragFiles, err := fs.Glob(fsys, "templates/fragments/*.html")
 	if err != nil {
 		return nil, fmt.Errorf("globbing fragments: %w", err)
 	}
@@ -62,14 +86,14 @@ func newTemplateEngine() (*templateEngine, error) {
 	}
 
 	// Parse the base layout with shared templates.
-	base, err := template.New("layout.html").Funcs(funcMap).ParseFS(templateFS, sharedFiles...)
+	base, err := template.New("layout.html").Funcs(funcMap).ParseFS(fsys, sharedFiles...)
 	if err != nil {
 		return nil, fmt.Errorf("parsing layout templates: %w", err)
 	}
 	e.layout = base
 
 	// Parse each page template by cloning the base and adding the page.
-	pageFiles, err := fs.Glob(templateFS, "templates/pages/*.html")
+	pageFiles, err := fs.Glob(fsys, "templates/pages/*.html")
 	if err != nil {
 		return nil, fmt.Errorf("globbing pages: %w", err)
 	}
@@ -80,7 +104,7 @@ func newTemplateEngine() (*templateEngine, error) {
 		if err != nil {
 			return nil, fmt.Errorf("cloning base for %s: %w", name, err)
 		}
-		_, err = clone.ParseFS(templateFS, pf)
+		_, err = clone.ParseFS(fsys, pf)
 		if err != nil {
 			return nil, fmt.Errorf("parsing page %s: %w", name, err)
 		}
@@ -90,7 +114,7 @@ func newTemplateEngine() (*templateEngine, error) {
 	// Parse all fragment templates together so they can reference each
 	// other (e.g. tree_content references tree_node).
 	if len(fragFiles) > 0 {
-		allFrags, err := template.New("fragments").Funcs(funcMap).ParseFS(templateFS, fragFiles...)
+		allFrags, err := template.New("fragments").Funcs(funcMap).ParseFS(fsys, fragFiles...)
 		if err != nil {
 			return nil, fmt.Errorf("parsing fragments: %w", err)
 		}
@@ -104,8 +128,30 @@ func newTemplateEngine() (*templateEngine, error) {
 	return e, nil
 }
 
+// reload re-parses all templates from the filesystem directory. This is
+// only called in dev mode to support live template editing.
+func (e *templateEngine) reload() error {
+	var fsys fs.FS = templateFS
+	if e.templateDir != "" {
+		fsys = os.DirFS(e.templateDir)
+	}
+	fresh, err := parseTemplatesFromFS(fsys)
+	if err != nil {
+		return err
+	}
+	e.layout = fresh.layout
+	e.pages = fresh.pages
+	e.fragments = fresh.fragments
+	return nil
+}
+
 // renderPage renders a full page (layout + page content).
 func (e *templateEngine) renderPage(w http.ResponseWriter, name string, data any) error {
+	if e.devMode {
+		if err := e.reload(); err != nil {
+			return fmt.Errorf("dev reload: %w", err)
+		}
+	}
 	tmpl, ok := e.pages[name]
 	if !ok {
 		return fmt.Errorf("page template %q not found", name)
@@ -121,6 +167,11 @@ func (e *templateEngine) renderPage(w http.ResponseWriter, name string, data any
 
 // renderFragment renders only a named template block (for HTMX partial updates).
 func (e *templateEngine) renderFragment(w http.ResponseWriter, name string, data any) error {
+	if e.devMode {
+		if err := e.reload(); err != nil {
+			return fmt.Errorf("dev reload: %w", err)
+		}
+	}
 	tmpl, ok := e.fragments[name]
 	if !ok {
 		return fmt.Errorf("fragment template %q not found", name)

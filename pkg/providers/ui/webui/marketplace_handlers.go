@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/MrWong99/zhi/pkg/zhiplugin/ui"
 )
@@ -281,14 +282,14 @@ func toPluginDetailData(d *ui.MarketplaceDetail) *pluginDetailData {
 func ratingStars(rating float64) string {
 	full := int(rating)
 	empty := 5 - full
-	s := ""
+	var s strings.Builder
 	for range full {
-		s += "\u2605" // ★
+		s.WriteString("\u2605") // ★
 	}
 	for range empty {
-		s += "\u2606" // ☆
+		s.WriteString("\u2606") // ☆
 	}
-	return s
+	return s.String()
 }
 
 // formatDownloads returns a human-friendly download count.

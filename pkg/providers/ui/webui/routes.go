@@ -9,13 +9,16 @@ import (
 
 // registerRoutes sets up all HTTP routes on the server's mux.
 func (s *Server) registerRoutes() {
-	// Static file serving from embedded FS.
+	// Static file serving from embedded FS. Content-hashed paths
+	// (e.g. /static/css/tokens.a1b2c3d4.css) are served with immutable
+	// cache headers. Non-hashed paths get a short cache.
 	staticSub, err := fs.Sub(staticFS, "static")
 	if err != nil {
 		panic("embedded static FS missing: " + err.Error())
 	}
+	fileServer := http.FileServerFS(staticSub)
 	s.mux.Handle("GET /static/", http.StripPrefix("/static/",
-		cacheControl(http.FileServerFS(staticSub)),
+		hashedStaticHandler(fileServer),
 	))
 
 	// Root redirect.
@@ -176,10 +179,18 @@ func (s *Server) renderError(w http.ResponseWriter, r *http.Request, code int, m
 	}
 }
 
-// cacheControl wraps a handler to set Cache-Control for static assets.
-func cacheControl(h http.Handler) http.Handler {
+// hashedStaticHandler strips content hashes from URLs and sets appropriate
+// cache headers. Hashed paths get immutable 1-year caching; non-hashed
+// paths get a short 1-hour cache.
+func hashedStaticHandler(fileServer http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Cache-Control", "public, max-age=3600")
-		h.ServeHTTP(w, r)
+		original, hashed := isHashedPath(r.URL.Path)
+		if hashed {
+			r.URL.Path = original
+			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+		} else {
+			w.Header().Set("Cache-Control", "public, max-age=3600")
+		}
+		fileServer.ServeHTTP(w, r)
 	})
 }
