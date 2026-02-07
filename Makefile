@@ -232,6 +232,27 @@ release-dry-run: ## Run GoReleaser without publishing
 	goreleaser release --skip=publish --clean
 
 # ──────────────────────────────────────────────────────────────────────────────
+# Docker
+# ──────────────────────────────────────────────────────────────────────────────
+
+DOCKER_REGISTRY ?= ghcr.io/mrwong99
+DOCKER_TAG ?= $(VERSION)
+
+.PHONY: docker-build
+docker-build: build ## Build Docker images for zhi-mirror and zhi-marketplace
+	docker build -f zhi-mirror.dockerfile -t $(DOCKER_REGISTRY)/zhi-mirror:$(DOCKER_TAG) .
+	docker build -f zhi-marketplace.dockerfile -t $(DOCKER_REGISTRY)/zhi-marketplace:$(DOCKER_TAG) .
+	docker tag $(DOCKER_REGISTRY)/zhi-mirror:$(DOCKER_TAG) $(DOCKER_REGISTRY)/zhi-mirror:latest
+	docker tag $(DOCKER_REGISTRY)/zhi-marketplace:$(DOCKER_TAG) $(DOCKER_REGISTRY)/zhi-marketplace:latest
+
+.PHONY: docker-push
+docker-push: ## Push Docker images to ghcr.io/mrwong99
+	docker push $(DOCKER_REGISTRY)/zhi-mirror:$(DOCKER_TAG)
+	docker push $(DOCKER_REGISTRY)/zhi-marketplace:$(DOCKER_TAG)
+	docker push $(DOCKER_REGISTRY)/zhi-mirror:latest
+	docker push $(DOCKER_REGISTRY)/zhi-marketplace:latest
+
+# ──────────────────────────────────────────────────────────────────────────────
 # Clean
 # ──────────────────────────────────────────────────────────────────────────────
 
