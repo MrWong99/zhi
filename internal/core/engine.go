@@ -8,6 +8,7 @@ import (
 	"reflect"
 
 	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
+	"github.com/MrWong99/zhi/pkg/zhiplugin/labels"
 	"github.com/MrWong99/zhi/pkg/zhiplugin/store"
 	"github.com/MrWong99/zhi/pkg/zhiplugin/transform"
 )
@@ -212,8 +213,27 @@ func (e *Engine) LoadStoredTree(ctx context.Context) (*config.Tree, bool, error)
 	}
 	tree := config.NewTree()
 	for path, v := range values {
-		cp := v
-		if err := tree.Set(path, &cp); err != nil {
+		if desiredType := labels.GetSemanticType(v.Metadata); desiredType != "" {
+			var err error
+			switch desiredType {
+			case "string":
+				err = v.TryConvert(reflect.TypeFor[string]())
+			case "int":
+				err = v.TryConvert(reflect.TypeFor[int]())
+			case "uint":
+				err = v.TryConvert(reflect.TypeFor[uint]())
+			case "float":
+				err = v.TryConvert(reflect.TypeFor[float64]())
+			case "bool":
+				err = v.TryConvert(reflect.TypeFor[bool]())
+			default:
+				err = fmt.Errorf("unsupported semantic type: %s", desiredType)
+			}
+			if err != nil {
+				Logger().Warn("could not convert value to desired type", "path", path, "error", err)
+			}
+		}
+		if err := tree.Set(path, &v); err != nil {
 			return nil, false, fmt.Errorf("setting stored value at %q: %w", path, err)
 		}
 	}
