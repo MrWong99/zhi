@@ -23,7 +23,7 @@ type Controller interface {
 	// Validate runs validation on the current configuration tree.
 	Validate(ctx context.Context) ([]config.ValidationResult, error)
 	// SaveTree persists the current tree to the store.
-	SaveTree(ctx context.Context, id string) error
+	SaveTree(ctx context.Context) error
 	// ExportTemplates returns the workspace export template definitions.
 	ExportTemplates(ctx context.Context) ([]ExportTemplate, error)
 	// Export runs a single export operation.

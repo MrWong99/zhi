@@ -245,7 +245,7 @@ func (a *App) updateTreeView(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return a, nil
 
 		case "s":
-			err := a.controller.SaveTree(a.ctx, "default")
+			err := a.controller.SaveTree(a.ctx)
 			if err != nil {
 				if store.IsCASConflict(err) {
 					a.statusMsg = "Save conflict: tree was modified externally. Press r to reload."

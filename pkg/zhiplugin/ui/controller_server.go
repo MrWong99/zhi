@@ -57,8 +57,8 @@ func (s *controllerGRPCServer) Validate(ctx context.Context, _ *pb.CtrlValidateR
 	return &pb.CtrlValidateResponse{Results: msgs}, nil
 }
 
-func (s *controllerGRPCServer) SaveTree(ctx context.Context, req *pb.CtrlSaveTreeRequest) (*pb.CtrlSaveTreeResponse, error) {
-	if err := s.impl.SaveTree(ctx, req.GetId()); err != nil {
+func (s *controllerGRPCServer) SaveTree(ctx context.Context, _ *pb.CtrlSaveTreeRequest) (*pb.CtrlSaveTreeResponse, error) {
+	if err := s.impl.SaveTree(ctx); err != nil {
 		return nil, err
 	}
 	return &pb.CtrlSaveTreeResponse{}, nil

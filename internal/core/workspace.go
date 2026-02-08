@@ -170,8 +170,10 @@ func LoadWorkspace(dir string) (*WorkspaceConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	ws.Dir = filepath.Dir(configPath)
+	if abs, err := filepath.Abs(ws.Dir); err == nil {
+		ws.Dir = abs
+	}
 	return ws, nil
 }
 

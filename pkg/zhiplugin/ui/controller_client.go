@@ -65,8 +65,8 @@ func (c *controllerGRPCClient) Validate(ctx context.Context) ([]config.Validatio
 	return results, nil
 }
 
-func (c *controllerGRPCClient) SaveTree(ctx context.Context, id string) error {
-	_, err := c.client.SaveTree(ctx, &pb.CtrlSaveTreeRequest{Id: id})
+func (c *controllerGRPCClient) SaveTree(ctx context.Context) error {
+	_, err := c.client.SaveTree(ctx, &pb.CtrlSaveTreeRequest{})
 	return err
 }
 

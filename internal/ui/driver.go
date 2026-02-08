@@ -99,7 +99,7 @@ func (c *UIController) Validate(ctx context.Context) ([]config.ValidationResult,
 }
 
 // SaveTree persists the current tree and component state to the store.
-func (c *UIController) SaveTree(ctx context.Context, id string) error {
+func (c *UIController) SaveTree(ctx context.Context) error {
 	if c.tree == nil {
 		return fmt.Errorf("no tree loaded")
 	}
@@ -107,7 +107,7 @@ func (c *UIController) SaveTree(ctx context.Context, id string) error {
 	if err := c.engine.TransformForSave(ctx, c.tree); err != nil {
 		return fmt.Errorf("transforming tree for save: %w", err)
 	}
-	return c.engine.SaveTree(ctx, id, c.tree)
+	return c.engine.SaveTree(ctx, c.tree)
 }
 
 // ListComponents returns all components with their current state.

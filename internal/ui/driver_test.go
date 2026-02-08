@@ -355,7 +355,7 @@ func TestUIController_SaveTree(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err := ctrl.SaveTree(ctx, "test")
+	err := ctrl.SaveTree(ctx)
 	if err != nil {
 		t.Fatalf("SaveTree: %v", err)
 	}

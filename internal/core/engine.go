@@ -2,7 +2,10 @@ package core
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
+	"reflect"
 
 	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
 	"github.com/MrWong99/zhi/pkg/zhiplugin/store"
@@ -84,6 +87,31 @@ func (e *Engine) LoadTree(ctx context.Context) (*config.Tree, error) {
 			return nil, fmt.Errorf("setting tree value at %q: %w", path, err)
 		}
 	}
+
+	// Load stored tree and merge if available
+	if storedTree, ok, err := e.LoadStoredTree(ctx); err == nil && ok {
+		for _, path := range tree.List() {
+			storedVal, found := storedTree.Get(path)
+			if !found {
+				continue
+			}
+			currentVal, found := tree.GetPtr(path) // pointer so we can modify it directly
+			if !found {
+				continue // should not happen since we used "List()"
+			}
+			// Check stored value has same type as current value
+			if reflect.TypeOf(storedVal.Val) != reflect.TypeOf(currentVal.Val) {
+				Logger().Warn("stored value has different type and won't be updated",
+					"path", path, "storedType", reflect.TypeOf(storedVal.Val), "newType", reflect.TypeOf(currentVal.Val))
+				continue
+			}
+			currentVal.Val = storedVal.Val
+			Logger().Debug("updated value from stored value", "path", path)
+		}
+	} else if err != nil {
+		Logger().Warn("could not load stored values", "error", err)
+	}
+
 	return tree, nil
 }
 
@@ -146,8 +174,9 @@ func (e *Engine) SetValue(ctx context.Context, path string, value config.Value) 
 }
 
 // SaveTree persists a tree to the store provider by extracting all values
-// and writing them with PutValues. Returns an error if no store is configured.
-func (e *Engine) SaveTree(ctx context.Context, id string, tree *config.Tree) error {
+// and writing them with PutValues. The tree is stored under the workspace's
+// derived TreeID. Returns an error if no store is configured.
+func (e *Engine) SaveTree(ctx context.Context, tree *config.Tree) error {
 	if e.storePlugin == nil {
 		return fmt.Errorf("no store provider configured")
 	}
@@ -158,13 +187,14 @@ func (e *Engine) SaveTree(ctx context.Context, id string, tree *config.Tree) err
 			values[path] = v
 		}
 	}
-	return e.storePlugin.PutValues(ctx, id, values, nil)
+	return e.storePlugin.PutValues(ctx, e.TreeID(), values, nil)
 }
 
 // LoadStoredTree loads a tree from the store provider. The config plugin's
 // path list is used so the store knows exactly which values to fetch.
+// The tree is loaded using the workspace's derived TreeID.
 // Returns an error if no store is configured.
-func (e *Engine) LoadStoredTree(ctx context.Context, id string) (*config.Tree, bool, error) {
+func (e *Engine) LoadStoredTree(ctx context.Context) (*config.Tree, bool, error) {
 	if e.storePlugin == nil {
 		return nil, false, fmt.Errorf("no store provider configured")
 	}
@@ -173,7 +203,7 @@ func (e *Engine) LoadStoredTree(ctx context.Context, id string) (*config.Tree, b
 	if err != nil {
 		return nil, false, fmt.Errorf("listing config paths for store load: %w", err)
 	}
-	values, err := e.storePlugin.GetValues(ctx, id, paths)
+	values, err := e.storePlugin.GetValues(ctx, e.TreeID(), paths)
 	if err != nil {
 		return nil, false, err
 	}
@@ -355,6 +385,19 @@ func (e *Engine) WorkspaceDir() string {
 		return ""
 	}
 	return e.workspace.Dir
+}
+
+// TreeID returns a deterministic identifier derived from the workspace
+// directory path. The same workspace always produces the same ID, while
+// different workspaces produce different IDs. This is used as the tree
+// key when persisting to the store.
+func (e *Engine) TreeID() string {
+	dir := e.WorkspaceDir()
+	if dir == "" {
+		return "default"
+	}
+	h := sha256.Sum256([]byte(dir))
+	return hex.EncodeToString(h[:8])
 }
 
 // ValidatePath runs config provider validation for a single path in the tree.

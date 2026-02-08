@@ -206,18 +206,7 @@ func (s *server) handleValidate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) handleSaveTree(w http.ResponseWriter, r *http.Request) {
-	var body struct {
-		ID string `json:"id"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		writeError(w, http.StatusBadRequest, fmt.Errorf("invalid JSON: %w", err))
-		return
-	}
-	if body.ID == "" {
-		writeError(w, http.StatusBadRequest, errors.New("id is required"))
-		return
-	}
-	if err := s.ctrl.SaveTree(r.Context(), body.ID); err != nil {
+	if err := s.ctrl.SaveTree(r.Context()); err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}

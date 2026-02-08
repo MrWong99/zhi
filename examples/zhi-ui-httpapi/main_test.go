@@ -28,7 +28,6 @@ type mockController struct {
 	applyResult   *ui.ApplyResult
 
 	// recorded calls
-	savedID      string
 	setValue     *config.Value
 	setValuePath string
 	enabledName  string
@@ -80,8 +79,7 @@ func (m *mockController) Validate(_ context.Context) ([]config.ValidationResult,
 	return m.validations, nil
 }
 
-func (m *mockController) SaveTree(_ context.Context, id string) error {
-	m.savedID = id
+func (m *mockController) SaveTree(_ context.Context) error {
 	return nil
 }
 
@@ -312,13 +310,9 @@ func TestSaveTree(t *testing.T) {
 	ctrl := newMockController()
 	base, _ := startTestServer(t, ctrl)
 
-	body := map[string]string{"id": "production"}
-	resp := postJSON(t, base+"/api/tree/save", body, nil)
+	resp := postJSON(t, base+"/api/tree/save", nil, nil)
 	if resp.StatusCode != http.StatusNoContent {
 		t.Fatalf("status = %d, want 204", resp.StatusCode)
-	}
-	if ctrl.savedID != "production" {
-		t.Errorf("savedID = %q, want %q", ctrl.savedID, "production")
 	}
 }
 

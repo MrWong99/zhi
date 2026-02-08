@@ -208,6 +208,7 @@ func setupTestEngine(t *testing.T) (*Engine, *mockConfig, *mockTransform, *mockS
 			{Name: "database", Paths: []string{"database/"}, Mandatory: true},
 			{Name: "extras", Paths: []string{"extras/"}},
 		},
+		Dir: t.TempDir(),
 	}
 
 	eng, err := NewEngine(reg, ws)
@@ -320,11 +321,11 @@ func TestEngineSaveAndLoadTree(t *testing.T) {
 		t.Fatalf("LoadTree: %v", err)
 	}
 
-	if err := eng.SaveTree(ctx, "test-tree", tree); err != nil {
+	if err := eng.SaveTree(ctx, tree); err != nil {
 		t.Fatalf("SaveTree: %v", err)
 	}
 
-	loaded, found, err := eng.LoadStoredTree(ctx, "test-tree")
+	loaded, found, err := eng.LoadStoredTree(ctx)
 	if err != nil {
 		t.Fatalf("LoadStoredTree: %v", err)
 	}
@@ -347,17 +348,17 @@ func TestEngineListTrees(t *testing.T) {
 	ctx := context.Background()
 
 	tree, _ := eng.LoadTree(ctx)
-	_ = eng.SaveTree(ctx, "alpha", tree)
-	_ = eng.SaveTree(ctx, "beta", tree)
+	_ = eng.SaveTree(ctx, tree)
 
 	ids, err := eng.ListTrees(ctx)
 	if err != nil {
 		t.Fatalf("ListTrees: %v", err)
 	}
-	sort.Strings(ids)
-	want := []string{"alpha", "beta"}
-	if !slices.Equal(ids, want) {
-		t.Errorf("ListTrees() = %v, want %v", ids, want)
+	if len(ids) != 1 {
+		t.Fatalf("ListTrees() = %v, want 1 entry", ids)
+	}
+	if ids[0] != eng.TreeID() {
+		t.Errorf("ListTrees()[0] = %v, want %v", ids[0], eng.TreeID())
 	}
 }
 
@@ -431,10 +432,10 @@ func TestEngineNoStore(t *testing.T) {
 
 	ctx := context.Background()
 
-	if err := eng.SaveTree(ctx, "test", config.NewTree()); err == nil {
+	if err := eng.SaveTree(ctx, config.NewTree()); err == nil {
 		t.Error("expected error saving without store")
 	}
-	if _, _, err := eng.LoadStoredTree(ctx, "test"); err == nil {
+	if _, _, err := eng.LoadStoredTree(ctx); err == nil {
 		t.Error("expected error loading without store")
 	}
 	if _, err := eng.ListTrees(ctx); err == nil {
@@ -566,15 +567,15 @@ func TestEngineDeleteTree(t *testing.T) {
 	ctx := context.Background()
 
 	tree, _ := eng.LoadTree(ctx)
-	_ = eng.SaveTree(ctx, "to-delete", tree)
+	_ = eng.SaveTree(ctx, tree)
 
-	if err := eng.DeleteTree(ctx, "to-delete"); err != nil {
+	if err := eng.DeleteTree(ctx, eng.TreeID()); err != nil {
 		t.Fatalf("DeleteTree: %v", err)
 	}
 
 	ids, _ := eng.ListTrees(ctx)
 	for _, id := range ids {
-		if id == "to-delete" {
+		if id == eng.TreeID() {
 			t.Error("tree should have been deleted")
 		}
 	}
@@ -585,13 +586,13 @@ func TestEngineDeleteValues(t *testing.T) {
 	ctx := context.Background()
 
 	tree, _ := eng.LoadTree(ctx)
-	_ = eng.SaveTree(ctx, "test", tree)
+	_ = eng.SaveTree(ctx, tree)
 
-	if err := eng.DeleteValues(ctx, "test", []string{"database/host"}); err != nil {
+	if err := eng.DeleteValues(ctx, eng.TreeID(), []string{"database/host"}); err != nil {
 		t.Fatalf("DeleteValues: %v", err)
 	}
 
-	loaded, found, _ := eng.LoadStoredTree(ctx, "test")
+	loaded, found, _ := eng.LoadStoredTree(ctx)
 	if !found {
 		t.Fatal("tree not found after DeleteValues")
 	}
@@ -766,6 +767,7 @@ func setupVersionedTestEngine(t *testing.T) (*Engine, *mockConfig, *versionedMoc
 		Version: "1",
 		Config:  ProviderRef{Provider: "mock"},
 		Store:   ProviderRef{Provider: "vmock"},
+		Dir:     t.TempDir(),
 	}
 
 	eng, err := NewEngine(reg, ws)
@@ -778,17 +780,18 @@ func setupVersionedTestEngine(t *testing.T) (*Engine, *mockConfig, *versionedMoc
 func TestEngineTreeVersioning(t *testing.T) {
 	eng, _, _ := setupVersionedTestEngine(t)
 	ctx := context.Background()
+	id := eng.TreeID()
 
 	// Save two versions.
 	tree1, _ := eng.LoadTree(ctx)
-	_ = eng.SaveTree(ctx, "app", tree1)
+	_ = eng.SaveTree(ctx, tree1)
 
 	_ = eng.SetValue(ctx, "database/host", config.Value{Val: "remote"})
 	tree2, _ := eng.LoadTree(ctx)
-	_ = eng.SaveTree(ctx, "app", tree2)
+	_ = eng.SaveTree(ctx, tree2)
 
 	// List versions.
-	versions, err := eng.ListTreeVersions(ctx, "app")
+	versions, err := eng.ListTreeVersions(ctx, id)
 	if err != nil {
 		t.Fatalf("ListTreeVersions: %v", err)
 	}
@@ -797,7 +800,7 @@ func TestEngineTreeVersioning(t *testing.T) {
 	}
 
 	// Get version 1 (empty snapshot before first write).
-	v1tree, found, err := eng.GetTreeVersion(ctx, "app", "v1")
+	v1tree, found, err := eng.GetTreeVersion(ctx, id, "v1")
 	if err != nil {
 		t.Fatalf("GetTreeVersion v1: %v", err)
 	}
@@ -807,16 +810,16 @@ func TestEngineTreeVersioning(t *testing.T) {
 	}
 
 	// Rollback to v1.
-	if err := eng.RollbackTree(ctx, "app", "v1"); err != nil {
+	if err := eng.RollbackTree(ctx, id, "v1"); err != nil {
 		t.Fatalf("RollbackTree: %v", err)
 	}
 
 	// Delete version v2.
-	if err := eng.DeleteTreeVersion(ctx, "app", "v2"); err != nil {
+	if err := eng.DeleteTreeVersion(ctx, id, "v2"); err != nil {
 		t.Fatalf("DeleteTreeVersion: %v", err)
 	}
 
-	versions, _ = eng.ListTreeVersions(ctx, "app")
+	versions, _ = eng.ListTreeVersions(ctx, id)
 	if len(versions) != 1 {
 		t.Errorf("got %d versions after delete, want 1", len(versions))
 	}

@@ -115,10 +115,14 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 		go openBrowser(url)
 	}
 
+	var cancelOnError context.CancelFunc
+	ctx, cancelOnError = context.WithCancel(ctx)
+
 	var wg sync.WaitGroup
 	wg.Go(func() {
 		if err := s.httpSrv.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Printf("http server error: %v", err)
+			cancelOnError()
 		}
 	})
 

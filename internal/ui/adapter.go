@@ -55,8 +55,8 @@ func (c *ControllerAdapter) Validate(ctx context.Context) ([]config.ValidationRe
 	return c.Inner.Validate(ctx)
 }
 
-func (c *ControllerAdapter) SaveTree(ctx context.Context, id string) error {
-	return c.Inner.SaveTree(ctx, id)
+func (c *ControllerAdapter) SaveTree(ctx context.Context) error {
+	return c.Inner.SaveTree(ctx)
 }
 
 func (c *ControllerAdapter) ExportTemplates(_ context.Context) ([]zhiui.ExportTemplate, error) {

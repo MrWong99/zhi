@@ -58,7 +58,7 @@ func (m *mockController) Validate(_ context.Context) ([]config.ValidationResult,
 	return nil, nil
 }
 
-func (m *mockController) SaveTree(_ context.Context, _ string) error {
+func (m *mockController) SaveTree(_ context.Context) error {
 	return nil
 }
 
@@ -1801,11 +1801,11 @@ func (m *errorMockController) Validate(ctx context.Context) ([]config.Validation
 	return m.mockController.Validate(ctx)
 }
 
-func (m *errorMockController) SaveTree(ctx context.Context, treeID string) error {
+func (m *errorMockController) SaveTree(ctx context.Context) error {
 	if m.saveTreeErr != nil {
 		return m.saveTreeErr
 	}
-	return m.mockController.SaveTree(ctx, treeID)
+	return m.mockController.SaveTree(ctx)
 }
 
 func (m *errorMockController) ExportTemplates(ctx context.Context) ([]ui.ExportTemplate, error) {

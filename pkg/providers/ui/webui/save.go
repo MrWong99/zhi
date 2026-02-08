@@ -10,14 +10,7 @@ import (
 func (s *Server) handleSaveTree(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "invalid form data", http.StatusBadRequest)
-		return
-	}
-
-	treeID := r.FormValue("tree_id")
-
-	if err := s.ctrl.SaveTree(ctx, treeID); err != nil {
+	if err := s.ctrl.SaveTree(ctx); err != nil {
 		notif := notificationEvent{
 			Type:    "error",
 			Message: "Failed to save: " + err.Error(),

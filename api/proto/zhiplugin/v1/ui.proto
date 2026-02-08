@@ -125,7 +125,7 @@ message CtrlValidateResponse {
 // -- SaveTree ---------------------------------------------------------------
 
 message CtrlSaveTreeRequest {
-  string id = 1;
+  reserved 1;
 }
 
 // CtrlSaveTreeResponse is intentionally empty.
@@ -238,8 +238,8 @@ message CtrlWorkspaceNameResponse {
 
 message CtrlSearchMarketplaceRequest {
   string query = 1;
-  string type = 2;     // "config", "transform", "store", "ui", "workspace"
-  string sort = 3;     // "relevance", "downloads", "rating", "updated"
+  string type = 2; // "config", "transform", "store", "ui", "workspace"
+  string sort = 3; // "relevance", "downloads", "rating", "updated"
   bool verified = 4;
   int32 page = 5;
   int32 per_page = 6;

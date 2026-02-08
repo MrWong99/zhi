@@ -459,7 +459,6 @@ func (x *CtrlValidateResponse) GetResults() []*proto.ValidationResultMsg {
 
 type CtrlSaveTreeRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -492,13 +491,6 @@ func (x *CtrlSaveTreeRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use CtrlSaveTreeRequest.ProtoReflect.Descriptor instead.
 func (*CtrlSaveTreeRequest) Descriptor() ([]byte, []int) {
 	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{10}
-}
-
-func (x *CtrlSaveTreeRequest) GetId() string {
-	if x != nil {
-		return x.Id
-	}
-	return ""
 }
 
 // CtrlSaveTreeResponse is intentionally empty.
@@ -2848,9 +2840,8 @@ const file_zhiplugin_v1_ui_proto_rawDesc = "" +
 	"\x14CtrlSetValueResponse\"\x15\n" +
 	"\x13CtrlValidateRequest\"S\n" +
 	"\x14CtrlValidateResponse\x12;\n" +
-	"\aresults\x18\x01 \x03(\v2!.zhiplugin.v1.ValidationResultMsgR\aresults\"%\n" +
-	"\x13CtrlSaveTreeRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"\x16\n" +
+	"\aresults\x18\x01 \x03(\v2!.zhiplugin.v1.ValidationResultMsgR\aresults\"\x1b\n" +
+	"\x13CtrlSaveTreeRequestJ\x04\b\x01\x10\x02\"\x16\n" +
 	"\x14CtrlSaveTreeResponse\"\x1c\n" +
 	"\x1aCtrlExportTemplatesRequest\"\x8f\x01\n" +
 	"\x15CtrlExportTemplateMsg\x12\x12\n" +

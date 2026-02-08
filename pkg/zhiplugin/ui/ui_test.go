@@ -89,10 +89,10 @@ func (c *testController) Validate(_ context.Context) ([]config.ValidationResult,
 	return c.validation, nil
 }
 
-func (c *testController) SaveTree(_ context.Context, id string) error {
+func (c *testController) SaveTree(_ context.Context) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.saveCalls = append(c.saveCalls, id)
+	c.saveCalls = append(c.saveCalls, "saved")
 	return nil
 }
 
@@ -454,7 +454,7 @@ func TestRunSaveTree(t *testing.T) {
 	ctrl := newTestController()
 	impl := &testUIPlugin{
 		actions: func(ctx context.Context, c Controller) error {
-			return c.SaveTree(ctx, "my-tree")
+			return c.SaveTree(ctx)
 		},
 	}
 
@@ -462,8 +462,8 @@ func TestRunSaveTree(t *testing.T) {
 	if err := p.Run(context.Background(), ctrl); err != nil {
 		t.Fatalf("Run: %v", err)
 	}
-	if len(ctrl.saveCalls) != 1 || ctrl.saveCalls[0] != "my-tree" {
-		t.Errorf("SaveTree calls = %v, want [my-tree]", ctrl.saveCalls)
+	if len(ctrl.saveCalls) != 1 {
+		t.Errorf("SaveTree calls = %v, want 1 call", ctrl.saveCalls)
 	}
 }
 

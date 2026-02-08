@@ -129,7 +129,7 @@ type Controller interface {
     LoadTree(ctx context.Context) (*config.Tree, error)
     SetValue(ctx context.Context, path string, value config.Value) error
     Validate(ctx context.Context) ([]config.ValidationResult, error)
-    SaveTree(ctx context.Context, id string) error
+    SaveTree(ctx context.Context) error
     ExportTemplates(ctx context.Context) ([]ExportTemplate, error)
     Export(ctx context.Context, req ExportRequest) (*ExportResult, error)
     Apply(ctx context.Context, target string, handler func(ApplyEvent)) (*ApplyResult, error)
@@ -145,7 +145,7 @@ type Controller interface {
 | `LoadTree`        | load or reload the full configuration tree (with transforms) |
 | `SetValue`        | store a configuration value at a path                        |
 | `Validate`        | run validation on the current tree                           |
-| `SaveTree`        | persist the current tree to the store under the given ID     |
+| `SaveTree`        | persist the current tree to the store                        |
 | `ExportTemplates` | return the workspace's configured export templates           |
 | `Export`          | run a single export operation                                |
 | `Apply`           | run the apply command; output streams via the callback       |

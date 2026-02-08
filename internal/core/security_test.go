@@ -396,7 +396,7 @@ func TestEngineNoStoreConfigured(t *testing.T) {
 	ctx := context.Background()
 
 	// Save should fail gracefully.
-	err := eng.SaveTree(ctx, "test", config.NewTree())
+	err := eng.SaveTree(ctx, config.NewTree())
 	if err == nil {
 		t.Fatal("SaveTree should error when no store is configured")
 	}
@@ -405,7 +405,7 @@ func TestEngineNoStoreConfigured(t *testing.T) {
 	}
 
 	// Load should fail gracefully.
-	_, _, err = eng.LoadStoredTree(ctx, "test")
+	_, _, err = eng.LoadStoredTree(ctx)
 	if err == nil {
 		t.Fatal("LoadStoredTree should error when no store is configured")
 	}
