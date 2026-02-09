@@ -259,7 +259,7 @@ var ErrMarketplaceNotConfigured = errors.New("marketplace not configured")
 
 // SearchMarketplace queries the marketplace for plugins or workspaces.
 // Returns ErrMarketplaceNotConfigured until the marketplace client is
-// available (Phase 4).
+// available.
 func (c *UIController) SearchMarketplace(_ context.Context, _ zhiui.MarketplaceQuery) (*zhiui.MarketplaceResults, error) {
 	return nil, ErrMarketplaceNotConfigured
 }

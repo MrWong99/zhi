@@ -8,6 +8,7 @@ import (
 
 	"github.com/MrWong99/zhi/pkg/sharing/client"
 	"github.com/MrWong99/zhi/pkg/sharing/manifest"
+	"github.com/MrWong99/zhi/pkg/sharing/verify"
 )
 
 var pluginPublishCmd = &cobra.Command{
@@ -110,11 +111,37 @@ func runPluginPublish(cmd *cobra.Command, _ []string) error {
 		} else {
 			fmt.Fprintln(w, "  Method: keyless (Sigstore Fulcio/OIDC)")
 		}
-		// Sigstore signing integration is prepared but not yet wired to
-		// sigstore-go. The signing infrastructure (flags, CLI flow, result
-		// display) is in place; adding the actual cosign.Sign call requires
-		// the sigstore-go dependency.
-		fmt.Fprintln(w, "  Note: cosign signing will be active once sigstore-go is integrated")
+
+		// Create a signer.
+		signer, err := verify.NewSigner(cmd.Context())
+		if err != nil {
+			return fmt.Errorf("creating signer: %w", err)
+		}
+
+		// Configure signing options.
+		signOpts := verify.SignOptions{
+			KeyPath:      pluginPublishKey,
+			UseRekor:     true, // Always use Rekor for transparency
+			UseTimestamp: true, // Always use TSA for tamper-evidence
+		}
+
+		// Sign the artifact using its digest.
+		signResult, err := signer.SignArtifact(cmd.Context(), result.Digest, signOpts)
+		if err != nil {
+			return fmt.Errorf("signing artifact: %w", err)
+		}
+
+		// Save the signature bundle alongside the artifact metadata.
+		// The bundle file is named <digest>.bundle.json and should be
+		// uploaded to the registry as an OCI attachment or stored separately.
+		bundlePath := result.Digest[7:15] + ".bundle.json" // Use first 8 chars of digest
+		if err := verify.SaveBundleToFile(signResult.BundleJSON, bundlePath); err != nil {
+			return fmt.Errorf("saving signature bundle: %w", err)
+		}
+
+		fmt.Fprintf(w, "  ✓ Signed successfully\n")
+		fmt.Fprintf(w, "  Identity: %s\n", signResult.SigningIdentity)
+		fmt.Fprintf(w, "  Bundle saved to: %s\n", bundlePath)
 	}
 
 	fmt.Fprintf(w, "\nInstall with: zhi plugin install %s\n", result.Reference)

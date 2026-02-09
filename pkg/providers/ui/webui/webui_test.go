@@ -567,7 +567,7 @@ func TestGenerateNonce(t *testing.T) {
 	}
 }
 
-// ---------- Phase 2: editor tests ----------
+// ---------- editor tests ----------
 
 // getCSRFToken fetches a page and extracts the CSRF cookie.
 func getCSRFToken(t *testing.T, base string) (string, []*http.Cookie) {
@@ -693,7 +693,7 @@ func TestDisplayValueNotFound(t *testing.T) {
 	}
 }
 
-// ---------- Phase 2: validation tests ----------
+// ---------- validation tests ----------
 
 func TestValidationPage(t *testing.T) {
 	base, _ := startTestServer(t)
@@ -735,7 +735,7 @@ func TestInlineValidation(t *testing.T) {
 	_ = body // No error means success.
 }
 
-// ---------- Phase 2: save tests ----------
+// ---------- save tests ----------
 
 func TestSaveTree(t *testing.T) {
 	base, _ := startTestServer(t)
@@ -758,7 +758,7 @@ func TestSaveTree(t *testing.T) {
 	}
 }
 
-// ---------- Phase 2: component tests ----------
+// ---------- component tests ----------
 
 func TestComponentsPage(t *testing.T) {
 	base, _ := startTestServer(t)
@@ -819,7 +819,7 @@ func TestComponentToggleNotFound(t *testing.T) {
 	}
 }
 
-// ---------- Phase 2: shortcuts page test ----------
+// ---------- shortcuts page test ----------
 
 func TestShortcutsPage(t *testing.T) {
 	base, _ := startTestServer(t)
@@ -836,7 +836,7 @@ func TestShortcutsPage(t *testing.T) {
 	}
 }
 
-// ---------- Phase 2: tree node has edit button ----------
+// ---------- tree node has edit button ----------
 
 func TestTreePageHasEditButtons(t *testing.T) {
 	base, _ := startTestServer(t)
@@ -853,7 +853,7 @@ func TestTreePageHasEditButtons(t *testing.T) {
 	}
 }
 
-// ---------- Phase 2: sidebar navigation ----------
+// ---------- sidebar navigation ----------
 
 func TestSidebarNavigation(t *testing.T) {
 	base, _ := startTestServer(t)
@@ -867,7 +867,7 @@ func TestSidebarNavigation(t *testing.T) {
 	}
 }
 
-// ---------- Phase 2: topbar save button ----------
+// ---------- topbar save button ----------
 
 func TestTopbarHasSaveButton(t *testing.T) {
 	base, _ := startTestServer(t)
@@ -881,7 +881,7 @@ func TestTopbarHasSaveButton(t *testing.T) {
 	}
 }
 
-// ---------- Phase 2: unit tests for editor helpers ----------
+// ---------- unit tests for editor helpers ----------
 
 func TestParseFormValue(t *testing.T) {
 	tests := []struct {
@@ -1020,7 +1020,7 @@ func TestToComponentViewData(t *testing.T) {
 	}
 }
 
-// ---------- Phase 2: tree node PathID ----------
+// ---------- tree node PathID ----------
 
 func TestTreeNodeHasPathID(t *testing.T) {
 	tree := config.NewTree()
@@ -1033,7 +1033,7 @@ func TestTreeNodeHasPathID(t *testing.T) {
 	}
 }
 
-// ---------- Phase 3: export tests ----------
+// ---------- export tests ----------
 
 func TestExportPage(t *testing.T) {
 	base, _ := startTestServer(t)
@@ -1147,7 +1147,7 @@ func TestExportHTMXFragment(t *testing.T) {
 	}
 }
 
-// ---------- Phase 3: apply tests ----------
+// ---------- apply tests ----------
 
 func TestApplyPage(t *testing.T) {
 	base, _ := startTestServer(t)
@@ -1213,7 +1213,7 @@ func TestApplyRunPreExport(t *testing.T) {
 	}
 }
 
-// ---------- Phase 3: sidebar navigation ----------
+// ---------- sidebar navigation ----------
 
 func TestSidebarHasExportAndApplyLinks(t *testing.T) {
 	base, _ := startTestServer(t)
@@ -1227,7 +1227,7 @@ func TestSidebarHasExportAndApplyLinks(t *testing.T) {
 	}
 }
 
-// ---------- Phase 3: shortcuts page ----------
+// ---------- shortcuts page ----------
 
 func TestShortcutsPageHasExportAndApply(t *testing.T) {
 	base, _ := startTestServer(t)
@@ -1241,7 +1241,7 @@ func TestShortcutsPageHasExportAndApply(t *testing.T) {
 	}
 }
 
-// ---------- Phase 3: unit tests ----------
+// ---------- unit tests ----------
 
 func TestToExportTemplateData(t *testing.T) {
 	templates := []ui.ExportTemplate{
@@ -1290,7 +1290,7 @@ func TestToApplyTargetData(t *testing.T) {
 	}
 }
 
-// ---------- Phase 4: marketplace tests ----------
+// ---------- marketplace tests ----------
 
 func TestMarketplacePage(t *testing.T) {
 	base, _ := startTestServer(t)
@@ -1445,7 +1445,7 @@ func TestRatePluginInvalidScore(t *testing.T) {
 	}
 }
 
-// ---------- Phase 4: installed plugins tests ----------
+// ---------- installed plugins tests ----------
 
 func TestPluginsPage(t *testing.T) {
 	base, _ := startTestServer(t)
@@ -1572,7 +1572,7 @@ func TestUpdateAllPlugins(t *testing.T) {
 	}
 }
 
-// ---------- Phase 4: sidebar navigation ----------
+// ---------- sidebar navigation ----------
 
 func TestSidebarHasMarketplaceAndPluginsLinks(t *testing.T) {
 	base, _ := startTestServer(t)
@@ -1586,7 +1586,7 @@ func TestSidebarHasMarketplaceAndPluginsLinks(t *testing.T) {
 	}
 }
 
-// ---------- Phase 4: shortcuts ----------
+// ---------- shortcuts ----------
 
 func TestShortcutsPageHasMarketplaceAndPlugins(t *testing.T) {
 	base, _ := startTestServer(t)
@@ -1600,7 +1600,7 @@ func TestShortcutsPageHasMarketplaceAndPlugins(t *testing.T) {
 	}
 }
 
-// ---------- Phase 4: capabilities ----------
+// ---------- capabilities ----------
 
 func TestCapabilitiesSupportsMarketplace(t *testing.T) {
 	w := New(DefaultConfig())
@@ -1613,7 +1613,7 @@ func TestCapabilitiesSupportsMarketplace(t *testing.T) {
 	}
 }
 
-// ---------- Phase 4: accessibility ----------
+// ---------- accessibility ----------
 
 func TestLayoutHasSkipLink(t *testing.T) {
 	base, _ := startTestServer(t)
@@ -1627,7 +1627,7 @@ func TestLayoutHasSkipLink(t *testing.T) {
 	}
 }
 
-// ---------- Phase 4: unit tests ----------
+// ---------- unit tests ----------
 
 func TestBuildMarketplaceQuery(t *testing.T) {
 	r, _ := http.NewRequest("GET", "/marketplace?q=vault&type=store&sort=downloads&verified=true&page=2", nil)
@@ -1759,7 +1759,7 @@ func TestTriggerNotification(t *testing.T) {
 	}
 }
 
-// ---------- Phase 5: error mock controller ----------
+// ---------- error mock controller ----------
 
 // errorMockController wraps mockController and allows configuring errors
 // for any method.
@@ -1908,7 +1908,7 @@ func startTestServerWithCtrl(t *testing.T, ctrl ui.Controller) (string, context.
 	return base, cancel
 }
 
-// ---------- Phase 5: error path tests ----------
+// ---------- error path tests ----------
 
 func TestLoadTreeError(t *testing.T) {
 	ctrl := &errorMockController{
@@ -2089,7 +2089,7 @@ func TestRatePluginError(t *testing.T) {
 	}
 }
 
-// ---------- Phase 5: CSRF rejection tests ----------
+// ---------- CSRF rejection tests ----------
 
 func TestCSRFRejectionAllPOSTs(t *testing.T) {
 	base, _ := startTestServer(t)
@@ -2130,7 +2130,7 @@ func TestCSRFRejectionAllPOSTs(t *testing.T) {
 	}
 }
 
-// ---------- Phase 5: path traversal tests ----------
+// ---------- path traversal tests ----------
 
 func TestStaticPathTraversal(t *testing.T) {
 	base, _ := startTestServer(t)
@@ -2155,7 +2155,7 @@ func TestStaticPathTraversal(t *testing.T) {
 	}
 }
 
-// ---------- Phase 5: error page tests ----------
+// ---------- error page tests ----------
 
 func TestErrorPageNoStackTrace(t *testing.T) {
 	base, _ := startTestServer(t)
@@ -2201,7 +2201,7 @@ func TestRecoveryMiddleware(t *testing.T) {
 	}
 }
 
-// ---------- Phase 5: save with blocking validation ----------
+// ---------- save with blocking validation ----------
 
 func TestSaveValueWithBlockingValidation(t *testing.T) {
 	ctrl := &blockingValidationController{
@@ -2239,7 +2239,7 @@ func (m *blockingValidationController) Validate(_ context.Context) ([]config.Val
 	}, nil
 }
 
-// ---------- Phase 5: middleware unit tests ----------
+// ---------- middleware unit tests ----------
 
 func TestResponseTimeHeader(t *testing.T) {
 	base, _ := startTestServer(t)
@@ -2282,7 +2282,7 @@ func TestETagHeaderStaticFile(t *testing.T) {
 	}
 }
 
-// ---------- Phase 5: asset manifest tests ----------
+// ---------- asset manifest tests ----------
 
 func TestAssetManifestHasEntries(t *testing.T) {
 	m := newAssetManifest()
@@ -2341,7 +2341,7 @@ func TestHashedStaticImmutableCache(t *testing.T) {
 	}
 }
 
-// ---------- Phase 5: config tests ----------
+// ---------- config tests ----------
 
 func TestDevModeConfig(t *testing.T) {
 	t.Setenv("ZHI_WEBUI_DEV", "true")
@@ -2355,7 +2355,7 @@ func TestDevModeConfig(t *testing.T) {
 	}
 }
 
-// ---------- Phase 6: benchmarks ----------
+// ---------- benchmarks ----------
 
 func BenchmarkTemplateRenderPage(b *testing.B) {
 	engine, err := newTemplateEngine(false, "")
@@ -2417,7 +2417,7 @@ func BenchmarkBuildNestedTree(b *testing.B) {
 	}
 }
 
-// ---------- Phase 6: server lifecycle test ----------
+// ---------- server lifecycle test ----------
 
 func TestServerLifecycle(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -2473,7 +2473,7 @@ func TestServerLifecycle(t *testing.T) {
 	}
 }
 
-// ---------- Phase 5: template function unit tests ----------
+// ---------- template function unit tests ----------
 
 func TestCsrfFieldFunc(t *testing.T) {
 	got := csrfFieldFunc(pageData{CSRFToken: "testtoken123"})

@@ -238,3 +238,54 @@ func TestExtractRegistryHost(t *testing.T) {
 func hasPrefix(s, prefix string) bool {
 	return len(s) >= len(prefix) && s[:len(prefix)] == prefix
 }
+
+func TestParseDigest(t *testing.T) {
+	tests := []struct {
+		name    string
+		digest  string
+		wantErr bool
+	}{
+		{
+			name:    "valid sha256",
+			digest:  "sha256:abc123def456",
+			wantErr: false,
+		},
+		{
+			name:    "invalid format no colon",
+			digest:  "sha256abc123",
+			wantErr: true,
+		},
+		{
+			name:    "invalid hex",
+			digest:  "sha256:notahex",
+			wantErr: true,
+		},
+		{
+			name:    "empty digest",
+			digest:  "",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := parseDigest(tt.digest)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("parseDigest() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestVerifySignatureOptionsDefaults(t *testing.T) {
+	opts := VerifySignatureOptions{}
+	if opts.RequireTimestamp {
+		t.Error("expected RequireTimestamp to default to false")
+	}
+	if opts.RequireCTLog {
+		t.Error("expected RequireCTLog to default to false")
+	}
+	if opts.RequireTLog {
+		t.Error("expected RequireTLog to default to false")
+	}
+}

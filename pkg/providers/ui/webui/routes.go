@@ -27,44 +27,44 @@ func (s *Server) registerRoutes() {
 	// Tree view.
 	s.mux.HandleFunc("GET /tree", s.handleTree)
 
-	// Value editor (Phase 2).
+	// Value editor
 	s.mux.HandleFunc("GET /tree/edit/{path...}", s.handleEditForm)
 	s.mux.HandleFunc("POST /tree/values/{path...}", s.handleSaveValue)
 	s.mux.HandleFunc("GET /tree/display/{path...}", s.handleDisplayValue)
 
-	// Inline validation (Phase 2).
+	// Inline validation
 	s.mux.HandleFunc("POST /validate/inline/{path...}", s.handleInlineValidation)
 
-	// Full validation (Phase 2).
+	// Full validation
 	s.mux.HandleFunc("GET /validation", s.handleValidationPage)
 	s.mux.HandleFunc("POST /validate", s.handleFullValidation)
 
-	// Save tree (Phase 2).
+	// Save tree
 	s.mux.HandleFunc("POST /tree/save", s.handleSaveTree)
 
-	// Components (Phase 2).
+	// Components
 	s.mux.HandleFunc("GET /components", s.handleComponentsPage)
 	s.mux.HandleFunc("POST /components/{name}/toggle", s.handleComponentToggle)
 
-	// Export (Phase 3).
+	// Export
 	s.mux.HandleFunc("GET /export", s.handleExportPage)
 	s.mux.HandleFunc("POST /export/preview", s.handleExportPreview)
 	s.mux.HandleFunc("POST /export", s.handleExport)
 	s.mux.HandleFunc("POST /export/all", s.handleExportAll)
 
-	// Apply (Phase 3).
+	// Apply
 	s.mux.HandleFunc("GET /apply", s.handleApplyPage)
 	s.mux.HandleFunc("POST /apply/run", s.handleApplyRun)
 
-	// Keyboard shortcuts (Phase 2).
+	// Keyboard shortcuts
 	s.mux.HandleFunc("GET /shortcuts", s.handleShortcutsPage)
 
-	// Marketplace (Phase 4).
+	// Marketplace
 	s.mux.HandleFunc("GET /marketplace", s.handleMarketplacePage)
 	s.mux.HandleFunc("GET /marketplace/{publisher}/{name}", s.handlePluginDetail)
 	s.mux.HandleFunc("POST /marketplace/{publisher}/{name}/rate", s.handleRatePlugin)
 
-	// Installed plugins (Phase 4).
+	// Installed plugins
 	s.mux.HandleFunc("GET /plugins", s.handlePluginsPage)
 	s.mux.HandleFunc("POST /plugins/install", s.handleInstallPlugin)
 	s.mux.HandleFunc("POST /plugins/update-all", s.handleUpdateAllPlugins)
