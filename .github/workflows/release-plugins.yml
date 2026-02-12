@@ -83,8 +83,18 @@ jobs:
               --username "${{ github.actor }}" \
               --password-stdin
 
+      - name: Fetch OIDC token for Sigstore keyless signing
+        id: oidc
+        run: |
+          OIDC_TOKEN=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sigstore" | jq -r '.value')
+          echo "::add-mask::$OIDC_TOKEN"
+          echo "token=$OIDC_TOKEN" >> "$GITHUB_OUTPUT"
+
       - name: Publish plugin
         working-directory: ${{ matrix.dir }}
+        env:
+          SIGSTORE_ID_TOKEN: ${{ steps.oidc.outputs.token }}
         run: |
           ../../bin/zhi plugin publish \
             --registry ghcr.io/mrwong99/zhi \
