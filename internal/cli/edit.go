@@ -87,6 +87,11 @@ func runEdit(cmd *cobra.Command, _ []string) error {
 	}
 
 	controller := ui.NewUIController(eng)
+	if mc, err := newMarketplaceClient(); err != nil {
+		controller.SetMarketplaceError(err)
+	} else {
+		controller.SetMarketplace(mc)
+	}
 	adapter := &ui.ControllerAdapter{Inner: controller}
 	ctx := cmd.Context()
 

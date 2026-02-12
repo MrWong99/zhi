@@ -33,7 +33,7 @@ services:
       - zhi-marketplace-data:/var/zhi-marketplace
     command: [
      "--listen", "0.0.0.0:80",
-     {{- with .Get "zhi-mirror/api-keys" }}
+     {{- with .Get "zhi-marketplace/api-keys" }}
      "--api-keys", "{{ . }}",
      {{- end }}
      "--db", "/var/zhi-marketplace/marketplace.db",

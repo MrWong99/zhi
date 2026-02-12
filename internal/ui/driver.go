@@ -8,8 +8,10 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/MrWong99/zhi/internal/core"
+	"github.com/MrWong99/zhi/pkg/sharing/marketplace"
 	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
 	zhiui "github.com/MrWong99/zhi/pkg/zhiplugin/ui"
 )
@@ -24,8 +26,10 @@ type UIDriver interface {
 // UIController is the engine-facing API that all UIs consume. It wraps the
 // core engine and provides a stable surface for UI operations.
 type UIController struct {
-	engine *core.Engine
-	tree   *config.Tree
+	engine         *core.Engine
+	tree           *config.Tree
+	marketplace    *marketplace.Client
+	marketplaceErr error
 }
 
 // NewUIController creates a new UIController wrapping the given engine.
@@ -33,6 +37,21 @@ func NewUIController(engine *core.Engine) *UIController {
 	return &UIController{
 		engine: engine,
 	}
+}
+
+// SetMarketplace configures the marketplace client for browsing and
+// managing plugins. If not called, marketplace operations return
+// ErrMarketplaceNotConfigured.
+func (c *UIController) SetMarketplace(mc *marketplace.Client) {
+	c.marketplace = mc
+	c.marketplaceErr = nil
+}
+
+// SetMarketplaceError records a marketplace configuration error so that
+// marketplace operations surface the underlying cause rather than the
+// generic ErrMarketplaceNotConfigured.
+func (c *UIController) SetMarketplaceError(err error) {
+	c.marketplaceErr = err
 }
 
 // LoadTree loads or reloads the full configuration tree from the config
@@ -257,26 +276,110 @@ func (c *UIController) prepareTreeData(ctx context.Context, allComponents bool, 
 // attempted but no marketplace backend has been configured.
 var ErrMarketplaceNotConfigured = errors.New("marketplace not configured")
 
+// marketplaceError returns the appropriate error when the marketplace client
+// is not available: the original configuration error if one was recorded,
+// or ErrMarketplaceNotConfigured as a fallback.
+func (c *UIController) marketplaceError() error {
+	if c.marketplaceErr != nil {
+		return c.marketplaceErr
+	}
+	return ErrMarketplaceNotConfigured
+}
+
 // SearchMarketplace queries the marketplace for plugins or workspaces.
-// Returns ErrMarketplaceNotConfigured until the marketplace client is
-// available.
-func (c *UIController) SearchMarketplace(_ context.Context, _ zhiui.MarketplaceQuery) (*zhiui.MarketplaceResults, error) {
-	return nil, ErrMarketplaceNotConfigured
+// Returns ErrMarketplaceNotConfigured if no marketplace client is set.
+func (c *UIController) SearchMarketplace(ctx context.Context, query zhiui.MarketplaceQuery) (*zhiui.MarketplaceResults, error) {
+	if c.marketplace == nil {
+		return nil, c.marketplaceError()
+	}
+
+	resp, err := c.marketplace.Search(ctx, query.Query, marketplace.SearchOptions{
+		Type:     query.Type,
+		Sort:     query.Sort,
+		Verified: query.Verified,
+		Limit:    query.PerPage,
+		Page:     query.Page,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("searching marketplace: %w", err)
+	}
+
+	results := make([]zhiui.MarketplaceEntry, 0, len(resp.Results))
+	for _, r := range resp.Results {
+		publisher, name := splitPublisher(r.Name)
+		results = append(results, zhiui.MarketplaceEntry{
+			Name:          name,
+			Publisher:     publisher,
+			Type:          r.Type,
+			Description:   r.Description,
+			LatestVersion: r.LatestVersion,
+			Rating:        r.Rating,
+			RatingCount:   r.RatingCount,
+			Downloads:     int(r.Downloads),
+			Verified:      r.Verified,
+			Platforms:     r.Platforms,
+		})
+	}
+
+	return &zhiui.MarketplaceResults{
+		Total:   resp.Total,
+		Results: results,
+	}, nil
 }
 
 // GetMarketplaceDetail returns detailed information about a marketplace artifact.
-func (c *UIController) GetMarketplaceDetail(_ context.Context, _, _ string) (*zhiui.MarketplaceDetail, error) {
-	return nil, ErrMarketplaceNotConfigured
+func (c *UIController) GetMarketplaceDetail(ctx context.Context, publisher, name string) (*zhiui.MarketplaceDetail, error) {
+	if c.marketplace == nil {
+		return nil, c.marketplaceError()
+	}
+
+	detail, err := c.marketplace.GetPlugin(ctx, publisher, name)
+	if err != nil {
+		return nil, fmt.Errorf("getting marketplace detail: %w", err)
+	}
+
+	entry := zhiui.MarketplaceEntry{
+		Name:        detail.Name,
+		Publisher:   detail.Author,
+		Type:        detail.Type,
+		Description: detail.Description,
+		Rating:      detail.Rating.Average,
+		RatingCount: detail.Rating.Count,
+		Downloads:   int(detail.Statistics.TotalDownloads),
+		Verified:    detail.Verified,
+	}
+	if len(detail.Versions) > 0 {
+		entry.LatestVersion = detail.Versions[0].Version
+		entry.Platforms = detail.Versions[0].Platforms
+	}
+
+	versions := make([]zhiui.VersionEntry, 0, len(detail.Versions))
+	for _, v := range detail.Versions {
+		versions = append(versions, zhiui.VersionEntry{
+			Version:   v.Version,
+			Digest:    v.Digest,
+			Platforms: v.Platforms,
+		})
+	}
+
+	return &zhiui.MarketplaceDetail{
+		MarketplaceEntry: entry,
+		LongDescription:  detail.LongDescription,
+		License:          detail.License,
+		Homepage:         detail.Homepage,
+		Repository:       detail.Repository,
+		Versions:         versions,
+	}, nil
 }
 
 // InstallPlugin downloads and installs a plugin from an OCI reference.
 func (c *UIController) InstallPlugin(_ context.Context, _ string) (*zhiui.InstallResult, error) {
-	return nil, ErrMarketplaceNotConfigured
+	return nil, c.marketplaceError()
 }
 
 // UninstallPlugin removes an installed plugin.
 func (c *UIController) UninstallPlugin(_ context.Context, _, _ string) error {
-	return ErrMarketplaceNotConfigured
+	return c.marketplaceError()
 }
 
 // ListInstalledPlugins returns all installed plugins with their metadata.
@@ -292,10 +395,26 @@ func (c *UIController) CheckUpdates(_ context.Context) ([]zhiui.PluginUpdate, er
 
 // UpdatePlugin updates a specific plugin to the latest (or specified) version.
 func (c *UIController) UpdatePlugin(_ context.Context, _, _ string) (*zhiui.InstallResult, error) {
-	return nil, ErrMarketplaceNotConfigured
+	return nil, c.marketplaceError()
 }
 
 // RatePlugin submits a rating for a marketplace plugin.
-func (c *UIController) RatePlugin(_ context.Context, _, _ string, _ zhiui.Rating) error {
-	return ErrMarketplaceNotConfigured
+func (c *UIController) RatePlugin(ctx context.Context, publisher, name string, rating zhiui.Rating) error {
+	if c.marketplace == nil {
+		return c.marketplaceError()
+	}
+
+	return c.marketplace.SubmitRating(ctx, publisher, name, marketplace.SubmitRatingRequest{
+		Score:   rating.Score,
+		Comment: rating.Comment,
+	})
+}
+
+// splitPublisher splits "publisher/name" into its parts. If there is no
+// slash the entire string is returned as the name with an empty publisher.
+func splitPublisher(s string) (publisher, name string) {
+	if i := strings.Index(s, "/"); i >= 0 {
+		return s[:i], s[i+1:]
+	}
+	return "", s
 }
