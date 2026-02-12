@@ -1,0 +1,19 @@
+schemaVersion: "1"
+name: vault
+type: store
+version: 0.0.1
+zhiProtocolVersion: "1"
+description: HashiCorp Vault KV v2 backed store plugin
+author: MrWong99
+license: MIT
+homepage: https://github.com/MrWong99/zhi
+keywords:
+  - store
+  - vault
+  - example
+
+binaries:
+  linux/amd64: dist/zhi-store-vault_linux_amd64
+  linux/arm64: dist/zhi-store-vault_linux_arm64
+  darwin/amd64: dist/zhi-store-vault_darwin_amd64
+  darwin/arm64: dist/zhi-store-vault_darwin_arm64

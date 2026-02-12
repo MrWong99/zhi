@@ -1,0 +1,20 @@
+schemaVersion: "1"
+name: httpapi
+type: ui
+version: 0.0.1
+zhiProtocolVersion: "1"
+description: HTTP/JSON API UI plugin for programmatic access
+author: MrWong99
+license: MIT
+homepage: https://github.com/MrWong99/zhi
+keywords:
+  - ui
+  - http
+  - api
+  - example
+
+binaries:
+  linux/amd64: dist/zhi-ui-httpapi_linux_amd64
+  linux/arm64: dist/zhi-ui-httpapi_linux_arm64
+  darwin/amd64: dist/zhi-ui-httpapi_darwin_amd64
+  darwin/arm64: dist/zhi-ui-httpapi_darwin_arm64

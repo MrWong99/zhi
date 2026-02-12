@@ -1,0 +1,19 @@
+schemaVersion: "1"
+name: pokedex
+type: transform
+version: 0.0.1
+zhiProtocolVersion: "1"
+description: Pokedex transform plugin that evolves starter Pokemon
+author: MrWong99
+license: MIT
+homepage: https://github.com/MrWong99/zhi
+keywords:
+  - transform
+  - pokedex
+  - example
+
+binaries:
+  linux/amd64: dist/zhi-transform-pokedex_linux_amd64
+  linux/arm64: dist/zhi-transform-pokedex_linux_arm64
+  darwin/amd64: dist/zhi-transform-pokedex_darwin_amd64
+  darwin/arm64: dist/zhi-transform-pokedex_darwin_arm64

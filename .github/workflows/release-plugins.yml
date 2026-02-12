@@ -1,0 +1,93 @@
+# Copyright 2025 Lukas Schmidt
+# SPDX-License-Identifier: MIT
+
+name: Release Plugins
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Version tag to use (e.g. v0.1.0)"
+        required: true
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write # keyless cosign signing via Sigstore Fulcio/OIDC
+
+jobs:
+  release-plugin:
+    name: Publish ${{ matrix.plugin }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - plugin: zhi-config-pokedex
+            dir: examples/zhi-config-pokedex
+          - plugin: zhi-transform-pokedex
+            dir: examples/zhi-transform-pokedex
+          - plugin: zhi-store-json
+            dir: examples/zhi-store-json
+          - plugin: zhi-store-memory
+            dir: examples/zhi-store-memory
+          - plugin: zhi-store-vault
+            dir: examples/zhi-store-vault
+          - plugin: zhi-ui-httpapi
+            dir: examples/zhi-ui-httpapi
+          - plugin: zhi-ui-webui
+            dir: examples/zhi-ui-webui
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: "go.mod"
+
+      - name: Determine version tag
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build zhi CLI
+        env:
+          CGO_ENABLED: "0"
+        run: go build -o bin/zhi ./cmd/zhi/
+
+      - name: Cross-compile plugin
+        env:
+          CGO_ENABLED: "0"
+        run: |
+          for pair in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64; do
+            os="${pair%/*}"
+            arch="${pair#*/}"
+            echo "Building ${{ matrix.plugin }} for ${os}/${arch}..."
+            GOOS="$os" GOARCH="$arch" go build -ldflags="-s -w" \
+              -o "${{ matrix.dir }}/dist/${{ matrix.plugin }}_${os}_${arch}" \
+              ./${{ matrix.dir }}/
+          done
+
+      - name: Login to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | \
+            bin/zhi registry login ghcr.io \
+              --username "${{ github.actor }}" \
+              --password-stdin
+
+      - name: Publish plugin
+        working-directory: ${{ matrix.dir }}
+        run: |
+          ../../bin/zhi plugin publish \
+            --registry ghcr.io/mrwong99/zhi \
+            --tag "${{ steps.version.outputs.tag }}" \
+            --sign \
+            --verbose

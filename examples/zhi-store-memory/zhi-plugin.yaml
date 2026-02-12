@@ -1,0 +1,19 @@
+schemaVersion: "1"
+name: memory
+type: store
+version: 0.0.1
+zhiProtocolVersion: "1"
+description: In-memory store plugin for development and testing
+author: MrWong99
+license: MIT
+homepage: https://github.com/MrWong99/zhi
+keywords:
+  - store
+  - memory
+  - example
+
+binaries:
+  linux/amd64: dist/zhi-store-memory_linux_amd64
+  linux/arm64: dist/zhi-store-memory_linux_arm64
+  darwin/amd64: dist/zhi-store-memory_darwin_amd64
+  darwin/arm64: dist/zhi-store-memory_darwin_arm64

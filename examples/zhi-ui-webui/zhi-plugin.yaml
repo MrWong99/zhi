@@ -1,5 +1,5 @@
 schemaVersion: "1"
-name: zhi-ui-webui
+name: webui
 type: ui
 version: 0.0.1
 zhiProtocolVersion: "1"
@@ -13,6 +13,8 @@ keywords:
   - browser
   - htmx
 
-# Build artifacts (paths relative to project root)
 binaries:
-  linux/amd64: dist/zhi-ui-webui
+  linux/amd64: dist/zhi-ui-webui_linux_amd64
+  linux/arm64: dist/zhi-ui-webui_linux_arm64
+  darwin/amd64: dist/zhi-ui-webui_darwin_amd64
+  darwin/arm64: dist/zhi-ui-webui_darwin_arm64
