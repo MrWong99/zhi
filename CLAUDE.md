@@ -68,6 +68,16 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on push/PR to main:
 4. **Proto Check** -- ensures generated `*.pb.go` files are committed
 5. **Integration** -- builds all binaries, runs `test/` if test files exist
 
+## Plugin Release Pipeline
+
+GitHub Actions (`.github/workflows/release-plugins.yml`) runs on tag push (`v*`) or manual dispatch:
+
+- Cross-compiles all Go example plugins for linux/darwin × amd64/arm64
+- Publishes each as a multi-platform OCI artifact to `ghcr.io/mrwong99/zhi/<plugin-name>:<tag>` using `zhi plugin publish`
+- Signs artifacts with keyless cosign via Sigstore Fulcio/OIDC (GitHub Actions OIDC identity)
+- Each example plugin has a `zhi-plugin.yaml` manifest with short name + type + multi-platform binaries
+- Install published plugins: `zhi plugin install oci://ghcr.io/mrwong99/zhi/zhi-store-memory:v0.0.9`
+
 ## Architecture
 
 ### CLI Binaries

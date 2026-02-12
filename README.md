@@ -169,7 +169,15 @@ The [`examples/`](examples/) directory contains fully working plugins you can bu
 | [zhi-ui-httpapi](examples/zhi-ui-httpapi/) | UI | HTTP/JSON API with SSE streaming |
 | [zhi-config-javabean](examples/zhi-config-javabean/) | Config | Java plugin with Bean Validation and GraalVM native-image |
 
-Build everything with:
+All Go example plugins are published to the GitHub Container Registry on every release and can be installed directly:
+
+```sh
+zhi plugin install oci://ghcr.io/mrwong99/zhi/zhi-store-memory:v0.0.9
+```
+
+See [Sharing and Registries](docs/user-guide/sharing-and-registries.md) for the full list and details.
+
+Build everything locally with:
 
 ```sh
 make build-all

@@ -2,13 +2,35 @@
 
 zhi plugins and workspaces can be shared via OCI-compatible container registries (GHCR, Docker Hub, Harbor, ECR, ACR, GAR, or any self-hosted OCI registry). This guide covers installing, publishing, searching, updating, and securing shared artifacts.
 
+## Official Plugin Registry
+
+The zhi project publishes example plugins to the GitHub Container Registry. These are built, signed, and released automatically on every tagged release:
+
+| Plugin | OCI Reference |
+|--------|---------------|
+| zhi-config-pokedex | `oci://ghcr.io/mrwong99/zhi/zhi-config-pokedex` |
+| zhi-transform-pokedex | `oci://ghcr.io/mrwong99/zhi/zhi-transform-pokedex` |
+| zhi-store-json | `oci://ghcr.io/mrwong99/zhi/zhi-store-json` |
+| zhi-store-memory | `oci://ghcr.io/mrwong99/zhi/zhi-store-memory` |
+| zhi-store-vault | `oci://ghcr.io/mrwong99/zhi/zhi-store-vault` |
+| zhi-ui-httpapi | `oci://ghcr.io/mrwong99/zhi/zhi-ui-httpapi` |
+| zhi-ui-webui | `oci://ghcr.io/mrwong99/zhi/zhi-ui-webui` |
+
+Install any of them with:
+
+```sh
+zhi plugin install oci://ghcr.io/mrwong99/zhi/zhi-store-memory:v0.0.9
+```
+
+All official plugins are signed with keyless cosign via Sigstore. No registry authentication is required to pull public plugins from GHCR.
+
 ## Installing Plugins
 
 Install a plugin from an OCI registry reference or a marketplace short name:
 
 ```sh
 # From an OCI reference
-zhi plugin install oci://ghcr.io/zhi-project/zhi-config-ansible:v1.2.0
+zhi plugin install oci://ghcr.io/mrwong99/zhi/zhi-config-pokedex:v0.0.9
 
 # From a marketplace short name (resolves via marketplace API)
 zhi plugin install ansible-config

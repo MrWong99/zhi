@@ -130,6 +130,8 @@ The [`examples/`](../../examples/) directory contains working reference implemen
 | [zhi-ui-httpapi](../../examples/zhi-ui-httpapi/) | UI | HTTP/JSON API with SSE streaming |
 | [zhi-config-javabean](../../examples/zhi-config-javabean/) | Config | Java bean with Bean Validation, GraalVM native-image |
 
+All Go examples are published as OCI artifacts to `ghcr.io/mrwong99/zhi/` on every release and can be installed with `zhi plugin install oci://ghcr.io/mrwong99/zhi/<plugin-name>:<tag>`. See the [Sharing and Registries guide](../user-guide/sharing-and-registries.md#official-plugin-registry) for the full list.
+
 ## Non-Go Plugin Development
 
 Plugins communicate over gRPC, so any language with gRPC support can implement a zhi plugin. See the language-specific guides:
