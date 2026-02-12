@@ -163,6 +163,12 @@ func (c *Client) pushSinglePlatformPlugin(ctx context.Context, target oras.Targe
 func (c *Client) pushMultiPlatformPlugin(ctx context.Context, target oras.Target, configData []byte, binaries map[string]string, tag string) (ocispec.Descriptor, error) {
 	store := memory.New()
 
+	// Push config blob once — it is shared across all platform manifests.
+	configDesc, err := pushBlob(ctx, store, MediaTypePluginConfig, configData)
+	if err != nil {
+		return ocispec.Descriptor{}, fmt.Errorf("pushing config: %w", err)
+	}
+
 	var platformManifests []ocispec.Descriptor
 
 	for platform, binaryPath := range binaries {
@@ -174,12 +180,6 @@ func (c *Client) pushMultiPlatformPlugin(ctx context.Context, target oras.Target
 		binaryData, err := os.ReadFile(binaryPath)
 		if err != nil {
 			return ocispec.Descriptor{}, fmt.Errorf("reading binary for %s: %w", platform, err)
-		}
-
-		// Push config blob.
-		configDesc, err := pushBlob(ctx, store, MediaTypePluginConfig, configData)
-		if err != nil {
-			return ocispec.Descriptor{}, fmt.Errorf("pushing config for %s: %w", platform, err)
 		}
 
 		// Push binary layer.
