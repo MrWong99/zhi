@@ -66,7 +66,7 @@ build: ## Build the cmd/ binaries
 	@for dir in $(CMD_DIR)/*/; do \
 		name=$$(basename "$$dir"); \
 		echo "Building cmd: $$name"; \
-	    go build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/$$name ./$$dir; \
+	    CGO_ENABLED=0 go build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/$$name ./$$dir; \
 	done
 
 .PHONY: build-examples

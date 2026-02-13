@@ -2,7 +2,9 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -462,7 +464,7 @@ func TestExportAll(t *testing.T) {
 }
 
 func TestTemplateFuncMapContainsSprigFunctions(t *testing.T) {
-	fm := templateFuncMap()
+	fm := templateFuncMap(nil)
 
 	// Verify a selection of Sprig-specific functions are present.
 	sprigFuncs := []string{
@@ -489,11 +491,11 @@ func TestTemplateFuncMapContainsSprigFunctions(t *testing.T) {
 }
 
 func TestTemplateFuncMapZhiFunctionsPresent(t *testing.T) {
-	fm := templateFuncMap()
+	fm := templateFuncMap(nil)
 
 	// Verify zhi-specific functions that have no Sprig equivalent are present.
 	zhiFuncs := []string{
-		"toYAML", "toTOML", "toDotenv", "shellQuote",
+		"toYAML", "toTOML", "toDotenv", "shellQuote", "fileACL", "fileMode",
 	}
 	for _, name := range zhiFuncs {
 		if _, ok := fm[name]; !ok {
@@ -569,5 +571,236 @@ func TestShellQuoteInTemplate(t *testing.T) {
 	// shellQuote wraps in single quotes with proper escaping.
 	if result.Content != "shell='myapp'" {
 		t.Errorf("shellQuote got: %q, want: %q", result.Content, "shell='myapp'")
+	}
+}
+
+func TestFileACLRendersEmpty(t *testing.T) {
+	opts := &exportFileOptions{}
+	fm := templateFuncMap(opts)
+
+	fn := fm["fileACL"].(func(string) string)
+	result := fn("g:10668:rw")
+
+	if result != "" {
+		t.Errorf("fileACL returned %q, want empty string", result)
+	}
+	if len(opts.acl) != 1 || opts.acl[0] != "g:10668:rw" {
+		t.Errorf("opts.acl = %v, want [g:10668:rw]", opts.acl)
+	}
+}
+
+func TestFileACLNilOpts(t *testing.T) {
+	fm := templateFuncMap(nil)
+	fn := fm["fileACL"].(func(string) string)
+
+	// Should not panic with nil opts.
+	result := fn("g:10668:rw")
+	if result != "" {
+		t.Errorf("fileACL returned %q, want empty string", result)
+	}
+}
+
+func TestFileACLAccumulates(t *testing.T) {
+	opts := &exportFileOptions{}
+	fm := templateFuncMap(opts)
+
+	fn := fm["fileACL"].(func(string) string)
+	fn("g:10668:rw")
+	fn("u:1000:r")
+
+	if len(opts.acl) != 2 {
+		t.Fatalf("opts.acl has %d entries, want 2", len(opts.acl))
+	}
+	if opts.acl[0] != "g:10668:rw" {
+		t.Errorf("opts.acl[0] = %q, want g:10668:rw", opts.acl[0])
+	}
+	if opts.acl[1] != "u:1000:r" {
+		t.Errorf("opts.acl[1] = %q, want u:1000:r", opts.acl[1])
+	}
+}
+
+func TestFileModeRendersEmpty(t *testing.T) {
+	opts := &exportFileOptions{}
+	fm := templateFuncMap(opts)
+
+	fn := fm["fileMode"].(func(int) string)
+	result := fn(0o755)
+
+	if result != "" {
+		t.Errorf("fileMode returned %q, want empty string", result)
+	}
+	if opts.mode != 0o755 {
+		t.Errorf("opts.mode = %o, want 755", opts.mode)
+	}
+}
+
+func TestFileModeNilOpts(t *testing.T) {
+	fm := templateFuncMap(nil)
+	fn := fm["fileMode"].(func(int) string)
+
+	// Should not panic with nil opts.
+	result := fn(0o600)
+	if result != "" {
+		t.Errorf("fileMode returned %q, want empty string", result)
+	}
+}
+
+func TestExportWriteWithFileMode(t *testing.T) {
+	dir := t.TempDir()
+	tmplContent := `{{ fileMode 0600 }}secret={{ .Get "app/name" }}`
+	tmplPath := filepath.Join(dir, "mode.tmpl")
+	if err := os.WriteFile(tmplPath, []byte(tmplContent), 0o644); err != nil {
+		t.Fatalf("writing template: %v", err)
+	}
+
+	outputPath := filepath.Join(dir, "output.txt")
+	tree := newTestTree()
+	td := NewTreeData(tree, nil)
+
+	_, err := Export(context.Background(), td, ExportRunConfig{
+		TemplatePath: tmplPath,
+		OutputPath:   outputPath,
+	})
+	if err != nil {
+		t.Fatalf("Export: %v", err)
+	}
+
+	info, err := os.Stat(outputPath)
+	if err != nil {
+		t.Fatalf("stat output: %v", err)
+	}
+	if got := info.Mode().Perm(); got != 0o600 {
+		t.Errorf("file mode = %o, want 600", got)
+	}
+}
+
+func TestExportWriteDefaultMode(t *testing.T) {
+	dir := t.TempDir()
+	tmplContent := `hello={{ .Get "app/name" }}`
+	tmplPath := filepath.Join(dir, "default.tmpl")
+	if err := os.WriteFile(tmplPath, []byte(tmplContent), 0o644); err != nil {
+		t.Fatalf("writing template: %v", err)
+	}
+
+	outputPath := filepath.Join(dir, "output.txt")
+	tree := newTestTree()
+	td := NewTreeData(tree, nil)
+
+	_, err := Export(context.Background(), td, ExportRunConfig{
+		TemplatePath: tmplPath,
+		OutputPath:   outputPath,
+	})
+	if err != nil {
+		t.Fatalf("Export: %v", err)
+	}
+
+	info, err := os.Stat(outputPath)
+	if err != nil {
+		t.Fatalf("stat output: %v", err)
+	}
+	if got := info.Mode().Perm(); got != 0o644 {
+		t.Errorf("file mode = %o, want 644", got)
+	}
+}
+
+func TestExportFileModeRendersCleanContent(t *testing.T) {
+	dir := t.TempDir()
+	tmplContent := `{{ fileMode 0600 }}hello={{ .Get "app/name" }}`
+	tmplPath := filepath.Join(dir, "clean.tmpl")
+	if err := os.WriteFile(tmplPath, []byte(tmplContent), 0o644); err != nil {
+		t.Fatalf("writing template: %v", err)
+	}
+
+	tree := newTestTree()
+	td := NewTreeData(tree, nil)
+
+	result, err := Export(context.Background(), td, ExportRunConfig{
+		TemplatePath: tmplPath,
+		DryRun:       true,
+	})
+	if err != nil {
+		t.Fatalf("Export: %v", err)
+	}
+
+	if result.Content != "hello=myapp" {
+		t.Errorf("content = %q, want %q", result.Content, "hello=myapp")
+	}
+}
+
+func TestExportWriteWithACL(t *testing.T) {
+	if _, err := exec.LookPath("setfacl"); err != nil {
+		t.Skip("setfacl not available, skipping ACL test")
+	}
+	if _, err := exec.LookPath("getfacl"); err != nil {
+		t.Skip("getfacl not available, skipping ACL test")
+	}
+
+	dir := t.TempDir()
+	gid := os.Getgid()
+	aclEntry := fmt.Sprintf("g:%d:rw", gid)
+	tmplContent := fmt.Sprintf(`{{ fileACL %q }}hello={{ .Get "app/name" }}`, aclEntry)
+	tmplPath := filepath.Join(dir, "acl.tmpl")
+	if err := os.WriteFile(tmplPath, []byte(tmplContent), 0o644); err != nil {
+		t.Fatalf("writing template: %v", err)
+	}
+
+	outputPath := filepath.Join(dir, "output.txt")
+	tree := newTestTree()
+	td := NewTreeData(tree, nil)
+
+	_, err := Export(context.Background(), td, ExportRunConfig{
+		TemplatePath: tmplPath,
+		OutputPath:   outputPath,
+	})
+	if err != nil {
+		t.Fatalf("Export: %v", err)
+	}
+
+	// Verify ACL was applied to the file using getfacl --numeric.
+	out, err := exec.Command("getfacl", "-c", "--numeric", outputPath).CombinedOutput()
+	if err != nil {
+		t.Fatalf("getfacl file: %v (%s)", err, out)
+	}
+	expected := fmt.Sprintf("group:%d:rw-", gid)
+	if !strings.Contains(string(out), expected) {
+		t.Errorf("file getfacl output missing %q:\n%s", expected, out)
+	}
+
+	// Verify ACL was also applied to the parent directory with execute.
+	out, err = exec.Command("getfacl", "-c", "--numeric", dir).CombinedOutput()
+	if err != nil {
+		t.Fatalf("getfacl dir: %v (%s)", err, out)
+	}
+	expectedDir := fmt.Sprintf("group:%d:rwx", gid)
+	if !strings.Contains(string(out), expectedDir) {
+		t.Errorf("directory getfacl output missing %q:\n%s", expectedDir, out)
+	}
+
+	// Content should be clean (no ACL artifacts).
+	data, err := os.ReadFile(outputPath)
+	if err != nil {
+		t.Fatalf("reading output: %v", err)
+	}
+	if string(data) != "hello=myapp" {
+		t.Errorf("content = %q, want %q", string(data), "hello=myapp")
+	}
+}
+
+func TestAclEntryWithExecute(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"g:10668:rw", "g:10668:rwx"},
+		{"u:1000:r", "u:1000:rx"},
+		{"g:10668:rwx", "g:10668:rwx"}, // already has x
+		{"g:10668:x", "g:10668:x"},     // already has x
+		{"g:10668:", "g:10668:x"},      // empty perms
+		{"nocolon", "nocolon"},         // malformed, returned as-is
+	}
+	for _, tt := range tests {
+		if got := aclEntryWithExecute(tt.input); got != tt.want {
+			t.Errorf("aclEntryWithExecute(%q) = %q, want %q", tt.input, got, tt.want)
+		}
 	}
 }

@@ -1,0 +1,6 @@
+{{- fileACL "g:10668:rw" -}}{{- fileMode 0600 -}}
+{{- with .Get "zhi-marketplace/api-keys" }}
+{{- range (splitList "," .) -}}
+{{ . }}
+{{ end -}}
+{{- end -}}

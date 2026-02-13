@@ -223,7 +223,7 @@ func TestAuditPluginBinaryLogsHash(t *testing.T) {
 // --- 8.3: File System Security Tests ---
 
 func TestWriteExportFileRejectsTraversal(t *testing.T) {
-	err := writeExportFile("/tmp/../../../etc/passwd", []byte("test"))
+	err := writeExportFile("/tmp/../../../etc/passwd", []byte("test"), nil)
 	if err == nil {
 		t.Fatal("writeExportFile should reject path traversal")
 	}
@@ -236,7 +236,7 @@ func TestWriteExportFileAtomicWrite(t *testing.T) {
 	dir := t.TempDir()
 	outPath := filepath.Join(dir, "output.json")
 
-	err := writeExportFile(outPath, []byte(`{"key":"value"}`))
+	err := writeExportFile(outPath, []byte(`{"key":"value"}`), nil)
 	if err != nil {
 		t.Fatalf("writeExportFile: %v", err)
 	}
@@ -265,7 +265,7 @@ func TestWriteExportFileCreatesDirs(t *testing.T) {
 	dir := t.TempDir()
 	outPath := filepath.Join(dir, "subdir", "deep", "output.txt")
 
-	err := writeExportFile(outPath, []byte("hello"))
+	err := writeExportFile(outPath, []byte("hello"), nil)
 	if err != nil {
 		t.Fatalf("writeExportFile: %v", err)
 	}
@@ -293,7 +293,7 @@ func TestWriteExportFileResolvesSymlinks(t *testing.T) {
 	}
 
 	outPath := filepath.Join(linkDir, "output.txt")
-	err := writeExportFile(outPath, []byte("content"))
+	err := writeExportFile(outPath, []byte("content"), nil)
 	if err != nil {
 		t.Fatalf("writeExportFile: %v", err)
 	}

@@ -28,16 +28,18 @@ import (
 
 func main() {
 	var (
-		dbPath     string
-		listen     string
-		registries string
-		apiKeys    string
+		dbPath      string
+		listen      string
+		registries  string
+		apiKeys     string
+		apiKeysFile string
 	)
 
 	flag.StringVar(&dbPath, "db", "marketplace.db", "SQLite database path")
 	flag.StringVar(&listen, "listen", ":8080", "HTTP listen address")
 	flag.StringVar(&registries, "oci-registries", "ghcr.io,docker.io", "comma-separated list of known OCI registries")
 	flag.StringVar(&apiKeys, "api-keys", "", "comma-separated key=publisherID pairs for API authentication")
+	flag.StringVar(&apiKeysFile, "api-keys-file", "", "path to file containing key=publisherID pairs (one per line); file is deleted after reading")
 	flag.Parse()
 
 	store, err := storage.NewSQLiteStore(dbPath)
@@ -46,8 +48,17 @@ func main() {
 	}
 	defer store.Close()
 
-	// Parse API keys and ensure publishers exist.
+	// Parse API keys from flag and/or file. File keys are merged with flag keys.
 	keys := parseAPIKeys(apiKeys)
+	if apiKeysFile != "" {
+		fileKeys, err := readAPIKeysFile(apiKeysFile)
+		if err != nil {
+			log.Fatalf("reading api-keys-file: %v", err)
+		}
+		for k, v := range fileKeys {
+			keys[k] = v
+		}
+	}
 	ensurePublishers(store, keys)
 	authenticator := auth.NewAuthenticator(keys)
 
@@ -112,6 +123,32 @@ func ensurePublishers(store storage.Store, keys map[string]string) {
 			log.Printf("created publisher %q from --api-keys", pubID)
 		}
 	}
+}
+
+// readAPIKeysFile reads key=publisherID pairs from a file (one per line) and
+// deletes the file afterwards. Blank lines and lines starting with # are ignored.
+func readAPIKeysFile(path string) (map[string]string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("reading %s: %w", path, err)
+	}
+	if err := os.Remove(path); err != nil {
+		return nil, fmt.Errorf("deleting %s after read: %w", path, err)
+	}
+	log.Printf("read and deleted api-keys file %s", path)
+
+	keys := make(map[string]string)
+	for line := range strings.SplitSeq(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) == 2 {
+			keys[parts[0]] = parts[1]
+		}
+	}
+	return keys, nil
 }
 
 // parseAPIKeys parses "key1=pub1,key2=pub2" into a map.

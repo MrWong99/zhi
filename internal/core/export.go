@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -49,6 +50,7 @@ type ExportResult struct {
 func Export(_ context.Context, tree *TreeData, cfg ExportRunConfig) (*ExportResult, error) {
 	var content string
 	var err error
+	var opts *exportFileOptions
 
 	if cfg.Format != "" {
 		// Use a built-in format.
@@ -57,8 +59,9 @@ func Export(_ context.Context, tree *TreeData, cfg ExportRunConfig) (*ExportResu
 			return nil, fmt.Errorf("rendering format %q: %w", cfg.Format, err)
 		}
 	} else if cfg.TemplatePath != "" {
-		// Use a template file.
-		content, err = renderTemplateFile(tree, cfg.TemplatePath)
+		// Use a template file. Pass opts so fileACL/fileMode can capture values.
+		opts = &exportFileOptions{}
+		content, err = renderTemplateFile(tree, cfg.TemplatePath, opts)
 		if err != nil {
 			return nil, fmt.Errorf("rendering template %q: %w", cfg.TemplatePath, err)
 		}
@@ -79,7 +82,7 @@ func Export(_ context.Context, tree *TreeData, cfg ExportRunConfig) (*ExportResu
 
 	// Write output if not dry-run and output is a file path.
 	if !cfg.DryRun && cfg.OutputPath != "" && cfg.OutputPath != "-" {
-		if err := writeExportFile(cfg.OutputPath, []byte(content)); err != nil {
+		if err := writeExportFile(cfg.OutputPath, []byte(content), opts); err != nil {
 			return nil, err
 		}
 		Logger().Debug("export written", "path", cfg.OutputPath)
@@ -161,13 +164,15 @@ func (pt *prefixTree) List() []string {
 }
 
 // renderTemplateFile reads a template file and executes it with the TreeData.
-func renderTemplateFile(td *TreeData, path string) (string, error) {
+// If opts is non-nil, template functions like fileGroupID and fileMode will
+// capture their values into it.
+func renderTemplateFile(td *TreeData, path string, opts *exportFileOptions) (string, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return "", fmt.Errorf("reading template: %w", err)
 	}
 
-	tmpl, err := template.New(filepath.Base(path)).Funcs(templateFuncMap()).Parse(string(data))
+	tmpl, err := template.New(filepath.Base(path)).Funcs(templateFuncMap(opts)).Parse(string(data))
 	if err != nil {
 		return "", fmt.Errorf("parsing template: %w", err)
 	}
@@ -204,7 +209,7 @@ func renderBuiltinFormat(td *TreeData, format, prefix string) (string, error) {
 		return "", fmt.Errorf("unknown format: %q (supported: json, yaml, toml, dotenv)", format)
 	}
 
-	tmpl, err := template.New("builtin").Funcs(templateFuncMap()).Parse(tmplText)
+	tmpl, err := template.New("builtin").Funcs(templateFuncMap(nil)).Parse(tmplText)
 	if err != nil {
 		return "", fmt.Errorf("parsing built-in template: %w", err)
 	}
@@ -216,10 +221,27 @@ func renderBuiltinFormat(td *TreeData, format, prefix string) (string, error) {
 	return buf.String(), nil
 }
 
+// exportFileOptions holds file-level overrides that template functions can set
+// during rendering. These are applied when writing the exported file to disk.
+type exportFileOptions struct {
+	acl  []string    // POSIX ACL entries to apply via setfacl -m
+	mode os.FileMode // file permissions; 0 means use default 0o644
+}
+
+// getACL returns the ACL entries, or nil if opts is nil.
+func (o *exportFileOptions) getACL() []string {
+	if o == nil {
+		return nil
+	}
+	return o.acl
+}
+
 // templateFuncMap returns the function map available in all export templates.
 // It starts with all Sprig template functions and adds zhi-specific functions
 // for formats that Sprig does not provide (YAML, TOML, dotenv, shell quoting).
-func templateFuncMap() template.FuncMap {
+// If opts is non-nil, the fileACL and fileMode functions will capture their
+// values into opts for use during file writing.
+func templateFuncMap(opts *exportFileOptions) template.FuncMap {
 	// Start with Sprig's text/template function map as the base.
 	// This provides 100+ functions including string manipulation, math,
 	// date/time, crypto, regex, list/dict operations, and more.
@@ -231,6 +253,18 @@ func templateFuncMap() template.FuncMap {
 	fm["toTOML"] = toTOML
 	fm["toDotenv"] = toDotenv
 	fm["shellQuote"] = shellQuote
+	fm["fileACL"] = func(entry string) string {
+		if opts != nil {
+			opts.acl = append(opts.acl, entry)
+		}
+		return ""
+	}
+	fm["fileMode"] = func(mode int) string {
+		if opts != nil {
+			opts.mode = os.FileMode(mode)
+		}
+		return ""
+	}
 
 	return fm
 }
@@ -283,8 +317,9 @@ func shellQuote(s string) string {
 //   - Rejects paths containing ".." traversal
 //   - Resolves symlinks to determine the real destination
 //   - Uses atomic writes (temp file + rename) to prevent partial writes
-//   - Sets 0644 permissions on the output file and 0755 on directories
-func writeExportFile(outputPath string, data []byte) error {
+//   - Sets file permissions (default 0644, overridable via opts.mode)
+//   - Optionally sets file group ID via opts.groupID
+func writeExportFile(outputPath string, data []byte, opts *exportFileOptions) error {
 	// Reject path traversal.
 	if containsPathTraversal(outputPath) {
 		return fmt.Errorf("export output path %q: path traversal (.. segments) is not allowed", outputPath)
@@ -321,7 +356,11 @@ func writeExportFile(outputPath string, data []byte) error {
 	}
 
 	// Set permissions before rename.
-	if err := os.Chmod(tmpName, 0o644); err != nil {
+	mode := os.FileMode(0o644)
+	if opts != nil && opts.mode != 0 {
+		mode = opts.mode
+	}
+	if err := os.Chmod(tmpName, mode); err != nil {
 		_ = os.Remove(tmpName)
 		return fmt.Errorf("setting export file permissions: %w", err)
 	}
@@ -331,5 +370,40 @@ func writeExportFile(outputPath string, data []byte) error {
 		return fmt.Errorf("renaming export temp file: %w", err)
 	}
 
+	// Apply POSIX ACL entries if requested.
+	for _, entry := range opts.getACL() {
+		// Apply to the file itself.
+		cmd := exec.Command("setfacl", "-m", entry, realPath)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			return fmt.Errorf("setting ACL %q on %s: %w (%s)", entry, realPath, err, strings.TrimSpace(string(out)))
+		}
+		// Apply to the parent directory with execute permission added,
+		// so that the ACL subject can traverse the directory and delete
+		// the file (e.g. for Docker volume mounts where the container
+		// needs to remove consumed files).
+		dirEntry := aclEntryWithExecute(entry)
+		cmd = exec.Command("setfacl", "-m", dirEntry, realDir)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			return fmt.Errorf("setting ACL %q on directory %s: %w (%s)", dirEntry, realDir, err, strings.TrimSpace(string(out)))
+		}
+	}
+
 	return nil
+}
+
+// aclEntryWithExecute takes an ACL entry like "g:10668:rw" and returns it
+// with execute permission added: "g:10668:rwx". This is needed for directory
+// ACLs where execute means traverse permission. If the entry doesn't match
+// the expected format, it is returned unchanged.
+func aclEntryWithExecute(entry string) string {
+	// ACL entries have the form type:qualifier:perms (e.g. "g:10668:rw").
+	i := strings.LastIndex(entry, ":")
+	if i < 0 {
+		return entry
+	}
+	perms := entry[i+1:]
+	if !strings.Contains(perms, "x") {
+		perms += "x"
+	}
+	return entry[:i+1] + perms
 }

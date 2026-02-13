@@ -39,6 +39,9 @@ export:
     - name: zhi-mirror-policy
       template: ./templates/zhi-mirror-policy.yml.tmpl
       output: ./zhi-mirror-policy.yml
+    - name: api-keys
+      template: ./templates/api-keys.tmpl
+      output: ./keys/api-keys
 
 apply:
   command: "docker compose up -d --remove-orphans --force-recreate --wait"

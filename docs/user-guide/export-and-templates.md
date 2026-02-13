@@ -102,6 +102,23 @@ Running `zhi export` without flags exports all configured templates. Each entry 
 
 All [Sprig template functions](https://masterminds.github.io/sprig/) are also available.
 
+### File Output Control
+
+These functions control properties of the exported file itself. They render as empty strings in the template output and only take effect when writing to a file (not with `--dry-run` or stdout).
+
+| Function | Description |
+|----------|-------------|
+| `fileACL <entry>` | Add a POSIX ACL entry via `setfacl -m`. Can be called multiple times. Requires `setfacl` on the system. |
+| `fileMode <mode>` | Override file permissions (default `0644`). Pass an octal integer, e.g. `0600` |
+
+**Example: restrict a secrets file and grant access to a container group:**
+
+```
+{{ fileMode 0660 }}{{ fileACL "g:10668:rw" }}DATABASE_PASSWORD={{ .Get "database/password" }}
+```
+
+This is useful for Docker volume host-path mounts where a container-only GID needs access to the file. POSIX ACLs work with numeric GIDs that don't need to exist on the host. The ACL is also applied to the parent directory (with execute permission added) so that the subject can traverse the directory and delete the file.
+
 ## Component Awareness
 
 By default, exports only include paths belonging to enabled components and unmanaged paths:

@@ -31,10 +31,13 @@ services:
       - "{{ .Get "zhi-marketplace/port" }}:80"
     volumes:
       - zhi-marketplace-data:/var/zhi-marketplace
+      {{- with .Get "zhi-marketplace/api-keys" }}
+      - ./keys/:/tmp/keys/:rw
+      {{- end }}
     command: [
      "--listen", "0.0.0.0:80",
      {{- with .Get "zhi-marketplace/api-keys" }}
-     "--api-keys", "{{ . }}",
+     "--api-keys-file", "/tmp/keys/api-keys",
      {{- end }}
      "--db", "/var/zhi-marketplace/marketplace.db",
      "--oci-registries",
