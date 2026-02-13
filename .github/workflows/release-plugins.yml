@@ -58,6 +58,12 @@ jobs:
             echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Set plugin version in manifest
+        run: |
+          version="${{ steps.version.outputs.tag }}"
+          version="${version#v}"
+          sed -i "s/^version: .*/version: ${version}/" "${{ matrix.dir }}/zhi-plugin.yaml"
+
       - name: Build zhi CLI
         env:
           CGO_ENABLED: "0"
