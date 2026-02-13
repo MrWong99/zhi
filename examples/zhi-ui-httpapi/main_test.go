@@ -118,7 +118,7 @@ func (m *mockController) SearchMarketplace(_ context.Context, _ ui.MarketplaceQu
 	return &ui.MarketplaceResults{}, nil
 }
 
-func (m *mockController) GetMarketplaceDetail(_ context.Context, _, _ string) (*ui.MarketplaceDetail, error) {
+func (m *mockController) GetMarketplaceDetail(_ context.Context, _, _, _ string) (*ui.MarketplaceDetail, error) {
 	return &ui.MarketplaceDetail{}, nil
 }
 
@@ -142,7 +142,7 @@ func (m *mockController) UpdatePlugin(_ context.Context, _, _ string) (*ui.Insta
 	return &ui.InstallResult{}, nil
 }
 
-func (m *mockController) RatePlugin(_ context.Context, _, _ string, _ ui.Rating) error {
+func (m *mockController) RatePlugin(_ context.Context, _, _, _ string, _ ui.Rating) error {
 	return nil
 }
 

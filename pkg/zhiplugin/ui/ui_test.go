@@ -172,7 +172,7 @@ func (c *testController) SearchMarketplace(_ context.Context, query MarketplaceQ
 	}, nil
 }
 
-func (c *testController) GetMarketplaceDetail(_ context.Context, publisher, name string) (*MarketplaceDetail, error) {
+func (c *testController) GetMarketplaceDetail(_ context.Context, _, publisher, name string) (*MarketplaceDetail, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.detailCalls = append(c.detailCalls, publisher+"/"+name)
@@ -273,7 +273,7 @@ func (c *testController) UpdatePlugin(_ context.Context, name string, version st
 	}, nil
 }
 
-func (c *testController) RatePlugin(_ context.Context, publisher, name string, _ Rating) error {
+func (c *testController) RatePlugin(_ context.Context, _, publisher, name string, _ Rating) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.rateCalls = append(c.rateCalls, publisher+"/"+name)
@@ -673,7 +673,7 @@ func TestRunGetMarketplaceDetail(t *testing.T) {
 	ctrl := newTestController()
 	impl := &testUIPlugin{
 		actions: func(ctx context.Context, c Controller) error {
-			detail, err := c.GetMarketplaceDetail(ctx, "acme", "test-plugin")
+			detail, err := c.GetMarketplaceDetail(ctx, "config", "acme", "test-plugin")
 			if err != nil {
 				return err
 			}
@@ -856,7 +856,7 @@ func TestRunRatePlugin(t *testing.T) {
 	ctrl := newTestController()
 	impl := &testUIPlugin{
 		actions: func(ctx context.Context, c Controller) error {
-			return c.RatePlugin(ctx, "acme", "test-plugin", Rating{Score: 5, Comment: "Great!"})
+			return c.RatePlugin(ctx, "config", "acme", "test-plugin", Rating{Score: 5, Comment: "Great!"})
 		},
 	}
 

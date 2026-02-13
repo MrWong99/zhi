@@ -1644,6 +1644,7 @@ type CtrlGetMarketplaceDetailRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Publisher     string                 `protobuf:"bytes,1,opt,name=publisher,proto3" json:"publisher,omitempty"`
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	PluginType    string                 `protobuf:"bytes,3,opt,name=plugin_type,json=pluginType,proto3" json:"plugin_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1688,6 +1689,13 @@ func (x *CtrlGetMarketplaceDetailRequest) GetPublisher() string {
 func (x *CtrlGetMarketplaceDetailRequest) GetName() string {
 	if x != nil {
 		return x.Name
+	}
+	return ""
+}
+
+func (x *CtrlGetMarketplaceDetailRequest) GetPluginType() string {
+	if x != nil {
+		return x.PluginType
 	}
 	return ""
 }
@@ -2717,6 +2725,7 @@ type CtrlRatePluginRequest struct {
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	Score         int32                  `protobuf:"varint,3,opt,name=score,proto3" json:"score,omitempty"`
 	Comment       string                 `protobuf:"bytes,4,opt,name=comment,proto3" json:"comment,omitempty"`
+	PluginType    string                 `protobuf:"bytes,5,opt,name=plugin_type,json=pluginType,proto3" json:"plugin_type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2775,6 +2784,13 @@ func (x *CtrlRatePluginRequest) GetScore() int32 {
 func (x *CtrlRatePluginRequest) GetComment() string {
 	if x != nil {
 		return x.Comment
+	}
+	return ""
+}
+
+func (x *CtrlRatePluginRequest) GetPluginType() string {
+	if x != nil {
+		return x.PluginType
 	}
 	return ""
 }
@@ -2918,10 +2934,12 @@ const file_zhiplugin_v1_ui_proto_rawDesc = "" +
 	"\tplatforms\x18\r \x03(\tR\tplatforms\"v\n" +
 	"\x1dCtrlSearchMarketplaceResponse\x12\x14\n" +
 	"\x05total\x18\x01 \x01(\x05R\x05total\x12?\n" +
-	"\aresults\x18\x02 \x03(\v2%.zhiplugin.v1.CtrlMarketplaceEntryMsgR\aresults\"S\n" +
+	"\aresults\x18\x02 \x03(\v2%.zhiplugin.v1.CtrlMarketplaceEntryMsgR\aresults\"t\n" +
 	"\x1fCtrlGetMarketplaceDetailRequest\x12\x1c\n" +
 	"\tpublisher\x18\x01 \x01(\tR\tpublisher\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\"\x8d\x01\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1f\n" +
+	"\vplugin_type\x18\x03 \x01(\tR\n" +
+	"pluginType\"\x8d\x01\n" +
 	"\x13CtrlVersionEntryMsg\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\tR\aversion\x12&\n" +
 	"\x0fcreated_at_unix\x18\x02 \x01(\x03R\rcreatedAtUnix\x12\x16\n" +
@@ -2995,12 +3013,14 @@ const file_zhiplugin_v1_ui_proto_rawDesc = "" +
 	"\fprev_version\x18\x04 \x01(\tR\vprevVersion\x12\x16\n" +
 	"\x06digest\x18\x05 \x01(\tR\x06digest\x12\x1a\n" +
 	"\bverified\x18\x06 \x01(\bR\bverified\x12!\n" +
-	"\fruntime_deps\x18\a \x03(\tR\vruntimeDeps\"y\n" +
+	"\fruntime_deps\x18\a \x03(\tR\vruntimeDeps\"\x9a\x01\n" +
 	"\x15CtrlRatePluginRequest\x12\x1c\n" +
 	"\tpublisher\x18\x01 \x01(\tR\tpublisher\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
 	"\x05score\x18\x03 \x01(\x05R\x05score\x12\x18\n" +
-	"\acomment\x18\x04 \x01(\tR\acomment\"\x18\n" +
+	"\acomment\x18\x04 \x01(\tR\acomment\x12\x1f\n" +
+	"\vplugin_type\x18\x05 \x01(\tR\n" +
+	"pluginType\"\x18\n" +
 	"\x16CtrlRatePluginResponse2\x9e\x01\n" +
 	"\tUIService\x12:\n" +
 	"\x03Run\x12\x18.zhiplugin.v1.RunRequest\x1a\x19.zhiplugin.v1.RunResponse\x12U\n" +

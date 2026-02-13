@@ -241,8 +241,8 @@ func (c *Client) Search(ctx context.Context, query string, opts SearchOptions) (
 }
 
 // GetPlugin fetches detailed information about a specific plugin.
-func (c *Client) GetPlugin(ctx context.Context, publisher, name string) (*PluginDetail, error) {
-	u := fmt.Sprintf("%s/api/v1/plugins/%s/%s", c.baseURL, url.PathEscape(publisher), url.PathEscape(name))
+func (c *Client) GetPlugin(ctx context.Context, pluginType, publisher, name string) (*PluginDetail, error) {
+	u := fmt.Sprintf("%s/api/v1/plugins/%s/%s/%s", c.baseURL, url.PathEscape(pluginType), url.PathEscape(publisher), url.PathEscape(name))
 	var detail PluginDetail
 	if err := c.get(ctx, u, &detail); err != nil {
 		return nil, fmt.Errorf("getting plugin detail: %w", err)
@@ -251,8 +251,8 @@ func (c *Client) GetPlugin(ctx context.Context, publisher, name string) (*Plugin
 }
 
 // ListVersions lists all versions of a plugin.
-func (c *Client) ListVersions(ctx context.Context, publisher, name string) (*VersionListResponse, error) {
-	u := fmt.Sprintf("%s/api/v1/plugins/%s/%s/versions", c.baseURL, url.PathEscape(publisher), url.PathEscape(name))
+func (c *Client) ListVersions(ctx context.Context, pluginType, publisher, name string) (*VersionListResponse, error) {
+	u := fmt.Sprintf("%s/api/v1/plugins/%s/%s/%s/versions", c.baseURL, url.PathEscape(pluginType), url.PathEscape(publisher), url.PathEscape(name))
 	var resp VersionListResponse
 	if err := c.get(ctx, u, &resp); err != nil {
 		return nil, fmt.Errorf("listing versions: %w", err)
@@ -261,7 +261,7 @@ func (c *Client) ListVersions(ctx context.Context, publisher, name string) (*Ver
 }
 
 // Resolve returns the OCI reference and digest for a specific version and platform.
-func (c *Client) Resolve(ctx context.Context, publisher, name, version, os, arch string) (*ResolveResponse, error) {
+func (c *Client) Resolve(ctx context.Context, pluginType, publisher, name, version, os, arch string) (*ResolveResponse, error) {
 	params := url.Values{}
 	if os != "" {
 		params.Set("os", os)
@@ -269,8 +269,9 @@ func (c *Client) Resolve(ctx context.Context, publisher, name, version, os, arch
 	if arch != "" {
 		params.Set("arch", arch)
 	}
-	u := fmt.Sprintf("%s/api/v1/plugins/%s/%s/%s/resolve?%s",
+	u := fmt.Sprintf("%s/api/v1/plugins/%s/%s/%s/%s/resolve?%s",
 		c.baseURL,
+		url.PathEscape(pluginType),
 		url.PathEscape(publisher),
 		url.PathEscape(name),
 		url.PathEscape(version),
@@ -293,9 +294,10 @@ func (c *Client) RegisterPlugin(ctx context.Context, req RegisterPluginRequest) 
 }
 
 // RegisterVersion notifies the marketplace of a new plugin version. Requires API key.
-func (c *Client) RegisterVersion(ctx context.Context, publisher, name string, req RegisterVersionRequest) error {
-	u := fmt.Sprintf("%s/api/v1/plugins/%s/%s/versions",
+func (c *Client) RegisterVersion(ctx context.Context, pluginType, publisher, name string, req RegisterVersionRequest) error {
+	u := fmt.Sprintf("%s/api/v1/plugins/%s/%s/%s/versions",
 		c.baseURL,
+		url.PathEscape(pluginType),
 		url.PathEscape(publisher),
 		url.PathEscape(name),
 	)
@@ -356,9 +358,10 @@ type PublisherProfile struct {
 }
 
 // SubmitRating submits or updates a rating for a plugin. Requires API key.
-func (c *Client) SubmitRating(ctx context.Context, publisher, name string, req SubmitRatingRequest) error {
-	u := fmt.Sprintf("%s/api/v1/plugins/%s/%s/ratings",
+func (c *Client) SubmitRating(ctx context.Context, pluginType, publisher, name string, req SubmitRatingRequest) error {
+	u := fmt.Sprintf("%s/api/v1/plugins/%s/%s/%s/ratings",
 		c.baseURL,
+		url.PathEscape(pluginType),
 		url.PathEscape(publisher),
 		url.PathEscape(name),
 	)
@@ -369,7 +372,7 @@ func (c *Client) SubmitRating(ctx context.Context, publisher, name string, req S
 }
 
 // ListRatings lists ratings for a plugin.
-func (c *Client) ListRatings(ctx context.Context, publisher, name string, page int, sort string) (*RatingsResponse, error) {
+func (c *Client) ListRatings(ctx context.Context, pluginType, publisher, name string, page int, sort string) (*RatingsResponse, error) {
 	params := url.Values{}
 	if page > 0 {
 		params.Set("page", strconv.Itoa(page))
@@ -377,8 +380,9 @@ func (c *Client) ListRatings(ctx context.Context, publisher, name string, page i
 	if sort != "" {
 		params.Set("sort", sort)
 	}
-	u := fmt.Sprintf("%s/api/v1/plugins/%s/%s/ratings?%s",
+	u := fmt.Sprintf("%s/api/v1/plugins/%s/%s/%s/ratings?%s",
 		c.baseURL,
+		url.PathEscape(pluginType),
 		url.PathEscape(publisher),
 		url.PathEscape(name),
 		params.Encode(),
@@ -391,9 +395,10 @@ func (c *Client) ListRatings(ctx context.Context, publisher, name string, page i
 }
 
 // MarkHelpful marks a rating as helpful.
-func (c *Client) MarkHelpful(ctx context.Context, publisher, name, ratingID string) error {
-	u := fmt.Sprintf("%s/api/v1/plugins/%s/%s/ratings/%s/helpful",
+func (c *Client) MarkHelpful(ctx context.Context, pluginType, publisher, name, ratingID string) error {
+	u := fmt.Sprintf("%s/api/v1/plugins/%s/%s/%s/ratings/%s/helpful",
 		c.baseURL,
+		url.PathEscape(pluginType),
 		url.PathEscape(publisher),
 		url.PathEscape(name),
 		url.PathEscape(ratingID),

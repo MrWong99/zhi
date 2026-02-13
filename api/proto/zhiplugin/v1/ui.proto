@@ -271,6 +271,7 @@ message CtrlSearchMarketplaceResponse {
 message CtrlGetMarketplaceDetailRequest {
   string publisher = 1;
   string name = 2;
+  string plugin_type = 3;
 }
 
 message CtrlVersionEntryMsg {
@@ -393,6 +394,7 @@ message CtrlRatePluginRequest {
   string name = 2;
   int32 score = 3;
   string comment = 4;
+  string plugin_type = 5;
 }
 
 // CtrlRatePluginResponse is intentionally empty.

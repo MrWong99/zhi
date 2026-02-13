@@ -61,8 +61,8 @@ func (s *Server) registerRoutes() {
 
 	// Marketplace
 	s.mux.HandleFunc("GET /marketplace", s.handleMarketplacePage)
-	s.mux.HandleFunc("GET /marketplace/{publisher}/{name}", s.handlePluginDetail)
-	s.mux.HandleFunc("POST /marketplace/{publisher}/{name}/rate", s.handleRatePlugin)
+	s.mux.HandleFunc("GET /marketplace/{type}/{publisher}/{name}", s.handlePluginDetail)
+	s.mux.HandleFunc("POST /marketplace/{type}/{publisher}/{name}/rate", s.handleRatePlugin)
 
 	// Installed plugins
 	s.mux.HandleFunc("GET /plugins", s.handlePluginsPage)

@@ -31,15 +31,15 @@ type listRatingsResponse struct {
 	Total   int              `json:"total"`
 }
 
-// HandleListRatings handles GET /api/v1/plugins/{publisher}/{name}/ratings.
+// HandleListRatings handles GET /api/v1/plugins/{type}/{publisher}/{name}/ratings.
 func (h *Handler) HandleListRatings(w http.ResponseWriter, r *http.Request) {
-	publisher, name := extractRatingsPath(r.URL.Path)
+	pluginType, publisher, name := extractRatingsPath(r.URL.Path)
 	if publisher == "" || name == "" {
 		writeError(w, http.StatusBadRequest, "invalid plugin path")
 		return
 	}
 
-	art, err := h.store.GetArtifact(publisher, name)
+	art, err := h.store.GetArtifact(publisher, name, pluginType)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -84,7 +84,7 @@ func (h *Handler) HandleListRatings(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, resp)
 }
 
-// HandleSubmitRating handles POST /api/v1/plugins/{publisher}/{name}/ratings.
+// HandleSubmitRating handles POST /api/v1/plugins/{type}/{publisher}/{name}/ratings.
 func (h *Handler) HandleSubmitRating(w http.ResponseWriter, r *http.Request) {
 	publisherID := r.Header.Get("X-Publisher-ID")
 	if publisherID == "" {
@@ -92,7 +92,7 @@ func (h *Handler) HandleSubmitRating(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	publisher, name := extractRatingsPath(r.URL.Path)
+	pluginType, publisher, name := extractRatingsPath(r.URL.Path)
 	if publisher == "" || name == "" {
 		writeError(w, http.StatusBadRequest, "invalid plugin path")
 		return
@@ -113,7 +113,7 @@ func (h *Handler) HandleSubmitRating(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	art, err := h.store.GetArtifact(publisher, name)
+	art, err := h.store.GetArtifact(publisher, name, pluginType)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -163,19 +163,19 @@ func (h *Handler) HandleRatingHelpful(w http.ResponseWriter, r *http.Request) {
 
 // --- Path helpers ---
 
-// extractRatingsPath parses /api/v1/plugins/{publisher}/{name}/ratings...
-func extractRatingsPath(path string) (publisher, name string) {
+// extractRatingsPath parses /api/v1/plugins/{type}/{publisher}/{name}/ratings...
+func extractRatingsPath(path string) (pluginType, publisher, name string) {
 	const prefix = "/api/v1/plugins/"
 	path = strings.TrimPrefix(path, prefix)
 	// Remove /ratings suffix (and anything after it).
 	if idx := strings.Index(path, "/ratings"); idx >= 0 {
 		path = path[:idx]
 	}
-	parts := strings.SplitN(path, "/", 3)
-	if len(parts) < 2 {
-		return "", ""
+	parts := strings.SplitN(path, "/", 4)
+	if len(parts) < 3 {
+		return "", "", ""
 	}
-	return parts[0], parts[1]
+	return parts[0], parts[1], parts[2]
 }
 
 // extractRatingHelpfulID parses /api/v1/plugins/.../ratings/{id}/helpful.

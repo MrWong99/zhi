@@ -13,7 +13,7 @@ func TestHandleRecordDownload(t *testing.T) {
 	seedTestData(t, store)
 	mux := NewMux(h)
 
-	req := httptest.NewRequest("POST", "/api/v1/plugins/zhi-project/ansible-config/1.2.0/download?platform=linux/amd64", nil)
+	req := httptest.NewRequest("POST", "/api/v1/plugins/config/zhi-project/ansible-config/1.2.0/download?platform=linux/amd64", nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 
@@ -38,7 +38,7 @@ func TestHandleRecordDownloadNotFound(t *testing.T) {
 	h, _ := newTestHandler(t)
 	mux := NewMux(h)
 
-	req := httptest.NewRequest("POST", "/api/v1/plugins/nobody/missing/1.0.0/download", nil)
+	req := httptest.NewRequest("POST", "/api/v1/plugins/config/nobody/missing/1.0.0/download", nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 
@@ -53,7 +53,7 @@ func TestHandleGetStats(t *testing.T) {
 	mux := NewMux(h)
 
 	// Record a download.
-	req := httptest.NewRequest("POST", "/api/v1/plugins/zhi-project/ansible-config/1.2.0/download?platform=linux/amd64", nil)
+	req := httptest.NewRequest("POST", "/api/v1/plugins/config/zhi-project/ansible-config/1.2.0/download?platform=linux/amd64", nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
@@ -62,7 +62,7 @@ func TestHandleGetStats(t *testing.T) {
 
 	// Submit a rating.
 	body := `{"score":4}`
-	req = httptest.NewRequest("POST", "/api/v1/plugins/zhi-project/ansible-config/ratings",
+	req = httptest.NewRequest("POST", "/api/v1/plugins/config/zhi-project/ansible-config/ratings",
 		strings.NewReader(body))
 	req.Header.Set("Authorization", "Bearer test-key")
 	req.Header.Set("Content-Type", "application/json")
@@ -70,7 +70,7 @@ func TestHandleGetStats(t *testing.T) {
 	mux.ServeHTTP(w, req)
 
 	// Get stats.
-	req = httptest.NewRequest("GET", "/api/v1/plugins/zhi-project/ansible-config/stats", nil)
+	req = httptest.NewRequest("GET", "/api/v1/plugins/config/zhi-project/ansible-config/stats", nil)
 	w = httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 
@@ -93,7 +93,7 @@ func TestHandleGetStatsNotFound(t *testing.T) {
 	h, _ := newTestHandler(t)
 	mux := NewMux(h)
 
-	req := httptest.NewRequest("GET", "/api/v1/plugins/nobody/missing/stats", nil)
+	req := httptest.NewRequest("GET", "/api/v1/plugins/config/nobody/missing/stats", nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 

@@ -38,7 +38,7 @@ func runPluginRate(cmd *cobra.Command, args []string) error {
 	scoreStr := args[1]
 	w := cmd.OutOrStdout()
 
-	publisher, name, err := parsePluginRef(ref)
+	pluginType, publisher, name, err := parsePluginRef(ref)
 	if err != nil {
 		return err
 	}
@@ -62,7 +62,7 @@ func runPluginRate(cmd *cobra.Command, args []string) error {
 		Comment: pluginRateComment,
 	}
 
-	if err := mc.SubmitRating(cmd.Context(), publisher, name, req); err != nil {
+	if err := mc.SubmitRating(cmd.Context(), pluginType, publisher, name, req); err != nil {
 		return fmt.Errorf("submitting rating: %w", err)
 	}
 
@@ -75,11 +75,22 @@ func runPluginRate(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// parsePluginRef parses "publisher/name" into its components.
-func parsePluginRef(ref string) (publisher, name string, err error) {
-	parts := strings.SplitN(ref, "/", 2)
-	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-		return "", "", fmt.Errorf("plugin reference must be in publisher/name format (e.g. \"zhi-project/ansible-config\")")
+// parsePluginRef parses "type/publisher/name" or "publisher/name" into its components.
+// When only two segments are provided, pluginType is returned as empty.
+func parsePluginRef(ref string) (pluginType, publisher, name string, err error) {
+	parts := strings.Split(ref, "/")
+	switch len(parts) {
+	case 3:
+		if parts[0] == "" || parts[1] == "" || parts[2] == "" {
+			return "", "", "", fmt.Errorf("plugin reference must be in type/publisher/name or publisher/name format")
+		}
+		return parts[0], parts[1], parts[2], nil
+	case 2:
+		if parts[0] == "" || parts[1] == "" {
+			return "", "", "", fmt.Errorf("plugin reference must be in type/publisher/name or publisher/name format")
+		}
+		return "", parts[0], parts[1], nil
+	default:
+		return "", "", "", fmt.Errorf("plugin reference must be in type/publisher/name or publisher/name format")
 	}
-	return parts[0], parts[1], nil
 }

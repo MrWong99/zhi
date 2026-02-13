@@ -177,8 +177,8 @@ func (c *ControllerAdapter) SearchMarketplace(ctx context.Context, query zhiui.M
 	return c.Inner.SearchMarketplace(ctx, query)
 }
 
-func (c *ControllerAdapter) GetMarketplaceDetail(ctx context.Context, publisher, name string) (*zhiui.MarketplaceDetail, error) {
-	return c.Inner.GetMarketplaceDetail(ctx, publisher, name)
+func (c *ControllerAdapter) GetMarketplaceDetail(ctx context.Context, pluginType, publisher, name string) (*zhiui.MarketplaceDetail, error) {
+	return c.Inner.GetMarketplaceDetail(ctx, pluginType, publisher, name)
 }
 
 func (c *ControllerAdapter) InstallPlugin(ctx context.Context, ref string) (*zhiui.InstallResult, error) {
@@ -201,6 +201,6 @@ func (c *ControllerAdapter) UpdatePlugin(ctx context.Context, name string, versi
 	return c.Inner.UpdatePlugin(ctx, name, version)
 }
 
-func (c *ControllerAdapter) RatePlugin(ctx context.Context, publisher, name string, rating zhiui.Rating) error {
-	return c.Inner.RatePlugin(ctx, publisher, name, rating)
+func (c *ControllerAdapter) RatePlugin(ctx context.Context, pluginType, publisher, name string, rating zhiui.Rating) error {
+	return c.Inner.RatePlugin(ctx, pluginType, publisher, name, rating)
 }

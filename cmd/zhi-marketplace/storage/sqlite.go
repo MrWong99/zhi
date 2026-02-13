@@ -165,8 +165,8 @@ func (s *JSONFileStore) CreateArtifact(art *Artifact) error {
 	art.UpdatedAt = art.CreatedAt
 
 	for _, existing := range s.artifacts {
-		if existing.PublisherID == art.PublisherID && existing.Name == art.Name {
-			return fmt.Errorf("artifact %q already exists for this publisher", art.Name)
+		if existing.PublisherID == art.PublisherID && existing.Name == art.Name && existing.Type == art.Type {
+			return fmt.Errorf("artifact %q (type %s) already exists for this publisher", art.Name, art.Type)
 		}
 	}
 
@@ -178,7 +178,7 @@ func (s *JSONFileStore) CreateArtifact(art *Artifact) error {
 	return s.flush()
 }
 
-func (s *JSONFileStore) GetArtifact(publisher, name string) (*Artifact, error) {
+func (s *JSONFileStore) GetArtifact(publisher, name, pluginType string) (*Artifact, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -195,6 +195,9 @@ func (s *JSONFileStore) GetArtifact(publisher, name string) (*Artifact, error) {
 
 	for _, a := range s.artifacts {
 		if a.PublisherID == pubID && a.Name == name {
+			if pluginType != "" && a.Type != pluginType {
+				continue
+			}
 			return a, nil
 		}
 	}

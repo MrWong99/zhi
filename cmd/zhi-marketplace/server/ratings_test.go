@@ -14,7 +14,7 @@ func TestHandleSubmitRating(t *testing.T) {
 	mux := NewMux(h)
 
 	body := `{"score":5,"comment":"Excellent plugin!"}`
-	req := httptest.NewRequest("POST", "/api/v1/plugins/zhi-project/ansible-config/ratings", strings.NewReader(body))
+	req := httptest.NewRequest("POST", "/api/v1/plugins/config/zhi-project/ansible-config/ratings", strings.NewReader(body))
 	req.Header.Set("Authorization", "Bearer test-key")
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -46,7 +46,7 @@ func TestHandleSubmitRatingInvalidScore(t *testing.T) {
 	mux := NewMux(h)
 
 	body := `{"score":6}`
-	req := httptest.NewRequest("POST", "/api/v1/plugins/zhi-project/ansible-config/ratings", strings.NewReader(body))
+	req := httptest.NewRequest("POST", "/api/v1/plugins/config/zhi-project/ansible-config/ratings", strings.NewReader(body))
 	req.Header.Set("Authorization", "Bearer test-key")
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -63,7 +63,7 @@ func TestHandleSubmitRatingUnauthorized(t *testing.T) {
 	mux := NewMux(h)
 
 	body := `{"score":4}`
-	req := httptest.NewRequest("POST", "/api/v1/plugins/zhi-project/ansible-config/ratings", strings.NewReader(body))
+	req := httptest.NewRequest("POST", "/api/v1/plugins/config/zhi-project/ansible-config/ratings", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 
@@ -79,7 +79,7 @@ func TestHandleListRatings(t *testing.T) {
 
 	// Submit a rating first.
 	body := `{"score":4,"comment":"Good"}`
-	req := httptest.NewRequest("POST", "/api/v1/plugins/zhi-project/ansible-config/ratings", strings.NewReader(body))
+	req := httptest.NewRequest("POST", "/api/v1/plugins/config/zhi-project/ansible-config/ratings", strings.NewReader(body))
 	req.Header.Set("Authorization", "Bearer test-key")
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -89,7 +89,7 @@ func TestHandleListRatings(t *testing.T) {
 	}
 
 	// Now list ratings.
-	req = httptest.NewRequest("GET", "/api/v1/plugins/zhi-project/ansible-config/ratings", nil)
+	req = httptest.NewRequest("GET", "/api/v1/plugins/config/zhi-project/ansible-config/ratings", nil)
 	w = httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 
@@ -115,7 +115,7 @@ func TestHandleListRatingsEmpty(t *testing.T) {
 	seedTestData(t, store)
 	mux := NewMux(h)
 
-	req := httptest.NewRequest("GET", "/api/v1/plugins/zhi-project/ansible-config/ratings", nil)
+	req := httptest.NewRequest("GET", "/api/v1/plugins/config/zhi-project/ansible-config/ratings", nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 
@@ -137,7 +137,7 @@ func TestHandleRatingUpdate(t *testing.T) {
 
 	// Submit first rating.
 	body := `{"score":3,"comment":"OK"}`
-	req := httptest.NewRequest("POST", "/api/v1/plugins/zhi-project/ansible-config/ratings", strings.NewReader(body))
+	req := httptest.NewRequest("POST", "/api/v1/plugins/config/zhi-project/ansible-config/ratings", strings.NewReader(body))
 	req.Header.Set("Authorization", "Bearer test-key")
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -148,7 +148,7 @@ func TestHandleRatingUpdate(t *testing.T) {
 
 	// Update the rating.
 	body = `{"score":5,"comment":"Much better now"}`
-	req = httptest.NewRequest("POST", "/api/v1/plugins/zhi-project/ansible-config/ratings", strings.NewReader(body))
+	req = httptest.NewRequest("POST", "/api/v1/plugins/config/zhi-project/ansible-config/ratings", strings.NewReader(body))
 	req.Header.Set("Authorization", "Bearer test-key")
 	req.Header.Set("Content-Type", "application/json")
 	w = httptest.NewRecorder()
@@ -174,7 +174,7 @@ func TestHandleRatingHelpful(t *testing.T) {
 
 	// Submit a rating first.
 	body := `{"score":4}`
-	req := httptest.NewRequest("POST", "/api/v1/plugins/zhi-project/ansible-config/ratings", strings.NewReader(body))
+	req := httptest.NewRequest("POST", "/api/v1/plugins/config/zhi-project/ansible-config/ratings", strings.NewReader(body))
 	req.Header.Set("Authorization", "Bearer test-key")
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -191,7 +191,7 @@ func TestHandleRatingHelpful(t *testing.T) {
 	ratingID := ratings[0].ID
 
 	// Mark as helpful.
-	req = httptest.NewRequest("POST", "/api/v1/plugins/zhi-project/ansible-config/ratings/"+ratingID+"/helpful", nil)
+	req = httptest.NewRequest("POST", "/api/v1/plugins/config/zhi-project/ansible-config/ratings/"+ratingID+"/helpful", nil)
 	req.Header.Set("Authorization", "Bearer test-key")
 	w = httptest.NewRecorder()
 	mux.ServeHTTP(w, req)

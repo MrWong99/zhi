@@ -104,7 +104,7 @@ func TestCreateAndGetArtifact(t *testing.T) {
 		t.Fatalf("CreateArtifact: %v", err)
 	}
 
-	got, err := s.GetArtifact("zhi-project", "ansible-config")
+	got, err := s.GetArtifact("zhi-project", "ansible-config", "config")
 	if err != nil {
 		t.Fatalf("GetArtifact: %v", err)
 	}

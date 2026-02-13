@@ -59,7 +59,7 @@ func (h *Handler) HandleCreateAdvisory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Look up the artifact to link the advisory.
-	art, err := h.store.GetArtifact(req.Publisher, req.Plugin)
+	art, err := h.store.GetArtifact(req.Publisher, req.Plugin, "")
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -100,7 +100,7 @@ func (h *Handler) HandleListAdvisories(w http.ResponseWriter, r *http.Request) {
 	// If publisher and plugin are given, resolve to artifact ID.
 	var artifactID string
 	if publisher != "" && plugin != "" {
-		art, err := h.store.GetArtifact(publisher, plugin)
+		art, err := h.store.GetArtifact(publisher, plugin, "")
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, err.Error())
 			return

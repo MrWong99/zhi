@@ -117,15 +117,15 @@ func (h *Handler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, resp)
 }
 
-// HandleGetPlugin handles GET /api/v1/plugins/{publisher}/{name}.
+// HandleGetPlugin handles GET /api/v1/plugins/{type}/{publisher}/{name}.
 func (h *Handler) HandleGetPlugin(w http.ResponseWriter, r *http.Request) {
-	publisher, name := extractPluginPath(r.URL.Path)
+	pluginType, publisher, name := extractPluginPath(r.URL.Path)
 	if publisher == "" || name == "" {
 		writeError(w, http.StatusBadRequest, "invalid plugin path")
 		return
 	}
 
-	art, err := h.store.GetArtifact(publisher, name)
+	art, err := h.store.GetArtifact(publisher, name, pluginType)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -205,15 +205,15 @@ func (h *Handler) HandleGetPlugin(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, resp)
 }
 
-// HandleListVersions handles GET /api/v1/plugins/{publisher}/{name}/versions.
+// HandleListVersions handles GET /api/v1/plugins/{type}/{publisher}/{name}/versions.
 func (h *Handler) HandleListVersions(w http.ResponseWriter, r *http.Request) {
-	publisher, name := extractVersionsPath(r.URL.Path)
+	pluginType, publisher, name := extractVersionsPath(r.URL.Path)
 	if publisher == "" || name == "" {
 		writeError(w, http.StatusBadRequest, "invalid plugin path")
 		return
 	}
 
-	art, err := h.store.GetArtifact(publisher, name)
+	art, err := h.store.GetArtifact(publisher, name, pluginType)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -251,15 +251,15 @@ func (h *Handler) HandleListVersions(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"versions": entries})
 }
 
-// HandleResolve handles GET /api/v1/plugins/{publisher}/{name}/{version}/resolve.
+// HandleResolve handles GET /api/v1/plugins/{type}/{publisher}/{name}/{version}/resolve.
 func (h *Handler) HandleResolve(w http.ResponseWriter, r *http.Request) {
-	publisher, name, version := extractResolvePath(r.URL.Path)
+	pluginType, publisher, name, version := extractResolvePath(r.URL.Path)
 	if publisher == "" || name == "" || version == "" {
 		writeError(w, http.StatusBadRequest, "invalid resolve path")
 		return
 	}
 
-	art, err := h.store.GetArtifact(publisher, name)
+	art, err := h.store.GetArtifact(publisher, name, pluginType)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -355,7 +355,7 @@ type registerVersionRequest struct {
 	Changelog          string   `json:"changelog"`
 }
 
-// HandleRegisterVersion handles POST /api/v1/plugins/{publisher}/{name}/versions.
+// HandleRegisterVersion handles POST /api/v1/plugins/{type}/{publisher}/{name}/versions.
 func (h *Handler) HandleRegisterVersion(w http.ResponseWriter, r *http.Request) {
 	publisherID := r.Header.Get("X-Publisher-ID")
 	if publisherID == "" {
@@ -363,7 +363,7 @@ func (h *Handler) HandleRegisterVersion(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	publisher, name := extractVersionsPath(r.URL.Path)
+	pluginType, publisher, name := extractVersionsPath(r.URL.Path)
 	if publisher == "" || name == "" {
 		writeError(w, http.StatusBadRequest, "invalid plugin path")
 		return
@@ -380,7 +380,7 @@ func (h *Handler) HandleRegisterVersion(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	art, err := h.store.GetArtifact(publisher, name)
+	art, err := h.store.GetArtifact(publisher, name, pluginType)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -426,40 +426,40 @@ func writeError(w http.ResponseWriter, status int, message string) {
 	writeJSON(w, status, map[string]string{"error": message})
 }
 
-// extractPluginPath parses /api/v1/plugins/{publisher}/{name} from a URL path.
-func extractPluginPath(path string) (publisher, name string) {
+// extractPluginPath parses /api/v1/plugins/{type}/{publisher}/{name} from a URL path.
+func extractPluginPath(path string) (pluginType, publisher, name string) {
 	const prefix = "/api/v1/plugins/"
 	path = strings.TrimPrefix(path, prefix)
-	parts := strings.SplitN(path, "/", 3)
-	if len(parts) < 2 {
-		return "", ""
-	}
-	return parts[0], parts[1]
-}
-
-// extractVersionsPath parses /api/v1/plugins/{publisher}/{name}/versions from a URL path.
-func extractVersionsPath(path string) (publisher, name string) {
-	const prefix = "/api/v1/plugins/"
-	path = strings.TrimPrefix(path, prefix)
-	// Remove /versions suffix if present
-	path = strings.TrimSuffix(path, "/versions")
-	parts := strings.SplitN(path, "/", 3)
-	if len(parts) < 2 {
-		return "", ""
-	}
-	return parts[0], parts[1]
-}
-
-// extractResolvePath parses /api/v1/plugins/{publisher}/{name}/{version}/resolve.
-func extractResolvePath(path string) (publisher, name, version string) {
-	const prefix = "/api/v1/plugins/"
-	path = strings.TrimPrefix(path, prefix)
-	path = strings.TrimSuffix(path, "/resolve")
 	parts := strings.SplitN(path, "/", 4)
 	if len(parts) < 3 {
 		return "", "", ""
 	}
 	return parts[0], parts[1], parts[2]
+}
+
+// extractVersionsPath parses /api/v1/plugins/{type}/{publisher}/{name}/versions from a URL path.
+func extractVersionsPath(path string) (pluginType, publisher, name string) {
+	const prefix = "/api/v1/plugins/"
+	path = strings.TrimPrefix(path, prefix)
+	// Remove /versions suffix if present
+	path = strings.TrimSuffix(path, "/versions")
+	parts := strings.SplitN(path, "/", 4)
+	if len(parts) < 3 {
+		return "", "", ""
+	}
+	return parts[0], parts[1], parts[2]
+}
+
+// extractResolvePath parses /api/v1/plugins/{type}/{publisher}/{name}/{version}/resolve.
+func extractResolvePath(path string) (pluginType, publisher, name, version string) {
+	const prefix = "/api/v1/plugins/"
+	path = strings.TrimPrefix(path, prefix)
+	path = strings.TrimSuffix(path, "/resolve")
+	parts := strings.SplitN(path, "/", 5)
+	if len(parts) < 4 {
+		return "", "", "", ""
+	}
+	return parts[0], parts[1], parts[2], parts[3]
 }
 
 // generateID produces a simple unique ID. In production this would be a UUID.

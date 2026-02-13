@@ -200,10 +200,11 @@ func (c *controllerGRPCClient) SearchMarketplace(ctx context.Context, query Mark
 	return results, nil
 }
 
-func (c *controllerGRPCClient) GetMarketplaceDetail(ctx context.Context, publisher, name string) (*MarketplaceDetail, error) {
+func (c *controllerGRPCClient) GetMarketplaceDetail(ctx context.Context, pluginType, publisher, name string) (*MarketplaceDetail, error) {
 	resp, err := c.client.GetMarketplaceDetail(ctx, &pb.CtrlGetMarketplaceDetailRequest{
-		Publisher: publisher,
-		Name:      name,
+		PluginType: pluginType,
+		Publisher:  publisher,
+		Name:       name,
 	})
 	if err != nil {
 		return nil, err
@@ -308,12 +309,13 @@ func (c *controllerGRPCClient) UpdatePlugin(ctx context.Context, name string, ve
 	}, nil
 }
 
-func (c *controllerGRPCClient) RatePlugin(ctx context.Context, publisher, name string, rating Rating) error {
+func (c *controllerGRPCClient) RatePlugin(ctx context.Context, pluginType, publisher, name string, rating Rating) error {
 	_, err := c.client.RatePlugin(ctx, &pb.CtrlRatePluginRequest{
-		Publisher: publisher,
-		Name:      name,
-		Score:     int32(rating.Score),
-		Comment:   rating.Comment,
+		PluginType: pluginType,
+		Publisher:  publisher,
+		Name:       name,
+		Score:      int32(rating.Score),
+		Comment:    rating.Comment,
 	})
 	return err
 }

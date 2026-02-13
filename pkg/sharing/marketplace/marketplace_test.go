@@ -122,7 +122,7 @@ func TestClientSearchEmpty(t *testing.T) {
 
 func TestClientGetPlugin(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/v1/plugins/zhi-project/ansible-config" {
+		if r.URL.Path != "/api/v1/plugins/config/zhi-project/ansible-config" {
 			t.Errorf("path = %s", r.URL.Path)
 		}
 		detail := PluginDetail{
@@ -144,7 +144,7 @@ func TestClientGetPlugin(t *testing.T) {
 	defer srv.Close()
 
 	c := NewClient(srv.URL)
-	detail, err := c.GetPlugin(context.Background(), "zhi-project", "ansible-config")
+	detail, err := c.GetPlugin(context.Background(), "config", "zhi-project", "ansible-config")
 	if err != nil {
 		t.Fatalf("GetPlugin: %v", err)
 	}
@@ -158,7 +158,7 @@ func TestClientGetPlugin(t *testing.T) {
 
 func TestClientResolve(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/v1/plugins/zhi-project/ansible-config/1.2.0/resolve" {
+		if r.URL.Path != "/api/v1/plugins/config/zhi-project/ansible-config/1.2.0/resolve" {
 			t.Errorf("path = %s", r.URL.Path)
 		}
 		if r.URL.Query().Get("os") != "linux" {
@@ -180,7 +180,7 @@ func TestClientResolve(t *testing.T) {
 	defer srv.Close()
 
 	c := NewClient(srv.URL)
-	resp, err := c.Resolve(context.Background(), "zhi-project", "ansible-config", "1.2.0", "linux", "amd64")
+	resp, err := c.Resolve(context.Background(), "config", "zhi-project", "ansible-config", "1.2.0", "linux", "amd64")
 	if err != nil {
 		t.Fatalf("Resolve: %v", err)
 	}
@@ -261,7 +261,7 @@ func TestClientAPIError(t *testing.T) {
 	defer srv.Close()
 
 	c := NewClient(srv.URL)
-	_, err := c.GetPlugin(context.Background(), "nobody", "missing")
+	_, err := c.GetPlugin(context.Background(), "config", "nobody", "missing")
 	if err == nil {
 		t.Fatal("expected error")
 	}

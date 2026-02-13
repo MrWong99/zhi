@@ -82,7 +82,7 @@ func runPluginRegister(cmd *cobra.Command, _ []string) error {
 		}
 
 		fmt.Fprintf(w, "Notifying marketplace of %s v%s...\n", m.Name, m.Version)
-		if err := mc.RegisterVersion(cmd.Context(), publisher, name, req); err != nil {
+		if err := mc.RegisterVersion(cmd.Context(), m.Type, publisher, name, req); err != nil {
 			return fmt.Errorf("registering version: %w", err)
 		}
 		fmt.Fprintln(w, "Version registered successfully.")

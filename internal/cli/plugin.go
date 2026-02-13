@@ -426,7 +426,7 @@ func runPluginInfoFromMarketplace(cmd *cobra.Command, name string) error {
 	}
 
 	// Try to get full plugin detail from marketplace for richer output.
-	detail, detailErr := mc.GetPlugin(cmd.Context(), match.Author, match.Name)
+	detail, detailErr := mc.GetPlugin(cmd.Context(), match.Type, match.Author, match.Name)
 
 	if pluginInfoJSON {
 		if detailErr == nil && detail != nil {

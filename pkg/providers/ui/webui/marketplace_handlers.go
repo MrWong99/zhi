@@ -77,9 +77,10 @@ func (s *Server) handleMarketplacePage(w http.ResponseWriter, r *http.Request) {
 }
 
 // handlePluginDetail renders the plugin detail page.
-// GET /marketplace/{publisher}/{name}
+// GET /marketplace/{type}/{publisher}/{name}
 func (s *Server) handlePluginDetail(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	pluginType := r.PathValue("type")
 	publisher := r.PathValue("publisher")
 	name := r.PathValue("name")
 	if publisher == "" || name == "" {
@@ -89,7 +90,7 @@ func (s *Server) handlePluginDetail(w http.ResponseWriter, r *http.Request) {
 
 	wsName, _ := s.ctrl.WorkspaceName(ctx)
 
-	detail, err := s.ctrl.GetMarketplaceDetail(ctx, publisher, name)
+	detail, err := s.ctrl.GetMarketplaceDetail(ctx, pluginType, publisher, name)
 	if err != nil {
 		s.renderError(w, r, http.StatusNotFound, "Plugin not found: "+err.Error())
 		return
@@ -103,7 +104,7 @@ func (s *Server) handlePluginDetail(w http.ResponseWriter, r *http.Request) {
 		PluginDetail:  toPluginDetailData(detail),
 		Breadcrumbs: []breadcrumb{
 			{Label: "Marketplace", Href: "/marketplace"},
-			{Label: publisher + "/" + name, Href: "/marketplace/" + publisher + "/" + name},
+			{Label: publisher + "/" + name, Href: "/marketplace/" + pluginType + "/" + publisher + "/" + name},
 		},
 	}
 
@@ -113,9 +114,10 @@ func (s *Server) handlePluginDetail(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleRatePlugin submits a rating for a plugin.
-// POST /marketplace/{publisher}/{name}/rate
+// POST /marketplace/{type}/{publisher}/{name}/rate
 func (s *Server) handleRatePlugin(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	pluginType := r.PathValue("type")
 	publisher := r.PathValue("publisher")
 	name := r.PathValue("name")
 
@@ -136,7 +138,7 @@ func (s *Server) handleRatePlugin(w http.ResponseWriter, r *http.Request) {
 		Comment: r.FormValue("comment"),
 	}
 
-	if err := s.ctrl.RatePlugin(ctx, publisher, name, rating); err != nil {
+	if err := s.ctrl.RatePlugin(ctx, pluginType, publisher, name, rating); err != nil {
 		w.Header().Set("HX-Trigger", triggerNotification("error", "Failed to submit rating: "+err.Error()))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -144,7 +146,7 @@ func (s *Server) handleRatePlugin(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("HX-Trigger", triggerNotification("success", "Rating submitted"))
 	// Re-render the detail page to show updated ratings.
-	detail, err := s.ctrl.GetMarketplaceDetail(ctx, publisher, name)
+	detail, err := s.ctrl.GetMarketplaceDetail(ctx, pluginType, publisher, name)
 	if err != nil {
 		w.WriteHeader(http.StatusOK)
 		return

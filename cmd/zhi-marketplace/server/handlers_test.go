@@ -131,7 +131,7 @@ func TestHandleGetPlugin(t *testing.T) {
 	seedTestData(t, store)
 	mux := NewMux(h)
 
-	req := httptest.NewRequest("GET", "/api/v1/plugins/zhi-project/ansible-config", nil)
+	req := httptest.NewRequest("GET", "/api/v1/plugins/config/zhi-project/ansible-config", nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 
@@ -153,7 +153,7 @@ func TestHandleGetPluginNotFound(t *testing.T) {
 	h, _ := newTestHandler(t)
 	mux := NewMux(h)
 
-	req := httptest.NewRequest("GET", "/api/v1/plugins/nobody/missing", nil)
+	req := httptest.NewRequest("GET", "/api/v1/plugins/config/nobody/missing", nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 
@@ -167,7 +167,7 @@ func TestHandleListVersions(t *testing.T) {
 	seedTestData(t, store)
 	mux := NewMux(h)
 
-	req := httptest.NewRequest("GET", "/api/v1/plugins/zhi-project/ansible-config/versions", nil)
+	req := httptest.NewRequest("GET", "/api/v1/plugins/config/zhi-project/ansible-config/versions", nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 
@@ -188,7 +188,7 @@ func TestHandleResolve(t *testing.T) {
 	seedTestData(t, store)
 	mux := NewMux(h)
 
-	req := httptest.NewRequest("GET", "/api/v1/plugins/zhi-project/ansible-config/1.2.0/resolve?os=linux&arch=amd64", nil)
+	req := httptest.NewRequest("GET", "/api/v1/plugins/config/zhi-project/ansible-config/1.2.0/resolve?os=linux&arch=amd64", nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 
@@ -226,7 +226,7 @@ func TestHandleRegisterPlugin(t *testing.T) {
 	}
 
 	// Verify it was created.
-	art, _ := store.GetArtifact("org", "my-plugin")
+	art, _ := store.GetArtifact("org", "my-plugin", "config")
 	if art == nil {
 		t.Fatal("expected artifact to be created")
 	}
@@ -255,7 +255,7 @@ func TestHandleRegisterVersion(t *testing.T) {
 	mux := NewMux(h)
 
 	body := `{"version":"2.0.0","digest":"sha256:def","platforms":["linux/amd64"]}`
-	req := httptest.NewRequest("POST", "/api/v1/plugins/zhi-project/ansible-config/versions", strings.NewReader(body))
+	req := httptest.NewRequest("POST", "/api/v1/plugins/config/zhi-project/ansible-config/versions", strings.NewReader(body))
 	req.Header.Set("Authorization", "Bearer test-key")
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -274,44 +274,46 @@ func TestHandleRegisterVersion(t *testing.T) {
 
 func TestExtractPluginPath(t *testing.T) {
 	tests := []struct {
-		path      string
-		publisher string
-		name      string
+		path       string
+		pluginType string
+		publisher  string
+		name       string
 	}{
-		{"/api/v1/plugins/org/plugin", "org", "plugin"},
-		{"/api/v1/plugins/org/plugin/extra", "org", "plugin"},
-		{"/api/v1/plugins/", "", ""},
+		{"/api/v1/plugins/config/org/plugin", "config", "org", "plugin"},
+		{"/api/v1/plugins/store/org/plugin/extra", "store", "org", "plugin"},
+		{"/api/v1/plugins/", "", "", ""},
 	}
 	for _, tt := range tests {
-		pub, name := extractPluginPath(tt.path)
-		if pub != tt.publisher || name != tt.name {
-			t.Errorf("extractPluginPath(%q) = (%q, %q), want (%q, %q)",
-				tt.path, pub, name, tt.publisher, tt.name)
+		typ, pub, name := extractPluginPath(tt.path)
+		if typ != tt.pluginType || pub != tt.publisher || name != tt.name {
+			t.Errorf("extractPluginPath(%q) = (%q, %q, %q), want (%q, %q, %q)",
+				tt.path, typ, pub, name, tt.pluginType, tt.publisher, tt.name)
 		}
 	}
 }
 
 func TestExtractVersionsPath(t *testing.T) {
 	tests := []struct {
-		path      string
-		publisher string
-		name      string
+		path       string
+		pluginType string
+		publisher  string
+		name       string
 	}{
-		{"/api/v1/plugins/org/plugin/versions", "org", "plugin"},
-		{"/api/v1/plugins/org/plugin", "org", "plugin"},
+		{"/api/v1/plugins/config/org/plugin/versions", "config", "org", "plugin"},
+		{"/api/v1/plugins/store/org/plugin", "store", "org", "plugin"},
 	}
 	for _, tt := range tests {
-		pub, name := extractVersionsPath(tt.path)
-		if pub != tt.publisher || name != tt.name {
-			t.Errorf("extractVersionsPath(%q) = (%q, %q), want (%q, %q)",
-				tt.path, pub, name, tt.publisher, tt.name)
+		typ, pub, name := extractVersionsPath(tt.path)
+		if typ != tt.pluginType || pub != tt.publisher || name != tt.name {
+			t.Errorf("extractVersionsPath(%q) = (%q, %q, %q), want (%q, %q, %q)",
+				tt.path, typ, pub, name, tt.pluginType, tt.publisher, tt.name)
 		}
 	}
 }
 
 func TestExtractResolvePath(t *testing.T) {
-	pub, name, ver := extractResolvePath("/api/v1/plugins/org/plugin/1.0.0/resolve")
-	if pub != "org" || name != "plugin" || ver != "1.0.0" {
-		t.Errorf("got (%q, %q, %q)", pub, name, ver)
+	typ, pub, name, ver := extractResolvePath("/api/v1/plugins/config/org/plugin/1.0.0/resolve")
+	if typ != "config" || pub != "org" || name != "plugin" || ver != "1.0.0" {
+		t.Errorf("got (%q, %q, %q, %q)", typ, pub, name, ver)
 	}
 }

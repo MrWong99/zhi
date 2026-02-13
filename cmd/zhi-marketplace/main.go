@@ -46,8 +46,9 @@ func main() {
 	}
 	defer store.Close()
 
-	// Parse API keys.
+	// Parse API keys and ensure publishers exist.
 	keys := parseAPIKeys(apiKeys)
+	ensurePublishers(store, keys)
 	authenticator := auth.NewAuthenticator(keys)
 
 	// Parse registries.
@@ -86,6 +87,30 @@ func main() {
 	defer cancel()
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		fmt.Fprintf(os.Stderr, "shutdown error: %v\n", err)
+	}
+}
+
+// ensurePublishers creates publisher records for any API key publisher IDs
+// that don't yet exist in the store. This handles first-run bootstrapping.
+func ensurePublishers(store storage.Store, keys map[string]string) {
+	seen := make(map[string]bool)
+	for _, pubID := range keys {
+		if seen[pubID] {
+			continue
+		}
+		seen[pubID] = true
+		if existing, err := store.GetPublisherByID(pubID); err == nil && existing != nil {
+			continue
+		}
+		pub := &storage.Publisher{
+			ID:   pubID,
+			Name: pubID,
+		}
+		if err := store.CreatePublisher(pub); err != nil {
+			log.Printf("warning: could not create publisher %q: %v", pubID, err)
+		} else {
+			log.Printf("created publisher %q from --api-keys", pubID)
+		}
 	}
 }
 

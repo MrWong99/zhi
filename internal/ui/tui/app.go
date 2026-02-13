@@ -428,7 +428,7 @@ func (a *App) updateMarketplaceView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "i":
 			// Open detail view for selected entry.
 			if entry, ok := a.marketplaceView.SelectedEntry(); ok {
-				a.pluginDetailView = NewPluginDetailView(a.ctx, a.controller, entry.Publisher, entry.Name)
+				a.pluginDetailView = NewPluginDetailView(a.ctx, a.controller, entry.Type, entry.Publisher, entry.Name)
 				a.pluginDetailView.SetSize(a.width, a.contentHeight())
 				a.activeView = viewPluginDetail
 				return a, a.pluginDetailView.Init()

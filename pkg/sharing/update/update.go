@@ -194,7 +194,7 @@ func (c *Checker) checkPlugin(ctx context.Context, plugin *metadata.InstalledPlu
 		return nil, nil // can't check without publisher
 	}
 
-	versions, err := c.marketplace.ListVersions(ctx, plugin.Publisher, plugin.Name)
+	versions, err := c.marketplace.ListVersions(ctx, plugin.Type, plugin.Publisher, plugin.Name)
 	if err != nil {
 		return nil, fmt.Errorf("listing versions for %s: %w", plugin.Name, err)
 	}

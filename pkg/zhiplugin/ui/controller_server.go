@@ -191,7 +191,7 @@ func (s *controllerGRPCServer) SearchMarketplace(ctx context.Context, req *pb.Ct
 }
 
 func (s *controllerGRPCServer) GetMarketplaceDetail(ctx context.Context, req *pb.CtrlGetMarketplaceDetailRequest) (*pb.CtrlGetMarketplaceDetailResponse, error) {
-	detail, err := s.impl.GetMarketplaceDetail(ctx, req.GetPublisher(), req.GetName())
+	detail, err := s.impl.GetMarketplaceDetail(ctx, req.GetPluginType(), req.GetPublisher(), req.GetName())
 	if err != nil {
 		return nil, err
 	}
@@ -290,7 +290,7 @@ func (s *controllerGRPCServer) UpdatePlugin(ctx context.Context, req *pb.CtrlUpd
 }
 
 func (s *controllerGRPCServer) RatePlugin(ctx context.Context, req *pb.CtrlRatePluginRequest) (*pb.CtrlRatePluginResponse, error) {
-	if err := s.impl.RatePlugin(ctx, req.GetPublisher(), req.GetName(), Rating{
+	if err := s.impl.RatePlugin(ctx, req.GetPluginType(), req.GetPublisher(), req.GetName(), Rating{
 		Score:   int(req.GetScore()),
 		Comment: req.GetComment(),
 	}); err != nil {

@@ -19,29 +19,31 @@ type pluginDetailMsg struct {
 
 // PluginDetailView shows full information for a single marketplace plugin.
 type PluginDetailView struct {
-	ctrl      *internalui.UIController
-	ctx       context.Context
-	detail    *zhiui.MarketplaceDetail
-	publisher string
-	name      string
-	loading   bool
-	message   string
-	errMsg    string
-	scrollY   int
-	width     int
-	height    int
+	ctrl       *internalui.UIController
+	ctx        context.Context
+	detail     *zhiui.MarketplaceDetail
+	pluginType string
+	publisher  string
+	name       string
+	loading    bool
+	message    string
+	errMsg     string
+	scrollY    int
+	width      int
+	height     int
 }
 
 // NewPluginDetailView creates a new plugin detail view.
-func NewPluginDetailView(ctx context.Context, ctrl *internalui.UIController, publisher, name string) PluginDetailView {
+func NewPluginDetailView(ctx context.Context, ctrl *internalui.UIController, pluginType, publisher, name string) PluginDetailView {
 	return PluginDetailView{
-		ctrl:      ctrl,
-		ctx:       ctx,
-		publisher: publisher,
-		name:      name,
-		loading:   true,
-		width:     80,
-		height:    20,
+		ctrl:       ctrl,
+		ctx:        ctx,
+		pluginType: pluginType,
+		publisher:  publisher,
+		name:       name,
+		loading:    true,
+		width:      80,
+		height:     20,
 	}
 }
 
@@ -55,10 +57,11 @@ func (v *PluginDetailView) SetSize(width, height int) {
 func (v PluginDetailView) Init() tea.Cmd {
 	ctx := v.ctx
 	ctrl := v.ctrl
+	pluginType := v.pluginType
 	publisher := v.publisher
 	name := v.name
 	return func() tea.Msg {
-		detail, err := ctrl.GetMarketplaceDetail(ctx, publisher, name)
+		detail, err := ctrl.GetMarketplaceDetail(ctx, pluginType, publisher, name)
 		return pluginDetailMsg{detail: detail, err: err}
 	}
 }
@@ -111,10 +114,11 @@ func (v PluginDetailView) UpdateDetail(msg tea.Msg) (PluginDetailView, tea.Cmd) 
 				// Rate with score 5 (simplified; real UI would prompt).
 				ctx := v.ctx
 				ctrl := v.ctrl
+				pluginType := v.pluginType
 				publisher := v.publisher
 				name := v.name
 				return v, func() tea.Msg {
-					err := ctrl.RatePlugin(ctx, publisher, name, zhiui.Rating{Score: 5})
+					err := ctrl.RatePlugin(ctx, pluginType, publisher, name, zhiui.Rating{Score: 5})
 					if err != nil {
 						return errMsg{err: err}
 					}

@@ -45,7 +45,7 @@ type Controller interface {
 	// SearchMarketplace queries the marketplace for plugins or workspaces.
 	SearchMarketplace(ctx context.Context, query MarketplaceQuery) (*MarketplaceResults, error)
 	// GetMarketplaceDetail returns detailed information about a marketplace artifact.
-	GetMarketplaceDetail(ctx context.Context, publisher, name string) (*MarketplaceDetail, error)
+	GetMarketplaceDetail(ctx context.Context, pluginType, publisher, name string) (*MarketplaceDetail, error)
 	// InstallPlugin downloads and installs a plugin from an OCI reference.
 	InstallPlugin(ctx context.Context, ref string) (*InstallResult, error)
 	// UninstallPlugin removes an installed plugin.
@@ -57,7 +57,7 @@ type Controller interface {
 	// UpdatePlugin updates a specific plugin to the latest (or specified) version.
 	UpdatePlugin(ctx context.Context, name string, version string) (*InstallResult, error)
 	// RatePlugin submits a rating for a marketplace plugin.
-	RatePlugin(ctx context.Context, publisher, name string, rating Rating) error
+	RatePlugin(ctx context.Context, pluginType, publisher, name string, rating Rating) error
 }
 
 // Plugin is the interface every zhi UI plugin must implement.

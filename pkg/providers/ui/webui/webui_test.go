@@ -138,7 +138,7 @@ func (m *mockController) SearchMarketplace(_ context.Context, q ui.MarketplaceQu
 	return &ui.MarketplaceResults{Total: len(results), Results: results}, nil
 }
 
-func (m *mockController) GetMarketplaceDetail(_ context.Context, publisher, name string) (*ui.MarketplaceDetail, error) {
+func (m *mockController) GetMarketplaceDetail(_ context.Context, _, publisher, name string) (*ui.MarketplaceDetail, error) {
 	return &ui.MarketplaceDetail{
 		MarketplaceEntry: ui.MarketplaceEntry{
 			Name:          name,
@@ -197,7 +197,7 @@ func (m *mockController) UpdatePlugin(_ context.Context, name, version string) (
 	return &ui.InstallResult{Name: name, Version: version}, nil
 }
 
-func (m *mockController) RatePlugin(_ context.Context, _, _ string, _ ui.Rating) error {
+func (m *mockController) RatePlugin(_ context.Context, _, _, _ string, _ ui.Rating) error {
 	return nil
 }
 
@@ -1381,7 +1381,7 @@ func TestMarketplaceInstalledBadge(t *testing.T) {
 
 func TestPluginDetailPage(t *testing.T) {
 	base, _ := startTestServer(t)
-	resp := get(t, base+"/marketplace/hashicorp/zhi-store-vault")
+	resp := get(t, base+"/marketplace/store/hashicorp/zhi-store-vault")
 	body := bodyString(t, resp)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d, want 200", resp.StatusCode)
@@ -1405,7 +1405,7 @@ func TestPluginDetailPage(t *testing.T) {
 
 func TestPluginDetailHasRatingForm(t *testing.T) {
 	base, _ := startTestServer(t)
-	resp := get(t, base+"/marketplace/hashicorp/zhi-store-vault")
+	resp := get(t, base+"/marketplace/store/hashicorp/zhi-store-vault")
 	body := bodyString(t, resp)
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d, want 200", resp.StatusCode)
@@ -1421,7 +1421,7 @@ func TestPluginDetailHasRatingForm(t *testing.T) {
 func TestRatePlugin(t *testing.T) {
 	base, _ := startTestServer(t)
 	token, cookies := getCSRFToken(t, base)
-	resp := postWithCSRF(t, base+"/marketplace/hashicorp/zhi-store-vault/rate", "score=5&comment=Great+plugin", token, cookies)
+	resp := postWithCSRF(t, base+"/marketplace/store/hashicorp/zhi-store-vault/rate", "score=5&comment=Great+plugin", token, cookies)
 	resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("status = %d, want 200", resp.StatusCode)
@@ -1438,7 +1438,7 @@ func TestRatePlugin(t *testing.T) {
 func TestRatePluginInvalidScore(t *testing.T) {
 	base, _ := startTestServer(t)
 	token, cookies := getCSRFToken(t, base)
-	resp := postWithCSRF(t, base+"/marketplace/hashicorp/zhi-store-vault/rate", "score=0", token, cookies)
+	resp := postWithCSRF(t, base+"/marketplace/store/hashicorp/zhi-store-vault/rate", "score=0", token, cookies)
 	resp.Body.Close()
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Errorf("status = %d, want 400", resp.StatusCode)
@@ -1836,11 +1836,11 @@ func (m *errorMockController) SearchMarketplace(ctx context.Context, q ui.Market
 	return m.mockController.SearchMarketplace(ctx, q)
 }
 
-func (m *errorMockController) GetMarketplaceDetail(ctx context.Context, publisher, name string) (*ui.MarketplaceDetail, error) {
+func (m *errorMockController) GetMarketplaceDetail(ctx context.Context, pluginType, publisher, name string) (*ui.MarketplaceDetail, error) {
 	if m.getDetailErr != nil {
 		return nil, m.getDetailErr
 	}
-	return m.mockController.GetMarketplaceDetail(ctx, publisher, name)
+	return m.mockController.GetMarketplaceDetail(ctx, pluginType, publisher, name)
 }
 
 func (m *errorMockController) InstallPlugin(ctx context.Context, ref string) (*ui.InstallResult, error) {
@@ -1864,11 +1864,11 @@ func (m *errorMockController) CheckUpdates(ctx context.Context) ([]ui.PluginUpda
 	return m.mockController.CheckUpdates(ctx)
 }
 
-func (m *errorMockController) RatePlugin(ctx context.Context, pub, name string, r ui.Rating) error {
+func (m *errorMockController) RatePlugin(ctx context.Context, pluginType, pub, name string, r ui.Rating) error {
 	if m.ratePluginErr != nil {
 		return m.ratePluginErr
 	}
-	return m.mockController.RatePlugin(ctx, pub, name, r)
+	return m.mockController.RatePlugin(ctx, pluginType, pub, name, r)
 }
 
 // startTestServerWithCtrl is like startTestServer but with a custom controller.
@@ -2041,7 +2041,7 @@ func TestPluginDetailError(t *testing.T) {
 		getDetailErr:   errors.New("not found"),
 	}
 	base, _ := startTestServerWithCtrl(t, ctrl)
-	resp := get(t, base+"/marketplace/test/plugin")
+	resp := get(t, base+"/marketplace/config/test/plugin")
 	body := bodyString(t, resp)
 	if resp.StatusCode != http.StatusNotFound {
 		t.Errorf("status = %d, want 404; body = %s", resp.StatusCode, body)
@@ -2082,7 +2082,7 @@ func TestRatePluginError(t *testing.T) {
 	}
 	base, _ := startTestServerWithCtrl(t, ctrl)
 	token, cookies := getCSRFToken(t, base)
-	resp := postWithCSRF(t, base+"/marketplace/test/plugin/rate", "score=5", token, cookies)
+	resp := postWithCSRF(t, base+"/marketplace/config/test/plugin/rate", "score=5", token, cookies)
 	resp.Body.Close()
 	if resp.StatusCode != http.StatusInternalServerError {
 		t.Errorf("status = %d, want 500", resp.StatusCode)
@@ -2104,7 +2104,7 @@ func TestCSRFRejectionAllPOSTs(t *testing.T) {
 		"/export",
 		"/export/all",
 		"/apply/run",
-		"/marketplace/hashicorp/zhi-store-vault/rate",
+		"/marketplace/store/hashicorp/zhi-store-vault/rate",
 		"/plugins/install",
 		"/plugins/zhi-store-vault/uninstall",
 		"/plugins/zhi-store-vault/update",

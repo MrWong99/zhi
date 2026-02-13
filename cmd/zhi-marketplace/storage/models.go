@@ -120,8 +120,10 @@ type Store interface {
 
 	// CreateArtifact registers a new plugin or workspace.
 	CreateArtifact(art *Artifact) error
-	// GetArtifact retrieves an artifact by publisher and name.
-	GetArtifact(publisher, name string) (*Artifact, error)
+	// GetArtifact retrieves an artifact by publisher, name, and type.
+	// If pluginType is empty, the first matching artifact is returned
+	// (for backward compatibility with routes that don't include type).
+	GetArtifact(publisher, name, pluginType string) (*Artifact, error)
 	// UpdateArtifact updates an existing artifact.
 	UpdateArtifact(art *Artifact) error
 	// Search performs full-text search across artifacts.

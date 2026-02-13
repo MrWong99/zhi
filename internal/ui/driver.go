@@ -306,7 +306,11 @@ func (c *UIController) SearchMarketplace(ctx context.Context, query zhiui.Market
 
 	results := make([]zhiui.MarketplaceEntry, 0, len(resp.Results))
 	for _, r := range resp.Results {
-		publisher, name := splitPublisher(r.Name)
+		publisher := r.Author
+		name := r.Name
+		if publisher == "" {
+			publisher, name = splitPublisher(r.Name)
+		}
 		results = append(results, zhiui.MarketplaceEntry{
 			Name:          name,
 			Publisher:     publisher,
@@ -328,12 +332,12 @@ func (c *UIController) SearchMarketplace(ctx context.Context, query zhiui.Market
 }
 
 // GetMarketplaceDetail returns detailed information about a marketplace artifact.
-func (c *UIController) GetMarketplaceDetail(ctx context.Context, publisher, name string) (*zhiui.MarketplaceDetail, error) {
+func (c *UIController) GetMarketplaceDetail(ctx context.Context, pluginType, publisher, name string) (*zhiui.MarketplaceDetail, error) {
 	if c.marketplace == nil {
 		return nil, c.marketplaceError()
 	}
 
-	detail, err := c.marketplace.GetPlugin(ctx, publisher, name)
+	detail, err := c.marketplace.GetPlugin(ctx, pluginType, publisher, name)
 	if err != nil {
 		return nil, fmt.Errorf("getting marketplace detail: %w", err)
 	}
@@ -399,12 +403,12 @@ func (c *UIController) UpdatePlugin(_ context.Context, _, _ string) (*zhiui.Inst
 }
 
 // RatePlugin submits a rating for a marketplace plugin.
-func (c *UIController) RatePlugin(ctx context.Context, publisher, name string, rating zhiui.Rating) error {
+func (c *UIController) RatePlugin(ctx context.Context, pluginType, publisher, name string, rating zhiui.Rating) error {
 	if c.marketplace == nil {
 		return c.marketplaceError()
 	}
 
-	return c.marketplace.SubmitRating(ctx, publisher, name, marketplace.SubmitRatingRequest{
+	return c.marketplace.SubmitRating(ctx, pluginType, publisher, name, marketplace.SubmitRatingRequest{
 		Score:   rating.Score,
 		Comment: rating.Comment,
 	})

@@ -129,13 +129,13 @@ func (s *server) registerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/components/{name}/enable", s.handleEnableComponent)
 	mux.HandleFunc("POST /api/components/{name}/disable", s.handleDisableComponent)
 	mux.HandleFunc("POST /api/marketplace/search", s.handleSearchMarketplace)
-	mux.HandleFunc("GET /api/marketplace/detail/{publisher}/{name}", s.handleGetMarketplaceDetail)
+	mux.HandleFunc("GET /api/marketplace/detail/{type}/{publisher}/{name}", s.handleGetMarketplaceDetail)
 	mux.HandleFunc("POST /api/plugins/install", s.handleInstallPlugin)
 	mux.HandleFunc("DELETE /api/plugins/{name}", s.handleUninstallPlugin)
 	mux.HandleFunc("GET /api/plugins", s.handleListInstalledPlugins)
 	mux.HandleFunc("GET /api/plugins/updates", s.handleCheckUpdates)
 	mux.HandleFunc("POST /api/plugins/{name}/update", s.handleUpdatePlugin)
-	mux.HandleFunc("POST /api/marketplace/{publisher}/{name}/rate", s.handleRatePlugin)
+	mux.HandleFunc("POST /api/marketplace/{type}/{publisher}/{name}/rate", s.handleRatePlugin)
 }
 
 // ---------- handlers ----------
@@ -400,9 +400,10 @@ func (s *server) handleSearchMarketplace(w http.ResponseWriter, r *http.Request)
 }
 
 func (s *server) handleGetMarketplaceDetail(w http.ResponseWriter, r *http.Request) {
+	pluginType := r.PathValue("type")
 	publisher := r.PathValue("publisher")
 	name := r.PathValue("name")
-	detail, err := s.ctrl.GetMarketplaceDetail(r.Context(), publisher, name)
+	detail, err := s.ctrl.GetMarketplaceDetail(r.Context(), pluginType, publisher, name)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
@@ -472,6 +473,7 @@ func (s *server) handleUpdatePlugin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) handleRatePlugin(w http.ResponseWriter, r *http.Request) {
+	pluginType := r.PathValue("type")
 	publisher := r.PathValue("publisher")
 	name := r.PathValue("name")
 	var body struct {
@@ -482,7 +484,7 @@ func (s *server) handleRatePlugin(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, fmt.Errorf("invalid JSON: %w", err))
 		return
 	}
-	if err := s.ctrl.RatePlugin(r.Context(), publisher, name, ui.Rating{
+	if err := s.ctrl.RatePlugin(r.Context(), pluginType, publisher, name, ui.Rating{
 		Score:   body.Score,
 		Comment: body.Comment,
 	}); err != nil {
