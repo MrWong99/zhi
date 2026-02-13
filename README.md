@@ -2,7 +2,7 @@
 
 # zhi
 
-[![Go](https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat&logo=go)](https://go.dev)
+[![Go](https://img.shields.io/badge/Go-1.26+-00ADD8?style=flat&logo=go)](https://go.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
 
@@ -36,7 +36,7 @@ Core principles:
 
 ### Prerequisites
 
-- Go 1.25+ (only needed when building from source)
+- Go 1.26+ (only needed when building from source)
 
 ### Installation
 

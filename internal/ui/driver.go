@@ -417,8 +417,8 @@ func (c *UIController) RatePlugin(ctx context.Context, pluginType, publisher, na
 // splitPublisher splits "publisher/name" into its parts. If there is no
 // slash the entire string is returned as the name with an empty publisher.
 func splitPublisher(s string) (publisher, name string) {
-	if i := strings.Index(s, "/"); i >= 0 {
-		return s[:i], s[i+1:]
+	if before, after, ok := strings.Cut(s, "/"); ok {
+		return before, after
 	}
 	return "", s
 }

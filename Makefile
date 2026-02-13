@@ -190,7 +190,7 @@ lint-fix: ## Run golangci-lint with auto-fix
 
 .PHONY: modernize
 modernize: ## Check for modern Go code
-	modernize ./...
+	go fix ./...
 
 .PHONY: modernize-fix
 modernize-fix: ## Write modern Go code
@@ -215,9 +215,8 @@ deps: ## Download module dependencies
 tools: ## Install required development tools
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-	go install golang.org/x/tools/go/analysis/passes/modernize/cmd/modernize@latest
 	go install github.com/goreleaser/goreleaser/v2@latest
-	curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(GOPATH)/bin v2.8.0
+	curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(GOPATH)/bin v2.9.0
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Release

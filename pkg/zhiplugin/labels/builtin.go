@@ -1,10 +1,5 @@
 package labels
 
-// ptr returns a pointer to the given value.
-func ptr[T any](v T) *T {
-	return &v
-}
-
 // registerBuiltinLabels registers all built-in labels with the given registry.
 func registerBuiltinLabels(r *Registry) {
 	// UI namespace labels
@@ -234,7 +229,7 @@ var storeLabels = []*Label{
 		ValueType:   "int",
 		AppliesTo:   []string{"store"},
 		Constraints: &Constraints{
-			Min: ptr(0.0),
+			Min: new(float64(0.0)),
 		},
 		Since: "0.1.0",
 	},
@@ -245,7 +240,7 @@ var storeLabels = []*Label{
 		ValueType:   "int",
 		AppliesTo:   []string{"store"},
 		Constraints: &Constraints{
-			Min: ptr(1.0),
+			Min: new(float64(1.0)),
 		},
 		Examples: []Example{
 			{Value: 5, Description: "Keep at most 5 versions"},

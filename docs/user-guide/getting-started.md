@@ -4,7 +4,7 @@ This guide walks you through installing zhi and creating your first workspace.
 
 ## Prerequisites
 
-- **Go 1.25+** (only needed when building from source)
+- **Go 1.26+** (only needed when building from source)
 
 ## Installation
 
