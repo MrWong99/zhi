@@ -26,6 +26,7 @@ func (s *Server) handleExportPage(w http.ResponseWriter, r *http.Request) {
 		ActiveNav:       "export",
 		Nonce:           nonceFromCtx(ctx),
 		CSRFToken:       csrfFromCtx(ctx),
+		Authenticated:   authenticatedFromCtx(ctx),
 		ExportTemplates: toExportTemplateData(templates),
 		Breadcrumbs: []breadcrumb{
 			{Label: "Export", Href: "/export"},

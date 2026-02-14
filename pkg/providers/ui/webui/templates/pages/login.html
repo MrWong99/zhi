@@ -1,0 +1,67 @@
+{{define "title"}}Login{{end}}
+
+{{define "content"}}
+<div class="login-container">
+  <div class="login-card">
+    <div class="login-header">
+      <h1>zhi</h1>
+      {{if .WorkspaceName}}
+        <p class="login-workspace">{{.WorkspaceName}}</p>
+      {{end}}
+      <p class="login-subtitle">Sign in to continue</p>
+    </div>
+
+    {{if .LoginError}}
+      <div class="login-error" role="alert">
+        {{icon "alert"}} {{.LoginError}}
+      </div>
+    {{end}}
+
+    {{if .AuthMethods}}
+      <form method="POST" action="/login" class="login-form">
+        {{csrfField .}}
+
+        {{if gt (len .AuthMethods) 1}}
+          <div class="form-group">
+            <label for="method">Authentication Method</label>
+            <select id="method" name="method" onchange="this.form.action='/login?method='+this.value; window.location='/login?method='+this.value;">
+              {{range .AuthMethods}}
+                <option value="{{.Type}}" {{if eq .Type $.SelectedMethod}}selected{{end}}>
+                  {{.Description}}
+                </option>
+              {{end}}
+            </select>
+          </div>
+        {{end}}
+
+        {{range .AuthMethods}}
+          {{if eq .Type $.SelectedMethod}}
+            {{if le (len $.AuthMethods) 1}}
+              <input type="hidden" name="method" value="{{.Type}}">
+            {{end}}
+            {{range .Fields}}
+              <div class="form-group">
+                <label for="cred_{{.Name}}">{{.Description}}</label>
+                {{if .Secret}}
+                  <input type="password" id="cred_{{.Name}}" name="cred_{{.Name}}"
+                         autocomplete="current-password"
+                         {{if .Required}}required{{end}}
+                         placeholder="{{.Description}}">
+                {{else}}
+                  <input type="text" id="cred_{{.Name}}" name="cred_{{.Name}}"
+                         {{if .Required}}required{{end}}
+                         placeholder="{{.Description}}">
+                {{end}}
+              </div>
+            {{end}}
+          {{end}}
+        {{end}}
+
+        <button type="submit" class="btn btn-primary login-btn">Login</button>
+      </form>
+    {{else}}
+      <p class="login-no-methods">No authentication methods available.</p>
+    {{end}}
+  </div>
+</div>
+{{end}}

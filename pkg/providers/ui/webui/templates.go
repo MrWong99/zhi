@@ -17,6 +17,7 @@ type contextKey int
 const (
 	nonceCtxKey contextKey = iota
 	csrfCtxKey
+	authenticatedCtxKey
 )
 
 // templateEngine parses and renders HTML templates from the embedded FS.
@@ -206,6 +207,13 @@ func csrfFromCtx(ctx context.Context) string {
 	return ""
 }
 
+// authenticatedFromCtx returns true if the requireAuth middleware
+// determined the user is authenticated.
+func authenticatedFromCtx(ctx context.Context) bool {
+	v, _ := ctx.Value(authenticatedCtxKey).(bool)
+	return v
+}
+
 // Template function implementations. Each receives the page data which
 // carries context values via the PageData struct.
 
@@ -248,6 +256,7 @@ func iconFunc(name string) template.HTML {
 		"shield":      `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
 		"trash":       `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>`,
 		"refresh":     `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>`,
+		"lock":        `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>`,
 	}
 	if svg, ok := icons[name]; ok {
 		//nolint:gosec // SVG icons are static, developer-controlled content.
@@ -330,6 +339,12 @@ type pageData struct {
 	// Installed plugins page data.
 	InstalledPlugins []installedPluginData
 	PluginUpdates    int
+
+	// Login page data.
+	AuthMethods    []authMethodData
+	SelectedMethod string
+	LoginError     string
+	Authenticated  bool
 
 	// Error page data.
 	StatusCode int

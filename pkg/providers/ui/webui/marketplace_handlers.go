@@ -25,6 +25,7 @@ func (s *Server) handleMarketplacePage(w http.ResponseWriter, r *http.Request) {
 			ActiveNav:          "marketplace",
 			Nonce:              nonceFromCtx(ctx),
 			CSRFToken:          csrfFromCtx(ctx),
+			Authenticated:      authenticatedFromCtx(ctx),
 			MarketplaceError:   "Marketplace is currently unavailable: " + err.Error(),
 			MarketplaceQuery:   query.Query,
 			MarketplaceType:    query.Type,
@@ -51,6 +52,7 @@ func (s *Server) handleMarketplacePage(w http.ResponseWriter, r *http.Request) {
 		ActiveNav:            "marketplace",
 		Nonce:                nonceFromCtx(ctx),
 		CSRFToken:            csrfFromCtx(ctx),
+		Authenticated:        authenticatedFromCtx(ctx),
 		MarketplaceResults:   toMarketplaceCardData(results.Results),
 		MarketplaceTotal:     results.Total,
 		MarketplaceQuery:     query.Query,
@@ -101,6 +103,7 @@ func (s *Server) handlePluginDetail(w http.ResponseWriter, r *http.Request) {
 		ActiveNav:     "marketplace",
 		Nonce:         nonceFromCtx(ctx),
 		CSRFToken:     csrfFromCtx(ctx),
+		Authenticated: authenticatedFromCtx(ctx),
 		PluginDetail:  toPluginDetailData(detail),
 		Breadcrumbs: []breadcrumb{
 			{Label: "Marketplace", Href: "/marketplace"},
