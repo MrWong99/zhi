@@ -58,6 +58,18 @@ type Controller interface {
 	UpdatePlugin(ctx context.Context, name string, version string) (*InstallResult, error)
 	// RatePlugin submits a rating for a marketplace plugin.
 	RatePlugin(ctx context.Context, pluginType, publisher, name string, rating Rating) error
+
+	// StoreAuthMethods returns the authentication methods supported by the
+	// configured store plugin. Returns nil if no store is configured or
+	// authentication is not required.
+	StoreAuthMethods(ctx context.Context) ([]StoreAuthMethod, error)
+	// StoreLogin authenticates with the store using the specified method
+	// and credentials. Returns the session status after the attempt.
+	StoreLogin(ctx context.Context, method string, credentials map[string]string) (*StoreSession, error)
+	// StoreAuthStatus returns the current authentication status.
+	StoreAuthStatus(ctx context.Context) (*StoreSession, error)
+	// StoreLogout clears the current authentication session.
+	StoreLogout(ctx context.Context) error
 }
 
 // Plugin is the interface every zhi UI plugin must implement.

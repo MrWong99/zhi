@@ -298,3 +298,61 @@ func (s *controllerGRPCServer) RatePlugin(ctx context.Context, req *pb.CtrlRateP
 	}
 	return &pb.CtrlRatePluginResponse{}, nil
 }
+
+func (s *controllerGRPCServer) StoreAuthMethods(ctx context.Context, _ *pb.CtrlStoreAuthMethodsRequest) (*pb.CtrlStoreAuthMethodsResponse, error) {
+	methods, err := s.impl.StoreAuthMethods(ctx)
+	if err != nil {
+		return nil, err
+	}
+	msgs := make([]*pb.CtrlStoreAuthMethodMsg, 0, len(methods))
+	for _, m := range methods {
+		fields := make([]*pb.CtrlStoreAuthFieldMsg, 0, len(m.Fields))
+		for _, f := range m.Fields {
+			fields = append(fields, &pb.CtrlStoreAuthFieldMsg{
+				Name:        f.Name,
+				Description: f.Description,
+				Required:    f.Required,
+				Secret:      f.Secret,
+			})
+		}
+		msgs = append(msgs, &pb.CtrlStoreAuthMethodMsg{
+			Type:        m.Type,
+			Description: m.Description,
+			Fields:      fields,
+		})
+	}
+	return &pb.CtrlStoreAuthMethodsResponse{Methods: msgs}, nil
+}
+
+func (s *controllerGRPCServer) StoreLogin(ctx context.Context, req *pb.CtrlStoreLoginRequest) (*pb.CtrlStoreLoginResponse, error) {
+	session, err := s.impl.StoreLogin(ctx, req.GetMethod(), req.GetCredentials())
+	if err != nil {
+		return nil, err
+	}
+	return &pb.CtrlStoreLoginResponse{
+		SessionId: session.SessionID,
+		Status:    string(session.Status),
+		ExpiresAt: session.ExpiresAt,
+		Metadata:  session.Metadata,
+	}, nil
+}
+
+func (s *controllerGRPCServer) StoreAuthStatus(ctx context.Context, _ *pb.CtrlStoreAuthStatusRequest) (*pb.CtrlStoreAuthStatusResponse, error) {
+	session, err := s.impl.StoreAuthStatus(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.CtrlStoreAuthStatusResponse{
+		SessionId: session.SessionID,
+		Status:    string(session.Status),
+		ExpiresAt: session.ExpiresAt,
+		Metadata:  session.Metadata,
+	}, nil
+}
+
+func (s *controllerGRPCServer) StoreLogout(ctx context.Context, _ *pb.CtrlStoreLogoutRequest) (*pb.CtrlStoreLogoutResponse, error) {
+	if err := s.impl.StoreLogout(ctx); err != nil {
+		return nil, err
+	}
+	return &pb.CtrlStoreLogoutResponse{}, nil
+}

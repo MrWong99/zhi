@@ -197,6 +197,10 @@ const (
 	UIControllerService_CheckUpdates_FullMethodName         = "/zhiplugin.v1.UIControllerService/CheckUpdates"
 	UIControllerService_UpdatePlugin_FullMethodName         = "/zhiplugin.v1.UIControllerService/UpdatePlugin"
 	UIControllerService_RatePlugin_FullMethodName           = "/zhiplugin.v1.UIControllerService/RatePlugin"
+	UIControllerService_StoreAuthMethods_FullMethodName     = "/zhiplugin.v1.UIControllerService/StoreAuthMethods"
+	UIControllerService_StoreLogin_FullMethodName           = "/zhiplugin.v1.UIControllerService/StoreLogin"
+	UIControllerService_StoreAuthStatus_FullMethodName      = "/zhiplugin.v1.UIControllerService/StoreAuthStatus"
+	UIControllerService_StoreLogout_FullMethodName          = "/zhiplugin.v1.UIControllerService/StoreLogout"
 )
 
 // UIControllerServiceClient is the client API for UIControllerService service.
@@ -244,6 +248,14 @@ type UIControllerServiceClient interface {
 	UpdatePlugin(ctx context.Context, in *CtrlUpdatePluginRequest, opts ...grpc.CallOption) (*CtrlUpdatePluginResponse, error)
 	// RatePlugin submits a rating for a marketplace plugin.
 	RatePlugin(ctx context.Context, in *CtrlRatePluginRequest, opts ...grpc.CallOption) (*CtrlRatePluginResponse, error)
+	// StoreAuthMethods returns the auth methods supported by the configured store.
+	StoreAuthMethods(ctx context.Context, in *CtrlStoreAuthMethodsRequest, opts ...grpc.CallOption) (*CtrlStoreAuthMethodsResponse, error)
+	// StoreLogin authenticates with the store using the given method and credentials.
+	StoreLogin(ctx context.Context, in *CtrlStoreLoginRequest, opts ...grpc.CallOption) (*CtrlStoreLoginResponse, error)
+	// StoreAuthStatus returns the current authentication status.
+	StoreAuthStatus(ctx context.Context, in *CtrlStoreAuthStatusRequest, opts ...grpc.CallOption) (*CtrlStoreAuthStatusResponse, error)
+	// StoreLogout clears the current authentication session.
+	StoreLogout(ctx context.Context, in *CtrlStoreLogoutRequest, opts ...grpc.CallOption) (*CtrlStoreLogoutResponse, error)
 }
 
 type uIControllerServiceClient struct {
@@ -453,6 +465,46 @@ func (c *uIControllerServiceClient) RatePlugin(ctx context.Context, in *CtrlRate
 	return out, nil
 }
 
+func (c *uIControllerServiceClient) StoreAuthMethods(ctx context.Context, in *CtrlStoreAuthMethodsRequest, opts ...grpc.CallOption) (*CtrlStoreAuthMethodsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CtrlStoreAuthMethodsResponse)
+	err := c.cc.Invoke(ctx, UIControllerService_StoreAuthMethods_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *uIControllerServiceClient) StoreLogin(ctx context.Context, in *CtrlStoreLoginRequest, opts ...grpc.CallOption) (*CtrlStoreLoginResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CtrlStoreLoginResponse)
+	err := c.cc.Invoke(ctx, UIControllerService_StoreLogin_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *uIControllerServiceClient) StoreAuthStatus(ctx context.Context, in *CtrlStoreAuthStatusRequest, opts ...grpc.CallOption) (*CtrlStoreAuthStatusResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CtrlStoreAuthStatusResponse)
+	err := c.cc.Invoke(ctx, UIControllerService_StoreAuthStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *uIControllerServiceClient) StoreLogout(ctx context.Context, in *CtrlStoreLogoutRequest, opts ...grpc.CallOption) (*CtrlStoreLogoutResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CtrlStoreLogoutResponse)
+	err := c.cc.Invoke(ctx, UIControllerService_StoreLogout_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UIControllerServiceServer is the server API for UIControllerService service.
 // All implementations must embed UnimplementedUIControllerServiceServer
 // for forward compatibility.
@@ -498,6 +550,14 @@ type UIControllerServiceServer interface {
 	UpdatePlugin(context.Context, *CtrlUpdatePluginRequest) (*CtrlUpdatePluginResponse, error)
 	// RatePlugin submits a rating for a marketplace plugin.
 	RatePlugin(context.Context, *CtrlRatePluginRequest) (*CtrlRatePluginResponse, error)
+	// StoreAuthMethods returns the auth methods supported by the configured store.
+	StoreAuthMethods(context.Context, *CtrlStoreAuthMethodsRequest) (*CtrlStoreAuthMethodsResponse, error)
+	// StoreLogin authenticates with the store using the given method and credentials.
+	StoreLogin(context.Context, *CtrlStoreLoginRequest) (*CtrlStoreLoginResponse, error)
+	// StoreAuthStatus returns the current authentication status.
+	StoreAuthStatus(context.Context, *CtrlStoreAuthStatusRequest) (*CtrlStoreAuthStatusResponse, error)
+	// StoreLogout clears the current authentication session.
+	StoreLogout(context.Context, *CtrlStoreLogoutRequest) (*CtrlStoreLogoutResponse, error)
 	mustEmbedUnimplementedUIControllerServiceServer()
 }
 
@@ -564,6 +624,18 @@ func (UnimplementedUIControllerServiceServer) UpdatePlugin(context.Context, *Ctr
 }
 func (UnimplementedUIControllerServiceServer) RatePlugin(context.Context, *CtrlRatePluginRequest) (*CtrlRatePluginResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RatePlugin not implemented")
+}
+func (UnimplementedUIControllerServiceServer) StoreAuthMethods(context.Context, *CtrlStoreAuthMethodsRequest) (*CtrlStoreAuthMethodsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method StoreAuthMethods not implemented")
+}
+func (UnimplementedUIControllerServiceServer) StoreLogin(context.Context, *CtrlStoreLoginRequest) (*CtrlStoreLoginResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method StoreLogin not implemented")
+}
+func (UnimplementedUIControllerServiceServer) StoreAuthStatus(context.Context, *CtrlStoreAuthStatusRequest) (*CtrlStoreAuthStatusResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method StoreAuthStatus not implemented")
+}
+func (UnimplementedUIControllerServiceServer) StoreLogout(context.Context, *CtrlStoreLogoutRequest) (*CtrlStoreLogoutResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method StoreLogout not implemented")
 }
 func (UnimplementedUIControllerServiceServer) mustEmbedUnimplementedUIControllerServiceServer() {}
 func (UnimplementedUIControllerServiceServer) testEmbeddedByValue()                             {}
@@ -921,6 +993,78 @@ func _UIControllerService_RatePlugin_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UIControllerService_StoreAuthMethods_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CtrlStoreAuthMethodsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UIControllerServiceServer).StoreAuthMethods(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UIControllerService_StoreAuthMethods_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UIControllerServiceServer).StoreAuthMethods(ctx, req.(*CtrlStoreAuthMethodsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UIControllerService_StoreLogin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CtrlStoreLoginRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UIControllerServiceServer).StoreLogin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UIControllerService_StoreLogin_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UIControllerServiceServer).StoreLogin(ctx, req.(*CtrlStoreLoginRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UIControllerService_StoreAuthStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CtrlStoreAuthStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UIControllerServiceServer).StoreAuthStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UIControllerService_StoreAuthStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UIControllerServiceServer).StoreAuthStatus(ctx, req.(*CtrlStoreAuthStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UIControllerService_StoreLogout_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CtrlStoreLogoutRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UIControllerServiceServer).StoreLogout(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UIControllerService_StoreLogout_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UIControllerServiceServer).StoreLogout(ctx, req.(*CtrlStoreLogoutRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UIControllerService_ServiceDesc is the grpc.ServiceDesc for UIControllerService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -999,6 +1143,22 @@ var UIControllerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RatePlugin",
 			Handler:    _UIControllerService_RatePlugin_Handler,
+		},
+		{
+			MethodName: "StoreAuthMethods",
+			Handler:    _UIControllerService_StoreAuthMethods_Handler,
+		},
+		{
+			MethodName: "StoreLogin",
+			Handler:    _UIControllerService_StoreLogin_Handler,
+		},
+		{
+			MethodName: "StoreAuthStatus",
+			Handler:    _UIControllerService_StoreAuthStatus_Handler,
+		},
+		{
+			MethodName: "StoreLogout",
+			Handler:    _UIControllerService_StoreLogout_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
