@@ -89,16 +89,29 @@ checksum:
 
 changelog:
   sort: asc
-  filters:
-    exclude:
-      - "^docs:"
-      - "^test:"
-      - "^ci:"
-      - "^chore:"
+  use: github
 
 release:
   github:
     owner: MrWong99
     name: zhi
-  draft: true
+  draft: false
   prerelease: auto
+  name_template: "Version {{ .Version }}"
+  header: |
+    # zhi Release {{ .Version }} - {{ .Date }}
+  footer: |
+    ## Plugin OCI installs
+
+    ```sh
+    # "Production" plugins
+    zhi plugin install oci://ghcr.io/mrwong99/zhi/zhi-store-vault:{{ .Tag }}
+    zhi plugin install oci://ghcr.io/mrwong99/zhi/zhi-ui-webui:{{ .Tag }}
+
+    # Examples
+    zhi plugin install oci://ghcr.io/mrwong99/zhi/zhi-config-pokedex:{{ .Tag }}
+    zhi plugin install oci://ghcr.io/mrwong99/zhi/zhi-store-json:{{ .Tag }}
+    zhi plugin install oci://ghcr.io/mrwong99/zhi/zhi-store-memory:{{ .Tag }}
+    zhi plugin install oci://ghcr.io/mrwong99/zhi/zhi-transform-pokedex:{{ .Tag }}
+    zhi plugin install oci://ghcr.io/mrwong99/zhi/zhi-ui-httpapi:{{ .Tag }}
+    ```
