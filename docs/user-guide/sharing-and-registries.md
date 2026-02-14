@@ -247,6 +247,19 @@ zhi registry list               # List configured registries
 
 Credentials are stored in `~/.zhi/config.yaml` or delegated to Docker credential helpers.
 
+## Marketplace Server TLS
+
+The `zhi-marketplace` server supports TLS and mutual TLS (mTLS) using the same flags as `zhi-mirror`:
+
+```sh
+zhi-marketplace --listen :8443 \
+  --tls-cert /etc/zhi-marketplace/server.crt \
+  --tls-key /etc/zhi-marketplace/server.key \
+  --tls-min-version 1.3
+```
+
+For mTLS, add `--tls-client-ca /path/to/client-ca.crt`. See [Enterprise Mirror](enterprise-mirror.md#tls-configuration) for the full flag reference.
+
 ## Global Configuration
 
 Configure sharing defaults in `~/.zhi/config.yaml`:

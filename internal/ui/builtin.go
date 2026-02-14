@@ -55,6 +55,21 @@ func NewWebUIProvider(_ string, options map[string]any) (zhiui.Plugin, error) {
 		if v, ok := options["template_dir"].(string); ok {
 			cfg.TemplateDir = v
 		}
+		if v, ok := options["tls_cert"].(string); ok {
+			cfg.TLSCert = v
+		}
+		if v, ok := options["tls_key"].(string); ok {
+			cfg.TLSKey = v
+		}
+		if v, ok := options["tls_client_ca"].(string); ok {
+			cfg.TLSClientCA = v
+		}
+		if v, ok := options["tls_min_version"].(string); ok {
+			cfg.TLSMinVersion = v
+		}
+		if v, ok := options["tls_cipher_suites"].([]string); ok {
+			cfg.TLSCipherSuites = v
+		}
 	}
 	return webui.New(cfg), nil
 }
