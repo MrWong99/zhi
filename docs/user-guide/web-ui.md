@@ -33,6 +33,11 @@ zhi edit --ui webui
 | `ZHI_WEBUI_AUTO_OPEN` | Open browser on start (`true`/`false`) | `true` |
 | `ZHI_WEBUI_DEV` | Enable developer mode (`true`/`false`) | `false` |
 | `ZHI_WEBUI_TEMPLATE_DIR` | Filesystem path for template reloading (dev mode only) | _(none)_ |
+| `ZHI_WEBUI_TLS_CERT` | Path to TLS certificate PEM file | _(none)_ |
+| `ZHI_WEBUI_TLS_KEY` | Path to TLS private key PEM file | _(none)_ |
+| `ZHI_WEBUI_TLS_CLIENT_CA` | Path to CA PEM for client cert verification (mTLS) | _(none)_ |
+| `ZHI_WEBUI_TLS_MIN_VERSION` | Minimum TLS version (`1.2` or `1.3`) | `1.2` |
+| `ZHI_WEBUI_TLS_CIPHER_SUITES` | Comma-separated list of allowed cipher suites | Go defaults |
 
 ### Workspace Options
 
@@ -42,6 +47,11 @@ zhi edit --ui webui
 | `auto_open` | bool | Open browser automatically |
 | `dev_mode` | bool | Enable developer mode |
 | `template_dir` | string | Template directory for live reloading |
+| `tls_cert` | string | Path to TLS certificate PEM file |
+| `tls_key` | string | Path to TLS private key PEM file |
+| `tls_client_ca` | string | Path to CA PEM for client cert verification (mTLS) |
+| `tls_min_version` | string | Minimum TLS version (`1.2` or `1.3`) |
+| `tls_cipher_suites` | string[] | List of allowed TLS cipher suite names |
 
 ## Features
 
@@ -125,6 +135,48 @@ export ZHI_WEBUI_TEMPLATE_DIR=/path/to/zhi/pkg/providers/ui/webui
 In dev mode, templates are re-parsed from the filesystem on every request. This allows editing HTML templates and seeing changes immediately without rebuilding.
 
 Route registrations are logged at startup for debugging.
+
+## TLS Configuration
+
+The Web UI supports TLS and mutual TLS (mTLS) for encrypted and authenticated connections.
+
+### Enabling TLS
+
+Provide a certificate and key via environment variables:
+
+```sh
+export ZHI_WEBUI_TLS_CERT=/path/to/server.crt
+export ZHI_WEBUI_TLS_KEY=/path/to/server.key
+zhi edit --ui webui
+```
+
+Or via workspace options in `zhi.yaml`:
+
+```yaml
+ui:
+  provider: webui
+  options:
+    addr: "0.0.0.0:8443"
+    tls_cert: "/path/to/server.crt"
+    tls_key: "/path/to/server.key"
+    tls_min_version: "1.3"
+```
+
+### Mutual TLS (mTLS)
+
+Require client certificates for authentication:
+
+```yaml
+ui:
+  provider: webui
+  options:
+    addr: "0.0.0.0:8443"
+    tls_cert: "/path/to/server.crt"
+    tls_key: "/path/to/server.key"
+    tls_client_ca: "/path/to/client-ca.crt"
+```
+
+When `tls_client_ca` is set, clients must present a certificate signed by the specified CA.
 
 ## Security Features
 

@@ -247,6 +247,69 @@ zhi registry list               # List configured registries
 
 Credentials are stored in `~/.zhi/config.yaml` or delegated to Docker credential helpers.
 
+## Marketplace Server TLS
+
+The `zhi-marketplace` server supports TLS and mutual TLS (mTLS) using the same flags as `zhi-mirror`:
+
+```sh
+zhi-marketplace --listen :8443 \
+  --tls-cert /etc/zhi-marketplace/server.crt \
+  --tls-key /etc/zhi-marketplace/server.key \
+  --tls-min-version 1.3
+```
+
+For mTLS, add `--tls-client-ca /path/to/client-ca.crt`. See [Enterprise Mirror](enterprise-mirror.md#tls-configuration) for the full flag reference.
+
+## Client TLS (mTLS)
+
+When connecting to registries or marketplace servers that require mutual TLS, configure client certificates and custom CAs in `~/.zhi/config.yaml`.
+
+### Global Client TLS
+
+Applied to all outbound connections (registries and marketplace):
+
+```yaml
+tls:
+  certFile: /path/to/client.crt
+  keyFile: /path/to/client.key
+  caFile: /path/to/server-ca.crt
+```
+
+### Per-Registry Client TLS
+
+Override the global TLS settings for a specific registry:
+
+```yaml
+registries:
+  mirror.company.internal:5050:
+    username: myuser
+    password: mytoken
+    tls:
+      certFile: /path/to/client.crt
+      keyFile: /path/to/client.key
+      caFile: /path/to/mirror-ca.crt
+```
+
+Per-registry TLS settings take precedence over the global `tls` section.
+
+### Mirror Upstream Client TLS
+
+The `zhi-mirror` server can present client certificates when connecting to upstream registries that require mTLS:
+
+```sh
+zhi-mirror serve --listen :5050 \
+  --upstream-registry registry.internal \
+  --upstream-tls-cert /path/to/client.crt \
+  --upstream-tls-key /path/to/client.key \
+  --upstream-tls-ca /path/to/upstream-ca.crt
+```
+
+| Flag | Description |
+|------|-------------|
+| `--upstream-tls-cert` | Client certificate for upstream mTLS |
+| `--upstream-tls-key` | Client key for upstream mTLS |
+| `--upstream-tls-ca` | CA to verify upstream server certificate |
+
 ## Global Configuration
 
 Configure sharing defaults in `~/.zhi/config.yaml`:
@@ -256,6 +319,12 @@ default: ghcr.io
 marketplace:
   url: https://marketplace.zhi.dev
   apiKey: zhk_abc123...
+
+# Client TLS for mTLS connections (optional)
+tls:
+  certFile: /path/to/client.crt
+  keyFile: /path/to/client.key
+  caFile: /path/to/ca.crt
 
 # use the zhi registry login command to create this section
 registries:

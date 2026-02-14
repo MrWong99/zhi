@@ -22,13 +22,17 @@ type MarketplaceProxy struct {
 	cacheTTL time.Duration
 }
 
-// NewMarketplaceProxy creates a marketplace API proxy.
-func NewMarketplaceProxy(upstream string, meta *storage.MetadataStore, policy *Policy) *MarketplaceProxy {
+// NewMarketplaceProxy creates a marketplace API proxy. If httpClient is
+// nil, a default client with a 30-second timeout is used.
+func NewMarketplaceProxy(upstream string, meta *storage.MetadataStore, policy *Policy, httpClient *http.Client) *MarketplaceProxy {
+	if httpClient == nil {
+		httpClient = &http.Client{Timeout: 30 * time.Second}
+	}
 	return &MarketplaceProxy{
 		upstream: strings.TrimRight(upstream, "/"),
 		meta:     meta,
 		policy:   policy,
-		client:   &http.Client{Timeout: 30 * time.Second},
+		client:   httpClient,
 		cacheTTL: 5 * time.Minute,
 	}
 }

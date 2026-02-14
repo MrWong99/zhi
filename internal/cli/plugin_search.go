@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/spf13/cobra"
 
+	"github.com/MrWong99/zhi/internal/tlsutil"
 	"github.com/MrWong99/zhi/pkg/sharing/marketplace"
 	"github.com/MrWong99/zhi/pkg/sharing/registry"
 )
@@ -142,6 +144,21 @@ func newMarketplaceClient() (*marketplace.Client, error) {
 	var opts []marketplace.ClientOption
 	if key := regStore.MarketplaceAPIKey(); key != "" {
 		opts = append(opts, marketplace.WithAPIKey(key))
+	}
+
+	// Configure client TLS (mTLS / custom CA) if set.
+	tlsCfg := regStore.GlobalClientTLS()
+	clientTLS := &tlsutil.ClientConfig{
+		CertFile: tlsCfg.CertFile,
+		KeyFile:  tlsCfg.KeyFile,
+		CAFile:   tlsCfg.CAFile,
+	}
+	if clientTLS.Enabled() {
+		hc, err := clientTLS.HTTPClient(30 * time.Second)
+		if err != nil {
+			return nil, fmt.Errorf("configuring marketplace TLS: %w", err)
+		}
+		opts = append(opts, marketplace.WithHTTPClient(hc))
 	}
 
 	return marketplace.NewClient(baseURL, opts...), nil

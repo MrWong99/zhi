@@ -96,6 +96,52 @@ zhi-mirror export \
 zhi-mirror import --input bundle.tar
 ```
 
+## TLS Configuration
+
+Enable TLS to encrypt traffic between clients and the mirror. The mirror supports server-side TLS and mutual TLS (mTLS) for client certificate authentication.
+
+### Server TLS
+
+```sh
+zhi-mirror serve --listen :5050 \
+  --tls-cert /etc/zhi-mirror/server.crt \
+  --tls-key /etc/zhi-mirror/server.key
+```
+
+### Mutual TLS (mTLS)
+
+Require clients to present a certificate signed by a trusted CA:
+
+```sh
+zhi-mirror serve --listen :5050 \
+  --tls-cert /etc/zhi-mirror/server.crt \
+  --tls-key /etc/zhi-mirror/server.key \
+  --tls-client-ca /etc/zhi-mirror/client-ca.crt
+```
+
+### TLS Version and Cipher Suites
+
+Control the minimum TLS version and allowed cipher suites:
+
+```sh
+zhi-mirror serve --listen :5050 \
+  --tls-cert server.crt --tls-key server.key \
+  --tls-min-version 1.3 \
+  --tls-cipher-suites TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384
+```
+
+### TLS Flags Reference
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--tls-cert` | Path to TLS certificate PEM file | _(none)_ |
+| `--tls-key` | Path to TLS private key PEM file | _(none)_ |
+| `--tls-client-ca` | Path to CA PEM for client cert verification (mTLS) | _(none)_ |
+| `--tls-min-version` | Minimum TLS version (`1.2` or `1.3`) | `1.2` |
+| `--tls-cipher-suites` | Comma-separated list of allowed cipher suites | Go defaults |
+
+TLS is enabled when both `--tls-cert` and `--tls-key` are provided. Cipher suite names match the Go standard library names (e.g. `TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256`).
+
 ## See Also
 
 - [Sharing and Registries](sharing-and-registries.md) -- plugin sharing overview

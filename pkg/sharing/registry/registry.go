@@ -20,6 +20,10 @@ type Config struct {
 	Registries map[string]Entry `yaml:"registries,omitempty" json:"registries,omitempty"`
 	// Marketplace holds marketplace connection settings.
 	Marketplace MarketplaceConfig `yaml:"marketplace,omitempty" json:"marketplace"`
+	// TLS holds client-side TLS settings applied to all outbound
+	// connections (registries and marketplace). Per-registry TLS
+	// settings in [Entry] override these defaults.
+	TLS TLSConfig `yaml:"tls,omitempty" json:"tls,omitempty"`
 }
 
 // MarketplaceConfig holds configuration for connecting to a marketplace server.
@@ -30,6 +34,18 @@ type MarketplaceConfig struct {
 	APIKey string `yaml:"apiKey,omitempty" json:"apiKey,omitempty"`
 }
 
+// TLSConfig holds client-side TLS settings for connecting to registries
+// and marketplace servers that require mutual TLS or use custom CAs.
+type TLSConfig struct {
+	// CertFile is the path to the client certificate PEM file.
+	CertFile string `yaml:"certFile,omitempty" json:"certFile,omitempty"`
+	// KeyFile is the path to the client private key PEM file.
+	KeyFile string `yaml:"keyFile,omitempty" json:"keyFile,omitempty"`
+	// CAFile is the path to a CA PEM file for server verification.
+	// When empty, the system certificate pool is used.
+	CAFile string `yaml:"caFile,omitempty" json:"caFile,omitempty"`
+}
+
 // Entry holds authentication and options for a single OCI registry.
 type Entry struct {
 	// Username for basic authentication.
@@ -38,6 +54,9 @@ type Entry struct {
 	Password string `yaml:"password,omitempty" json:"password,omitempty"`
 	// Insecure allows plain HTTP (for development registries).
 	Insecure bool `yaml:"insecure,omitempty" json:"insecure,omitempty"`
+	// TLS holds per-registry client TLS settings. Overrides the
+	// global TLS settings.
+	TLS TLSConfig `yaml:"tls,omitempty" json:"tls,omitempty"`
 }
 
 // Store manages registry credentials on disk. It is safe for concurrent use.
@@ -151,6 +170,26 @@ func (s *Store) MarketplaceAPIKey() string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.cfg.Marketplace.APIKey
+}
+
+// ClientTLS returns the client TLS settings for the given registry host.
+// Per-registry settings take precedence over the global TLS config.
+func (s *Store) ClientTLS(host string) TLSConfig {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if entry, ok := s.cfg.Registries[host]; ok {
+		if entry.TLS.CertFile != "" || entry.TLS.CAFile != "" {
+			return entry.TLS
+		}
+	}
+	return s.cfg.TLS
+}
+
+// GlobalClientTLS returns the global client TLS settings.
+func (s *Store) GlobalClientTLS() TLSConfig {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.cfg.TLS
 }
 
 // save writes the current configuration to disk. Must be called with s.mu held.

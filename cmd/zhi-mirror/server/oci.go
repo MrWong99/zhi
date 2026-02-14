@@ -29,17 +29,20 @@ type OCIHandler struct {
 	client   *http.Client
 }
 
-// NewOCIHandler creates an OCI Distribution API handler.
-func NewOCIHandler(store *storage.OCILayout, upstream string, policy *Policy, audit *AuditLogger) *OCIHandler {
+// NewOCIHandler creates an OCI Distribution API handler. If httpClient
+// is nil, a default client with a 60-second timeout is used for upstream
+// connections.
+func NewOCIHandler(store *storage.OCILayout, upstream string, policy *Policy, audit *AuditLogger, httpClient *http.Client) *OCIHandler {
+	if httpClient == nil {
+		httpClient = &http.Client{Timeout: 60 * time.Second}
+	}
 	return &OCIHandler{
 		store:    store,
 		upstream: strings.TrimRight(upstream, "/"),
 		policy:   policy,
 		audit:    audit,
 		tagTTL:   5 * time.Minute,
-		client: &http.Client{
-			Timeout: 60 * time.Second,
-		},
+		client:   httpClient,
 	}
 }
 

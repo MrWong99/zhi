@@ -2,6 +2,7 @@ package webui
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"log"
@@ -12,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/MrWong99/zhi/internal/tlsutil"
 	"github.com/MrWong99/zhi/pkg/zhiplugin/ui"
 )
 
@@ -95,13 +97,34 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 		return fmt.Errorf("listen %s: %w", s.config.Addr, err)
 	}
 
+	// Wrap with TLS if configured.
+	tlsCfg := &tlsutil.Config{
+		CertFile:     s.config.TLSCert,
+		KeyFile:      s.config.TLSKey,
+		ClientCAFile: s.config.TLSClientCA,
+		MinVersion:   s.config.TLSMinVersion,
+		CipherSuites: s.config.TLSCipherSuites,
+	}
+	if tlsCfg.Enabled() {
+		tc, err := tlsCfg.TLSConfig()
+		if err != nil {
+			ln.Close()
+			return fmt.Errorf("configuring TLS: %w", err)
+		}
+		ln = tls.NewListener(ln, tc)
+	}
+
 	actual := ln.Addr().String()
 	s.mu.Lock()
 	s.boundAddr = actual
 	s.mu.Unlock()
 	close(s.ready)
 
-	url := "http://" + actual
+	scheme := "http"
+	if tlsCfg.Enabled() {
+		scheme = "https"
+	}
+	url := scheme + "://" + actual
 	log.Printf("zhi webui: listening on %s", url)
 
 	if s.config.DevMode {

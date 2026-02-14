@@ -29,6 +29,9 @@ type ExportOptions struct {
 	Output string
 	// UpstreamRegistry is the upstream OCI registry host (e.g. "ghcr.io").
 	UpstreamRegistry string
+	// HTTPClient is an optional HTTP client for upstream connections.
+	// When nil, a default client with a 5-minute timeout is used.
+	HTTPClient *http.Client
 }
 
 // BundleManifest describes the contents of an export bundle.
@@ -69,7 +72,10 @@ func Export(opts ExportOptions) error {
 		return fmt.Errorf("creating blobs directory: %w", err)
 	}
 
-	client := &http.Client{Timeout: 5 * time.Minute}
+	client := opts.HTTPClient
+	if client == nil {
+		client = &http.Client{Timeout: 5 * time.Minute}
+	}
 	var entries []BundleEntry
 
 	for _, ref := range opts.Artifacts {

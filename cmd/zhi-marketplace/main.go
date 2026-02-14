@@ -24,6 +24,7 @@ import (
 	"github.com/MrWong99/zhi/cmd/zhi-marketplace/auth"
 	"github.com/MrWong99/zhi/cmd/zhi-marketplace/server"
 	"github.com/MrWong99/zhi/cmd/zhi-marketplace/storage"
+	"github.com/MrWong99/zhi/internal/tlsutil"
 )
 
 func main() {
@@ -33,6 +34,7 @@ func main() {
 		registries  string
 		apiKeys     string
 		apiKeysFile string
+		tlsCfg      tlsutil.Config
 	)
 
 	flag.StringVar(&dbPath, "db", "marketplace.db", "SQLite database path")
@@ -40,6 +42,7 @@ func main() {
 	flag.StringVar(&registries, "oci-registries", "ghcr.io,docker.io", "comma-separated list of known OCI registries")
 	flag.StringVar(&apiKeys, "api-keys", "", "comma-separated key=publisherID pairs for API authentication")
 	flag.StringVar(&apiKeysFile, "api-keys-file", "", "path to file containing key=publisherID pairs (one per line); file is deleted after reading")
+	tlsutil.RegisterFlags(flag.CommandLine, &tlsCfg)
 	flag.Parse()
 
 	store, err := storage.NewSQLiteStore(dbPath)
@@ -80,13 +83,31 @@ func main() {
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
+	if tlsCfg.Enabled() {
+		tc, err := tlsCfg.TLSConfig()
+		if err != nil {
+			log.Fatalf("configuring TLS: %v", err)
+		}
+		srv.TLSConfig = tc
+	}
+
 	// Graceful shutdown.
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
 	go func() {
-		log.Printf("marketplace server listening on %s", listen)
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		scheme := "http"
+		if tlsCfg.Enabled() {
+			scheme = "https"
+		}
+		log.Printf("marketplace server listening on %s://%s", scheme, listen)
+		var err error
+		if tlsCfg.Enabled() {
+			err = srv.ListenAndServeTLS("", "")
+		} else {
+			err = srv.ListenAndServe()
+		}
+		if err != nil && err != http.ErrServerClosed {
 			log.Fatalf("server error: %v", err)
 		}
 	}()

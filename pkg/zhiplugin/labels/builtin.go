@@ -229,7 +229,7 @@ var storeLabels = []*Label{
 		ValueType:   "int",
 		AppliesTo:   []string{"store"},
 		Constraints: &Constraints{
-			Min: new(float64(0.0)),
+			Min: ptr(0.0),
 		},
 		Since: "0.1.0",
 	},
@@ -240,7 +240,7 @@ var storeLabels = []*Label{
 		ValueType:   "int",
 		AppliesTo:   []string{"store"},
 		Constraints: &Constraints{
-			Min: new(float64(1.0)),
+			Min: ptr(1.0),
 		},
 		Examples: []Example{
 			{Value: 5, Description: "Keep at most 5 versions"},
@@ -434,3 +434,7 @@ const (
 	LabelCoreExample     = "core.example"
 	LabelCoreUnit        = "core.unit"
 )
+
+// ptr returns a pointer to v. It is a helper for composite literals
+// where the address of a constant is needed.
+func ptr[T any](v T) *T { return &v }
