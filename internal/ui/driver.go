@@ -59,6 +59,7 @@ func (c *UIController) SetMarketplaceError(err error) {
 func (c *UIController) LoadTree(ctx context.Context) (*config.Tree, error) {
 	tree, err := c.engine.LoadTree(ctx)
 	if err != nil {
+		c.handleAuthError(err)
 		return nil, fmt.Errorf("loading tree: %w", err)
 	}
 	if err := c.engine.TransformForDisplay(ctx, tree); err != nil {
@@ -126,7 +127,11 @@ func (c *UIController) SaveTree(ctx context.Context) error {
 	if err := c.engine.TransformForSave(ctx, c.tree); err != nil {
 		return fmt.Errorf("transforming tree for save: %w", err)
 	}
-	return c.engine.SaveTree(ctx, c.tree)
+	err := c.engine.SaveTree(ctx, c.tree)
+	if err != nil {
+		c.handleAuthError(err)
+	}
+	return err
 }
 
 // ListComponents returns all components with their current state.
@@ -266,6 +271,105 @@ func (c *UIController) WorkspaceName() string {
 // SaveComponentState persists the current component state to the workspace.
 func (c *UIController) SaveComponentState() map[string]bool {
 	return c.engine.Components().SaveState()
+}
+
+// StoreAuthMethods returns the authentication methods supported by the
+// configured store plugin.
+func (c *UIController) StoreAuthMethods(ctx context.Context) ([]zhiui.StoreAuthMethod, error) {
+	sess := c.engine.Session()
+	if sess == nil {
+		return nil, nil
+	}
+	methods, err := sess.AuthMethods(ctx)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]zhiui.StoreAuthMethod, 0, len(methods))
+	for _, m := range methods {
+		fields := make([]zhiui.StoreAuthField, 0, len(m.Fields))
+		for _, f := range m.Fields {
+			fields = append(fields, zhiui.StoreAuthField{
+				Name:        f.Name,
+				Description: f.Description,
+				Required:    f.Required,
+				Secret:      f.Secret,
+			})
+		}
+		result = append(result, zhiui.StoreAuthMethod{
+			Type:        m.Type,
+			Description: m.Description,
+			Fields:      fields,
+		})
+	}
+	return result, nil
+}
+
+// StoreLogin authenticates with the store using the specified method
+// and credentials.
+func (c *UIController) StoreLogin(ctx context.Context, method string, credentials map[string]string) (*zhiui.StoreSession, error) {
+	sess := c.engine.Session()
+	if sess == nil {
+		return &zhiui.StoreSession{Status: zhiui.StoreSessionNone}, nil
+	}
+	s, err := sess.Login(ctx, method, credentials)
+	if err != nil {
+		return nil, err
+	}
+	return coreSessionToUI(s), nil
+}
+
+// StoreAuthStatus returns the current authentication status.
+func (c *UIController) StoreAuthStatus(_ context.Context) (*zhiui.StoreSession, error) {
+	sess := c.engine.Session()
+	if sess == nil {
+		return &zhiui.StoreSession{Status: zhiui.StoreSessionNone}, nil
+	}
+	return coreSessionToUI(sess.Status()), nil
+}
+
+// StoreLogout clears the current authentication session.
+func (c *UIController) StoreLogout(_ context.Context) error {
+	sess := c.engine.Session()
+	if sess == nil {
+		return nil
+	}
+	sess.Logout()
+	return nil
+}
+
+// handleAuthError delegates to the session manager's HandleAuthError if
+// a session manager is available.
+func (c *UIController) handleAuthError(err error) {
+	if sess := c.engine.Session(); sess != nil {
+		sess.HandleAuthError(err)
+	}
+}
+
+// coreSessionToUI converts a core.Session to a UI-facing StoreSession.
+func coreSessionToUI(s *core.Session) *zhiui.StoreSession {
+	var status zhiui.StoreSessionStatus
+	switch s.Status {
+	case core.SessionNone:
+		status = zhiui.StoreSessionNone
+	case core.SessionUnauthenticated:
+		status = zhiui.StoreSessionUnauthenticated
+	case core.SessionAuthenticated:
+		status = zhiui.StoreSessionAuthenticated
+	case core.SessionExpired:
+		status = zhiui.StoreSessionExpired
+	default:
+		status = zhiui.StoreSessionNone
+	}
+	var expiresAt string
+	if !s.ExpiresAt.IsZero() {
+		expiresAt = s.ExpiresAt.Format("2006-01-02T15:04:05Z07:00")
+	}
+	return &zhiui.StoreSession{
+		SessionID: s.ID,
+		Status:    status,
+		ExpiresAt: expiresAt,
+		Metadata:  s.Metadata,
+	}
 }
 
 func (c *UIController) prepareTreeData(ctx context.Context, allComponents bool, prefix string) (*core.TreeData, error) {

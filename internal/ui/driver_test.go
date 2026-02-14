@@ -369,3 +369,175 @@ func TestUIController_WorkspaceName(t *testing.T) {
 		t.Errorf("expected non-empty workspace name, got %q", name)
 	}
 }
+
+func TestUIController_StoreAuthMethods_NoAuth(t *testing.T) {
+	ctrl := setupTestController(t)
+	ctx := context.Background()
+
+	methods, err := ctrl.StoreAuthMethods(ctx)
+	if err != nil {
+		t.Fatalf("StoreAuthMethods: %v", err)
+	}
+	// mockStore returns nil for AuthMethods, so result should be empty.
+	if len(methods) != 0 {
+		t.Errorf("expected 0 methods, got %d", len(methods))
+	}
+}
+
+func TestUIController_StoreAuthStatus_NoAuth(t *testing.T) {
+	ctrl := setupTestController(t)
+	ctx := context.Background()
+
+	session, err := ctrl.StoreAuthStatus(ctx)
+	if err != nil {
+		t.Fatalf("StoreAuthStatus: %v", err)
+	}
+	// mockStore doesn't require auth, so after AuthRequired check the
+	// session should reflect that. But since setupTestController doesn't
+	// call AuthRequired, the session defaults to Unauthenticated.
+	if session == nil {
+		t.Fatal("expected non-nil session")
+	}
+}
+
+func TestUIController_StoreLogout(t *testing.T) {
+	ctrl := setupTestController(t)
+	ctx := context.Background()
+
+	err := ctrl.StoreLogout(ctx)
+	if err != nil {
+		t.Fatalf("StoreLogout: %v", err)
+	}
+
+	// After logout, status should be unauthenticated.
+	session, err := ctrl.StoreAuthStatus(ctx)
+	if err != nil {
+		t.Fatalf("StoreAuthStatus after logout: %v", err)
+	}
+	if session.Status != "unauthenticated" {
+		t.Errorf("expected unauthenticated status after logout, got %q", session.Status)
+	}
+}
+
+func TestUIController_StoreAuthMethods_WithAuthStore(t *testing.T) {
+	reg := core.NewRegistry()
+	mc := newMockConfig()
+	ms := &authMockStore{mockStore: newMockStore()}
+
+	if err := reg.RegisterConfig("mock", func(string, map[string]any) (config.Plugin, error) {
+		return mc, nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := reg.RegisterTransform("mock", func(string, map[string]any) (transform.Plugin, error) {
+		return &mockTransform{}, nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := reg.RegisterStore("mock", func(string, map[string]any) (store.Plugin, error) {
+		return ms, nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	ws := &core.WorkspaceConfig{
+		Version: "1",
+		Config:  core.ProviderRef{Provider: "mock"},
+		Transform: []core.ProviderRef{
+			{Provider: "mock"},
+		},
+		Store: core.ProviderRef{Provider: "mock"},
+		Dir:   t.TempDir(),
+	}
+
+	eng, err := core.NewEngine(reg, ws)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctrl := ui.NewUIController(eng)
+	ctx := context.Background()
+
+	methods, err := ctrl.StoreAuthMethods(ctx)
+	if err != nil {
+		t.Fatalf("StoreAuthMethods: %v", err)
+	}
+	if len(methods) != 1 {
+		t.Fatalf("expected 1 method, got %d", len(methods))
+	}
+	if methods[0].Type != "userpass" {
+		t.Errorf("expected userpass method, got %q", methods[0].Type)
+	}
+	if len(methods[0].Fields) != 2 {
+		t.Errorf("expected 2 fields, got %d", len(methods[0].Fields))
+	}
+
+	// Login
+	session, err := ctrl.StoreLogin(ctx, "userpass", map[string]string{
+		"username": "admin",
+		"password": "secret",
+	})
+	if err != nil {
+		t.Fatalf("StoreLogin: %v", err)
+	}
+	if session.Status != "authenticated" {
+		t.Errorf("expected authenticated, got %q", session.Status)
+	}
+	if session.SessionID == "" {
+		t.Error("expected non-empty session ID")
+	}
+
+	// Status check
+	status, err := ctrl.StoreAuthStatus(ctx)
+	if err != nil {
+		t.Fatalf("StoreAuthStatus: %v", err)
+	}
+	if status.Status != "authenticated" {
+		t.Errorf("expected authenticated, got %q", status.Status)
+	}
+
+	// Logout
+	if err := ctrl.StoreLogout(ctx); err != nil {
+		t.Fatalf("StoreLogout: %v", err)
+	}
+	status, err = ctrl.StoreAuthStatus(ctx)
+	if err != nil {
+		t.Fatalf("StoreAuthStatus after logout: %v", err)
+	}
+	if status.Status != "unauthenticated" {
+		t.Errorf("expected unauthenticated after logout, got %q", status.Status)
+	}
+}
+
+// authMockStore wraps mockStore and adds auth support.
+type authMockStore struct {
+	*mockStore
+}
+
+func (m *authMockStore) Capabilities(_ context.Context) (*store.Capabilities, error) {
+	return &store.Capabilities{
+		Versioning: store.VersioningNone,
+		Encryption: store.EncryptionNone,
+		Auth:       true,
+	}, nil
+}
+
+func (m *authMockStore) AuthMethods(_ context.Context) ([]store.AuthMethod, error) {
+	return []store.AuthMethod{
+		{
+			Type:        "userpass",
+			Description: "Username and password",
+			Fields: []store.AuthField{
+				{Name: "username", Description: "Username", Required: true},
+				{Name: "password", Description: "Password", Required: true, Secret: true},
+			},
+		},
+	}, nil
+}
+
+func (m *authMockStore) Login(_ context.Context, _ string, _ map[string]string) (*store.Credential, error) {
+	return &store.Credential{
+		Token:    "mock-token",
+		Metadata: map[string]string{"username": "admin"},
+	}, nil
+}

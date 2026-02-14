@@ -204,3 +204,19 @@ func (c *ControllerAdapter) UpdatePlugin(ctx context.Context, name string, versi
 func (c *ControllerAdapter) RatePlugin(ctx context.Context, pluginType, publisher, name string, rating zhiui.Rating) error {
 	return c.Inner.RatePlugin(ctx, pluginType, publisher, name, rating)
 }
+
+func (c *ControllerAdapter) StoreAuthMethods(ctx context.Context) ([]zhiui.StoreAuthMethod, error) {
+	return c.Inner.StoreAuthMethods(ctx)
+}
+
+func (c *ControllerAdapter) StoreLogin(ctx context.Context, method string, credentials map[string]string) (*zhiui.StoreSession, error) {
+	return c.Inner.StoreLogin(ctx, method, credentials)
+}
+
+func (c *ControllerAdapter) StoreAuthStatus(ctx context.Context) (*zhiui.StoreSession, error) {
+	return c.Inner.StoreAuthStatus(ctx)
+}
+
+func (c *ControllerAdapter) StoreLogout(ctx context.Context) error {
+	return c.Inner.StoreLogout(ctx)
+}

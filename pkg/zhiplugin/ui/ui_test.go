@@ -280,6 +280,22 @@ func (c *testController) RatePlugin(_ context.Context, _, publisher, name string
 	return nil
 }
 
+func (c *testController) StoreAuthMethods(_ context.Context) ([]StoreAuthMethod, error) {
+	return nil, nil
+}
+
+func (c *testController) StoreLogin(_ context.Context, _ string, _ map[string]string) (*StoreSession, error) {
+	return &StoreSession{Status: StoreSessionNone}, nil
+}
+
+func (c *testController) StoreAuthStatus(_ context.Context) (*StoreSession, error) {
+	return &StoreSession{Status: StoreSessionNone}, nil
+}
+
+func (c *testController) StoreLogout(_ context.Context) error {
+	return nil
+}
+
 // --- testUIPlugin: exercises the Controller during Run --------------------
 
 type testUIPlugin struct {

@@ -201,6 +201,22 @@ func (m *mockController) RatePlugin(_ context.Context, _, _, _ string, _ ui.Rati
 	return nil
 }
 
+func (m *mockController) StoreAuthMethods(_ context.Context) ([]ui.StoreAuthMethod, error) {
+	return nil, nil
+}
+
+func (m *mockController) StoreLogin(_ context.Context, _ string, _ map[string]string) (*ui.StoreSession, error) {
+	return &ui.StoreSession{Status: ui.StoreSessionNone}, nil
+}
+
+func (m *mockController) StoreAuthStatus(_ context.Context) (*ui.StoreSession, error) {
+	return &ui.StoreSession{Status: ui.StoreSessionNone}, nil
+}
+
+func (m *mockController) StoreLogout(_ context.Context) error {
+	return nil
+}
+
 // ---------- test helpers ----------
 
 func startTestServer(t *testing.T) (string, context.CancelFunc) {

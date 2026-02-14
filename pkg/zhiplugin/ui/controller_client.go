@@ -319,3 +319,62 @@ func (c *controllerGRPCClient) RatePlugin(ctx context.Context, pluginType, publi
 	})
 	return err
 }
+
+func (c *controllerGRPCClient) StoreAuthMethods(ctx context.Context) ([]StoreAuthMethod, error) {
+	resp, err := c.client.StoreAuthMethods(ctx, &pb.CtrlStoreAuthMethodsRequest{})
+	if err != nil {
+		return nil, err
+	}
+	methods := make([]StoreAuthMethod, 0, len(resp.GetMethods()))
+	for _, m := range resp.GetMethods() {
+		fields := make([]StoreAuthField, 0, len(m.GetFields()))
+		for _, f := range m.GetFields() {
+			fields = append(fields, StoreAuthField{
+				Name:        f.GetName(),
+				Description: f.GetDescription(),
+				Required:    f.GetRequired(),
+				Secret:      f.GetSecret(),
+			})
+		}
+		methods = append(methods, StoreAuthMethod{
+			Type:        m.GetType(),
+			Description: m.GetDescription(),
+			Fields:      fields,
+		})
+	}
+	return methods, nil
+}
+
+func (c *controllerGRPCClient) StoreLogin(ctx context.Context, method string, credentials map[string]string) (*StoreSession, error) {
+	resp, err := c.client.StoreLogin(ctx, &pb.CtrlStoreLoginRequest{
+		Method:      method,
+		Credentials: credentials,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &StoreSession{
+		SessionID: resp.GetSessionId(),
+		Status:    StoreSessionStatus(resp.GetStatus()),
+		ExpiresAt: resp.GetExpiresAt(),
+		Metadata:  resp.GetMetadata(),
+	}, nil
+}
+
+func (c *controllerGRPCClient) StoreAuthStatus(ctx context.Context) (*StoreSession, error) {
+	resp, err := c.client.StoreAuthStatus(ctx, &pb.CtrlStoreAuthStatusRequest{})
+	if err != nil {
+		return nil, err
+	}
+	return &StoreSession{
+		SessionID: resp.GetSessionId(),
+		Status:    StoreSessionStatus(resp.GetStatus()),
+		ExpiresAt: resp.GetExpiresAt(),
+		Metadata:  resp.GetMetadata(),
+	}, nil
+}
+
+func (c *controllerGRPCClient) StoreLogout(ctx context.Context) error {
+	_, err := c.client.StoreLogout(ctx, &pb.CtrlStoreLogoutRequest{})
+	return err
+}
