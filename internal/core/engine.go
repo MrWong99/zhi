@@ -22,6 +22,7 @@ type Engine struct {
 	transformPlugins []transform.Plugin
 	storePlugin      store.Plugin // nil if no store is configured
 	components       *ComponentManager
+	session          *SessionManager // nil if no store is configured
 }
 
 // NewEngine resolves all providers from the workspace config using the
@@ -55,6 +56,11 @@ func NewEngine(registry *Registry, workspace *WorkspaceConfig) (*Engine, error) 
 			return nil, fmt.Errorf("resolving store provider: %w", err)
 		}
 		e.storePlugin = sp
+	}
+
+	// Initialize session manager for authenticated stores.
+	if e.storePlugin != nil {
+		e.session = NewSessionManager(e.storePlugin)
 	}
 
 	// Initialize component manager.
@@ -397,6 +403,12 @@ func (e *Engine) FilteredTree(ctx context.Context) (*config.Tree, error) {
 // configured.
 func (e *Engine) StorePlugin() store.Plugin {
 	return e.storePlugin
+}
+
+// Session returns the session manager for the active store plugin, or
+// nil if no store is configured.
+func (e *Engine) Session() *SessionManager {
+	return e.session
 }
 
 // WorkspaceDir returns the directory containing the workspace config file.
