@@ -1,7 +1,8 @@
-// Package tlsutil provides shared TLS configuration for zhi HTTP servers.
-// It supports server TLS, mutual TLS (mTLS) with client certificate
-// verification, configurable minimum TLS version, and cipher suite
-// selection.
+// Package tlsutil provides shared TLS configuration for zhi HTTP servers
+// and clients. It supports server TLS, mutual TLS (mTLS) with client
+// certificate verification, configurable minimum TLS version, and cipher
+// suite selection. For outbound connections it provides [ClientConfig] to
+// present client certificates and trust custom CAs.
 package tlsutil
 
 import (
@@ -9,8 +10,10 @@ import (
 	"crypto/x509"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
 // Config holds TLS settings shared across zhi HTTP servers.
@@ -110,6 +113,73 @@ func RegisterFlags(fs *flag.FlagSet, c *Config) {
 		}
 		return nil
 	})
+}
+
+// ClientConfig holds TLS settings for outbound HTTP connections. It
+// allows the client to present a certificate (for mTLS) and/or trust a
+// custom CA (e.g. a self-signed server certificate).
+type ClientConfig struct {
+	// CertFile is the path to the client certificate PEM file.
+	CertFile string
+	// KeyFile is the path to the client private key PEM file.
+	KeyFile string
+	// CAFile is the path to a CA PEM file to trust for server
+	// verification. When empty, the system certificate pool is used.
+	CAFile string
+}
+
+// Enabled reports whether any client TLS setting is configured.
+func (c *ClientConfig) Enabled() bool {
+	return (c.CertFile != "" && c.KeyFile != "") || c.CAFile != ""
+}
+
+// HTTPClient returns an [http.Client] configured with the client TLS
+// settings. If no settings are configured it returns nil.
+func (c *ClientConfig) HTTPClient(timeout time.Duration) (*http.Client, error) {
+	if !c.Enabled() {
+		return nil, nil
+	}
+	tc, err := c.tlsConfig()
+	if err != nil {
+		return nil, err
+	}
+	return &http.Client{
+		Timeout: timeout,
+		Transport: &http.Transport{
+			TLSClientConfig: tc,
+		},
+	}, nil
+}
+
+// tlsConfig builds a [tls.Config] for client-side connections.
+func (c *ClientConfig) tlsConfig() (*tls.Config, error) {
+	cfg := &tls.Config{
+		MinVersion: tls.VersionTLS12,
+	}
+
+	// Client certificate for mTLS.
+	if c.CertFile != "" && c.KeyFile != "" {
+		cert, err := tls.LoadX509KeyPair(c.CertFile, c.KeyFile)
+		if err != nil {
+			return nil, fmt.Errorf("loading client certificate: %w", err)
+		}
+		cfg.Certificates = []tls.Certificate{cert}
+	}
+
+	// Custom CA for server verification.
+	if c.CAFile != "" {
+		caPEM, err := os.ReadFile(c.CAFile)
+		if err != nil {
+			return nil, fmt.Errorf("reading CA file: %w", err)
+		}
+		pool := x509.NewCertPool()
+		if !pool.AppendCertsFromPEM(caPEM) {
+			return nil, fmt.Errorf("CA file %q contains no valid certificates", c.CAFile)
+		}
+		cfg.RootCAs = pool
+	}
+
+	return cfg, nil
 }
 
 // resolveCipherSuites maps cipher suite names to their uint16 IDs.

@@ -78,6 +78,7 @@ func runServe(args []string) error {
 		policyFile          string
 		auditFile           string
 		tlsCfg              tlsutil.Config
+		upstreamClientTLS   tlsutil.ClientConfig
 	)
 	fs.StringVar(&listen, "listen", ":5050", "HTTP listen address")
 	fs.StringVar(&storageDir, "storage", defaultStorageDir(), "Storage directory")
@@ -86,6 +87,9 @@ func runServe(args []string) error {
 	fs.StringVar(&policyFile, "policy", server.DefaultPolicyPath(), "Policy YAML file path")
 	fs.StringVar(&auditFile, "audit", "", "Audit log file (default: stdout)")
 	tlsutil.RegisterFlags(fs, &tlsCfg)
+	fs.StringVar(&upstreamClientTLS.CertFile, "upstream-tls-cert", "", "Client certificate for upstream mTLS")
+	fs.StringVar(&upstreamClientTLS.KeyFile, "upstream-tls-key", "", "Client key for upstream mTLS")
+	fs.StringVar(&upstreamClientTLS.CAFile, "upstream-tls-ca", "", "CA to verify upstream server certificate")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -125,9 +129,19 @@ func runServe(args []string) error {
 		return fmt.Errorf("initializing metadata store: %w", err)
 	}
 
+	// Build upstream HTTP client with optional client TLS.
+	var upstreamHTTPClient *http.Client
+	if upstreamClientTLS.Enabled() {
+		hc, err := upstreamClientTLS.HTTPClient(60 * time.Second)
+		if err != nil {
+			return fmt.Errorf("configuring upstream TLS: %w", err)
+		}
+		upstreamHTTPClient = hc
+	}
+
 	// Create handlers.
-	ociHandler := server.NewOCIHandler(ociStore, upstreamRegistry, policy, audit)
-	marketplaceProxy := server.NewMarketplaceProxy(upstreamMarketplace, metaStore, policy)
+	ociHandler := server.NewOCIHandler(ociStore, upstreamRegistry, policy, audit, upstreamHTTPClient)
+	marketplaceProxy := server.NewMarketplaceProxy(upstreamMarketplace, metaStore, policy, upstreamHTTPClient)
 
 	mux := server.NewMux(ociHandler, marketplaceProxy)
 
@@ -147,7 +161,7 @@ func runServe(args []string) error {
 
 	// Start sync scheduler if configured.
 	if len(policy.Sync) > 0 {
-		scheduler := server.NewSyncScheduler(ociStore, upstreamRegistry, policy.Sync)
+		scheduler := server.NewSyncScheduler(ociStore, upstreamRegistry, policy.Sync, upstreamHTTPClient)
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 		scheduler.Start(ctx)

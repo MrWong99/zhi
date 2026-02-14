@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/MrWong99/zhi/internal/core"
+	"github.com/MrWong99/zhi/internal/tlsutil"
 	"github.com/MrWong99/zhi/pkg/sharing/client"
 	"github.com/MrWong99/zhi/pkg/sharing/marketplace"
 	"github.com/MrWong99/zhi/pkg/sharing/metadata"
@@ -598,7 +599,23 @@ func newSharingClient() (*client.Client, error) {
 	}
 
 	metaStore := metadata.NewStore(metaDir)
-	return client.NewClient(pluginDir, cacheDir, regStore, metaStore), nil
+
+	var opts []client.ClientOption
+	tlsCfg := regStore.GlobalClientTLS()
+	clientTLS := &tlsutil.ClientConfig{
+		CertFile: tlsCfg.CertFile,
+		KeyFile:  tlsCfg.KeyFile,
+		CAFile:   tlsCfg.CAFile,
+	}
+	if clientTLS.Enabled() {
+		hc, err := clientTLS.HTTPClient(60 * time.Second)
+		if err != nil {
+			return nil, fmt.Errorf("configuring registry TLS: %w", err)
+		}
+		opts = append(opts, client.WithHTTPClient(hc))
+	}
+
+	return client.NewClient(pluginDir, cacheDir, regStore, metaStore, opts...), nil
 }
 
 // parsePlatformFlag parses a "os/arch" string into a Platform.

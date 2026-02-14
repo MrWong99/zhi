@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -75,16 +76,34 @@ type Client struct {
 	registryStore *registry.Store
 	// metadataStore tracks installed plugins.
 	metadataStore *metadata.Store
+	// httpClient is an optional HTTP client used for OCI registry
+	// connections (e.g. with client TLS configured).
+	httpClient *http.Client
+}
+
+// ClientOption configures a [Client].
+type ClientOption func(*Client)
+
+// WithHTTPClient sets a custom HTTP client for OCI registry connections.
+// This is used to configure client TLS (mTLS / custom CA).
+func WithHTTPClient(hc *http.Client) ClientOption {
+	return func(c *Client) {
+		c.httpClient = hc
+	}
 }
 
 // NewClient creates a new OCI client with the given directories and stores.
-func NewClient(pluginDir, cacheDir string, regStore *registry.Store, metaStore *metadata.Store) *Client {
-	return &Client{
+func NewClient(pluginDir, cacheDir string, regStore *registry.Store, metaStore *metadata.Store, opts ...ClientOption) *Client {
+	c := &Client{
 		pluginDir:     pluginDir,
 		cacheDir:      cacheDir,
 		registryStore: regStore,
 		metadataStore: metaStore,
 	}
+	for _, opt := range opts {
+		opt(c)
+	}
+	return c
 }
 
 // PullPlugin downloads and installs a plugin from an OCI reference.
@@ -207,16 +226,21 @@ func (c *Client) newRepository(parsed *ParsedRef) (*remote.Repository, error) {
 		return nil, err
 	}
 
+	authClient := &auth.Client{}
 	if c.registryStore != nil {
 		username, password, ok := c.registryStore.GetCredentials(parsed.Host)
 		if ok {
-			repo.Client = &auth.Client{
-				Credential: auth.StaticCredential(parsed.Host, auth.Credential{
-					Username: username,
-					Password: password,
-				}),
-			}
+			authClient.Credential = auth.StaticCredential(parsed.Host, auth.Credential{
+				Username: username,
+				Password: password,
+			})
 		}
+	}
+	if c.httpClient != nil {
+		authClient.Client = c.httpClient
+	}
+	if authClient.Credential != nil || authClient.Client != nil {
+		repo.Client = authClient
 	}
 
 	return repo, nil

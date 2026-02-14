@@ -10,6 +10,7 @@ import (
 	"encoding/pem"
 	"flag"
 	"math/big"
+	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
@@ -273,5 +274,99 @@ func TestRegisterFlags(t *testing.T) {
 	}
 	if c.CipherSuites[1] != "TLS_AES_256_GCM_SHA384" {
 		t.Errorf("CipherSuites[1] = %q", c.CipherSuites[1])
+	}
+}
+
+// --- ClientConfig tests ---
+
+func TestClientConfig_Enabled(t *testing.T) {
+	tests := []struct {
+		name     string
+		cfg      ClientConfig
+		expected bool
+	}{
+		{"empty", ClientConfig{}, false},
+		{"cert+key", ClientConfig{CertFile: "c.pem", KeyFile: "k.pem"}, true},
+		{"ca only", ClientConfig{CAFile: "ca.pem"}, true},
+		{"all", ClientConfig{CertFile: "c.pem", KeyFile: "k.pem", CAFile: "ca.pem"}, true},
+		{"cert only", ClientConfig{CertFile: "c.pem"}, false},
+		{"key only", ClientConfig{KeyFile: "k.pem"}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.cfg.Enabled(); got != tt.expected {
+				t.Errorf("Enabled() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestClientConfig_HTTPClient_Disabled(t *testing.T) {
+	c := &ClientConfig{}
+	hc, err := c.HTTPClient(30 * time.Second)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if hc != nil {
+		t.Fatal("expected nil client when not enabled")
+	}
+}
+
+func TestClientConfig_HTTPClient_WithCert(t *testing.T) {
+	dir := t.TempDir()
+	certFile, keyFile := generateTestCert(t, dir, "client-")
+
+	c := &ClientConfig{CertFile: certFile, KeyFile: keyFile}
+	hc, err := c.HTTPClient(30 * time.Second)
+	if err != nil {
+		t.Fatalf("HTTPClient() error: %v", err)
+	}
+	if hc == nil {
+		t.Fatal("expected non-nil client")
+	}
+	tr, ok := hc.Transport.(*http.Transport)
+	if !ok {
+		t.Fatal("expected *http.Transport")
+	}
+	if len(tr.TLSClientConfig.Certificates) != 1 {
+		t.Errorf("expected 1 certificate, got %d", len(tr.TLSClientConfig.Certificates))
+	}
+}
+
+func TestClientConfig_HTTPClient_WithCA(t *testing.T) {
+	dir := t.TempDir()
+	caFile, _ := generateTestCert(t, dir, "ca-")
+
+	c := &ClientConfig{CAFile: caFile}
+	hc, err := c.HTTPClient(30 * time.Second)
+	if err != nil {
+		t.Fatalf("HTTPClient() error: %v", err)
+	}
+	if hc == nil {
+		t.Fatal("expected non-nil client")
+	}
+	tr := hc.Transport.(*http.Transport)
+	if tr.TLSClientConfig.RootCAs == nil {
+		t.Fatal("expected RootCAs to be set")
+	}
+}
+
+func TestClientConfig_HTTPClient_BadCert(t *testing.T) {
+	c := &ClientConfig{CertFile: "/nonexistent/c.pem", KeyFile: "/nonexistent/k.pem"}
+	_, err := c.HTTPClient(30 * time.Second)
+	if err == nil {
+		t.Fatal("expected error for missing cert files")
+	}
+}
+
+func TestClientConfig_HTTPClient_BadCA(t *testing.T) {
+	dir := t.TempDir()
+	badCA := filepath.Join(dir, "bad.pem")
+	os.WriteFile(badCA, []byte("not a cert"), 0o644)
+
+	c := &ClientConfig{CAFile: badCA}
+	_, err := c.HTTPClient(30 * time.Second)
+	if err == nil {
+		t.Fatal("expected error for invalid CA")
 	}
 }

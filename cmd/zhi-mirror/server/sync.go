@@ -24,13 +24,17 @@ type SyncScheduler struct {
 	wg       sync.WaitGroup
 }
 
-// NewSyncScheduler creates a sync scheduler for the given rules.
-func NewSyncScheduler(store *storage.OCILayout, upstream string, rules []SyncRule) *SyncScheduler {
+// NewSyncScheduler creates a sync scheduler for the given rules. If
+// httpClient is nil, a default client with a 5-minute timeout is used.
+func NewSyncScheduler(store *storage.OCILayout, upstream string, rules []SyncRule, httpClient *http.Client) *SyncScheduler {
+	if httpClient == nil {
+		httpClient = &http.Client{Timeout: 5 * time.Minute}
+	}
 	return &SyncScheduler{
 		store:    store,
 		upstream: strings.TrimRight(upstream, "/"),
 		rules:    rules,
-		client:   &http.Client{Timeout: 5 * time.Minute},
+		client:   httpClient,
 	}
 }
 
