@@ -27,6 +27,7 @@ func (s *Server) handleValidationPage(w http.ResponseWriter, r *http.Request) {
 		ActiveNav:        "validation",
 		Nonce:            nonceFromCtx(ctx),
 		CSRFToken:        csrfFromCtx(ctx),
+		Authenticated:    authenticatedFromCtx(ctx),
 		ValidationGroups: groups,
 		ValidationCount:  count,
 		Breadcrumbs: []breadcrumb{
@@ -66,6 +67,7 @@ func (s *Server) handleFullValidation(w http.ResponseWriter, r *http.Request) {
 		ActiveNav:        "validation",
 		Nonce:            nonceFromCtx(ctx),
 		CSRFToken:        csrfFromCtx(ctx),
+		Authenticated:    authenticatedFromCtx(ctx),
 		ValidationGroups: groups,
 		ValidationCount:  count,
 		Breadcrumbs: []breadcrumb{

@@ -2592,9 +2592,349 @@ func TestCheckUpdatesError(t *testing.T) {
 	}
 }
 
+// ---------- auth mock controller ----------
+
+// authMockController wraps mockController with configurable auth behavior.
+type authMockController struct {
+	mockController
+	authStatus  ui.StoreSessionStatus
+	authMethods []ui.StoreAuthMethod
+	loginErr    error
+}
+
+func (m *authMockController) StoreAuthStatus(_ context.Context) (*ui.StoreSession, error) {
+	return &ui.StoreSession{Status: m.authStatus}, nil
+}
+
+func (m *authMockController) StoreAuthMethods(_ context.Context) ([]ui.StoreAuthMethod, error) {
+	return m.authMethods, nil
+}
+
+func (m *authMockController) StoreLogin(_ context.Context, _ string, _ map[string]string) (*ui.StoreSession, error) {
+	if m.loginErr != nil {
+		return nil, m.loginErr
+	}
+	return &ui.StoreSession{Status: ui.StoreSessionAuthenticated}, nil
+}
+
+func (m *authMockController) StoreLogout(_ context.Context) error {
+	return nil
+}
+
+// ---------- login page tests ----------
+
+func TestLoginPageRender(t *testing.T) {
+	ctrl := &authMockController{
+		mockController: *newMockController(),
+		authStatus:     ui.StoreSessionUnauthenticated,
+		authMethods: []ui.StoreAuthMethod{
+			{
+				Type:        "userpass",
+				Description: "Username & Password",
+				Fields: []ui.StoreAuthField{
+					{Name: "username", Description: "Username", Required: true},
+					{Name: "password", Description: "Password", Required: true, Secret: true},
+				},
+			},
+		},
+	}
+	base, _ := startTestServerWithCtrl(t, ctrl)
+	resp := get(t, base+"/login")
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if !strings.Contains(body, "Username") {
+		t.Error("login page should contain 'Username' field")
+	}
+	if !strings.Contains(body, `type="password"`) {
+		t.Error("login page should have password input type")
+	}
+	if !strings.Contains(body, "Login") {
+		t.Error("login page should contain Login button")
+	}
+	cc := resp.Header.Get("Cache-Control")
+	if cc != "no-store" {
+		t.Errorf("Cache-Control = %q, want 'no-store'", cc)
+	}
+}
+
+func TestLoginPageRedirectsWhenAuthenticated(t *testing.T) {
+	ctrl := &authMockController{
+		mockController: *newMockController(),
+		authStatus:     ui.StoreSessionAuthenticated,
+	}
+	base, _ := startTestServerWithCtrl(t, ctrl)
+	client := &http.Client{CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
+		return http.ErrUseLastResponse
+	}}
+	resp, err := client.Get(base + "/login")
+	if err != nil {
+		t.Fatalf("GET /login: %v", err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusSeeOther {
+		t.Errorf("status = %d, want %d", resp.StatusCode, http.StatusSeeOther)
+	}
+	loc := resp.Header.Get("Location")
+	if loc != "/tree" {
+		t.Errorf("Location = %q, want /tree", loc)
+	}
+}
+
+func TestLoginPageMultipleMethods(t *testing.T) {
+	ctrl := &authMockController{
+		mockController: *newMockController(),
+		authStatus:     ui.StoreSessionUnauthenticated,
+		authMethods: []ui.StoreAuthMethod{
+			{Type: "userpass", Description: "Username & Password", Fields: []ui.StoreAuthField{
+				{Name: "username", Description: "Username", Required: true},
+				{Name: "password", Description: "Password", Required: true, Secret: true},
+			}},
+			{Type: "token", Description: "API Token", Fields: []ui.StoreAuthField{
+				{Name: "token", Description: "Token", Required: true, Secret: true},
+			}},
+		},
+	}
+	base, _ := startTestServerWithCtrl(t, ctrl)
+	resp := get(t, base+"/login")
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if !strings.Contains(body, "userpass") {
+		t.Error("login page should contain 'userpass' method option")
+	}
+	if !strings.Contains(body, "token") {
+		t.Error("login page should contain 'token' method option")
+	}
+}
+
+func TestLoginSuccess(t *testing.T) {
+	ctrl := &authMockController{
+		mockController: *newMockController(),
+		authStatus:     ui.StoreSessionUnauthenticated,
+		authMethods: []ui.StoreAuthMethod{
+			{Type: "userpass", Description: "Username & Password", Fields: []ui.StoreAuthField{
+				{Name: "username", Description: "Username", Required: true},
+				{Name: "password", Description: "Password", Required: true, Secret: true},
+			}},
+		},
+	}
+	base, _ := startTestServerWithCtrl(t, ctrl)
+	token, cookies := getCSRFToken(t, base)
+	resp := postWithCSRF(t, base+"/login", "method=userpass&cred_username=admin&cred_password=secret", token, cookies)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusSeeOther {
+		t.Errorf("status = %d, want %d", resp.StatusCode, http.StatusSeeOther)
+	}
+	loc := resp.Header.Get("Location")
+	if loc != "/tree" {
+		t.Errorf("Location = %q, want /tree", loc)
+	}
+}
+
+func TestLoginFailure(t *testing.T) {
+	ctrl := &authMockController{
+		mockController: *newMockController(),
+		authStatus:     ui.StoreSessionUnauthenticated,
+		authMethods: []ui.StoreAuthMethod{
+			{Type: "userpass", Description: "Username & Password", Fields: []ui.StoreAuthField{
+				{Name: "username", Description: "Username", Required: true},
+				{Name: "password", Description: "Password", Required: true, Secret: true},
+			}},
+		},
+		loginErr: errors.New("invalid credentials"),
+	}
+	base, _ := startTestServerWithCtrl(t, ctrl)
+	token, cookies := getCSRFToken(t, base)
+	resp := postWithCSRF(t, base+"/login", "method=userpass&cred_username=admin&cred_password=wrong", token, cookies)
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Errorf("status = %d, want %d", resp.StatusCode, http.StatusUnauthorized)
+	}
+	if !strings.Contains(body, "invalid credentials") {
+		t.Error("login page should show error message")
+	}
+}
+
+func TestLoginCSRFRequired(t *testing.T) {
+	ctrl := &authMockController{
+		mockController: *newMockController(),
+		authStatus:     ui.StoreSessionUnauthenticated,
+		authMethods:    []ui.StoreAuthMethod{{Type: "token", Fields: []ui.StoreAuthField{}}},
+	}
+	base, _ := startTestServerWithCtrl(t, ctrl)
+	// POST without CSRF token should be rejected.
+	resp, err := http.Post(base+"/login", "application/x-www-form-urlencoded", strings.NewReader("method=token"))
+	if err != nil {
+		t.Fatalf("POST /login: %v", err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusForbidden {
+		t.Errorf("status = %d, want %d", resp.StatusCode, http.StatusForbidden)
+	}
+}
+
+func TestLogout(t *testing.T) {
+	ctrl := &authMockController{
+		mockController: *newMockController(),
+		authStatus:     ui.StoreSessionAuthenticated,
+	}
+	base, _ := startTestServerWithCtrl(t, ctrl)
+	token, cookies := getCSRFToken(t, base)
+	resp := postWithCSRF(t, base+"/logout", "", token, cookies)
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusSeeOther {
+		t.Errorf("status = %d, want %d", resp.StatusCode, http.StatusSeeOther)
+	}
+	loc := resp.Header.Get("Location")
+	if loc != "/login" {
+		t.Errorf("Location = %q, want /login", loc)
+	}
+}
+
+func TestAuthStatus(t *testing.T) {
+	ctrl := &authMockController{
+		mockController: *newMockController(),
+		authStatus:     ui.StoreSessionAuthenticated,
+	}
+	base, _ := startTestServerWithCtrl(t, ctrl)
+	resp := get(t, base+"/auth/status")
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if !strings.Contains(body, `"status":"authenticated"`) {
+		t.Errorf("body = %q, want status authenticated", body)
+	}
+}
+
+// ---------- requireAuth middleware tests ----------
+
+func TestRequireAuthPassthroughWhenNoAuth(t *testing.T) {
+	// Default mock returns StoreSessionNone, so all routes should work.
+	base, _ := startTestServer(t)
+	resp := get(t, base+"/tree")
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if !strings.Contains(body, "db") {
+		t.Error("tree page should render normally when auth is none")
+	}
+}
+
+func TestRequireAuthRedirectWhenUnauthenticated(t *testing.T) {
+	ctrl := &authMockController{
+		mockController: *newMockController(),
+		authStatus:     ui.StoreSessionUnauthenticated,
+	}
+	base, _ := startTestServerWithCtrl(t, ctrl)
+	client := &http.Client{CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
+		return http.ErrUseLastResponse
+	}}
+	resp, err := client.Get(base + "/tree")
+	if err != nil {
+		t.Fatalf("GET /tree: %v", err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusSeeOther {
+		t.Errorf("status = %d, want %d", resp.StatusCode, http.StatusSeeOther)
+	}
+	loc := resp.Header.Get("Location")
+	if loc != "/login" {
+		t.Errorf("Location = %q, want /login", loc)
+	}
+}
+
+func TestRequireAuthRedirectWhenExpired(t *testing.T) {
+	ctrl := &authMockController{
+		mockController: *newMockController(),
+		authStatus:     ui.StoreSessionExpired,
+	}
+	base, _ := startTestServerWithCtrl(t, ctrl)
+	client := &http.Client{CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
+		return http.ErrUseLastResponse
+	}}
+	resp, err := client.Get(base + "/components")
+	if err != nil {
+		t.Fatalf("GET /components: %v", err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusSeeOther {
+		t.Errorf("status = %d, want %d", resp.StatusCode, http.StatusSeeOther)
+	}
+	loc := resp.Header.Get("Location")
+	if loc != "/login" {
+		t.Errorf("Location = %q, want /login", loc)
+	}
+}
+
+func TestRequireAuthHTMXRedirect(t *testing.T) {
+	ctrl := &authMockController{
+		mockController: *newMockController(),
+		authStatus:     ui.StoreSessionUnauthenticated,
+	}
+	base, _ := startTestServerWithCtrl(t, ctrl)
+	req, err := http.NewRequest("GET", base+"/tree", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("HX-Request", "true")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	hxRedirect := resp.Header.Get("HX-Redirect")
+	if hxRedirect != "/login" {
+		t.Errorf("HX-Redirect = %q, want /login", hxRedirect)
+	}
+}
+
+func TestRequireAuthAllowsAuthenticated(t *testing.T) {
+	ctrl := &authMockController{
+		mockController: *newMockController(),
+		authStatus:     ui.StoreSessionAuthenticated,
+	}
+	base, _ := startTestServerWithCtrl(t, ctrl)
+	resp := get(t, base+"/tree")
+	body := bodyString(t, resp)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if !strings.Contains(body, "db") {
+		t.Error("tree page should render when authenticated")
+	}
+}
+
+func TestLogoutButtonVisibleWhenAuthenticated(t *testing.T) {
+	ctrl := &authMockController{
+		mockController: *newMockController(),
+		authStatus:     ui.StoreSessionAuthenticated,
+	}
+	base, _ := startTestServerWithCtrl(t, ctrl)
+	resp := get(t, base+"/tree")
+	body := bodyString(t, resp)
+	if !strings.Contains(body, "Logout") {
+		t.Error("sidebar should contain Logout button when authenticated")
+	}
+}
+
+func TestLogoutButtonHiddenWhenNoAuth(t *testing.T) {
+	base, _ := startTestServer(t)
+	resp := get(t, base+"/tree")
+	body := bodyString(t, resp)
+	if strings.Contains(body, "Logout") {
+		t.Error("sidebar should not contain Logout button when auth is none")
+	}
+}
+
 // ---------- compile-time interface checks ----------
 
 var _ ui.Plugin = (*WebUI)(nil)
 var _ ui.Controller = (*mockController)(nil)
 var _ ui.Controller = (*errorMockController)(nil)
 var _ ui.Controller = (*blockingValidationController)(nil)
+var _ ui.Controller = (*authMockController)(nil)

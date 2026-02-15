@@ -32,6 +32,7 @@ func (s *Server) handlePluginsPage(w http.ResponseWriter, r *http.Request) {
 		ActiveNav:        "plugins",
 		Nonce:            nonceFromCtx(ctx),
 		CSRFToken:        csrfFromCtx(ctx),
+		Authenticated:    authenticatedFromCtx(ctx),
 		InstalledPlugins: toInstalledPluginData(plugins, updateMap),
 		PluginUpdates:    len(updates),
 		Breadcrumbs: []breadcrumb{

@@ -21,55 +21,65 @@ func (s *Server) registerRoutes() {
 		hashedStaticHandler(fileServer),
 	))
 
+	// Auth routes (not behind requireAuth).
+	s.mux.HandleFunc("GET /login", s.handleLoginPage)
+	s.mux.HandleFunc("POST /login", s.handleLogin)
+	s.mux.HandleFunc("POST /logout", s.handleLogout)
+	s.mux.HandleFunc("GET /auth/status", s.handleAuthStatus)
+
+	// authWrap applies requireAuth middleware to a handler function.
+	auth := s.requireAuth
+	authWrap := func(h http.HandlerFunc) http.Handler { return auth(h) }
+
 	// Root redirect.
-	s.mux.HandleFunc("GET /{$}", s.handleRoot)
+	s.mux.Handle("GET /{$}", authWrap(s.handleRoot))
 
 	// Tree view.
-	s.mux.HandleFunc("GET /tree", s.handleTree)
+	s.mux.Handle("GET /tree", authWrap(s.handleTree))
 
 	// Value editor
-	s.mux.HandleFunc("GET /tree/edit/{path...}", s.handleEditForm)
-	s.mux.HandleFunc("POST /tree/values/{path...}", s.handleSaveValue)
-	s.mux.HandleFunc("GET /tree/display/{path...}", s.handleDisplayValue)
+	s.mux.Handle("GET /tree/edit/{path...}", authWrap(s.handleEditForm))
+	s.mux.Handle("POST /tree/values/{path...}", authWrap(s.handleSaveValue))
+	s.mux.Handle("GET /tree/display/{path...}", authWrap(s.handleDisplayValue))
 
 	// Inline validation
-	s.mux.HandleFunc("POST /validate/inline/{path...}", s.handleInlineValidation)
+	s.mux.Handle("POST /validate/inline/{path...}", authWrap(s.handleInlineValidation))
 
 	// Full validation
-	s.mux.HandleFunc("GET /validation", s.handleValidationPage)
-	s.mux.HandleFunc("POST /validate", s.handleFullValidation)
+	s.mux.Handle("GET /validation", authWrap(s.handleValidationPage))
+	s.mux.Handle("POST /validate", authWrap(s.handleFullValidation))
 
 	// Save tree
-	s.mux.HandleFunc("POST /tree/save", s.handleSaveTree)
+	s.mux.Handle("POST /tree/save", authWrap(s.handleSaveTree))
 
 	// Components
-	s.mux.HandleFunc("GET /components", s.handleComponentsPage)
-	s.mux.HandleFunc("POST /components/{name}/toggle", s.handleComponentToggle)
+	s.mux.Handle("GET /components", authWrap(s.handleComponentsPage))
+	s.mux.Handle("POST /components/{name}/toggle", authWrap(s.handleComponentToggle))
 
 	// Export
-	s.mux.HandleFunc("GET /export", s.handleExportPage)
-	s.mux.HandleFunc("POST /export/preview", s.handleExportPreview)
-	s.mux.HandleFunc("POST /export", s.handleExport)
-	s.mux.HandleFunc("POST /export/all", s.handleExportAll)
+	s.mux.Handle("GET /export", authWrap(s.handleExportPage))
+	s.mux.Handle("POST /export/preview", authWrap(s.handleExportPreview))
+	s.mux.Handle("POST /export", authWrap(s.handleExport))
+	s.mux.Handle("POST /export/all", authWrap(s.handleExportAll))
 
 	// Apply
-	s.mux.HandleFunc("GET /apply", s.handleApplyPage)
-	s.mux.HandleFunc("POST /apply/run", s.handleApplyRun)
+	s.mux.Handle("GET /apply", authWrap(s.handleApplyPage))
+	s.mux.Handle("POST /apply/run", authWrap(s.handleApplyRun))
 
 	// Keyboard shortcuts
-	s.mux.HandleFunc("GET /shortcuts", s.handleShortcutsPage)
+	s.mux.Handle("GET /shortcuts", authWrap(s.handleShortcutsPage))
 
 	// Marketplace
-	s.mux.HandleFunc("GET /marketplace", s.handleMarketplacePage)
-	s.mux.HandleFunc("GET /marketplace/{type}/{publisher}/{name}", s.handlePluginDetail)
-	s.mux.HandleFunc("POST /marketplace/{type}/{publisher}/{name}/rate", s.handleRatePlugin)
+	s.mux.Handle("GET /marketplace", authWrap(s.handleMarketplacePage))
+	s.mux.Handle("GET /marketplace/{type}/{publisher}/{name}", authWrap(s.handlePluginDetail))
+	s.mux.Handle("POST /marketplace/{type}/{publisher}/{name}/rate", authWrap(s.handleRatePlugin))
 
 	// Installed plugins
-	s.mux.HandleFunc("GET /plugins", s.handlePluginsPage)
-	s.mux.HandleFunc("POST /plugins/install", s.handleInstallPlugin)
-	s.mux.HandleFunc("POST /plugins/update-all", s.handleUpdateAllPlugins)
-	s.mux.HandleFunc("POST /plugins/{name}/uninstall", s.handleUninstallPlugin)
-	s.mux.HandleFunc("POST /plugins/{name}/update", s.handleUpdatePlugin)
+	s.mux.Handle("GET /plugins", authWrap(s.handlePluginsPage))
+	s.mux.Handle("POST /plugins/install", authWrap(s.handleInstallPlugin))
+	s.mux.Handle("POST /plugins/update-all", authWrap(s.handleUpdateAllPlugins))
+	s.mux.Handle("POST /plugins/{name}/uninstall", authWrap(s.handleUninstallPlugin))
+	s.mux.Handle("POST /plugins/{name}/update", authWrap(s.handleUpdatePlugin))
 
 	// 404 catch-all. The standard mux routes unmatched paths to the
 	// longest matching pattern. With Go 1.22+ patterns, we register a
@@ -115,6 +125,7 @@ func (s *Server) handleTree(w http.ResponseWriter, r *http.Request) {
 		ActiveNav:     "tree",
 		Nonce:         nonceFromCtx(ctx),
 		CSRFToken:     csrfFromCtx(ctx),
+		Authenticated: authenticatedFromCtx(ctx),
 		TreeNodes:     nodes,
 		Filter:        filter,
 		Breadcrumbs: []breadcrumb{
@@ -144,6 +155,7 @@ func (s *Server) handleShortcutsPage(w http.ResponseWriter, r *http.Request) {
 		ActiveNav:     "shortcuts",
 		Nonce:         nonceFromCtx(ctx),
 		CSRFToken:     csrfFromCtx(ctx),
+		Authenticated: authenticatedFromCtx(ctx),
 		Breadcrumbs: []breadcrumb{
 			{Label: "Keyboard Shortcuts", Href: "/shortcuts"},
 		},
@@ -168,6 +180,7 @@ func (s *Server) renderError(w http.ResponseWriter, r *http.Request, code int, m
 		WorkspaceName: wsName,
 		Nonce:         nonceFromCtx(ctx),
 		CSRFToken:     csrfFromCtx(ctx),
+		Authenticated: authenticatedFromCtx(ctx),
 		StatusCode:    code,
 		StatusText:    http.StatusText(code),
 		Message:       message,

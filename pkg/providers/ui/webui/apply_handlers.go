@@ -25,6 +25,7 @@ func (s *Server) handleApplyPage(w http.ResponseWriter, r *http.Request) {
 		ActiveNav:       "apply",
 		Nonce:           nonceFromCtx(ctx),
 		CSRFToken:       csrfFromCtx(ctx),
+		Authenticated:   authenticatedFromCtx(ctx),
 		ApplyTargets:    toApplyTargetData(templates),
 		ExportTemplates: toExportTemplateData(templates),
 		Breadcrumbs: []breadcrumb{

@@ -25,6 +25,7 @@ func (s *Server) handleComponentsPage(w http.ResponseWriter, r *http.Request) {
 		ActiveNav:     "components",
 		Nonce:         nonceFromCtx(ctx),
 		CSRFToken:     csrfFromCtx(ctx),
+		Authenticated: authenticatedFromCtx(ctx),
 		Components:    toComponentViewData(components),
 		Breadcrumbs: []breadcrumb{
 			{Label: "Components", Href: "/components"},
