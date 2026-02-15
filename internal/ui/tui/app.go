@@ -10,13 +10,15 @@ import (
 	"github.com/MrWong99/zhi/internal/ui"
 	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
 	"github.com/MrWong99/zhi/pkg/zhiplugin/store"
+	zhiui "github.com/MrWong99/zhi/pkg/zhiplugin/ui"
 )
 
 // viewType identifies which sub-view is currently active.
 type viewType int
 
 const (
-	viewTree viewType = iota
+	viewLogin viewType = iota
+	viewTree
 	viewEditor
 	viewComponent
 	viewValidation
@@ -62,6 +64,8 @@ type App struct {
 	ctx              context.Context
 	tree             *config.Tree
 	activeView       viewType
+	previousView     viewType // view to return to after re-authentication
+	loginView        loginModel
 	treeView         TreeView
 	editorView       ValueEditor
 	componentView    ComponentView
@@ -81,20 +85,28 @@ type App struct {
 
 // NewApp creates a new App and performs the initial tree load.
 func NewApp(ctx context.Context, controller *ui.UIController) (*App, error) {
-	tree, err := controller.LoadTree(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("loading initial tree: %w", err)
-	}
-
 	app := &App{
 		controller: controller,
 		ctx:        ctx,
-		tree:       tree,
 		activeView: viewTree,
 		width:      80,
 		height:     24,
 	}
 
+	// Check if authentication is required before loading the tree.
+	if needsLogin, methods := app.checkAuthRequired(ctx); needsLogin {
+		app.loginView = newLoginModel(ctx, controller, methods, "")
+		app.activeView = viewLogin
+		app.notification = NewNotification()
+		return app, nil
+	}
+
+	tree, err := controller.LoadTree(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("loading initial tree: %w", err)
+	}
+
+	app.tree = tree
 	app.treeView = NewTreeView(controller, tree)
 	app.editorView = NewValueEditor()
 	app.componentView = NewComponentView(controller)
@@ -106,6 +118,37 @@ func NewApp(ctx context.Context, controller *ui.UIController) (*App, error) {
 	app.notification = NewNotification()
 
 	return app, nil
+}
+
+// checkAuthRequired checks if the store requires authentication.
+// Returns true and the available methods if login is needed.
+func (a *App) checkAuthRequired(ctx context.Context) (bool, []zhiui.StoreAuthMethod) {
+	methods, err := a.controller.StoreAuthMethods(ctx)
+	if err != nil || len(methods) == 0 {
+		return false, nil
+	}
+	session, err := a.controller.StoreAuthStatus(ctx)
+	if err != nil || session == nil {
+		return false, nil
+	}
+	if session.Status != zhiui.StoreSessionUnauthenticated && session.Status != zhiui.StoreSessionExpired {
+		return false, nil
+	}
+	return true, methods
+}
+
+// showLoginView transitions to the login view with an optional message.
+func (a *App) showLoginView(message string) tea.Cmd {
+	methods, err := a.controller.StoreAuthMethods(a.ctx)
+	if err != nil || len(methods) == 0 {
+		a.statusMsg = "Authentication required but no auth methods available"
+		return nil
+	}
+	a.previousView = a.activeView
+	a.loginView = newLoginModel(a.ctx, a.controller, methods, message)
+	a.loginView.SetSize(a.width, a.contentHeight())
+	a.activeView = viewLogin
+	return a.loginView.Init()
 }
 
 // Init returns the initial command.
@@ -122,6 +165,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		a.width = msg.Width
 		a.height = msg.Height
+		a.loginView.SetSize(a.width, a.contentHeight())
 		a.treeView.SetSize(a.width, a.contentHeight())
 		a.validationView.SetSize(a.width, a.contentHeight())
 		a.applyView.SetSize(a.width, a.contentHeight())
@@ -163,6 +207,10 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				a.showHelp = false
 				return a, nil
 			}
+			if a.activeView == viewLogin {
+				// Let the login view handle Esc (e.g. back to method selection).
+				break
+			}
 			if a.activeView == viewTree {
 				if a.treeView.filtering {
 					a.treeView.ClearFilter()
@@ -180,8 +228,25 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
+	case loginResultMsg:
+		if msg.err != nil {
+			// Error is displayed within the login view itself.
+			a.loginView, _ = a.loginView.UpdateLogin(msg)
+			return a, nil
+		}
+		a.loginView, _ = a.loginView.UpdateLogin(msg)
+		// Successful login: load tree and transition to tree view.
+		a.statusMsg = "Login successful"
+		return a, func() tea.Msg {
+			tree, err := a.controller.LoadTree(a.ctx)
+			return treeLoadedMsg{tree: tree, err: err}
+		}
+
 	case treeLoadedMsg:
 		if msg.err != nil {
+			if store.IsAuthRequired(msg.err) {
+				return a, a.showLoginView("Authentication required. Please log in.")
+			}
 			a.err = msg.err
 			a.statusMsg = "Error loading tree: " + msg.err.Error()
 			return a, nil
@@ -189,7 +254,20 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.tree = msg.tree
 		a.treeView = NewTreeView(a.controller, a.tree)
 		a.treeView.SetSize(a.width, a.contentHeight())
-		a.statusMsg = "Tree reloaded"
+		if a.activeView == viewLogin {
+			// Transitioning from login: initialize all views and go to tree.
+			a.editorView = NewValueEditor()
+			a.componentView = NewComponentView(a.controller)
+			a.validationView = NewValidationView()
+			a.applyView = NewApplyView()
+			a.exportView = NewExportView(a.controller)
+			a.marketplaceView = NewMarketplaceView(a.ctx, a.controller)
+			a.installedView = NewInstalledView(a.ctx, a.controller)
+			a.activeView = viewTree
+			a.statusMsg = "Login successful"
+		} else {
+			a.statusMsg = "Tree reloaded"
+		}
 		return a, nil
 
 	case statusMsg:
@@ -204,6 +282,8 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	// Route to active view.
 	switch a.activeView {
+	case viewLogin:
+		return a.updateLoginView(msg)
 	case viewTree:
 		return a.updateTreeView(msg)
 	case viewEditor:
@@ -227,6 +307,12 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return a, nil
 }
 
+func (a *App) updateLoginView(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	a.loginView, cmd = a.loginView.UpdateLogin(msg)
+	return a, cmd
+}
+
 func (a *App) updateTreeView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if keyMsg, ok := msg.(tea.KeyMsg); ok && !a.treeView.filtering {
 		switch keyMsg.String() {
@@ -247,6 +333,9 @@ func (a *App) updateTreeView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "s":
 			err := a.controller.SaveTree(a.ctx)
 			if err != nil {
+				if store.IsAuthRequired(err) {
+					return a, a.showLoginView("Session expired. Please log in again.")
+				}
 				if store.IsCASConflict(err) {
 					a.statusMsg = "Save conflict: tree was modified externally. Press r to reload."
 				} else {
@@ -260,6 +349,9 @@ func (a *App) updateTreeView(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "v":
 			results, err := a.controller.Validate(a.ctx)
 			if err != nil {
+				if store.IsAuthRequired(err) {
+					return a, a.showLoginView("Session expired. Please log in again.")
+				}
 				a.statusMsg = "Validation error: " + err.Error()
 				return a, nil
 			}
@@ -365,6 +457,9 @@ func (a *App) commitEditorValue() (tea.Model, tea.Cmd) {
 	val := a.editorView.CommitValue()
 	err := a.controller.SetValue(a.ctx, a.editorView.path, val)
 	if err != nil {
+		if store.IsAuthRequired(err) {
+			return a, a.showLoginView("Session expired. Please log in again.")
+		}
 		a.statusMsg = "Set failed: " + err.Error()
 	} else {
 		a.statusMsg = fmt.Sprintf("Updated %s", a.editorView.path)
@@ -503,6 +598,8 @@ func (a *App) renderHeader() string {
 	title := fmt.Sprintf(" zhi - %s ", a.controller.WorkspaceName())
 	viewName := ""
 	switch a.activeView {
+	case viewLogin:
+		viewName = "Login"
 	case viewTree:
 		viewName = "Tree"
 	case viewEditor:
@@ -532,6 +629,8 @@ func (a *App) renderHeader() string {
 
 func (a *App) renderContent() string {
 	switch a.activeView {
+	case viewLogin:
+		return a.loginView.View()
 	case viewTree:
 		return a.treeView.View()
 	case viewEditor:
@@ -558,6 +657,8 @@ func (a *App) renderContent() string {
 func (a *App) renderStatusBar() string {
 	var hints string
 	switch a.activeView {
+	case viewLogin:
+		hints = "Tab:next field  Enter:submit  Ctrl+C:quit"
 	case viewTree:
 		hints = "j/k:navigate  enter:edit  s:save  v:validate  a:apply  e:export  c:components  m:marketplace  p:plugins  r:reload  ?:help  q:quit"
 	case viewEditor:
