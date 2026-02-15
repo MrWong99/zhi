@@ -17,6 +17,7 @@ End-to-end validation that the full login flow works with the Vault store plugin
 
 - **`test/integration/login_test.go`** (or similar) -- Integration tests that spin up a Vault dev server and test the full flow programmatically through the controller layer.
 - Extend example plugin tests if applicable.
+- Adjust **`.github/workflows/`** if needed to run the integration tests using GitHub Actions.
 
 ### Vault-Specific Validation
 
@@ -35,6 +36,7 @@ The `oidc` method requires browser-based interactive flow and is handled separat
 - `make check` passes.
 - No regressions in existing tests.
 - Error messages from Vault are surfaced clearly in both UIs.
+- The GitHub Actions workflow runs successfully.
 
 ## Dependencies
 

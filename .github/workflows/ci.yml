@@ -140,6 +140,13 @@ jobs:
         with:
           go-version-file: "go.mod"
 
+      - name: Install Vault
+        run: |
+          curl -fsSL https://releases.hashicorp.com/vault/1.21.2/vault_1.21.2_linux_amd64.zip -o vault.zip
+          unzip vault.zip
+          sudo mv vault /usr/local/bin/
+          vault version
+
       - name: Build all binaries
         run: make build-all
 
