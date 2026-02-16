@@ -92,6 +92,12 @@
     padding: var(--space-8);
 }
 
+.error-page-mascot {
+    margin-bottom: var(--space-4);
+    opacity: 0.6;
+    border-radius: var(--radius-md);
+}
+
 .error-page-code {
     font-size: var(--text-2xl);
     margin-bottom: var(--space-2);

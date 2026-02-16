@@ -30,6 +30,16 @@ body {
     border-bottom: 1px solid var(--color-border-light);
 }
 
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.sidebar-mascot {
+    border-radius: var(--radius-md);
+}
+
 .sidebar-header h1 {
     font-size: var(--text-lg);
     font-weight: var(--font-semibold);

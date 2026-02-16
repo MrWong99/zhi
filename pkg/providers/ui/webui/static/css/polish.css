@@ -160,6 +160,9 @@ details summary::before {
     .sidebar-header .workspace-name {
         display: none;
     }
+    .sidebar-brand {
+        justify-content: center;
+    }
     .sidebar-nav a {
         justify-content: center;
         padding: var(--space-2);

@@ -1,7 +1,10 @@
 {{define "sidebar"}}
 <aside class="sidebar">
   <div class="sidebar-header">
-    <h1>zhi</h1>
+    <div class="sidebar-brand">
+      <img src="{{assetPath "mascot.svg"}}" alt="" class="sidebar-mascot" width="32" height="32">
+      <h1>zhi</h1>
+    </div>
     <div class="workspace-name">{{.WorkspaceName}}</div>
   </div>
   <nav class="sidebar-nav">
