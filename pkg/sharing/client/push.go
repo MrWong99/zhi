@@ -149,8 +149,9 @@ func (c *Client) pushSinglePlatformPlugin(ctx context.Context, target oras.Targe
 		return ocispec.Descriptor{}, fmt.Errorf("tagging manifest: %w", err)
 	}
 
-	// Copy from memory store to remote.
-	desc, err := oras.Copy(ctx, store, tag, target, tag, oras.DefaultCopyOptions)
+	// Copy from memory store to remote. Wrap target to handle registries
+	// that return 403 on Exists for new packages (e.g. GHCR).
+	desc, err := oras.Copy(ctx, store, tag, &lenientExistsTarget{target}, tag, oras.DefaultCopyOptions)
 	if err != nil {
 		return ocispec.Descriptor{}, fmt.Errorf("pushing to registry: %w", err)
 	}
@@ -234,7 +235,7 @@ func (c *Client) pushMultiPlatformPlugin(ctx context.Context, target oras.Target
 		return ocispec.Descriptor{}, fmt.Errorf("tagging index: %w", err)
 	}
 
-	desc, err := oras.Copy(ctx, store, tag, target, tag, oras.DefaultCopyOptions)
+	desc, err := oras.Copy(ctx, store, tag, &lenientExistsTarget{target}, tag, oras.DefaultCopyOptions)
 	if err != nil {
 		return ocispec.Descriptor{}, fmt.Errorf("pushing to registry: %w", err)
 	}
@@ -308,7 +309,7 @@ func (c *Client) PushWorkspace(ctx context.Context, m *manifest.WorkspaceManifes
 		return nil, fmt.Errorf("tagging manifest: %w", err)
 	}
 
-	desc, err := oras.Copy(ctx, store, tag, remote, tag, oras.DefaultCopyOptions)
+	desc, err := oras.Copy(ctx, store, tag, &lenientExistsTarget{remote}, tag, oras.DefaultCopyOptions)
 	if err != nil {
 		return nil, fmt.Errorf("pushing to registry: %w", err)
 	}

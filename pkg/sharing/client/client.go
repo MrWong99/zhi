@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -14,6 +15,7 @@ import (
 	"oras.land/oras-go/v2/content/memory"
 	"oras.land/oras-go/v2/registry/remote"
 	"oras.land/oras-go/v2/registry/remote/auth"
+	"oras.land/oras-go/v2/registry/remote/errcode"
 
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 
@@ -330,4 +332,25 @@ func readBlob(ctx context.Context, store oras.ReadOnlyTarget, desc ocispec.Descr
 	}
 	defer rc.Close()
 	return io.ReadAll(rc)
+}
+
+// lenientExistsTarget wraps an oras.Target so that Exists treats HTTP 403
+// responses as "not found". Some registries (notably GHCR) return 403 Forbidden
+// on HEAD requests for repositories that do not yet exist, instead of the
+// expected 404. Without this wrapper, oras.Copy fails on the Exists pre-check
+// when pushing to a brand-new package.
+type lenientExistsTarget struct {
+	oras.Target
+}
+
+func (t *lenientExistsTarget) Exists(ctx context.Context, desc ocispec.Descriptor) (bool, error) {
+	exists, err := t.Target.Exists(ctx, desc)
+	if err != nil {
+		var errResp *errcode.ErrorResponse
+		if errors.As(err, &errResp) && errResp.StatusCode == http.StatusForbidden {
+			return false, nil
+		}
+		return false, err
+	}
+	return exists, nil
 }

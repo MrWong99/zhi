@@ -4,8 +4,8 @@ description: This zhi deployment can be used to deploy a zhi-mirror and zhi-mark
 author: MrWong99
 license: MIT
 dependencies:
-  - ref: oci://ghcr.io/mrwong99/zhi/zhi-storage-vault:v1.1.0
-    type: storage
+  - ref: oci://ghcr.io/mrwong99/zhi/zhi-store-vault:v1.1.0
+    type: store
     optional: false
 tools:
   - name: docker
@@ -17,5 +17,4 @@ keywords:
   - mirror
   - marketplace
   - deployment
-  - security
   - docker
