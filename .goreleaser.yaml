@@ -115,3 +115,10 @@ release:
     zhi plugin install oci://ghcr.io/mrwong99/zhi/zhi-transform-pokedex:{{ .Tag }}
     zhi plugin install oci://ghcr.io/mrwong99/zhi/zhi-ui-httpapi:{{ .Tag }}
     ```
+
+    ## Workspace OCI installs
+
+    ```sh
+    zhi workspace install ghcr.io/mrwong99/zhi/zhi-workspace-vault:{{ .Tag }}
+    zhi workspace install ghcr.io/mrwong99/zhi/zhi-workspace-zhi:{{ .Tag }}
+    ```
