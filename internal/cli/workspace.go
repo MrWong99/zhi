@@ -14,6 +14,7 @@ import (
 	"github.com/MrWong99/zhi/pkg/sharing/lockfile"
 	"github.com/MrWong99/zhi/pkg/sharing/manifest"
 	"github.com/MrWong99/zhi/pkg/sharing/metadata"
+	"github.com/MrWong99/zhi/pkg/sharing/verify"
 )
 
 var workspaceCmd = &cobra.Command{
@@ -125,20 +126,33 @@ var workspacePublishCmd = &cobra.Command{
 	Short: "Publish the current workspace as an OCI artifact",
 	Long: `Package the current workspace (zhi.yaml, templates, apply scripts) and
 push it to an OCI registry. Plugin dependencies declared in zhi.yaml are
-recorded in the workspace artifact metadata.`,
+recorded in the workspace artifact metadata.
+
+Signing:
+  --sign             Sign the artifact with cosign after pushing
+  --key <path>       Path to a cosign private key (default: keyless via Fulcio/OIDC)
+
+When --sign is used without --key, keyless signing via Sigstore Fulcio is used,
+which requires an OIDC identity (e.g. GitHub Actions).`,
 	Example: `  zhi workspace publish --registry ghcr.io/myorg
-  zhi workspace publish --registry ghcr.io/myorg --tag v1.0.0`,
+  zhi workspace publish --registry ghcr.io/myorg --tag v1.0.0
+  zhi workspace publish --registry ghcr.io/myorg --sign
+  zhi workspace publish --registry ghcr.io/myorg --sign --key cosign.key`,
 	RunE: runWorkspacePublish,
 }
 
 var (
 	workspacePublishRegistry string
 	workspacePublishTag      string
+	workspacePublishSign     bool
+	workspacePublishKey      string
 )
 
 func init() {
 	workspacePublishCmd.Flags().StringVar(&workspacePublishRegistry, "registry", "", "target OCI registry (required)")
 	workspacePublishCmd.Flags().StringVar(&workspacePublishTag, "tag", "", "OCI tag (default: v{version} from manifest)")
+	workspacePublishCmd.Flags().BoolVar(&workspacePublishSign, "sign", false, "sign the artifact with cosign after pushing")
+	workspacePublishCmd.Flags().StringVar(&workspacePublishKey, "key", "", "path to cosign private key (default: keyless via Fulcio/OIDC)")
 }
 
 func runWorkspacePublish(cmd *cobra.Command, _ []string) error {
@@ -146,6 +160,11 @@ func runWorkspacePublish(cmd *cobra.Command, _ []string) error {
 
 	if workspacePublishRegistry == "" {
 		return fmt.Errorf("--registry is required")
+	}
+
+	// Validate --key requires --sign.
+	if workspacePublishKey != "" && !workspacePublishSign {
+		return fmt.Errorf("--key requires --sign")
 	}
 
 	// Look for workspace manifest.
@@ -174,6 +193,42 @@ func runWorkspacePublish(cmd *cobra.Command, _ []string) error {
 	fmt.Fprintf(w, "  Reference: %s\n", result.Reference)
 	fmt.Fprintf(w, "  Tag:       %s\n", result.Tag)
 	fmt.Fprintf(w, "  Digest:    %s\n", result.Digest)
+
+	// Sign the artifact if requested.
+	if workspacePublishSign {
+		fmt.Fprintln(w, "\nSigning artifact...")
+		if workspacePublishKey != "" {
+			fmt.Fprintf(w, "  Method: key-based (%s)\n", workspacePublishKey)
+		} else {
+			fmt.Fprintln(w, "  Method: keyless (Sigstore Fulcio/OIDC)")
+		}
+
+		signer, err := verify.NewSigner(cmd.Context())
+		if err != nil {
+			return fmt.Errorf("creating signer: %w", err)
+		}
+
+		signOpts := verify.SignOptions{
+			KeyPath:      workspacePublishKey,
+			UseRekor:     true,
+			UseTimestamp: true,
+		}
+
+		signResult, err := signer.SignArtifact(cmd.Context(), result.Digest, signOpts)
+		if err != nil {
+			return fmt.Errorf("signing artifact: %w", err)
+		}
+
+		bundlePath := result.Digest[7:15] + ".bundle.json"
+		if err := verify.SaveBundleToFile(signResult.BundleJSON, bundlePath); err != nil {
+			return fmt.Errorf("saving signature bundle: %w", err)
+		}
+
+		fmt.Fprintf(w, "  Signed successfully\n")
+		fmt.Fprintf(w, "  Identity: %s\n", signResult.SigningIdentity)
+		fmt.Fprintf(w, "  Bundle saved to: %s\n", bundlePath)
+	}
+
 	fmt.Fprintf(w, "\nInstall with: zhi workspace install %s\n", result.Reference)
 	return nil
 }

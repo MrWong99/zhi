@@ -1,0 +1,26 @@
+name: vault
+version: 1.1.0
+description: This zhi deployment can be used to deploy a Vault instance.
+author: MrWong99
+license: MIT
+tools:
+  - name: vault
+    version: 1.21.1
+  - name: kubectl
+    version: 1.25.0
+  - name: docker
+    version: 29.2.1
+  - name: docker compose
+    version: 5.0.2
+  - name: jq
+    version: 1.8.1
+  - name: curl
+    version: 8.18.0
+keywords:
+  - vault
+  - deployment
+  - security
+  - storage
+  - docker
+  - kubernetes
+  - host
