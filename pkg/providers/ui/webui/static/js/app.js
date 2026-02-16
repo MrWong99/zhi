@@ -263,4 +263,13 @@
   registerShortcut("Ctrl+S", "Save tree", function () {});
   registerShortcut("Esc", "Close edit form / Cancel", function () {});
   registerShortcut("?", "Show shortcut overlay", function () {});
+
+  // ---------- Login Page Auth Method Selector ----------
+
+  var authMethodSelect = document.getElementById("auth-method-select");
+  if (authMethodSelect) {
+    authMethodSelect.addEventListener("change", function () {
+      window.location.href = "/login?method=" + encodeURIComponent(this.value);
+    });
+  }
 })();

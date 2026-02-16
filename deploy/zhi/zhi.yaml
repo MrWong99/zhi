@@ -23,7 +23,10 @@ components:
     mandatory: true
 
 store:
-  provider: json
+  provider: vault
+  options:
+    addr: "http://127.0.0.1:8200"
+    mount: "kv"
 
 ui:
   provider: webui

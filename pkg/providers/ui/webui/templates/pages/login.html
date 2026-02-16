@@ -23,8 +23,8 @@
 
         {{if gt (len .AuthMethods) 1}}
           <div class="form-group">
-            <label for="method">Authentication Method</label>
-            <select id="method" name="method" onchange="this.form.action='/login?method='+this.value; window.location='/login?method='+this.value;">
+            <label for="auth-method-select">Authentication Method</label>
+            <select id="auth-method-select" name="method">
               {{range .AuthMethods}}
                 <option value="{{.Type}}" {{if eq .Type $.SelectedMethod}}selected{{end}}>
                   {{.Description}}
