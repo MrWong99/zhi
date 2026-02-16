@@ -4,7 +4,7 @@ zhi:
     metadata:
       ui.section: "General"
       ui.displayName: "External OCI Registry"
-      ui.placeholder: "ghcr.io"
+      ui.placeholder: "ghcr.io/mrwong99/zhi"
       core.description: "The external OCI registry to use for mirroring plugins or workspaces."
     imports:
       - strings

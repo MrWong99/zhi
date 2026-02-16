@@ -91,6 +91,33 @@ zhi plugin search --type config
 
 See [Sharing and Registries](sharing-and-registries.md) for the full guide.
 
+## Setup zhi marketplace and mirror
+
+You can set up a local mirror and marketplace including a HashiCorp Vault storage backend.
+There are pre-built zhi workspaces available to do this:
+
+```sh
+local zhi_version="1.1.3" # set to latest released version
+zhi workspace install ghcr.io/mrwong99/zhi/zhi-workspace-vault:v${zhi_version} ./vault
+
+# Edit the settings for vault in the webui (set admin credentials), then "Export" -> "Export all" and "Apply" -> "Run"
+cd vault && zhi edit && cd ..
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# MAKE SURE TO SAVE THE VAULT UNSEAL KEY(S) IN A SAFE PLACE!!!
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+# Now open the Vault UI in your browser http(s)://<api address>/ui/ and enable the "kv" secret engine
+
+# Finally install the zhi workspace
+zhi workspace install ghcr.io/mrwong99/zhi/zhi-workspace-zhi:v${zhi_version} ./mirror
+cd mirror
+# optionally edit the store options in the ./zhi.yaml and then
+zhi edit
+
+# Login using the admin credentials with userpass in the webui,
+# make your changes, enable the "Components" you want and then "Export" -> "Export all" and "Apply" -> "Run"
+```
+
 ## What's Next
 
 - [Workspace Configuration](workspace-configuration.md) -- learn about `zhi.yaml`

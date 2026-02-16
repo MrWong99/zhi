@@ -8,6 +8,7 @@ import (
 
 	"github.com/MrWong99/zhi/internal/core"
 	"github.com/MrWong99/zhi/internal/ui"
+	vaultstore "github.com/MrWong99/zhi/pkg/providers/store/vault"
 	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
 	"github.com/MrWong99/zhi/pkg/zhiplugin/store"
 	zhiui "github.com/MrWong99/zhi/pkg/zhiplugin/ui"
@@ -141,6 +142,29 @@ func setupVaultController(t *testing.T, addr, token string) (*ui.UIController, *
 	mc := newMockConfig()
 	if err := reg.RegisterConfig("mock", func(string, map[string]any) (config.Plugin, error) {
 		return mc, nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := reg.RegisterStore("vault", func(_ string, options map[string]any) (store.Plugin, error) {
+		cfg := vaultstore.DefaultConfig()
+		if options != nil {
+			if v, ok := options["address"].(string); ok {
+				cfg.Address = v
+			}
+			if v, ok := options["token"].(string); ok {
+				cfg.Token = v
+			}
+			if v, ok := options["mount"].(string); ok {
+				cfg.Mount = v
+			}
+			if v, ok := options["prefix"].(string); ok {
+				cfg.Prefix = v
+			}
+			if v, ok := options["namespace"].(string); ok {
+				cfg.Namespace = v
+			}
+		}
+		return vaultstore.New(cfg)
 	}); err != nil {
 		t.Fatal(err)
 	}
