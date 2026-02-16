@@ -1,0 +1,71 @@
+version: "1"
+
+config:
+  provider: structuredfile
+  options:
+    directory: ./config
+
+# Intentionally no store: section -- this workspace is ephemeral by design.
+# Users configure via the UI, export, apply, and discard. The generated apply
+# script deletes secret-containing files after execution.
+
+ui:
+  provider: webui
+  options:
+    addr: "127.0.0.1:9090"
+    auto_open: true
+
+components:
+  - name: vault-server
+    description: "Core Vault server configuration (listener, storage, TLS)"
+    paths:
+      - "vault-server/"
+    mandatory: true
+  - name: vault-deploy
+    description: "Deployment mode and environment settings"
+    paths:
+      - "vault-deploy/"
+    mandatory: true
+  - name: vault-auth
+    description: "Authentication methods and initial admin user"
+    paths:
+      - "vault-auth/"
+    mandatory: true
+  - name: vault-secrets
+    description: "Secret engines to enable during bootstrap"
+    paths:
+      - "vault-secrets/"
+    mandatory: false
+
+export:
+  templates:
+    - name: apply-script
+      template: ./templates/apply.sh.tmpl
+      output: ./apply.sh
+    - name: vault-config
+      template: ./templates/vault-config.hcl.tmpl
+      output: ./vault-config.hcl
+    - name: docker-compose
+      template: ./templates/docker-compose.yml.tmpl
+      output: ./docker-compose.yml
+    - name: k8s-namespace
+      template: ./templates/k8s-namespace.yml.tmpl
+      output: ./k8s-namespace.yml
+    - name: k8s-configmap
+      template: ./templates/k8s-configmap.yml.tmpl
+      output: ./k8s-configmap.yml
+    - name: k8s-statefulset
+      template: ./templates/k8s-statefulset.yml.tmpl
+      output: ./k8s-statefulset.yml
+    - name: k8s-service
+      template: ./templates/k8s-service.yml.tmpl
+      output: ./k8s-service.yml
+    - name: k8s-ingress
+      template: ./templates/k8s-ingress.yml.tmpl
+      output: ./k8s-ingress.yml
+
+apply:
+  command: "bash ./apply.sh"
+  workdir: "."
+  pre-export: true
+  timeout: 300

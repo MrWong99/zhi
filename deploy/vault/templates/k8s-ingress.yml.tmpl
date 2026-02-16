@@ -1,0 +1,30 @@
+{{- if eq (.Get "vault-deploy/k8s/ingress-enabled" | toString) "true" }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vault
+  namespace: {{ .Get "vault-deploy/k8s/namespace" }}
+  labels:
+    app.kubernetes.io/name: vault
+    app.kubernetes.io/managed-by: zhi
+  annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: {{ if eq (.Get "vault-server/tls/enabled" | toString) "true" }}"HTTPS"{{ else }}"HTTP"{{ end }}
+spec:
+  rules:
+    - host: {{ .Get "vault-deploy/k8s/ingress-host" }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: vault
+                port:
+                  number: 8200
+  {{- if eq (.Get "vault-server/tls/enabled" | toString) "true" }}
+  tls:
+    - hosts:
+        - {{ .Get "vault-deploy/k8s/ingress-host" }}
+      secretName: vault-ingress-tls
+  {{- end }}
+{{- end }}

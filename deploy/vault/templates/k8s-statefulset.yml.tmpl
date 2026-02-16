@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: vault
+  namespace: {{ .Get "vault-deploy/k8s/namespace" }}
+  labels:
+    app.kubernetes.io/name: vault
+    app.kubernetes.io/managed-by: zhi
+spec:
+  serviceName: vault
+  replicas: {{ .Get "vault-deploy/k8s/replicas" }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vault
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: vault
+    spec:
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: vault
+          image: hashicorp/vault:{{ .Get "vault-deploy/vault-version" }}
+          args: ["server"]
+          ports:
+            - name: api
+              containerPort: 8200
+              protocol: TCP
+            - name: cluster
+              containerPort: 8201
+              protocol: TCP
+          env:
+            - name: VAULT_ADDR
+              value: "{{ .Get "vault-server/api-addr" }}"
+            - name: VAULT_API_ADDR
+              value: "{{ .Get "vault-server/api-addr" }}"
+          volumeMounts:
+            - name: vault-config
+              mountPath: /vault/config
+              readOnly: true
+            - name: vault-data
+              mountPath: {{ .Get "vault-server/storage-path" }}
+{{- if eq (.Get "vault-server/tls/enabled" | toString) "true" }}
+            - name: vault-tls
+              mountPath: /vault/tls
+              readOnly: true
+{{- end }}
+          securityContext:
+            capabilities:
+              add: ["IPC_LOCK"]
+          readinessProbe:
+            httpGet:
+              path: /v1/sys/health?standbyok=true&uninitcode=204&sealedcode=204
+              port: 8200
+              scheme: {{ if eq (.Get "vault-server/tls/enabled" | toString) "true" }}HTTPS{{ else }}HTTP{{ end }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /v1/sys/health?standbyok=true&uninitcode=204&sealedcode=204
+              port: 8200
+              scheme: {{ if eq (.Get "vault-server/tls/enabled" | toString) "true" }}HTTPS{{ else }}HTTP{{ end }}
+            initialDelaySeconds: 15
+            periodSeconds: 30
+      volumes:
+        - name: vault-config
+          configMap:
+            name: vault-config
+{{- if eq (.Get "vault-server/tls/enabled" | toString) "true" }}
+        - name: vault-tls
+          secret:
+            secretName: vault-tls
+{{- end }}
+  volumeClaimTemplates:
+    - metadata:
+        name: vault-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: {{ .Get "vault-deploy/k8s/storage-class" }}
+        resources:
+          requests:
+            storage: {{ .Get "vault-deploy/k8s/storage-size" }}

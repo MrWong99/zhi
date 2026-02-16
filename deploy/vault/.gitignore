@@ -1,0 +1,12 @@
+# Generated files from zhi export
+apply.sh
+vault-config.hcl
+docker-compose.yml
+k8s-namespace.yml
+k8s-configmap.yml
+k8s-statefulset.yml
+k8s-service.yml
+k8s-ingress.yml
+
+# Local zhi state (if any store were added)
+.zhi/
