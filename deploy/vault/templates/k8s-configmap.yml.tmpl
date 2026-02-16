@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vault-config
+  namespace: {{ .Get "vault-deploy/k8s/namespace" }}
+  labels:
+    app.kubernetes.io/name: vault
+    app.kubernetes.io/managed-by: zhi
+data:
+  vault.hcl: |
+    ui = {{ .Get "vault-server/ui" }}
+
+    listener "tcp" {
+      address     = "0.0.0.0:8200"
+    {{- if eq (.Get "vault-server/tls/enabled" | toString) "true" }}
+      tls_cert_file      = "/vault/tls/cert.pem"
+      tls_key_file       = "/vault/tls/key.pem"
+      {{- with .Get "vault-server/tls/client-ca-file" }}
+      tls_client_ca_file = "/vault/tls/ca.pem"
+      {{- end }}
+      tls_disable = false
+    {{- else }}
+      tls_disable = true
+    {{- end }}
+    }
+
+    storage "{{ .Get "vault-server/storage-backend" }}" {
+      path = "{{ .Get "vault-server/storage-path" }}"
+    }
+
+    api_addr     = "{{ .Get "vault-server/api-addr" }}"
+    cluster_addr = "{{ .Get "vault-server/cluster-addr" }}"
+    log_level    = "{{ .Get "vault-server/log-level" }}"
