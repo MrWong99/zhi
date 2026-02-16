@@ -88,14 +88,20 @@ func TestCreateWorkspaceBundle(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Create files that should NOT be included.
+	// Create a file that will be gitignored.
+	if err := os.WriteFile(filepath.Join(dir, "random.txt"), []byte("random"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// Create a .gitignore that excludes random.txt.
+	if err := os.WriteFile(filepath.Join(dir, ".gitignore"), []byte("random.txt\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create files that should NOT be included (hidden dirs).
 	if err := os.MkdirAll(filepath.Join(dir, ".git"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(dir, ".git", "config"), []byte("git config"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(dir, "random.txt"), []byte("random"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -142,29 +148,59 @@ func TestCreateWorkspaceBundleEmpty(t *testing.T) {
 	}
 }
 
-func TestIsWorkspaceFile(t *testing.T) {
-	tests := []struct {
-		path string
-		want bool
-	}{
-		{"zhi.yaml", true},
-		{"zhi-workspace.yaml", true},
-		{"templates/config.tmpl", true},
-		{"templates", true},
-		{"apply/setup.sh", true},
-		{"apply", true},
-		{"README.md", true},
-		{"readme.txt", true},
-		{"random.txt", false},
-		{".git/config", false},
-		{"src/main.go", false},
-	}
-	for _, tt := range tests {
-		t.Run(tt.path, func(t *testing.T) {
-			if got := isWorkspaceFile(tt.path); got != tt.want {
-				t.Errorf("isWorkspaceFile(%q) = %v, want %v", tt.path, got, tt.want)
+func TestLoadGitignorePatterns(t *testing.T) {
+	t.Run("with gitignore", func(t *testing.T) {
+		dir := t.TempDir()
+		content := "# comment\n\nrandom.txt\n/keys\n*.log\n"
+		if err := os.WriteFile(filepath.Join(dir, ".gitignore"), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		patterns := loadGitignorePatterns(dir)
+		want := []string{"random.txt", "/keys", "*.log"}
+		if len(patterns) != len(want) {
+			t.Fatalf("got %d patterns, want %d: %v", len(patterns), len(want), patterns)
+		}
+		for i, p := range patterns {
+			if p != want[i] {
+				t.Errorf("pattern[%d] = %q, want %q", i, p, want[i])
 			}
-		})
+		}
+	})
+
+	t.Run("no gitignore", func(t *testing.T) {
+		dir := t.TempDir()
+		patterns := loadGitignorePatterns(dir)
+		if patterns != nil {
+			t.Errorf("got %v, want nil", patterns)
+		}
+	})
+}
+
+func TestCreateWorkspaceBundleNoGitignore(t *testing.T) {
+	dir := t.TempDir()
+
+	if err := os.WriteFile(filepath.Join(dir, "zhi.yaml"), []byte("version: \"1\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "extra.txt"), []byte("extra"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	data, err := createWorkspaceBundle(dir)
+	if err != nil {
+		t.Fatalf("createWorkspaceBundle: %v", err)
+	}
+
+	files := extractTarGzEntries(t, data)
+	expected := map[string]bool{"zhi.yaml": true, "extra.txt": true}
+	for _, f := range files {
+		if !expected[f] {
+			t.Errorf("unexpected file in bundle: %s", f)
+		}
+		delete(expected, f)
+	}
+	for f := range expected {
+		t.Errorf("expected file not in bundle: %s", f)
 	}
 }
 

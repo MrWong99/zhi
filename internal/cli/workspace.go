@@ -89,6 +89,21 @@ func runWorkspaceInstall(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("installing workspace: %w", err)
 	}
 
+	// Report dependency installation results.
+	if !workspaceInstallSkipPlugins && len(wm.Dependencies) > 0 {
+		fmt.Fprintln(w, "\nDependencies:")
+		for _, dep := range wm.Dependencies {
+			if dep.Ref == "" {
+				continue
+			}
+			optLabel := ""
+			if dep.Optional {
+				optLabel = " (optional)"
+			}
+			fmt.Fprintf(w, "  + %s%s\n", dep.Ref, optLabel)
+		}
+	}
+
 	// Check external tools if not skipped.
 	if !workspaceInstallSkipToolsCheck && len(wm.Tools) > 0 {
 		fmt.Fprintln(w, "\nChecking tools:")

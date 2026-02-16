@@ -16,6 +16,7 @@ import (
 	digest "github.com/opencontainers/go-digest"
 	specs "github.com/opencontainers/image-spec/specs-go"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
+	"github.com/shibumi/go-pathspec"
 	"oras.land/oras-go/v2"
 	"oras.land/oras-go/v2/content/memory"
 
@@ -432,11 +433,14 @@ func parsePlatform(s string) (string, string, error) {
 }
 
 // createWorkspaceBundle creates a tar.gz archive of workspace files in dir.
-// It includes zhi.yaml, templates/, and apply/ directories.
+// It respects a .gitignore file in the workspace root (if present) and always
+// skips hidden directories (e.g. .git, .zhi).
 func createWorkspaceBundle(dir string) ([]byte, error) {
 	var buf bytes.Buffer
 	gw := gzip.NewWriter(&buf)
 	tw := tar.NewWriter(gw)
+
+	patterns := loadGitignorePatterns(dir)
 
 	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -453,17 +457,20 @@ func createWorkspaceBundle(dir string) ([]byte, error) {
 			return filepath.SkipDir
 		}
 
-		// Skip the workspace bundle itself and other non-workspace files.
-		if rel == "." {
+		// Skip the root directory entry and the .gitignore itself.
+		if rel == "." || rel == ".gitignore" {
 			return nil
 		}
 
-		// Only include known workspace files.
-		if !isWorkspaceFile(rel) {
-			if d.IsDir() {
-				return filepath.SkipDir
+		// Skip files matched by .gitignore patterns.
+		if len(patterns) > 0 {
+			ignored, _ := pathspec.GitIgnore(patterns, rel)
+			if ignored {
+				if d.IsDir() {
+					return filepath.SkipDir
+				}
+				return nil
 			}
-			return nil
 		}
 
 		info, err := d.Info()
@@ -507,30 +514,35 @@ func createWorkspaceBundle(dir string) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// isWorkspaceFile returns whether a relative path should be included in
-// a workspace bundle.
-func isWorkspaceFile(rel string) bool {
-	// Always include zhi.yaml and zhi-workspace.yaml at the root.
-	base := filepath.Base(rel)
-	if rel == "zhi.yaml" || rel == "zhi-workspace.yaml" {
-		return true
+// loadGitignorePatterns reads a .gitignore file from the given directory and
+// returns the non-empty, non-comment lines. Returns nil if no .gitignore exists.
+func loadGitignorePatterns(dir string) []string {
+	data, err := os.ReadFile(filepath.Join(dir, ".gitignore"))
+	if err != nil {
+		return nil
 	}
-
-	// Include templates/ and apply/ directories and their contents.
-	top := strings.SplitN(rel, string(filepath.Separator), 2)[0]
-	if top == "templates" || top == "apply" {
-		return true
+	var patterns []string
+	for _, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		patterns = append(patterns, line)
 	}
-
-	// Include README files.
-	lower := strings.ToLower(base)
-	return strings.HasPrefix(lower, "readme")
+	return patterns
 }
 
 // extractTarGz extracts a tar.gz archive to the target directory.
 func extractTarGz(data []byte, targetDir string) error {
 	if err := os.MkdirAll(targetDir, 0o755); err != nil {
 		return err
+	}
+
+	// Resolve to absolute path so the traversal check works with relative
+	// target directories (e.g. ".").
+	targetDir, err := filepath.Abs(targetDir)
+	if err != nil {
+		return fmt.Errorf("resolving target directory: %w", err)
 	}
 
 	gr, err := gzip.NewReader(bytes.NewReader(data))
