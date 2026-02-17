@@ -261,7 +261,7 @@ func (m loginModel) viewMethodSelection() string {
 		if method.Description != "" {
 			line += DimStyle.Render(fmt.Sprintf(" - %s", method.Description))
 		}
-		sb.WriteString(fmt.Sprintf("  %s%s\n", cursor, style.Render(line)))
+		fmt.Fprintf(&sb, "  %s%s\n", cursor, style.Render(line))
 	}
 	return sb.String()
 }
@@ -279,8 +279,8 @@ func (m loginModel) viewCredentialForm() string {
 		if field.Required {
 			label += RequiredBadgeStyle.Render(" *")
 		}
-		sb.WriteString(fmt.Sprintf("  %s:\n", label))
-		sb.WriteString(fmt.Sprintf("  %s\n\n", m.inputs[i].View()))
+		fmt.Fprintf(&sb, "  %s:\n", label)
+		fmt.Fprintf(&sb, "  %s\n\n", m.inputs[i].View())
 	}
 	return sb.String()
 }

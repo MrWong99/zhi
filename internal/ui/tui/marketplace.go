@@ -237,8 +237,7 @@ func (v MarketplaceView) View() string {
 	if v.typeFilter != "" {
 		typeLabel = v.typeFilter
 	}
-	sb.WriteString(fmt.Sprintf("  Filter: [%s]  Sort: [%s]  (t:type o:sort)", typeLabel, v.sortBy))
-	sb.WriteString("\n\n")
+	fmt.Fprintf(&sb, "  Filter: [%s]  Sort: [%s]  (t:type o:sort)\n\n", typeLabel, v.sortBy)
 
 	// Messages.
 	if v.errMsg != "" {

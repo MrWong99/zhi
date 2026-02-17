@@ -303,7 +303,7 @@ func toDotenv(v any) (string, error) {
 	var sb strings.Builder
 	for _, k := range keys {
 		envKey := strings.ToUpper(strings.ReplaceAll(k, "/", "_"))
-		sb.WriteString(fmt.Sprintf("%s=%v\n", envKey, m[k]))
+		fmt.Fprintf(&sb, "%s=%v\n", envKey, m[k])
 	}
 	return strings.TrimSpace(sb.String()), nil
 }

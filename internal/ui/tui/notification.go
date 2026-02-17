@@ -78,11 +78,9 @@ func (n Notification) View() string {
 	}
 
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("  %d plugin update(s) available:", len(n.updates)))
-	sb.WriteString("\n")
+	fmt.Fprintf(&sb, "  %d plugin update(s) available:\n", len(n.updates))
 	for _, u := range n.updates {
-		sb.WriteString(fmt.Sprintf("    %s: %s -> %s", u.Name, u.CurrentVersion, u.LatestVersion))
-		sb.WriteString("\n")
+		fmt.Fprintf(&sb, "    %s: %s -> %s\n", u.Name, u.CurrentVersion, u.LatestVersion)
 	}
 	sb.WriteString("  [d]ismiss")
 	sb.WriteString("\n")

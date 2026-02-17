@@ -555,7 +555,7 @@ func TestValueType(t *testing.T) {
 // ---------- middleware tests ----------
 
 func TestCSRFValidation(t *testing.T) {
-	csrf := newCSRFMiddleware()
+	csrf := newCSRFMiddleware(true)
 	token := csrf.generateToken()
 
 	if !csrf.validateToken(token) {
