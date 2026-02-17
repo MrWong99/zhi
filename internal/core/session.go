@@ -94,6 +94,42 @@ func (m *SessionManager) Login(ctx context.Context, method string, credentials m
 	return &s, nil
 }
 
+// LoginInteractive starts an interactive (browser-based) authentication
+// flow by delegating to the store plugin.
+func (m *SessionManager) LoginInteractive(ctx context.Context, method string, params map[string]string) (*store.InteractiveChallenge, error) {
+	return m.store.LoginInteractive(ctx, method, params)
+}
+
+// LoginInteractiveCallback completes an interactive auth flow with the
+// callback parameters from the identity provider. On success, creates a
+// new session just like Login does.
+func (m *SessionManager) LoginInteractiveCallback(ctx context.Context, challengeID string, callbackParams map[string]string) (*Session, error) {
+	cred, err := m.store.LoginInteractiveCallback(ctx, challengeID, callbackParams)
+	if err != nil {
+		return nil, err
+	}
+
+	var expiresAt time.Time
+	if cred.ExpiresAt != "" {
+		t, err := time.Parse(time.RFC3339, cred.ExpiresAt)
+		if err == nil {
+			expiresAt = t
+		}
+	}
+
+	m.mu.Lock()
+	m.session = &Session{
+		ID:        uuid.New().String(),
+		Status:    SessionAuthenticated,
+		ExpiresAt: expiresAt,
+		Metadata:  cred.Metadata,
+	}
+	s := *m.session
+	m.mu.Unlock()
+
+	return &s, nil
+}
+
 // Status returns the current session state. It lazily checks expiry:
 // if the session has an expiry time that is in the past, it transitions
 // to SessionExpired.

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 	"testing"
@@ -152,6 +153,14 @@ func (m *mockController) StoreAuthMethods(_ context.Context) ([]ui.StoreAuthMeth
 
 func (m *mockController) StoreLogin(_ context.Context, _ string, _ map[string]string) (*ui.StoreSession, error) {
 	return &ui.StoreSession{Status: ui.StoreSessionNone}, nil
+}
+
+func (m *mockController) StoreLoginInteractive(_ context.Context, _ string, _ map[string]string) (*ui.StoreInteractiveChallenge, error) {
+	return nil, errors.New("interactive login not supported")
+}
+
+func (m *mockController) StoreLoginInteractiveCallback(_ context.Context, _ string, _ map[string]string) (*ui.StoreSession, error) {
+	return nil, errors.New("interactive login not supported")
 }
 
 func (m *mockController) StoreAuthStatus(_ context.Context) (*ui.StoreSession, error) {

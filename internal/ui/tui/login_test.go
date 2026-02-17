@@ -75,6 +75,14 @@ func (m *authMockStore) Login(_ context.Context, method string, creds map[string
 	return cred, err
 }
 
+func (m *authMockStore) LoginInteractive(context.Context, string, map[string]string) (*store.InteractiveChallenge, error) {
+	return nil, fmt.Errorf("interactive login not supported")
+}
+
+func (m *authMockStore) LoginInteractiveCallback(context.Context, string, map[string]string) (*store.Credential, error) {
+	return nil, fmt.Errorf("interactive login not supported")
+}
+
 func (m *authMockStore) ListTrees(_ context.Context) ([]string, error) {
 	var ids []string
 	for id := range m.trees {

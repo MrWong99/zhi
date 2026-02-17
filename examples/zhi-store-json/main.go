@@ -95,6 +95,14 @@ func (s *jsonStore) Login(_ context.Context, _ string, _ map[string]string) (*st
 	return nil, errors.New("authentication not supported")
 }
 
+func (s *jsonStore) LoginInteractive(_ context.Context, _ string, _ map[string]string) (*store.InteractiveChallenge, error) {
+	return nil, errors.New("interactive login not supported")
+}
+
+func (s *jsonStore) LoginInteractiveCallback(_ context.Context, _ string, _ map[string]string) (*store.Credential, error) {
+	return nil, errors.New("interactive login not supported")
+}
+
 // --- Tree management ---
 
 func (s *jsonStore) ListTrees(_ context.Context) ([]string, error) {

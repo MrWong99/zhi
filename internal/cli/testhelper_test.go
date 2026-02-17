@@ -97,6 +97,14 @@ func (m *mockStore) Login(context.Context, string, map[string]string) (*store.Cr
 	return nil, fmt.Errorf("auth not supported")
 }
 
+func (m *mockStore) LoginInteractive(context.Context, string, map[string]string) (*store.InteractiveChallenge, error) {
+	return nil, fmt.Errorf("interactive login not supported")
+}
+
+func (m *mockStore) LoginInteractiveCallback(context.Context, string, map[string]string) (*store.Credential, error) {
+	return nil, fmt.Errorf("interactive login not supported")
+}
+
 func (m *mockStore) ListTrees(context.Context) ([]string, error) {
 	var ids []string
 	for id := range m.trees {

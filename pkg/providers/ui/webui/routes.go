@@ -24,6 +24,7 @@ func (s *Server) registerRoutes() {
 	// Auth routes (not behind requireAuth).
 	s.mux.HandleFunc("GET /login", s.handleLoginPage)
 	s.mux.HandleFunc("POST /login", s.handleLogin)
+	s.mux.HandleFunc("POST /login/interactive", s.handleLoginInteractive)
 	s.mux.HandleFunc("POST /logout", s.handleLogout)
 	s.mux.HandleFunc("GET /auth/status", s.handleAuthStatus)
 

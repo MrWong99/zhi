@@ -340,6 +340,7 @@ func (c *controllerGRPCClient) StoreAuthMethods(ctx context.Context) ([]StoreAut
 			Type:        m.GetType(),
 			Description: m.GetDescription(),
 			Fields:      fields,
+			Interactive: m.GetInteractive(),
 		})
 	}
 	return methods, nil
@@ -349,6 +350,37 @@ func (c *controllerGRPCClient) StoreLogin(ctx context.Context, method string, cr
 	resp, err := c.client.StoreLogin(ctx, &pb.CtrlStoreLoginRequest{
 		Method:      method,
 		Credentials: credentials,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &StoreSession{
+		SessionID: resp.GetSessionId(),
+		Status:    StoreSessionStatus(resp.GetStatus()),
+		ExpiresAt: resp.GetExpiresAt(),
+		Metadata:  resp.GetMetadata(),
+	}, nil
+}
+
+func (c *controllerGRPCClient) StoreLoginInteractive(ctx context.Context, method string, params map[string]string) (*StoreInteractiveChallenge, error) {
+	resp, err := c.client.StoreLoginInteractive(ctx, &pb.CtrlStoreLoginInteractiveRequest{
+		Method: method,
+		Params: params,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &StoreInteractiveChallenge{
+		ChallengeID: resp.GetChallengeId(),
+		AuthURL:     resp.GetAuthUrl(),
+		ExpiresAt:   resp.GetExpiresAt(),
+	}, nil
+}
+
+func (c *controllerGRPCClient) StoreLoginInteractiveCallback(ctx context.Context, challengeID string, callbackParams map[string]string) (*StoreSession, error) {
+	resp, err := c.client.StoreLoginInteractiveCallback(ctx, &pb.CtrlStoreLoginInteractiveCallbackRequest{
+		ChallengeId:    challengeID,
+		CallbackParams: callbackParams,
 	})
 	if err != nil {
 		return nil, err

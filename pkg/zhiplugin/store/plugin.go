@@ -33,6 +33,17 @@ type Plugin interface {
 	// credentials. The plugin stores the resulting session internally;
 	// the returned Credential is informational for the host/UI.
 	Login(ctx context.Context, method string, credentials map[string]string) (*Credential, error)
+	// LoginInteractive starts an interactive authentication flow (e.g.
+	// OIDC). The store returns an InteractiveChallenge containing a URL
+	// to open in the user's browser and metadata needed to complete the
+	// flow. The params map carries method-specific parameters such as
+	// "role" and "redirect_uri".
+	LoginInteractive(ctx context.Context, method string, params map[string]string) (*InteractiveChallenge, error)
+	// LoginInteractiveCallback completes an interactive auth flow with
+	// the callback parameters received from the identity provider
+	// (e.g. "code", "state"). The challengeID must match the one
+	// returned by LoginInteractive.
+	LoginInteractiveCallback(ctx context.Context, challengeID string, callbackParams map[string]string) (*Credential, error)
 
 	// --- Tree management ---
 

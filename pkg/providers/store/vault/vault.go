@@ -202,6 +202,7 @@ func (s *Store) AuthMethods(_ context.Context) ([]store.AuthMethod, error) {
 		{
 			Type:        "oidc",
 			Description: "Authenticate via OIDC provider",
+			Interactive: true,
 			Fields: []store.AuthField{
 				{Name: "role", Description: "OIDC role name", Required: false, Secret: false},
 			},
@@ -326,6 +327,78 @@ func (s *Store) loginKubernetes(ctx context.Context, creds map[string]string) (*
 		return nil, s.mapAuthError(err)
 	}
 	return s.processAuthResponse(resp)
+}
+
+// LoginInteractive starts an OIDC browser-based authentication flow.
+// It contacts Vault's OIDC auth endpoint to obtain an authorization URL
+// that the user must visit in their browser.
+func (s *Store) LoginInteractive(ctx context.Context, method string, params map[string]string) (*store.InteractiveChallenge, error) {
+	if method != "oidc" {
+		return nil, fmt.Errorf("interactive login not supported for method %q", method)
+	}
+
+	body := map[string]any{}
+	if role := params["role"]; role != "" {
+		body["role"] = role
+	}
+	if redirectURI := params["redirect_uri"]; redirectURI != "" {
+		body["redirect_uri"] = redirectURI
+	}
+
+	resp, err := s.client.request(ctx, http.MethodPost, "auth/oidc/oidc/auth_url", body)
+	if err != nil {
+		return nil, s.mapAuthError(err)
+	}
+
+	var authData struct {
+		AuthURL string `json:"auth_url"`
+	}
+	if err := json.Unmarshal(resp.Data, &authData); err != nil {
+		return nil, fmt.Errorf("parsing OIDC auth_url response: %w", err)
+	}
+	if authData.AuthURL == "" {
+		return nil, fmt.Errorf("vault returned empty OIDC auth_url")
+	}
+
+	// Extract state from the auth URL to use as challenge ID.
+	challengeID := extractQueryParam(authData.AuthURL, "state")
+	if challengeID == "" {
+		challengeID = authData.AuthURL // fallback
+	}
+
+	return &store.InteractiveChallenge{
+		ChallengeID: challengeID,
+		AuthURL:     authData.AuthURL,
+		ExpiresAt:   time.Now().Add(5 * time.Minute).Format(time.RFC3339),
+	}, nil
+}
+
+// LoginInteractiveCallback completes the OIDC authentication flow by
+// exchanging the callback parameters (code, state) with Vault.
+func (s *Store) LoginInteractiveCallback(ctx context.Context, _ string, callbackParams map[string]string) (*store.Credential, error) {
+	body := make(map[string]any, len(callbackParams))
+	for k, v := range callbackParams {
+		body[k] = v
+	}
+
+	resp, err := s.client.request(ctx, http.MethodPut, "auth/oidc/oidc/callback", body)
+	if err != nil {
+		return nil, s.mapAuthError(err)
+	}
+	return s.processAuthResponse(resp)
+}
+
+// extractQueryParam extracts a query parameter from a URL string.
+func extractQueryParam(rawURL, param string) string {
+	idx := strings.Index(rawURL, param+"=")
+	if idx < 0 {
+		return ""
+	}
+	val := rawURL[idx+len(param)+1:]
+	if end := strings.IndexByte(val, '&'); end >= 0 {
+		val = val[:end]
+	}
+	return val
 }
 
 // processAuthResponse extracts the token from a login response, stores it,

@@ -5,6 +5,15 @@ type StoreAuthMethod struct {
 	Type        string
 	Description string
 	Fields      []StoreAuthField
+	Interactive bool // true if this method requires browser interaction (e.g. OIDC)
+}
+
+// StoreInteractiveChallenge holds the data needed to initiate a browser-based
+// authentication flow.
+type StoreInteractiveChallenge struct {
+	ChallengeID string // opaque identifier for this auth attempt
+	AuthURL     string // URL the user must visit in their browser
+	ExpiresAt   string // RFC3339 expiry timestamp
 }
 
 // StoreAuthField describes a single credential field for an auth method.

@@ -319,6 +319,7 @@ func (s *controllerGRPCServer) StoreAuthMethods(ctx context.Context, _ *pb.CtrlS
 			Type:        m.Type,
 			Description: m.Description,
 			Fields:      fields,
+			Interactive: m.Interactive,
 		})
 	}
 	return &pb.CtrlStoreAuthMethodsResponse{Methods: msgs}, nil
@@ -330,6 +331,31 @@ func (s *controllerGRPCServer) StoreLogin(ctx context.Context, req *pb.CtrlStore
 		return nil, err
 	}
 	return &pb.CtrlStoreLoginResponse{
+		SessionId: session.SessionID,
+		Status:    string(session.Status),
+		ExpiresAt: session.ExpiresAt,
+		Metadata:  session.Metadata,
+	}, nil
+}
+
+func (s *controllerGRPCServer) StoreLoginInteractive(ctx context.Context, req *pb.CtrlStoreLoginInteractiveRequest) (*pb.CtrlStoreLoginInteractiveResponse, error) {
+	challenge, err := s.impl.StoreLoginInteractive(ctx, req.GetMethod(), req.GetParams())
+	if err != nil {
+		return nil, err
+	}
+	return &pb.CtrlStoreLoginInteractiveResponse{
+		ChallengeId: challenge.ChallengeID,
+		AuthUrl:     challenge.AuthURL,
+		ExpiresAt:   challenge.ExpiresAt,
+	}, nil
+}
+
+func (s *controllerGRPCServer) StoreLoginInteractiveCallback(ctx context.Context, req *pb.CtrlStoreLoginInteractiveCallbackRequest) (*pb.CtrlStoreLoginInteractiveCallbackResponse, error) {
+	session, err := s.impl.StoreLoginInteractiveCallback(ctx, req.GetChallengeId(), req.GetCallbackParams())
+	if err != nil {
+		return nil, err
+	}
+	return &pb.CtrlStoreLoginInteractiveCallbackResponse{
 		SessionId: session.SessionID,
 		Status:    string(session.Status),
 		ExpiresAt: session.ExpiresAt,

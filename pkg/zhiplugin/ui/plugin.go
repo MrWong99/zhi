@@ -66,6 +66,13 @@ type Controller interface {
 	// StoreLogin authenticates with the store using the specified method
 	// and credentials. Returns the session status after the attempt.
 	StoreLogin(ctx context.Context, method string, credentials map[string]string) (*StoreSession, error)
+	// StoreLoginInteractive initiates a browser-based login flow (e.g. OIDC).
+	// Returns a challenge with a URL to open in the user's browser.
+	StoreLoginInteractive(ctx context.Context, method string, params map[string]string) (*StoreInteractiveChallenge, error)
+	// StoreLoginInteractiveCallback completes the interactive flow after the
+	// user authenticates at the IdP. The callbackParams are the query parameters
+	// from the redirect callback.
+	StoreLoginInteractiveCallback(ctx context.Context, challengeID string, callbackParams map[string]string) (*StoreSession, error)
 	// StoreAuthStatus returns the current authentication status.
 	StoreAuthStatus(ctx context.Context) (*StoreSession, error)
 	// StoreLogout clears the current authentication session.

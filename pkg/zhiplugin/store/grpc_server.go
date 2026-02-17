@@ -43,6 +43,7 @@ func (s *GRPCServer) AuthMethods(ctx context.Context, _ *pb.AuthMethodsRequest) 
 		msg := &pb.AuthMethodMsg{
 			Type:        m.Type,
 			Description: m.Description,
+			Interactive: m.Interactive,
 		}
 		for _, f := range m.Fields {
 			msg.Fields = append(msg.Fields, &pb.AuthFieldMsg{
@@ -63,6 +64,30 @@ func (s *GRPCServer) Login(ctx context.Context, req *pb.LoginRequest) (*pb.Login
 		return nil, errorToStatus(err)
 	}
 	return &pb.LoginResponse{
+		Token:     cred.Token,
+		ExpiresAt: cred.ExpiresAt,
+		Metadata:  cred.Metadata,
+	}, nil
+}
+
+func (s *GRPCServer) LoginInteractive(ctx context.Context, req *pb.LoginInteractiveRequest) (*pb.LoginInteractiveResponse, error) {
+	challenge, err := s.Impl.LoginInteractive(ctx, req.GetMethod(), req.GetParams())
+	if err != nil {
+		return nil, errorToStatus(err)
+	}
+	return &pb.LoginInteractiveResponse{
+		ChallengeId: challenge.ChallengeID,
+		AuthUrl:     challenge.AuthURL,
+		ExpiresAt:   challenge.ExpiresAt,
+	}, nil
+}
+
+func (s *GRPCServer) LoginInteractiveCallback(ctx context.Context, req *pb.LoginInteractiveCallbackRequest) (*pb.LoginInteractiveCallbackResponse, error) {
+	cred, err := s.Impl.LoginInteractiveCallback(ctx, req.GetChallengeId(), req.GetCallbackParams())
+	if err != nil {
+		return nil, errorToStatus(err)
+	}
+	return &pb.LoginInteractiveCallbackResponse{
 		Token:     cred.Token,
 		ExpiresAt: cred.ExpiresAt,
 		Metadata:  cred.Metadata,

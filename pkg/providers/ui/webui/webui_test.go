@@ -209,6 +209,14 @@ func (m *mockController) StoreLogin(_ context.Context, _ string, _ map[string]st
 	return &ui.StoreSession{Status: ui.StoreSessionNone}, nil
 }
 
+func (m *mockController) StoreLoginInteractive(_ context.Context, _ string, _ map[string]string) (*ui.StoreInteractiveChallenge, error) {
+	return nil, errors.New("interactive login not supported")
+}
+
+func (m *mockController) StoreLoginInteractiveCallback(_ context.Context, _ string, _ map[string]string) (*ui.StoreSession, error) {
+	return nil, errors.New("interactive login not supported")
+}
+
 func (m *mockController) StoreAuthStatus(_ context.Context) (*ui.StoreSession, error) {
 	return &ui.StoreSession{Status: ui.StoreSessionNone}, nil
 }
@@ -2615,6 +2623,14 @@ func (m *authMockController) StoreLogin(_ context.Context, _ string, _ map[strin
 		return nil, m.loginErr
 	}
 	return &ui.StoreSession{Status: ui.StoreSessionAuthenticated}, nil
+}
+
+func (m *authMockController) StoreLoginInteractive(_ context.Context, _ string, _ map[string]string) (*ui.StoreInteractiveChallenge, error) {
+	return nil, errors.New("interactive login not supported")
+}
+
+func (m *authMockController) StoreLoginInteractiveCallback(_ context.Context, _ string, _ map[string]string) (*ui.StoreSession, error) {
+	return nil, errors.New("interactive login not supported")
 }
 
 func (m *authMockController) StoreLogout(_ context.Context) error {

@@ -84,6 +84,10 @@ type AuthMethod struct {
 	Description string
 	// Fields describes the credential fields needed for this method.
 	Fields []AuthField
+	// Interactive is true if this method requires browser/external
+	// interaction (e.g. OIDC redirect flow) rather than a simple
+	// credential form.
+	Interactive bool
 }
 
 // AuthField describes a single credential field for an auth method.
@@ -107,6 +111,17 @@ type Credential struct {
 	ExpiresAt string
 	// Metadata carries optional key-value information about the session.
 	Metadata map[string]string
+}
+
+// InteractiveChallenge is returned by LoginInteractive to initiate a
+// browser-based authentication flow (e.g. OIDC).
+type InteractiveChallenge struct {
+	// ChallengeID is an opaque identifier for this auth attempt.
+	ChallengeID string
+	// AuthURL is the URL the user must visit in their browser.
+	AuthURL string
+	// ExpiresAt is an RFC3339 timestamp after which the challenge expires.
+	ExpiresAt string
 }
 
 // PutOptions controls optional behaviour of PutValues.

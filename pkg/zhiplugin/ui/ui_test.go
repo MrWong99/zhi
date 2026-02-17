@@ -296,6 +296,14 @@ func (c *testController) StoreLogout(_ context.Context) error {
 	return nil
 }
 
+func (c *testController) StoreLoginInteractive(_ context.Context, _ string, _ map[string]string) (*StoreInteractiveChallenge, error) {
+	return nil, nil
+}
+
+func (c *testController) StoreLoginInteractiveCallback(_ context.Context, _ string, _ map[string]string) (*StoreSession, error) {
+	return nil, nil
+}
+
 // --- testUIPlugin: exercises the Controller during Run --------------------
 
 type testUIPlugin struct {
