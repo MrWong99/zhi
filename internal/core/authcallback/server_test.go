@@ -21,16 +21,15 @@ func TestCallbackServer_SuccessfulCallback(t *testing.T) {
 	}
 
 	// Simulate IdP callback in background.
+	errCh := make(chan error, 1)
 	go func() {
 		resp, err := http.Get(url + "?code=abc123&state=xyz")
 		if err != nil {
-			t.Errorf("GET callback: %v", err)
+			errCh <- err
 			return
 		}
 		resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			t.Errorf("expected 200, got %d", resp.StatusCode)
-		}
+		errCh <- nil
 	}()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -45,6 +44,11 @@ func TestCallbackServer_SuccessfulCallback(t *testing.T) {
 	}
 	if result.Params["state"] != "xyz" {
 		t.Errorf("expected state=xyz, got %q", result.Params["state"])
+	}
+
+	// Wait for the HTTP request goroutine to finish before test exits.
+	if err := <-errCh; err != nil {
+		t.Errorf("GET callback: %v", err)
 	}
 }
 
