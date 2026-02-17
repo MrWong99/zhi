@@ -229,12 +229,13 @@ func generateNonce() string {
 // csrfMiddleware implements double-submit cookie CSRF protection.
 type csrfMiddleware struct {
 	secret []byte
+	secure bool
 }
 
-func newCSRFMiddleware() *csrfMiddleware {
+func newCSRFMiddleware(secure bool) *csrfMiddleware {
 	secret := make([]byte, 32)
 	_, _ = rand.Read(secret)
-	return &csrfMiddleware{secret: secret}
+	return &csrfMiddleware{secret: secret, secure: secure}
 }
 
 // generateToken creates an HMAC-SHA256 CSRF token.
@@ -274,7 +275,7 @@ func (c *csrfMiddleware) middleware(next http.Handler) http.Handler {
 				Path:     "/",
 				HttpOnly: true,
 				SameSite: http.SameSiteStrictMode,
-				Secure:   true,
+				Secure:   c.secure,
 			})
 		} else {
 			token = cookie.Value

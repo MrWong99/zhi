@@ -256,12 +256,12 @@ func (v ComponentView) renderInfoPanel(comp core.ComponentState) string {
 	var sb strings.Builder
 	sb.WriteString(HeaderStyle.Render(fmt.Sprintf(" Component: %s ", comp.Name)))
 	sb.WriteString("\n")
-	sb.WriteString(fmt.Sprintf("  Description:  %s\n", def.Description))
+	fmt.Fprintf(&sb, "  Description:  %s\n", def.Description)
 	status := "enabled"
 	if !comp.Enabled {
 		status = "disabled"
 	}
-	sb.WriteString(fmt.Sprintf("  Status:       %s\n", status))
+	fmt.Fprintf(&sb, "  Status:       %s\n", status)
 	sb.WriteString(fmt.Sprintf("  Mandatory:    %v\n", comp.Mandatory))
 	sb.WriteString(fmt.Sprintf("  Paths:        %s\n", strings.Join(def.Paths, ", ")))
 	if len(comp.Dependencies) > 0 {
