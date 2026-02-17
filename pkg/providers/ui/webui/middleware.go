@@ -274,6 +274,7 @@ func (c *csrfMiddleware) middleware(next http.Handler) http.Handler {
 				Path:     "/",
 				HttpOnly: true,
 				SameSite: http.SameSiteStrictMode,
+				Secure:   true,
 			})
 		} else {
 			token = cookie.Value
