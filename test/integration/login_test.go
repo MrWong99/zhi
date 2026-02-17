@@ -2,6 +2,7 @@ package integration
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"testing"
 	"time"
@@ -61,6 +62,12 @@ func (m *noAuthStore) Capabilities(context.Context) (*store.Capabilities, error)
 func (m *noAuthStore) AuthMethods(context.Context) ([]store.AuthMethod, error) { return nil, nil }
 func (m *noAuthStore) Login(context.Context, string, map[string]string) (*store.Credential, error) {
 	return nil, nil
+}
+func (m *noAuthStore) LoginInteractive(context.Context, string, map[string]string) (*store.InteractiveChallenge, error) {
+	return nil, errors.New("interactive login not supported")
+}
+func (m *noAuthStore) LoginInteractiveCallback(context.Context, string, map[string]string) (*store.Credential, error) {
+	return nil, errors.New("interactive login not supported")
 }
 func (m *noAuthStore) ListTrees(context.Context) ([]string, error) {
 	keys := make([]string, 0, len(m.trees))

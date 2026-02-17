@@ -20,6 +20,10 @@ service StoreService {
   rpc AuthMethods(AuthMethodsRequest) returns (AuthMethodsResponse);
   // Login authenticates with the store using the given method and credentials.
   rpc Login(LoginRequest) returns (LoginResponse);
+  // LoginInteractive starts an interactive authentication flow (e.g. OIDC).
+  rpc LoginInteractive(LoginInteractiveRequest) returns (LoginInteractiveResponse);
+  // LoginInteractiveCallback completes an interactive auth flow with callback parameters.
+  rpc LoginInteractiveCallback(LoginInteractiveCallbackRequest) returns (LoginInteractiveCallbackResponse);
 
   // ListTrees returns all tree IDs the current identity has access to.
   rpc ListTrees(ListTreesRequest) returns (ListTreesResponse);
@@ -103,6 +107,7 @@ message AuthMethodMsg {
   string type = 1;
   string description = 2;
   repeated AuthFieldMsg fields = 3;
+  bool interactive = 4;
 }
 
 message AuthMethodsRequest {}
@@ -117,6 +122,28 @@ message LoginRequest {
 }
 
 message LoginResponse {
+  string token = 1;
+  string expires_at = 2;
+  map<string, string> metadata = 3;
+}
+
+message LoginInteractiveRequest {
+  string method = 1;
+  map<string, string> params = 2;
+}
+
+message LoginInteractiveResponse {
+  string challenge_id = 1;
+  string auth_url = 2;
+  string expires_at = 3;
+}
+
+message LoginInteractiveCallbackRequest {
+  string challenge_id = 1;
+  map<string, string> callback_params = 2;
+}
+
+message LoginInteractiveCallbackResponse {
   string token = 1;
   string expires_at = 2;
   map<string, string> metadata = 3;

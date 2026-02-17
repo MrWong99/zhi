@@ -178,29 +178,31 @@ var UIService_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
-	UIControllerService_LoadTree_FullMethodName             = "/zhiplugin.v1.UIControllerService/LoadTree"
-	UIControllerService_SetValue_FullMethodName             = "/zhiplugin.v1.UIControllerService/SetValue"
-	UIControllerService_Validate_FullMethodName             = "/zhiplugin.v1.UIControllerService/Validate"
-	UIControllerService_SaveTree_FullMethodName             = "/zhiplugin.v1.UIControllerService/SaveTree"
-	UIControllerService_ExportTemplates_FullMethodName      = "/zhiplugin.v1.UIControllerService/ExportTemplates"
-	UIControllerService_Export_FullMethodName               = "/zhiplugin.v1.UIControllerService/Export"
-	UIControllerService_Apply_FullMethodName                = "/zhiplugin.v1.UIControllerService/Apply"
-	UIControllerService_ListComponents_FullMethodName       = "/zhiplugin.v1.UIControllerService/ListComponents"
-	UIControllerService_EnableComponent_FullMethodName      = "/zhiplugin.v1.UIControllerService/EnableComponent"
-	UIControllerService_DisableComponent_FullMethodName     = "/zhiplugin.v1.UIControllerService/DisableComponent"
-	UIControllerService_WorkspaceName_FullMethodName        = "/zhiplugin.v1.UIControllerService/WorkspaceName"
-	UIControllerService_SearchMarketplace_FullMethodName    = "/zhiplugin.v1.UIControllerService/SearchMarketplace"
-	UIControllerService_GetMarketplaceDetail_FullMethodName = "/zhiplugin.v1.UIControllerService/GetMarketplaceDetail"
-	UIControllerService_InstallPlugin_FullMethodName        = "/zhiplugin.v1.UIControllerService/InstallPlugin"
-	UIControllerService_UninstallPlugin_FullMethodName      = "/zhiplugin.v1.UIControllerService/UninstallPlugin"
-	UIControllerService_ListInstalledPlugins_FullMethodName = "/zhiplugin.v1.UIControllerService/ListInstalledPlugins"
-	UIControllerService_CheckUpdates_FullMethodName         = "/zhiplugin.v1.UIControllerService/CheckUpdates"
-	UIControllerService_UpdatePlugin_FullMethodName         = "/zhiplugin.v1.UIControllerService/UpdatePlugin"
-	UIControllerService_RatePlugin_FullMethodName           = "/zhiplugin.v1.UIControllerService/RatePlugin"
-	UIControllerService_StoreAuthMethods_FullMethodName     = "/zhiplugin.v1.UIControllerService/StoreAuthMethods"
-	UIControllerService_StoreLogin_FullMethodName           = "/zhiplugin.v1.UIControllerService/StoreLogin"
-	UIControllerService_StoreAuthStatus_FullMethodName      = "/zhiplugin.v1.UIControllerService/StoreAuthStatus"
-	UIControllerService_StoreLogout_FullMethodName          = "/zhiplugin.v1.UIControllerService/StoreLogout"
+	UIControllerService_LoadTree_FullMethodName                      = "/zhiplugin.v1.UIControllerService/LoadTree"
+	UIControllerService_SetValue_FullMethodName                      = "/zhiplugin.v1.UIControllerService/SetValue"
+	UIControllerService_Validate_FullMethodName                      = "/zhiplugin.v1.UIControllerService/Validate"
+	UIControllerService_SaveTree_FullMethodName                      = "/zhiplugin.v1.UIControllerService/SaveTree"
+	UIControllerService_ExportTemplates_FullMethodName               = "/zhiplugin.v1.UIControllerService/ExportTemplates"
+	UIControllerService_Export_FullMethodName                        = "/zhiplugin.v1.UIControllerService/Export"
+	UIControllerService_Apply_FullMethodName                         = "/zhiplugin.v1.UIControllerService/Apply"
+	UIControllerService_ListComponents_FullMethodName                = "/zhiplugin.v1.UIControllerService/ListComponents"
+	UIControllerService_EnableComponent_FullMethodName               = "/zhiplugin.v1.UIControllerService/EnableComponent"
+	UIControllerService_DisableComponent_FullMethodName              = "/zhiplugin.v1.UIControllerService/DisableComponent"
+	UIControllerService_WorkspaceName_FullMethodName                 = "/zhiplugin.v1.UIControllerService/WorkspaceName"
+	UIControllerService_SearchMarketplace_FullMethodName             = "/zhiplugin.v1.UIControllerService/SearchMarketplace"
+	UIControllerService_GetMarketplaceDetail_FullMethodName          = "/zhiplugin.v1.UIControllerService/GetMarketplaceDetail"
+	UIControllerService_InstallPlugin_FullMethodName                 = "/zhiplugin.v1.UIControllerService/InstallPlugin"
+	UIControllerService_UninstallPlugin_FullMethodName               = "/zhiplugin.v1.UIControllerService/UninstallPlugin"
+	UIControllerService_ListInstalledPlugins_FullMethodName          = "/zhiplugin.v1.UIControllerService/ListInstalledPlugins"
+	UIControllerService_CheckUpdates_FullMethodName                  = "/zhiplugin.v1.UIControllerService/CheckUpdates"
+	UIControllerService_UpdatePlugin_FullMethodName                  = "/zhiplugin.v1.UIControllerService/UpdatePlugin"
+	UIControllerService_RatePlugin_FullMethodName                    = "/zhiplugin.v1.UIControllerService/RatePlugin"
+	UIControllerService_StoreAuthMethods_FullMethodName              = "/zhiplugin.v1.UIControllerService/StoreAuthMethods"
+	UIControllerService_StoreLogin_FullMethodName                    = "/zhiplugin.v1.UIControllerService/StoreLogin"
+	UIControllerService_StoreLoginInteractive_FullMethodName         = "/zhiplugin.v1.UIControllerService/StoreLoginInteractive"
+	UIControllerService_StoreLoginInteractiveCallback_FullMethodName = "/zhiplugin.v1.UIControllerService/StoreLoginInteractiveCallback"
+	UIControllerService_StoreAuthStatus_FullMethodName               = "/zhiplugin.v1.UIControllerService/StoreAuthStatus"
+	UIControllerService_StoreLogout_FullMethodName                   = "/zhiplugin.v1.UIControllerService/StoreLogout"
 )
 
 // UIControllerServiceClient is the client API for UIControllerService service.
@@ -252,6 +254,10 @@ type UIControllerServiceClient interface {
 	StoreAuthMethods(ctx context.Context, in *CtrlStoreAuthMethodsRequest, opts ...grpc.CallOption) (*CtrlStoreAuthMethodsResponse, error)
 	// StoreLogin authenticates with the store using the given method and credentials.
 	StoreLogin(ctx context.Context, in *CtrlStoreLoginRequest, opts ...grpc.CallOption) (*CtrlStoreLoginResponse, error)
+	// StoreLoginInteractive starts an interactive (browser-based) auth flow.
+	StoreLoginInteractive(ctx context.Context, in *CtrlStoreLoginInteractiveRequest, opts ...grpc.CallOption) (*CtrlStoreLoginInteractiveResponse, error)
+	// StoreLoginInteractiveCallback completes an interactive auth flow with callback parameters.
+	StoreLoginInteractiveCallback(ctx context.Context, in *CtrlStoreLoginInteractiveCallbackRequest, opts ...grpc.CallOption) (*CtrlStoreLoginInteractiveCallbackResponse, error)
 	// StoreAuthStatus returns the current authentication status.
 	StoreAuthStatus(ctx context.Context, in *CtrlStoreAuthStatusRequest, opts ...grpc.CallOption) (*CtrlStoreAuthStatusResponse, error)
 	// StoreLogout clears the current authentication session.
@@ -485,6 +491,26 @@ func (c *uIControllerServiceClient) StoreLogin(ctx context.Context, in *CtrlStor
 	return out, nil
 }
 
+func (c *uIControllerServiceClient) StoreLoginInteractive(ctx context.Context, in *CtrlStoreLoginInteractiveRequest, opts ...grpc.CallOption) (*CtrlStoreLoginInteractiveResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CtrlStoreLoginInteractiveResponse)
+	err := c.cc.Invoke(ctx, UIControllerService_StoreLoginInteractive_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *uIControllerServiceClient) StoreLoginInteractiveCallback(ctx context.Context, in *CtrlStoreLoginInteractiveCallbackRequest, opts ...grpc.CallOption) (*CtrlStoreLoginInteractiveCallbackResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CtrlStoreLoginInteractiveCallbackResponse)
+	err := c.cc.Invoke(ctx, UIControllerService_StoreLoginInteractiveCallback_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *uIControllerServiceClient) StoreAuthStatus(ctx context.Context, in *CtrlStoreAuthStatusRequest, opts ...grpc.CallOption) (*CtrlStoreAuthStatusResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CtrlStoreAuthStatusResponse)
@@ -554,6 +580,10 @@ type UIControllerServiceServer interface {
 	StoreAuthMethods(context.Context, *CtrlStoreAuthMethodsRequest) (*CtrlStoreAuthMethodsResponse, error)
 	// StoreLogin authenticates with the store using the given method and credentials.
 	StoreLogin(context.Context, *CtrlStoreLoginRequest) (*CtrlStoreLoginResponse, error)
+	// StoreLoginInteractive starts an interactive (browser-based) auth flow.
+	StoreLoginInteractive(context.Context, *CtrlStoreLoginInteractiveRequest) (*CtrlStoreLoginInteractiveResponse, error)
+	// StoreLoginInteractiveCallback completes an interactive auth flow with callback parameters.
+	StoreLoginInteractiveCallback(context.Context, *CtrlStoreLoginInteractiveCallbackRequest) (*CtrlStoreLoginInteractiveCallbackResponse, error)
 	// StoreAuthStatus returns the current authentication status.
 	StoreAuthStatus(context.Context, *CtrlStoreAuthStatusRequest) (*CtrlStoreAuthStatusResponse, error)
 	// StoreLogout clears the current authentication session.
@@ -630,6 +660,12 @@ func (UnimplementedUIControllerServiceServer) StoreAuthMethods(context.Context, 
 }
 func (UnimplementedUIControllerServiceServer) StoreLogin(context.Context, *CtrlStoreLoginRequest) (*CtrlStoreLoginResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method StoreLogin not implemented")
+}
+func (UnimplementedUIControllerServiceServer) StoreLoginInteractive(context.Context, *CtrlStoreLoginInteractiveRequest) (*CtrlStoreLoginInteractiveResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method StoreLoginInteractive not implemented")
+}
+func (UnimplementedUIControllerServiceServer) StoreLoginInteractiveCallback(context.Context, *CtrlStoreLoginInteractiveCallbackRequest) (*CtrlStoreLoginInteractiveCallbackResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method StoreLoginInteractiveCallback not implemented")
 }
 func (UnimplementedUIControllerServiceServer) StoreAuthStatus(context.Context, *CtrlStoreAuthStatusRequest) (*CtrlStoreAuthStatusResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method StoreAuthStatus not implemented")
@@ -1029,6 +1065,42 @@ func _UIControllerService_StoreLogin_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UIControllerService_StoreLoginInteractive_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CtrlStoreLoginInteractiveRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UIControllerServiceServer).StoreLoginInteractive(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UIControllerService_StoreLoginInteractive_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UIControllerServiceServer).StoreLoginInteractive(ctx, req.(*CtrlStoreLoginInteractiveRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UIControllerService_StoreLoginInteractiveCallback_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CtrlStoreLoginInteractiveCallbackRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UIControllerServiceServer).StoreLoginInteractiveCallback(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UIControllerService_StoreLoginInteractiveCallback_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UIControllerServiceServer).StoreLoginInteractiveCallback(ctx, req.(*CtrlStoreLoginInteractiveCallbackRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _UIControllerService_StoreAuthStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CtrlStoreAuthStatusRequest)
 	if err := dec(in); err != nil {
@@ -1151,6 +1223,14 @@ var UIControllerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "StoreLogin",
 			Handler:    _UIControllerService_StoreLogin_Handler,
+		},
+		{
+			MethodName: "StoreLoginInteractive",
+			Handler:    _UIControllerService_StoreLoginInteractive_Handler,
+		},
+		{
+			MethodName: "StoreLoginInteractiveCallback",
+			Handler:    _UIControllerService_StoreLoginInteractiveCallback_Handler,
 		},
 		{
 			MethodName: "StoreAuthStatus",

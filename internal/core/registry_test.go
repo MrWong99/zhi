@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"slices"
 	"testing"
 
@@ -40,6 +41,12 @@ func (s *stubStore) Capabilities(context.Context) (*store.Capabilities, error) {
 func (s *stubStore) AuthMethods(context.Context) ([]store.AuthMethod, error) { return nil, nil }
 func (s *stubStore) Login(context.Context, string, map[string]string) (*store.Credential, error) {
 	return nil, nil
+}
+func (s *stubStore) LoginInteractive(context.Context, string, map[string]string) (*store.InteractiveChallenge, error) {
+	return nil, fmt.Errorf("interactive login not supported")
+}
+func (s *stubStore) LoginInteractiveCallback(context.Context, string, map[string]string) (*store.Credential, error) {
+	return nil, fmt.Errorf("interactive login not supported")
 }
 func (s *stubStore) ListTrees(context.Context) ([]string, error) { return nil, nil }
 func (s *stubStore) DeleteTree(context.Context, string) error    { return nil }

@@ -22,27 +22,29 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	StoreService_Capabilities_FullMethodName       = "/zhiplugin.v1.StoreService/Capabilities"
-	StoreService_AuthMethods_FullMethodName        = "/zhiplugin.v1.StoreService/AuthMethods"
-	StoreService_Login_FullMethodName              = "/zhiplugin.v1.StoreService/Login"
-	StoreService_ListTrees_FullMethodName          = "/zhiplugin.v1.StoreService/ListTrees"
-	StoreService_DeleteTree_FullMethodName         = "/zhiplugin.v1.StoreService/DeleteTree"
-	StoreService_GetValues_FullMethodName          = "/zhiplugin.v1.StoreService/GetValues"
-	StoreService_PutValues_FullMethodName          = "/zhiplugin.v1.StoreService/PutValues"
-	StoreService_DeleteValues_FullMethodName       = "/zhiplugin.v1.StoreService/DeleteValues"
-	StoreService_ListTreeVersions_FullMethodName   = "/zhiplugin.v1.StoreService/ListTreeVersions"
-	StoreService_GetTreeVersion_FullMethodName     = "/zhiplugin.v1.StoreService/GetTreeVersion"
-	StoreService_RollbackTree_FullMethodName       = "/zhiplugin.v1.StoreService/RollbackTree"
-	StoreService_DeleteTreeVersion_FullMethodName  = "/zhiplugin.v1.StoreService/DeleteTreeVersion"
-	StoreService_ListValueVersions_FullMethodName  = "/zhiplugin.v1.StoreService/ListValueVersions"
-	StoreService_GetValueVersion_FullMethodName    = "/zhiplugin.v1.StoreService/GetValueVersion"
-	StoreService_RollbackValue_FullMethodName      = "/zhiplugin.v1.StoreService/RollbackValue"
-	StoreService_DeleteValueVersion_FullMethodName = "/zhiplugin.v1.StoreService/DeleteValueVersion"
-	StoreService_InitEncryption_FullMethodName     = "/zhiplugin.v1.StoreService/InitEncryption"
-	StoreService_RotateEncryption_FullMethodName   = "/zhiplugin.v1.StoreService/RotateEncryption"
-	StoreService_GrantAccess_FullMethodName        = "/zhiplugin.v1.StoreService/GrantAccess"
-	StoreService_RevokeAccess_FullMethodName       = "/zhiplugin.v1.StoreService/RevokeAccess"
-	StoreService_ListAccess_FullMethodName         = "/zhiplugin.v1.StoreService/ListAccess"
+	StoreService_Capabilities_FullMethodName             = "/zhiplugin.v1.StoreService/Capabilities"
+	StoreService_AuthMethods_FullMethodName              = "/zhiplugin.v1.StoreService/AuthMethods"
+	StoreService_Login_FullMethodName                    = "/zhiplugin.v1.StoreService/Login"
+	StoreService_LoginInteractive_FullMethodName         = "/zhiplugin.v1.StoreService/LoginInteractive"
+	StoreService_LoginInteractiveCallback_FullMethodName = "/zhiplugin.v1.StoreService/LoginInteractiveCallback"
+	StoreService_ListTrees_FullMethodName                = "/zhiplugin.v1.StoreService/ListTrees"
+	StoreService_DeleteTree_FullMethodName               = "/zhiplugin.v1.StoreService/DeleteTree"
+	StoreService_GetValues_FullMethodName                = "/zhiplugin.v1.StoreService/GetValues"
+	StoreService_PutValues_FullMethodName                = "/zhiplugin.v1.StoreService/PutValues"
+	StoreService_DeleteValues_FullMethodName             = "/zhiplugin.v1.StoreService/DeleteValues"
+	StoreService_ListTreeVersions_FullMethodName         = "/zhiplugin.v1.StoreService/ListTreeVersions"
+	StoreService_GetTreeVersion_FullMethodName           = "/zhiplugin.v1.StoreService/GetTreeVersion"
+	StoreService_RollbackTree_FullMethodName             = "/zhiplugin.v1.StoreService/RollbackTree"
+	StoreService_DeleteTreeVersion_FullMethodName        = "/zhiplugin.v1.StoreService/DeleteTreeVersion"
+	StoreService_ListValueVersions_FullMethodName        = "/zhiplugin.v1.StoreService/ListValueVersions"
+	StoreService_GetValueVersion_FullMethodName          = "/zhiplugin.v1.StoreService/GetValueVersion"
+	StoreService_RollbackValue_FullMethodName            = "/zhiplugin.v1.StoreService/RollbackValue"
+	StoreService_DeleteValueVersion_FullMethodName       = "/zhiplugin.v1.StoreService/DeleteValueVersion"
+	StoreService_InitEncryption_FullMethodName           = "/zhiplugin.v1.StoreService/InitEncryption"
+	StoreService_RotateEncryption_FullMethodName         = "/zhiplugin.v1.StoreService/RotateEncryption"
+	StoreService_GrantAccess_FullMethodName              = "/zhiplugin.v1.StoreService/GrantAccess"
+	StoreService_RevokeAccess_FullMethodName             = "/zhiplugin.v1.StoreService/RevokeAccess"
+	StoreService_ListAccess_FullMethodName               = "/zhiplugin.v1.StoreService/ListAccess"
 )
 
 // StoreServiceClient is the client API for StoreService service.
@@ -59,6 +61,10 @@ type StoreServiceClient interface {
 	AuthMethods(ctx context.Context, in *AuthMethodsRequest, opts ...grpc.CallOption) (*AuthMethodsResponse, error)
 	// Login authenticates with the store using the given method and credentials.
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
+	// LoginInteractive starts an interactive authentication flow (e.g. OIDC).
+	LoginInteractive(ctx context.Context, in *LoginInteractiveRequest, opts ...grpc.CallOption) (*LoginInteractiveResponse, error)
+	// LoginInteractiveCallback completes an interactive auth flow with callback parameters.
+	LoginInteractiveCallback(ctx context.Context, in *LoginInteractiveCallbackRequest, opts ...grpc.CallOption) (*LoginInteractiveCallbackResponse, error)
 	// ListTrees returns all tree IDs the current identity has access to.
 	ListTrees(ctx context.Context, in *ListTreesRequest, opts ...grpc.CallOption) (*ListTreesResponse, error)
 	// DeleteTree removes an entire tree and all its versions/values.
@@ -129,6 +135,26 @@ func (c *storeServiceClient) Login(ctx context.Context, in *LoginRequest, opts .
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(LoginResponse)
 	err := c.cc.Invoke(ctx, StoreService_Login_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *storeServiceClient) LoginInteractive(ctx context.Context, in *LoginInteractiveRequest, opts ...grpc.CallOption) (*LoginInteractiveResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LoginInteractiveResponse)
+	err := c.cc.Invoke(ctx, StoreService_LoginInteractive_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *storeServiceClient) LoginInteractiveCallback(ctx context.Context, in *LoginInteractiveCallbackRequest, opts ...grpc.CallOption) (*LoginInteractiveCallbackResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LoginInteractiveCallbackResponse)
+	err := c.cc.Invoke(ctx, StoreService_LoginInteractiveCallback_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -329,6 +355,10 @@ type StoreServiceServer interface {
 	AuthMethods(context.Context, *AuthMethodsRequest) (*AuthMethodsResponse, error)
 	// Login authenticates with the store using the given method and credentials.
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
+	// LoginInteractive starts an interactive authentication flow (e.g. OIDC).
+	LoginInteractive(context.Context, *LoginInteractiveRequest) (*LoginInteractiveResponse, error)
+	// LoginInteractiveCallback completes an interactive auth flow with callback parameters.
+	LoginInteractiveCallback(context.Context, *LoginInteractiveCallbackRequest) (*LoginInteractiveCallbackResponse, error)
 	// ListTrees returns all tree IDs the current identity has access to.
 	ListTrees(context.Context, *ListTreesRequest) (*ListTreesResponse, error)
 	// DeleteTree removes an entire tree and all its versions/values.
@@ -383,6 +413,12 @@ func (UnimplementedStoreServiceServer) AuthMethods(context.Context, *AuthMethods
 }
 func (UnimplementedStoreServiceServer) Login(context.Context, *LoginRequest) (*LoginResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Login not implemented")
+}
+func (UnimplementedStoreServiceServer) LoginInteractive(context.Context, *LoginInteractiveRequest) (*LoginInteractiveResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method LoginInteractive not implemented")
+}
+func (UnimplementedStoreServiceServer) LoginInteractiveCallback(context.Context, *LoginInteractiveCallbackRequest) (*LoginInteractiveCallbackResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method LoginInteractiveCallback not implemented")
 }
 func (UnimplementedStoreServiceServer) ListTrees(context.Context, *ListTreesRequest) (*ListTreesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListTrees not implemented")
@@ -509,6 +545,42 @@ func _StoreService_Login_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(StoreServiceServer).Login(ctx, req.(*LoginRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StoreService_LoginInteractive_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LoginInteractiveRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StoreServiceServer).LoginInteractive(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StoreService_LoginInteractive_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StoreServiceServer).LoginInteractive(ctx, req.(*LoginInteractiveRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StoreService_LoginInteractiveCallback_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LoginInteractiveCallbackRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StoreServiceServer).LoginInteractiveCallback(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StoreService_LoginInteractiveCallback_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StoreServiceServer).LoginInteractiveCallback(ctx, req.(*LoginInteractiveCallbackRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -855,6 +927,14 @@ var StoreService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Login",
 			Handler:    _StoreService_Login_Handler,
+		},
+		{
+			MethodName: "LoginInteractive",
+			Handler:    _StoreService_LoginInteractive_Handler,
+		},
+		{
+			MethodName: "LoginInteractiveCallback",
+			Handler:    _StoreService_LoginInteractiveCallback_Handler,
 		},
 		{
 			MethodName: "ListTrees",

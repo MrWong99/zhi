@@ -3,11 +3,14 @@ package tui
 import (
 	"context"
 	"fmt"
+	"os/exec"
+	"runtime"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/MrWong99/zhi/internal/core/authcallback"
 	"github.com/MrWong99/zhi/internal/ui"
 	zhiui "github.com/MrWong99/zhi/pkg/zhiplugin/ui"
 )
@@ -18,6 +21,7 @@ type loginPhase int
 const (
 	loginPhaseMethod loginPhase = iota
 	loginPhaseForm
+	loginPhaseInteractive // waiting for browser-based auth callback
 )
 
 // loginResultMsg is sent after a login attempt completes.
@@ -58,9 +62,15 @@ func newLoginModel(ctx context.Context, controller *ui.UIController, methods []z
 	}
 
 	if len(methods) == 1 {
-		m.phase = loginPhaseForm
 		m.selectedMethod = methods[0]
-		m.buildInputs()
+		if m.selectedMethod.Interactive {
+			// Interactive single method: go straight to interactive phase.
+			// The startInteractiveLogin cmd is triggered via Init().
+			m.phase = loginPhaseInteractive
+		} else {
+			m.phase = loginPhaseForm
+			m.buildInputs()
+		}
 	} else {
 		m.phase = loginPhaseMethod
 	}
@@ -95,6 +105,9 @@ func (m *loginModel) SetSize(width, height int) {
 
 // Init returns the initial command for the login model.
 func (m loginModel) Init() tea.Cmd {
+	if m.phase == loginPhaseInteractive {
+		return m.interactiveLoginCmd()
+	}
 	if m.phase == loginPhaseForm && len(m.inputs) > 0 {
 		return textinput.Blink
 	}
@@ -121,6 +134,8 @@ func (m loginModel) UpdateLogin(msg tea.Msg) (loginModel, tea.Cmd) {
 		return m.updateMethodSelection(msg)
 	case loginPhaseForm:
 		return m.updateCredentialForm(msg)
+	case loginPhaseInteractive:
+		return m.updateInteractive(msg)
 	}
 	return m, nil
 }
@@ -138,8 +153,11 @@ func (m loginModel) updateMethodSelection(msg tea.Msg) (loginModel, tea.Cmd) {
 			}
 		case "enter":
 			m.selectedMethod = m.methods[m.methodCursor]
-			m.phase = loginPhaseForm
 			m.errMsg = ""
+			if m.selectedMethod.Interactive {
+				return m.startInteractiveLogin()
+			}
+			m.phase = loginPhaseForm
 			m.buildInputs()
 			return m, textinput.Blink
 		}
@@ -204,6 +222,74 @@ func (m loginModel) submitLogin() (loginModel, tea.Cmd) {
 	}
 }
 
+func (m loginModel) startInteractiveLogin() (loginModel, tea.Cmd) {
+	m.phase = loginPhaseInteractive
+	m.submitting = true
+	m.errMsg = ""
+	return m, m.interactiveLoginCmd()
+}
+
+func (m loginModel) interactiveLoginCmd() tea.Cmd {
+	ctx := m.ctx
+	ctrl := m.controller
+	method := m.selectedMethod.Type
+
+	return func() tea.Msg {
+		// Start callback server.
+		cbSrv, err := authcallback.NewCallbackServer()
+		if err != nil {
+			return loginResultMsg{err: fmt.Errorf("failed to start callback server: %w", err)}
+		}
+		defer cbSrv.Close()
+
+		// Initiate interactive login with callback URL.
+		chall, err := ctrl.StoreLoginInteractive(ctx, method, map[string]string{
+			"redirect_uri": cbSrv.URL(),
+		})
+		if err != nil {
+			return loginResultMsg{err: fmt.Errorf("failed to start interactive login: %w", err)}
+		}
+
+		// Open browser.
+		openBrowser(chall.AuthURL)
+
+		// Wait for callback.
+		result, err := cbSrv.Wait(ctx)
+		if err != nil {
+			return loginResultMsg{err: fmt.Errorf("authentication callback failed: %w", err)}
+		}
+
+		// Complete the login.
+		session, err := ctrl.StoreLoginInteractiveCallback(ctx, chall.ChallengeID, result.Params)
+		return loginResultMsg{session: session, err: err}
+	}
+}
+
+func (m loginModel) updateInteractive(msg tea.Msg) (loginModel, tea.Cmd) {
+	// While waiting for browser callback, allow esc to go back (if multiple methods).
+	if keyMsg, ok := msg.(tea.KeyMsg); ok {
+		if keyMsg.String() == "esc" && len(m.methods) > 1 {
+			m.phase = loginPhaseMethod
+			m.submitting = false
+			m.errMsg = ""
+			return m, nil
+		}
+	}
+	return m, nil
+}
+
+// openBrowser opens the given URL in the user's default browser.
+func openBrowser(url string) {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "darwin":
+		cmd = exec.Command("open", url)
+	default:
+		cmd = exec.Command("xdg-open", url)
+	}
+	_ = cmd.Start()
+}
+
 // View renders the login view.
 func (m loginModel) View() string {
 	var sb strings.Builder
@@ -225,6 +311,8 @@ func (m loginModel) View() string {
 		sb.WriteString(m.viewMethodSelection())
 	case loginPhaseForm:
 		sb.WriteString(m.viewCredentialForm())
+	case loginPhaseInteractive:
+		sb.WriteString(m.viewInteractive())
 	}
 
 	if m.errMsg != "" {
@@ -258,11 +346,26 @@ func (m loginModel) viewMethodSelection() string {
 			style = ActiveStyle
 		}
 		line := method.Type
+		if method.Interactive {
+			line += " (opens browser)"
+		}
 		if method.Description != "" {
 			line += DimStyle.Render(fmt.Sprintf(" - %s", method.Description))
 		}
 		fmt.Fprintf(&sb, "  %s%s\n", cursor, style.Render(line))
 	}
+	return sb.String()
+}
+
+func (m loginModel) viewInteractive() string {
+	var sb strings.Builder
+	if len(m.methods) > 1 {
+		sb.WriteString(DimStyle.Render(fmt.Sprintf("  Method: %s", m.selectedMethod.Type)))
+		sb.WriteString("\n\n")
+	}
+	sb.WriteString("  Waiting for browser authentication...\n")
+	sb.WriteString(DimStyle.Render("  A browser window should open. Complete the login there."))
+	sb.WriteString("\n")
 	return sb.String()
 }
 
@@ -293,6 +396,12 @@ func (m loginModel) viewHints() string {
 		hints := "  Tab: next field  Enter: login  Ctrl+C: quit"
 		if len(m.methods) > 1 {
 			hints = "  Tab: next field  Enter: login  Esc: back  Ctrl+C: quit"
+		}
+		return DimStyle.Render(hints)
+	case loginPhaseInteractive:
+		hints := "  Ctrl+C: quit"
+		if len(m.methods) > 1 {
+			hints = "  Esc: back  Ctrl+C: quit"
 		}
 		return DimStyle.Render(hints)
 	}

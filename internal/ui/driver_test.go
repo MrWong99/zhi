@@ -2,6 +2,7 @@ package ui_test
 
 import (
 	"context"
+	"fmt"
 	"maps"
 	"sort"
 	"testing"
@@ -70,6 +71,14 @@ func (m *mockStore) Capabilities(_ context.Context) (*store.Capabilities, error)
 func (m *mockStore) AuthMethods(_ context.Context) ([]store.AuthMethod, error) { return nil, nil }
 func (m *mockStore) Login(_ context.Context, _ string, _ map[string]string) (*store.Credential, error) {
 	return nil, nil
+}
+
+func (m *mockStore) LoginInteractive(context.Context, string, map[string]string) (*store.InteractiveChallenge, error) {
+	return nil, fmt.Errorf("interactive login not supported")
+}
+
+func (m *mockStore) LoginInteractiveCallback(context.Context, string, map[string]string) (*store.Credential, error) {
+	return nil, fmt.Errorf("interactive login not supported")
 }
 
 func (m *mockStore) ListTrees(_ context.Context) ([]string, error) {

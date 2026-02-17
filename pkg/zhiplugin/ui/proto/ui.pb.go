@@ -2905,6 +2905,7 @@ type CtrlStoreAuthMethodMsg struct {
 	Type          string                   `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
 	Description   string                   `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
 	Fields        []*CtrlStoreAuthFieldMsg `protobuf:"bytes,3,rep,name=fields,proto3" json:"fields,omitempty"`
+	Interactive   bool                     `protobuf:"varint,4,opt,name=interactive,proto3" json:"interactive,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2958,6 +2959,13 @@ func (x *CtrlStoreAuthMethodMsg) GetFields() []*CtrlStoreAuthFieldMsg {
 		return x.Fields
 	}
 	return nil
+}
+
+func (x *CtrlStoreAuthMethodMsg) GetInteractive() bool {
+	if x != nil {
+		return x.Interactive
+	}
+	return false
 }
 
 // CtrlStoreAuthMethodsRequest is intentionally empty.
@@ -3161,6 +3169,238 @@ func (x *CtrlStoreLoginResponse) GetMetadata() map[string]string {
 	return nil
 }
 
+type CtrlStoreLoginInteractiveRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Method        string                 `protobuf:"bytes,1,opt,name=method,proto3" json:"method,omitempty"`
+	Params        map[string]string      `protobuf:"bytes,2,rep,name=params,proto3" json:"params,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CtrlStoreLoginInteractiveRequest) Reset() {
+	*x = CtrlStoreLoginInteractiveRequest{}
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[56]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CtrlStoreLoginInteractiveRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CtrlStoreLoginInteractiveRequest) ProtoMessage() {}
+
+func (x *CtrlStoreLoginInteractiveRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[56]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CtrlStoreLoginInteractiveRequest.ProtoReflect.Descriptor instead.
+func (*CtrlStoreLoginInteractiveRequest) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{56}
+}
+
+func (x *CtrlStoreLoginInteractiveRequest) GetMethod() string {
+	if x != nil {
+		return x.Method
+	}
+	return ""
+}
+
+func (x *CtrlStoreLoginInteractiveRequest) GetParams() map[string]string {
+	if x != nil {
+		return x.Params
+	}
+	return nil
+}
+
+type CtrlStoreLoginInteractiveResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ChallengeId   string                 `protobuf:"bytes,1,opt,name=challenge_id,json=challengeId,proto3" json:"challenge_id,omitempty"`
+	AuthUrl       string                 `protobuf:"bytes,2,opt,name=auth_url,json=authUrl,proto3" json:"auth_url,omitempty"`
+	ExpiresAt     string                 `protobuf:"bytes,3,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CtrlStoreLoginInteractiveResponse) Reset() {
+	*x = CtrlStoreLoginInteractiveResponse{}
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[57]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CtrlStoreLoginInteractiveResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CtrlStoreLoginInteractiveResponse) ProtoMessage() {}
+
+func (x *CtrlStoreLoginInteractiveResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[57]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CtrlStoreLoginInteractiveResponse.ProtoReflect.Descriptor instead.
+func (*CtrlStoreLoginInteractiveResponse) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{57}
+}
+
+func (x *CtrlStoreLoginInteractiveResponse) GetChallengeId() string {
+	if x != nil {
+		return x.ChallengeId
+	}
+	return ""
+}
+
+func (x *CtrlStoreLoginInteractiveResponse) GetAuthUrl() string {
+	if x != nil {
+		return x.AuthUrl
+	}
+	return ""
+}
+
+func (x *CtrlStoreLoginInteractiveResponse) GetExpiresAt() string {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return ""
+}
+
+type CtrlStoreLoginInteractiveCallbackRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	ChallengeId    string                 `protobuf:"bytes,1,opt,name=challenge_id,json=challengeId,proto3" json:"challenge_id,omitempty"`
+	CallbackParams map[string]string      `protobuf:"bytes,2,rep,name=callback_params,json=callbackParams,proto3" json:"callback_params,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *CtrlStoreLoginInteractiveCallbackRequest) Reset() {
+	*x = CtrlStoreLoginInteractiveCallbackRequest{}
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[58]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CtrlStoreLoginInteractiveCallbackRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CtrlStoreLoginInteractiveCallbackRequest) ProtoMessage() {}
+
+func (x *CtrlStoreLoginInteractiveCallbackRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[58]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CtrlStoreLoginInteractiveCallbackRequest.ProtoReflect.Descriptor instead.
+func (*CtrlStoreLoginInteractiveCallbackRequest) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{58}
+}
+
+func (x *CtrlStoreLoginInteractiveCallbackRequest) GetChallengeId() string {
+	if x != nil {
+		return x.ChallengeId
+	}
+	return ""
+}
+
+func (x *CtrlStoreLoginInteractiveCallbackRequest) GetCallbackParams() map[string]string {
+	if x != nil {
+		return x.CallbackParams
+	}
+	return nil
+}
+
+type CtrlStoreLoginInteractiveCallbackResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	Status        string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
+	ExpiresAt     string                 `protobuf:"bytes,3,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
+	Metadata      map[string]string      `protobuf:"bytes,4,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CtrlStoreLoginInteractiveCallbackResponse) Reset() {
+	*x = CtrlStoreLoginInteractiveCallbackResponse{}
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[59]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CtrlStoreLoginInteractiveCallbackResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CtrlStoreLoginInteractiveCallbackResponse) ProtoMessage() {}
+
+func (x *CtrlStoreLoginInteractiveCallbackResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[59]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CtrlStoreLoginInteractiveCallbackResponse.ProtoReflect.Descriptor instead.
+func (*CtrlStoreLoginInteractiveCallbackResponse) Descriptor() ([]byte, []int) {
+	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{59}
+}
+
+func (x *CtrlStoreLoginInteractiveCallbackResponse) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *CtrlStoreLoginInteractiveCallbackResponse) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *CtrlStoreLoginInteractiveCallbackResponse) GetExpiresAt() string {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return ""
+}
+
+func (x *CtrlStoreLoginInteractiveCallbackResponse) GetMetadata() map[string]string {
+	if x != nil {
+		return x.Metadata
+	}
+	return nil
+}
+
 // CtrlStoreAuthStatusRequest is intentionally empty.
 type CtrlStoreAuthStatusRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -3170,7 +3410,7 @@ type CtrlStoreAuthStatusRequest struct {
 
 func (x *CtrlStoreAuthStatusRequest) Reset() {
 	*x = CtrlStoreAuthStatusRequest{}
-	mi := &file_zhiplugin_v1_ui_proto_msgTypes[56]
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[60]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3182,7 +3422,7 @@ func (x *CtrlStoreAuthStatusRequest) String() string {
 func (*CtrlStoreAuthStatusRequest) ProtoMessage() {}
 
 func (x *CtrlStoreAuthStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_zhiplugin_v1_ui_proto_msgTypes[56]
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[60]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3195,7 +3435,7 @@ func (x *CtrlStoreAuthStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CtrlStoreAuthStatusRequest.ProtoReflect.Descriptor instead.
 func (*CtrlStoreAuthStatusRequest) Descriptor() ([]byte, []int) {
-	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{56}
+	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{60}
 }
 
 type CtrlStoreAuthStatusResponse struct {
@@ -3210,7 +3450,7 @@ type CtrlStoreAuthStatusResponse struct {
 
 func (x *CtrlStoreAuthStatusResponse) Reset() {
 	*x = CtrlStoreAuthStatusResponse{}
-	mi := &file_zhiplugin_v1_ui_proto_msgTypes[57]
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[61]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3222,7 +3462,7 @@ func (x *CtrlStoreAuthStatusResponse) String() string {
 func (*CtrlStoreAuthStatusResponse) ProtoMessage() {}
 
 func (x *CtrlStoreAuthStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_zhiplugin_v1_ui_proto_msgTypes[57]
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[61]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3235,7 +3475,7 @@ func (x *CtrlStoreAuthStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CtrlStoreAuthStatusResponse.ProtoReflect.Descriptor instead.
 func (*CtrlStoreAuthStatusResponse) Descriptor() ([]byte, []int) {
-	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{57}
+	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{61}
 }
 
 func (x *CtrlStoreAuthStatusResponse) GetSessionId() string {
@@ -3275,7 +3515,7 @@ type CtrlStoreLogoutRequest struct {
 
 func (x *CtrlStoreLogoutRequest) Reset() {
 	*x = CtrlStoreLogoutRequest{}
-	mi := &file_zhiplugin_v1_ui_proto_msgTypes[58]
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[62]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3287,7 +3527,7 @@ func (x *CtrlStoreLogoutRequest) String() string {
 func (*CtrlStoreLogoutRequest) ProtoMessage() {}
 
 func (x *CtrlStoreLogoutRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_zhiplugin_v1_ui_proto_msgTypes[58]
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[62]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3300,7 +3540,7 @@ func (x *CtrlStoreLogoutRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CtrlStoreLogoutRequest.ProtoReflect.Descriptor instead.
 func (*CtrlStoreLogoutRequest) Descriptor() ([]byte, []int) {
-	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{58}
+	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{62}
 }
 
 // CtrlStoreLogoutResponse is intentionally empty.
@@ -3312,7 +3552,7 @@ type CtrlStoreLogoutResponse struct {
 
 func (x *CtrlStoreLogoutResponse) Reset() {
 	*x = CtrlStoreLogoutResponse{}
-	mi := &file_zhiplugin_v1_ui_proto_msgTypes[59]
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[63]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3324,7 +3564,7 @@ func (x *CtrlStoreLogoutResponse) String() string {
 func (*CtrlStoreLogoutResponse) ProtoMessage() {}
 
 func (x *CtrlStoreLogoutResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_zhiplugin_v1_ui_proto_msgTypes[59]
+	mi := &file_zhiplugin_v1_ui_proto_msgTypes[63]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3337,7 +3577,7 @@ func (x *CtrlStoreLogoutResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CtrlStoreLogoutResponse.ProtoReflect.Descriptor instead.
 func (*CtrlStoreLogoutResponse) Descriptor() ([]byte, []int) {
-	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{59}
+	return file_zhiplugin_v1_ui_proto_rawDescGZIP(), []int{63}
 }
 
 var File_zhiplugin_v1_ui_proto protoreflect.FileDescriptor
@@ -3534,11 +3774,12 @@ const file_zhiplugin_v1_ui_proto_rawDesc = "" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x1a\n" +
 	"\brequired\x18\x03 \x01(\bR\brequired\x12\x16\n" +
-	"\x06secret\x18\x04 \x01(\bR\x06secret\"\x8b\x01\n" +
+	"\x06secret\x18\x04 \x01(\bR\x06secret\"\xad\x01\n" +
 	"\x16CtrlStoreAuthMethodMsg\x12\x12\n" +
 	"\x04type\x18\x01 \x01(\tR\x04type\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x12;\n" +
-	"\x06fields\x18\x03 \x03(\v2#.zhiplugin.v1.CtrlStoreAuthFieldMsgR\x06fields\"\x1d\n" +
+	"\x06fields\x18\x03 \x03(\v2#.zhiplugin.v1.CtrlStoreAuthFieldMsgR\x06fields\x12 \n" +
+	"\vinteractive\x18\x04 \x01(\bR\vinteractive\"\x1d\n" +
 	"\x1bCtrlStoreAuthMethodsRequest\"^\n" +
 	"\x1cCtrlStoreAuthMethodsResponse\x12>\n" +
 	"\amethods\x18\x01 \x03(\v2$.zhiplugin.v1.CtrlStoreAuthMethodMsgR\amethods\"\xc7\x01\n" +
@@ -3557,6 +3798,33 @@ const file_zhiplugin_v1_ui_proto_rawDesc = "" +
 	"\bmetadata\x18\x04 \x03(\v22.zhiplugin.v1.CtrlStoreLoginResponse.MetadataEntryR\bmetadata\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xc9\x01\n" +
+	" CtrlStoreLoginInteractiveRequest\x12\x16\n" +
+	"\x06method\x18\x01 \x01(\tR\x06method\x12R\n" +
+	"\x06params\x18\x02 \x03(\v2:.zhiplugin.v1.CtrlStoreLoginInteractiveRequest.ParamsEntryR\x06params\x1a9\n" +
+	"\vParamsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x80\x01\n" +
+	"!CtrlStoreLoginInteractiveResponse\x12!\n" +
+	"\fchallenge_id\x18\x01 \x01(\tR\vchallengeId\x12\x19\n" +
+	"\bauth_url\x18\x02 \x01(\tR\aauthUrl\x12\x1d\n" +
+	"\n" +
+	"expires_at\x18\x03 \x01(\tR\texpiresAt\"\x85\x02\n" +
+	"(CtrlStoreLoginInteractiveCallbackRequest\x12!\n" +
+	"\fchallenge_id\x18\x01 \x01(\tR\vchallengeId\x12s\n" +
+	"\x0fcallback_params\x18\x02 \x03(\v2J.zhiplugin.v1.CtrlStoreLoginInteractiveCallbackRequest.CallbackParamsEntryR\x0ecallbackParams\x1aA\n" +
+	"\x13CallbackParamsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa1\x02\n" +
+	")CtrlStoreLoginInteractiveCallbackResponse\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x16\n" +
+	"\x06status\x18\x02 \x01(\tR\x06status\x12\x1d\n" +
+	"\n" +
+	"expires_at\x18\x03 \x01(\tR\texpiresAt\x12a\n" +
+	"\bmetadata\x18\x04 \x03(\v2E.zhiplugin.v1.CtrlStoreLoginInteractiveCallbackResponse.MetadataEntryR\bmetadata\x1a;\n" +
+	"\rMetadataEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x1c\n" +
 	"\x1aCtrlStoreAuthStatusRequest\"\x85\x02\n" +
 	"\x1bCtrlStoreAuthStatusResponse\x12\x1d\n" +
@@ -3573,7 +3841,7 @@ const file_zhiplugin_v1_ui_proto_rawDesc = "" +
 	"\x17CtrlStoreLogoutResponse2\x9e\x01\n" +
 	"\tUIService\x12:\n" +
 	"\x03Run\x12\x18.zhiplugin.v1.RunRequest\x1a\x19.zhiplugin.v1.RunResponse\x12U\n" +
-	"\fCapabilities\x12!.zhiplugin.v1.CapabilitiesRequest\x1a\".zhiplugin.v1.CapabilitiesResponse2\xc1\x11\n" +
+	"\fCapabilities\x12!.zhiplugin.v1.CapabilitiesRequest\x1a\".zhiplugin.v1.CapabilitiesResponse2\xce\x13\n" +
 	"\x13UIControllerService\x12Q\n" +
 	"\bLoadTree\x12!.zhiplugin.v1.CtrlLoadTreeRequest\x1a\".zhiplugin.v1.CtrlLoadTreeResponse\x12Q\n" +
 	"\bSetValue\x12!.zhiplugin.v1.CtrlSetValueRequest\x1a\".zhiplugin.v1.CtrlSetValueResponse\x12Q\n" +
@@ -3597,7 +3865,9 @@ const file_zhiplugin_v1_ui_proto_rawDesc = "" +
 	"RatePlugin\x12#.zhiplugin.v1.CtrlRatePluginRequest\x1a$.zhiplugin.v1.CtrlRatePluginResponse\x12i\n" +
 	"\x10StoreAuthMethods\x12).zhiplugin.v1.CtrlStoreAuthMethodsRequest\x1a*.zhiplugin.v1.CtrlStoreAuthMethodsResponse\x12W\n" +
 	"\n" +
-	"StoreLogin\x12#.zhiplugin.v1.CtrlStoreLoginRequest\x1a$.zhiplugin.v1.CtrlStoreLoginResponse\x12f\n" +
+	"StoreLogin\x12#.zhiplugin.v1.CtrlStoreLoginRequest\x1a$.zhiplugin.v1.CtrlStoreLoginResponse\x12x\n" +
+	"\x15StoreLoginInteractive\x12..zhiplugin.v1.CtrlStoreLoginInteractiveRequest\x1a/.zhiplugin.v1.CtrlStoreLoginInteractiveResponse\x12\x90\x01\n" +
+	"\x1dStoreLoginInteractiveCallback\x126.zhiplugin.v1.CtrlStoreLoginInteractiveCallbackRequest\x1a7.zhiplugin.v1.CtrlStoreLoginInteractiveCallbackResponse\x12f\n" +
 	"\x0fStoreAuthStatus\x12(.zhiplugin.v1.CtrlStoreAuthStatusRequest\x1a).zhiplugin.v1.CtrlStoreAuthStatusResponse\x12Z\n" +
 	"\vStoreLogout\x12$.zhiplugin.v1.CtrlStoreLogoutRequest\x1a%.zhiplugin.v1.CtrlStoreLogoutResponseB0Z.github.com/MrWong99/zhi/pkg/zhiplugin/ui/protob\x06proto3"
 
@@ -3613,77 +3883,84 @@ func file_zhiplugin_v1_ui_proto_rawDescGZIP() []byte {
 	return file_zhiplugin_v1_ui_proto_rawDescData
 }
 
-var file_zhiplugin_v1_ui_proto_msgTypes = make([]protoimpl.MessageInfo, 63)
+var file_zhiplugin_v1_ui_proto_msgTypes = make([]protoimpl.MessageInfo, 70)
 var file_zhiplugin_v1_ui_proto_goTypes = []any{
-	(*RunRequest)(nil),                       // 0: zhiplugin.v1.RunRequest
-	(*RunResponse)(nil),                      // 1: zhiplugin.v1.RunResponse
-	(*CapabilitiesRequest)(nil),              // 2: zhiplugin.v1.CapabilitiesRequest
-	(*CapabilitiesResponse)(nil),             // 3: zhiplugin.v1.CapabilitiesResponse
-	(*CtrlLoadTreeRequest)(nil),              // 4: zhiplugin.v1.CtrlLoadTreeRequest
-	(*CtrlLoadTreeResponse)(nil),             // 5: zhiplugin.v1.CtrlLoadTreeResponse
-	(*CtrlSetValueRequest)(nil),              // 6: zhiplugin.v1.CtrlSetValueRequest
-	(*CtrlSetValueResponse)(nil),             // 7: zhiplugin.v1.CtrlSetValueResponse
-	(*CtrlValidateRequest)(nil),              // 8: zhiplugin.v1.CtrlValidateRequest
-	(*CtrlValidateResponse)(nil),             // 9: zhiplugin.v1.CtrlValidateResponse
-	(*CtrlSaveTreeRequest)(nil),              // 10: zhiplugin.v1.CtrlSaveTreeRequest
-	(*CtrlSaveTreeResponse)(nil),             // 11: zhiplugin.v1.CtrlSaveTreeResponse
-	(*CtrlExportTemplatesRequest)(nil),       // 12: zhiplugin.v1.CtrlExportTemplatesRequest
-	(*CtrlExportTemplateMsg)(nil),            // 13: zhiplugin.v1.CtrlExportTemplateMsg
-	(*CtrlExportTemplatesResponse)(nil),      // 14: zhiplugin.v1.CtrlExportTemplatesResponse
-	(*CtrlExportRequest)(nil),                // 15: zhiplugin.v1.CtrlExportRequest
-	(*CtrlExportResponse)(nil),               // 16: zhiplugin.v1.CtrlExportResponse
-	(*CtrlApplyRequest)(nil),                 // 17: zhiplugin.v1.CtrlApplyRequest
-	(*CtrlApplyResponse)(nil),                // 18: zhiplugin.v1.CtrlApplyResponse
-	(*CtrlListComponentsRequest)(nil),        // 19: zhiplugin.v1.CtrlListComponentsRequest
-	(*CtrlComponentInfoMsg)(nil),             // 20: zhiplugin.v1.CtrlComponentInfoMsg
-	(*CtrlListComponentsResponse)(nil),       // 21: zhiplugin.v1.CtrlListComponentsResponse
-	(*CtrlEnableComponentRequest)(nil),       // 22: zhiplugin.v1.CtrlEnableComponentRequest
-	(*CtrlEnableComponentResponse)(nil),      // 23: zhiplugin.v1.CtrlEnableComponentResponse
-	(*CtrlDisableComponentRequest)(nil),      // 24: zhiplugin.v1.CtrlDisableComponentRequest
-	(*CtrlDisableComponentResponse)(nil),     // 25: zhiplugin.v1.CtrlDisableComponentResponse
-	(*CtrlWorkspaceNameRequest)(nil),         // 26: zhiplugin.v1.CtrlWorkspaceNameRequest
-	(*CtrlWorkspaceNameResponse)(nil),        // 27: zhiplugin.v1.CtrlWorkspaceNameResponse
-	(*CtrlSearchMarketplaceRequest)(nil),     // 28: zhiplugin.v1.CtrlSearchMarketplaceRequest
-	(*CtrlMarketplaceEntryMsg)(nil),          // 29: zhiplugin.v1.CtrlMarketplaceEntryMsg
-	(*CtrlSearchMarketplaceResponse)(nil),    // 30: zhiplugin.v1.CtrlSearchMarketplaceResponse
-	(*CtrlGetMarketplaceDetailRequest)(nil),  // 31: zhiplugin.v1.CtrlGetMarketplaceDetailRequest
-	(*CtrlVersionEntryMsg)(nil),              // 32: zhiplugin.v1.CtrlVersionEntryMsg
-	(*CtrlRatingEntryMsg)(nil),               // 33: zhiplugin.v1.CtrlRatingEntryMsg
-	(*CtrlDependencyEntryMsg)(nil),           // 34: zhiplugin.v1.CtrlDependencyEntryMsg
-	(*CtrlGetMarketplaceDetailResponse)(nil), // 35: zhiplugin.v1.CtrlGetMarketplaceDetailResponse
-	(*CtrlInstallPluginRequest)(nil),         // 36: zhiplugin.v1.CtrlInstallPluginRequest
-	(*CtrlInstallPluginResponse)(nil),        // 37: zhiplugin.v1.CtrlInstallPluginResponse
-	(*CtrlUninstallPluginRequest)(nil),       // 38: zhiplugin.v1.CtrlUninstallPluginRequest
-	(*CtrlUninstallPluginResponse)(nil),      // 39: zhiplugin.v1.CtrlUninstallPluginResponse
-	(*CtrlListInstalledPluginsRequest)(nil),  // 40: zhiplugin.v1.CtrlListInstalledPluginsRequest
-	(*CtrlInstalledPluginMsg)(nil),           // 41: zhiplugin.v1.CtrlInstalledPluginMsg
-	(*CtrlListInstalledPluginsResponse)(nil), // 42: zhiplugin.v1.CtrlListInstalledPluginsResponse
-	(*CtrlCheckUpdatesRequest)(nil),          // 43: zhiplugin.v1.CtrlCheckUpdatesRequest
-	(*CtrlPluginUpdateMsg)(nil),              // 44: zhiplugin.v1.CtrlPluginUpdateMsg
-	(*CtrlCheckUpdatesResponse)(nil),         // 45: zhiplugin.v1.CtrlCheckUpdatesResponse
-	(*CtrlUpdatePluginRequest)(nil),          // 46: zhiplugin.v1.CtrlUpdatePluginRequest
-	(*CtrlUpdatePluginResponse)(nil),         // 47: zhiplugin.v1.CtrlUpdatePluginResponse
-	(*CtrlRatePluginRequest)(nil),            // 48: zhiplugin.v1.CtrlRatePluginRequest
-	(*CtrlRatePluginResponse)(nil),           // 49: zhiplugin.v1.CtrlRatePluginResponse
-	(*CtrlStoreAuthFieldMsg)(nil),            // 50: zhiplugin.v1.CtrlStoreAuthFieldMsg
-	(*CtrlStoreAuthMethodMsg)(nil),           // 51: zhiplugin.v1.CtrlStoreAuthMethodMsg
-	(*CtrlStoreAuthMethodsRequest)(nil),      // 52: zhiplugin.v1.CtrlStoreAuthMethodsRequest
-	(*CtrlStoreAuthMethodsResponse)(nil),     // 53: zhiplugin.v1.CtrlStoreAuthMethodsResponse
-	(*CtrlStoreLoginRequest)(nil),            // 54: zhiplugin.v1.CtrlStoreLoginRequest
-	(*CtrlStoreLoginResponse)(nil),           // 55: zhiplugin.v1.CtrlStoreLoginResponse
-	(*CtrlStoreAuthStatusRequest)(nil),       // 56: zhiplugin.v1.CtrlStoreAuthStatusRequest
-	(*CtrlStoreAuthStatusResponse)(nil),      // 57: zhiplugin.v1.CtrlStoreAuthStatusResponse
-	(*CtrlStoreLogoutRequest)(nil),           // 58: zhiplugin.v1.CtrlStoreLogoutRequest
-	(*CtrlStoreLogoutResponse)(nil),          // 59: zhiplugin.v1.CtrlStoreLogoutResponse
-	nil,                                      // 60: zhiplugin.v1.CtrlStoreLoginRequest.CredentialsEntry
-	nil,                                      // 61: zhiplugin.v1.CtrlStoreLoginResponse.MetadataEntry
-	nil,                                      // 62: zhiplugin.v1.CtrlStoreAuthStatusResponse.MetadataEntry
-	(*proto.TreeEntry)(nil),                  // 63: zhiplugin.v1.TreeEntry
-	(*proto.ValidationResultMsg)(nil),        // 64: zhiplugin.v1.ValidationResultMsg
+	(*RunRequest)(nil),                                // 0: zhiplugin.v1.RunRequest
+	(*RunResponse)(nil),                               // 1: zhiplugin.v1.RunResponse
+	(*CapabilitiesRequest)(nil),                       // 2: zhiplugin.v1.CapabilitiesRequest
+	(*CapabilitiesResponse)(nil),                      // 3: zhiplugin.v1.CapabilitiesResponse
+	(*CtrlLoadTreeRequest)(nil),                       // 4: zhiplugin.v1.CtrlLoadTreeRequest
+	(*CtrlLoadTreeResponse)(nil),                      // 5: zhiplugin.v1.CtrlLoadTreeResponse
+	(*CtrlSetValueRequest)(nil),                       // 6: zhiplugin.v1.CtrlSetValueRequest
+	(*CtrlSetValueResponse)(nil),                      // 7: zhiplugin.v1.CtrlSetValueResponse
+	(*CtrlValidateRequest)(nil),                       // 8: zhiplugin.v1.CtrlValidateRequest
+	(*CtrlValidateResponse)(nil),                      // 9: zhiplugin.v1.CtrlValidateResponse
+	(*CtrlSaveTreeRequest)(nil),                       // 10: zhiplugin.v1.CtrlSaveTreeRequest
+	(*CtrlSaveTreeResponse)(nil),                      // 11: zhiplugin.v1.CtrlSaveTreeResponse
+	(*CtrlExportTemplatesRequest)(nil),                // 12: zhiplugin.v1.CtrlExportTemplatesRequest
+	(*CtrlExportTemplateMsg)(nil),                     // 13: zhiplugin.v1.CtrlExportTemplateMsg
+	(*CtrlExportTemplatesResponse)(nil),               // 14: zhiplugin.v1.CtrlExportTemplatesResponse
+	(*CtrlExportRequest)(nil),                         // 15: zhiplugin.v1.CtrlExportRequest
+	(*CtrlExportResponse)(nil),                        // 16: zhiplugin.v1.CtrlExportResponse
+	(*CtrlApplyRequest)(nil),                          // 17: zhiplugin.v1.CtrlApplyRequest
+	(*CtrlApplyResponse)(nil),                         // 18: zhiplugin.v1.CtrlApplyResponse
+	(*CtrlListComponentsRequest)(nil),                 // 19: zhiplugin.v1.CtrlListComponentsRequest
+	(*CtrlComponentInfoMsg)(nil),                      // 20: zhiplugin.v1.CtrlComponentInfoMsg
+	(*CtrlListComponentsResponse)(nil),                // 21: zhiplugin.v1.CtrlListComponentsResponse
+	(*CtrlEnableComponentRequest)(nil),                // 22: zhiplugin.v1.CtrlEnableComponentRequest
+	(*CtrlEnableComponentResponse)(nil),               // 23: zhiplugin.v1.CtrlEnableComponentResponse
+	(*CtrlDisableComponentRequest)(nil),               // 24: zhiplugin.v1.CtrlDisableComponentRequest
+	(*CtrlDisableComponentResponse)(nil),              // 25: zhiplugin.v1.CtrlDisableComponentResponse
+	(*CtrlWorkspaceNameRequest)(nil),                  // 26: zhiplugin.v1.CtrlWorkspaceNameRequest
+	(*CtrlWorkspaceNameResponse)(nil),                 // 27: zhiplugin.v1.CtrlWorkspaceNameResponse
+	(*CtrlSearchMarketplaceRequest)(nil),              // 28: zhiplugin.v1.CtrlSearchMarketplaceRequest
+	(*CtrlMarketplaceEntryMsg)(nil),                   // 29: zhiplugin.v1.CtrlMarketplaceEntryMsg
+	(*CtrlSearchMarketplaceResponse)(nil),             // 30: zhiplugin.v1.CtrlSearchMarketplaceResponse
+	(*CtrlGetMarketplaceDetailRequest)(nil),           // 31: zhiplugin.v1.CtrlGetMarketplaceDetailRequest
+	(*CtrlVersionEntryMsg)(nil),                       // 32: zhiplugin.v1.CtrlVersionEntryMsg
+	(*CtrlRatingEntryMsg)(nil),                        // 33: zhiplugin.v1.CtrlRatingEntryMsg
+	(*CtrlDependencyEntryMsg)(nil),                    // 34: zhiplugin.v1.CtrlDependencyEntryMsg
+	(*CtrlGetMarketplaceDetailResponse)(nil),          // 35: zhiplugin.v1.CtrlGetMarketplaceDetailResponse
+	(*CtrlInstallPluginRequest)(nil),                  // 36: zhiplugin.v1.CtrlInstallPluginRequest
+	(*CtrlInstallPluginResponse)(nil),                 // 37: zhiplugin.v1.CtrlInstallPluginResponse
+	(*CtrlUninstallPluginRequest)(nil),                // 38: zhiplugin.v1.CtrlUninstallPluginRequest
+	(*CtrlUninstallPluginResponse)(nil),               // 39: zhiplugin.v1.CtrlUninstallPluginResponse
+	(*CtrlListInstalledPluginsRequest)(nil),           // 40: zhiplugin.v1.CtrlListInstalledPluginsRequest
+	(*CtrlInstalledPluginMsg)(nil),                    // 41: zhiplugin.v1.CtrlInstalledPluginMsg
+	(*CtrlListInstalledPluginsResponse)(nil),          // 42: zhiplugin.v1.CtrlListInstalledPluginsResponse
+	(*CtrlCheckUpdatesRequest)(nil),                   // 43: zhiplugin.v1.CtrlCheckUpdatesRequest
+	(*CtrlPluginUpdateMsg)(nil),                       // 44: zhiplugin.v1.CtrlPluginUpdateMsg
+	(*CtrlCheckUpdatesResponse)(nil),                  // 45: zhiplugin.v1.CtrlCheckUpdatesResponse
+	(*CtrlUpdatePluginRequest)(nil),                   // 46: zhiplugin.v1.CtrlUpdatePluginRequest
+	(*CtrlUpdatePluginResponse)(nil),                  // 47: zhiplugin.v1.CtrlUpdatePluginResponse
+	(*CtrlRatePluginRequest)(nil),                     // 48: zhiplugin.v1.CtrlRatePluginRequest
+	(*CtrlRatePluginResponse)(nil),                    // 49: zhiplugin.v1.CtrlRatePluginResponse
+	(*CtrlStoreAuthFieldMsg)(nil),                     // 50: zhiplugin.v1.CtrlStoreAuthFieldMsg
+	(*CtrlStoreAuthMethodMsg)(nil),                    // 51: zhiplugin.v1.CtrlStoreAuthMethodMsg
+	(*CtrlStoreAuthMethodsRequest)(nil),               // 52: zhiplugin.v1.CtrlStoreAuthMethodsRequest
+	(*CtrlStoreAuthMethodsResponse)(nil),              // 53: zhiplugin.v1.CtrlStoreAuthMethodsResponse
+	(*CtrlStoreLoginRequest)(nil),                     // 54: zhiplugin.v1.CtrlStoreLoginRequest
+	(*CtrlStoreLoginResponse)(nil),                    // 55: zhiplugin.v1.CtrlStoreLoginResponse
+	(*CtrlStoreLoginInteractiveRequest)(nil),          // 56: zhiplugin.v1.CtrlStoreLoginInteractiveRequest
+	(*CtrlStoreLoginInteractiveResponse)(nil),         // 57: zhiplugin.v1.CtrlStoreLoginInteractiveResponse
+	(*CtrlStoreLoginInteractiveCallbackRequest)(nil),  // 58: zhiplugin.v1.CtrlStoreLoginInteractiveCallbackRequest
+	(*CtrlStoreLoginInteractiveCallbackResponse)(nil), // 59: zhiplugin.v1.CtrlStoreLoginInteractiveCallbackResponse
+	(*CtrlStoreAuthStatusRequest)(nil),                // 60: zhiplugin.v1.CtrlStoreAuthStatusRequest
+	(*CtrlStoreAuthStatusResponse)(nil),               // 61: zhiplugin.v1.CtrlStoreAuthStatusResponse
+	(*CtrlStoreLogoutRequest)(nil),                    // 62: zhiplugin.v1.CtrlStoreLogoutRequest
+	(*CtrlStoreLogoutResponse)(nil),                   // 63: zhiplugin.v1.CtrlStoreLogoutResponse
+	nil,                                               // 64: zhiplugin.v1.CtrlStoreLoginRequest.CredentialsEntry
+	nil,                                               // 65: zhiplugin.v1.CtrlStoreLoginResponse.MetadataEntry
+	nil,                                               // 66: zhiplugin.v1.CtrlStoreLoginInteractiveRequest.ParamsEntry
+	nil,                                               // 67: zhiplugin.v1.CtrlStoreLoginInteractiveCallbackRequest.CallbackParamsEntry
+	nil,                                               // 68: zhiplugin.v1.CtrlStoreLoginInteractiveCallbackResponse.MetadataEntry
+	nil,                                               // 69: zhiplugin.v1.CtrlStoreAuthStatusResponse.MetadataEntry
+	(*proto.TreeEntry)(nil),                           // 70: zhiplugin.v1.TreeEntry
+	(*proto.ValidationResultMsg)(nil),                 // 71: zhiplugin.v1.ValidationResultMsg
 }
 var file_zhiplugin_v1_ui_proto_depIdxs = []int32{
-	63, // 0: zhiplugin.v1.CtrlLoadTreeResponse.tree:type_name -> zhiplugin.v1.TreeEntry
-	64, // 1: zhiplugin.v1.CtrlValidateResponse.results:type_name -> zhiplugin.v1.ValidationResultMsg
+	70, // 0: zhiplugin.v1.CtrlLoadTreeResponse.tree:type_name -> zhiplugin.v1.TreeEntry
+	71, // 1: zhiplugin.v1.CtrlValidateResponse.results:type_name -> zhiplugin.v1.ValidationResultMsg
 	13, // 2: zhiplugin.v1.CtrlExportTemplatesResponse.templates:type_name -> zhiplugin.v1.CtrlExportTemplateMsg
 	20, // 3: zhiplugin.v1.CtrlListComponentsResponse.components:type_name -> zhiplugin.v1.CtrlComponentInfoMsg
 	29, // 4: zhiplugin.v1.CtrlSearchMarketplaceResponse.results:type_name -> zhiplugin.v1.CtrlMarketplaceEntryMsg
@@ -3695,64 +3972,71 @@ var file_zhiplugin_v1_ui_proto_depIdxs = []int32{
 	44, // 10: zhiplugin.v1.CtrlCheckUpdatesResponse.updates:type_name -> zhiplugin.v1.CtrlPluginUpdateMsg
 	50, // 11: zhiplugin.v1.CtrlStoreAuthMethodMsg.fields:type_name -> zhiplugin.v1.CtrlStoreAuthFieldMsg
 	51, // 12: zhiplugin.v1.CtrlStoreAuthMethodsResponse.methods:type_name -> zhiplugin.v1.CtrlStoreAuthMethodMsg
-	60, // 13: zhiplugin.v1.CtrlStoreLoginRequest.credentials:type_name -> zhiplugin.v1.CtrlStoreLoginRequest.CredentialsEntry
-	61, // 14: zhiplugin.v1.CtrlStoreLoginResponse.metadata:type_name -> zhiplugin.v1.CtrlStoreLoginResponse.MetadataEntry
-	62, // 15: zhiplugin.v1.CtrlStoreAuthStatusResponse.metadata:type_name -> zhiplugin.v1.CtrlStoreAuthStatusResponse.MetadataEntry
-	0,  // 16: zhiplugin.v1.UIService.Run:input_type -> zhiplugin.v1.RunRequest
-	2,  // 17: zhiplugin.v1.UIService.Capabilities:input_type -> zhiplugin.v1.CapabilitiesRequest
-	4,  // 18: zhiplugin.v1.UIControllerService.LoadTree:input_type -> zhiplugin.v1.CtrlLoadTreeRequest
-	6,  // 19: zhiplugin.v1.UIControllerService.SetValue:input_type -> zhiplugin.v1.CtrlSetValueRequest
-	8,  // 20: zhiplugin.v1.UIControllerService.Validate:input_type -> zhiplugin.v1.CtrlValidateRequest
-	10, // 21: zhiplugin.v1.UIControllerService.SaveTree:input_type -> zhiplugin.v1.CtrlSaveTreeRequest
-	12, // 22: zhiplugin.v1.UIControllerService.ExportTemplates:input_type -> zhiplugin.v1.CtrlExportTemplatesRequest
-	15, // 23: zhiplugin.v1.UIControllerService.Export:input_type -> zhiplugin.v1.CtrlExportRequest
-	17, // 24: zhiplugin.v1.UIControllerService.Apply:input_type -> zhiplugin.v1.CtrlApplyRequest
-	19, // 25: zhiplugin.v1.UIControllerService.ListComponents:input_type -> zhiplugin.v1.CtrlListComponentsRequest
-	22, // 26: zhiplugin.v1.UIControllerService.EnableComponent:input_type -> zhiplugin.v1.CtrlEnableComponentRequest
-	24, // 27: zhiplugin.v1.UIControllerService.DisableComponent:input_type -> zhiplugin.v1.CtrlDisableComponentRequest
-	26, // 28: zhiplugin.v1.UIControllerService.WorkspaceName:input_type -> zhiplugin.v1.CtrlWorkspaceNameRequest
-	28, // 29: zhiplugin.v1.UIControllerService.SearchMarketplace:input_type -> zhiplugin.v1.CtrlSearchMarketplaceRequest
-	31, // 30: zhiplugin.v1.UIControllerService.GetMarketplaceDetail:input_type -> zhiplugin.v1.CtrlGetMarketplaceDetailRequest
-	36, // 31: zhiplugin.v1.UIControllerService.InstallPlugin:input_type -> zhiplugin.v1.CtrlInstallPluginRequest
-	38, // 32: zhiplugin.v1.UIControllerService.UninstallPlugin:input_type -> zhiplugin.v1.CtrlUninstallPluginRequest
-	40, // 33: zhiplugin.v1.UIControllerService.ListInstalledPlugins:input_type -> zhiplugin.v1.CtrlListInstalledPluginsRequest
-	43, // 34: zhiplugin.v1.UIControllerService.CheckUpdates:input_type -> zhiplugin.v1.CtrlCheckUpdatesRequest
-	46, // 35: zhiplugin.v1.UIControllerService.UpdatePlugin:input_type -> zhiplugin.v1.CtrlUpdatePluginRequest
-	48, // 36: zhiplugin.v1.UIControllerService.RatePlugin:input_type -> zhiplugin.v1.CtrlRatePluginRequest
-	52, // 37: zhiplugin.v1.UIControllerService.StoreAuthMethods:input_type -> zhiplugin.v1.CtrlStoreAuthMethodsRequest
-	54, // 38: zhiplugin.v1.UIControllerService.StoreLogin:input_type -> zhiplugin.v1.CtrlStoreLoginRequest
-	56, // 39: zhiplugin.v1.UIControllerService.StoreAuthStatus:input_type -> zhiplugin.v1.CtrlStoreAuthStatusRequest
-	58, // 40: zhiplugin.v1.UIControllerService.StoreLogout:input_type -> zhiplugin.v1.CtrlStoreLogoutRequest
-	1,  // 41: zhiplugin.v1.UIService.Run:output_type -> zhiplugin.v1.RunResponse
-	3,  // 42: zhiplugin.v1.UIService.Capabilities:output_type -> zhiplugin.v1.CapabilitiesResponse
-	5,  // 43: zhiplugin.v1.UIControllerService.LoadTree:output_type -> zhiplugin.v1.CtrlLoadTreeResponse
-	7,  // 44: zhiplugin.v1.UIControllerService.SetValue:output_type -> zhiplugin.v1.CtrlSetValueResponse
-	9,  // 45: zhiplugin.v1.UIControllerService.Validate:output_type -> zhiplugin.v1.CtrlValidateResponse
-	11, // 46: zhiplugin.v1.UIControllerService.SaveTree:output_type -> zhiplugin.v1.CtrlSaveTreeResponse
-	14, // 47: zhiplugin.v1.UIControllerService.ExportTemplates:output_type -> zhiplugin.v1.CtrlExportTemplatesResponse
-	16, // 48: zhiplugin.v1.UIControllerService.Export:output_type -> zhiplugin.v1.CtrlExportResponse
-	18, // 49: zhiplugin.v1.UIControllerService.Apply:output_type -> zhiplugin.v1.CtrlApplyResponse
-	21, // 50: zhiplugin.v1.UIControllerService.ListComponents:output_type -> zhiplugin.v1.CtrlListComponentsResponse
-	23, // 51: zhiplugin.v1.UIControllerService.EnableComponent:output_type -> zhiplugin.v1.CtrlEnableComponentResponse
-	25, // 52: zhiplugin.v1.UIControllerService.DisableComponent:output_type -> zhiplugin.v1.CtrlDisableComponentResponse
-	27, // 53: zhiplugin.v1.UIControllerService.WorkspaceName:output_type -> zhiplugin.v1.CtrlWorkspaceNameResponse
-	30, // 54: zhiplugin.v1.UIControllerService.SearchMarketplace:output_type -> zhiplugin.v1.CtrlSearchMarketplaceResponse
-	35, // 55: zhiplugin.v1.UIControllerService.GetMarketplaceDetail:output_type -> zhiplugin.v1.CtrlGetMarketplaceDetailResponse
-	37, // 56: zhiplugin.v1.UIControllerService.InstallPlugin:output_type -> zhiplugin.v1.CtrlInstallPluginResponse
-	39, // 57: zhiplugin.v1.UIControllerService.UninstallPlugin:output_type -> zhiplugin.v1.CtrlUninstallPluginResponse
-	42, // 58: zhiplugin.v1.UIControllerService.ListInstalledPlugins:output_type -> zhiplugin.v1.CtrlListInstalledPluginsResponse
-	45, // 59: zhiplugin.v1.UIControllerService.CheckUpdates:output_type -> zhiplugin.v1.CtrlCheckUpdatesResponse
-	47, // 60: zhiplugin.v1.UIControllerService.UpdatePlugin:output_type -> zhiplugin.v1.CtrlUpdatePluginResponse
-	49, // 61: zhiplugin.v1.UIControllerService.RatePlugin:output_type -> zhiplugin.v1.CtrlRatePluginResponse
-	53, // 62: zhiplugin.v1.UIControllerService.StoreAuthMethods:output_type -> zhiplugin.v1.CtrlStoreAuthMethodsResponse
-	55, // 63: zhiplugin.v1.UIControllerService.StoreLogin:output_type -> zhiplugin.v1.CtrlStoreLoginResponse
-	57, // 64: zhiplugin.v1.UIControllerService.StoreAuthStatus:output_type -> zhiplugin.v1.CtrlStoreAuthStatusResponse
-	59, // 65: zhiplugin.v1.UIControllerService.StoreLogout:output_type -> zhiplugin.v1.CtrlStoreLogoutResponse
-	41, // [41:66] is the sub-list for method output_type
-	16, // [16:41] is the sub-list for method input_type
-	16, // [16:16] is the sub-list for extension type_name
-	16, // [16:16] is the sub-list for extension extendee
-	0,  // [0:16] is the sub-list for field type_name
+	64, // 13: zhiplugin.v1.CtrlStoreLoginRequest.credentials:type_name -> zhiplugin.v1.CtrlStoreLoginRequest.CredentialsEntry
+	65, // 14: zhiplugin.v1.CtrlStoreLoginResponse.metadata:type_name -> zhiplugin.v1.CtrlStoreLoginResponse.MetadataEntry
+	66, // 15: zhiplugin.v1.CtrlStoreLoginInteractiveRequest.params:type_name -> zhiplugin.v1.CtrlStoreLoginInteractiveRequest.ParamsEntry
+	67, // 16: zhiplugin.v1.CtrlStoreLoginInteractiveCallbackRequest.callback_params:type_name -> zhiplugin.v1.CtrlStoreLoginInteractiveCallbackRequest.CallbackParamsEntry
+	68, // 17: zhiplugin.v1.CtrlStoreLoginInteractiveCallbackResponse.metadata:type_name -> zhiplugin.v1.CtrlStoreLoginInteractiveCallbackResponse.MetadataEntry
+	69, // 18: zhiplugin.v1.CtrlStoreAuthStatusResponse.metadata:type_name -> zhiplugin.v1.CtrlStoreAuthStatusResponse.MetadataEntry
+	0,  // 19: zhiplugin.v1.UIService.Run:input_type -> zhiplugin.v1.RunRequest
+	2,  // 20: zhiplugin.v1.UIService.Capabilities:input_type -> zhiplugin.v1.CapabilitiesRequest
+	4,  // 21: zhiplugin.v1.UIControllerService.LoadTree:input_type -> zhiplugin.v1.CtrlLoadTreeRequest
+	6,  // 22: zhiplugin.v1.UIControllerService.SetValue:input_type -> zhiplugin.v1.CtrlSetValueRequest
+	8,  // 23: zhiplugin.v1.UIControllerService.Validate:input_type -> zhiplugin.v1.CtrlValidateRequest
+	10, // 24: zhiplugin.v1.UIControllerService.SaveTree:input_type -> zhiplugin.v1.CtrlSaveTreeRequest
+	12, // 25: zhiplugin.v1.UIControllerService.ExportTemplates:input_type -> zhiplugin.v1.CtrlExportTemplatesRequest
+	15, // 26: zhiplugin.v1.UIControllerService.Export:input_type -> zhiplugin.v1.CtrlExportRequest
+	17, // 27: zhiplugin.v1.UIControllerService.Apply:input_type -> zhiplugin.v1.CtrlApplyRequest
+	19, // 28: zhiplugin.v1.UIControllerService.ListComponents:input_type -> zhiplugin.v1.CtrlListComponentsRequest
+	22, // 29: zhiplugin.v1.UIControllerService.EnableComponent:input_type -> zhiplugin.v1.CtrlEnableComponentRequest
+	24, // 30: zhiplugin.v1.UIControllerService.DisableComponent:input_type -> zhiplugin.v1.CtrlDisableComponentRequest
+	26, // 31: zhiplugin.v1.UIControllerService.WorkspaceName:input_type -> zhiplugin.v1.CtrlWorkspaceNameRequest
+	28, // 32: zhiplugin.v1.UIControllerService.SearchMarketplace:input_type -> zhiplugin.v1.CtrlSearchMarketplaceRequest
+	31, // 33: zhiplugin.v1.UIControllerService.GetMarketplaceDetail:input_type -> zhiplugin.v1.CtrlGetMarketplaceDetailRequest
+	36, // 34: zhiplugin.v1.UIControllerService.InstallPlugin:input_type -> zhiplugin.v1.CtrlInstallPluginRequest
+	38, // 35: zhiplugin.v1.UIControllerService.UninstallPlugin:input_type -> zhiplugin.v1.CtrlUninstallPluginRequest
+	40, // 36: zhiplugin.v1.UIControllerService.ListInstalledPlugins:input_type -> zhiplugin.v1.CtrlListInstalledPluginsRequest
+	43, // 37: zhiplugin.v1.UIControllerService.CheckUpdates:input_type -> zhiplugin.v1.CtrlCheckUpdatesRequest
+	46, // 38: zhiplugin.v1.UIControllerService.UpdatePlugin:input_type -> zhiplugin.v1.CtrlUpdatePluginRequest
+	48, // 39: zhiplugin.v1.UIControllerService.RatePlugin:input_type -> zhiplugin.v1.CtrlRatePluginRequest
+	52, // 40: zhiplugin.v1.UIControllerService.StoreAuthMethods:input_type -> zhiplugin.v1.CtrlStoreAuthMethodsRequest
+	54, // 41: zhiplugin.v1.UIControllerService.StoreLogin:input_type -> zhiplugin.v1.CtrlStoreLoginRequest
+	56, // 42: zhiplugin.v1.UIControllerService.StoreLoginInteractive:input_type -> zhiplugin.v1.CtrlStoreLoginInteractiveRequest
+	58, // 43: zhiplugin.v1.UIControllerService.StoreLoginInteractiveCallback:input_type -> zhiplugin.v1.CtrlStoreLoginInteractiveCallbackRequest
+	60, // 44: zhiplugin.v1.UIControllerService.StoreAuthStatus:input_type -> zhiplugin.v1.CtrlStoreAuthStatusRequest
+	62, // 45: zhiplugin.v1.UIControllerService.StoreLogout:input_type -> zhiplugin.v1.CtrlStoreLogoutRequest
+	1,  // 46: zhiplugin.v1.UIService.Run:output_type -> zhiplugin.v1.RunResponse
+	3,  // 47: zhiplugin.v1.UIService.Capabilities:output_type -> zhiplugin.v1.CapabilitiesResponse
+	5,  // 48: zhiplugin.v1.UIControllerService.LoadTree:output_type -> zhiplugin.v1.CtrlLoadTreeResponse
+	7,  // 49: zhiplugin.v1.UIControllerService.SetValue:output_type -> zhiplugin.v1.CtrlSetValueResponse
+	9,  // 50: zhiplugin.v1.UIControllerService.Validate:output_type -> zhiplugin.v1.CtrlValidateResponse
+	11, // 51: zhiplugin.v1.UIControllerService.SaveTree:output_type -> zhiplugin.v1.CtrlSaveTreeResponse
+	14, // 52: zhiplugin.v1.UIControllerService.ExportTemplates:output_type -> zhiplugin.v1.CtrlExportTemplatesResponse
+	16, // 53: zhiplugin.v1.UIControllerService.Export:output_type -> zhiplugin.v1.CtrlExportResponse
+	18, // 54: zhiplugin.v1.UIControllerService.Apply:output_type -> zhiplugin.v1.CtrlApplyResponse
+	21, // 55: zhiplugin.v1.UIControllerService.ListComponents:output_type -> zhiplugin.v1.CtrlListComponentsResponse
+	23, // 56: zhiplugin.v1.UIControllerService.EnableComponent:output_type -> zhiplugin.v1.CtrlEnableComponentResponse
+	25, // 57: zhiplugin.v1.UIControllerService.DisableComponent:output_type -> zhiplugin.v1.CtrlDisableComponentResponse
+	27, // 58: zhiplugin.v1.UIControllerService.WorkspaceName:output_type -> zhiplugin.v1.CtrlWorkspaceNameResponse
+	30, // 59: zhiplugin.v1.UIControllerService.SearchMarketplace:output_type -> zhiplugin.v1.CtrlSearchMarketplaceResponse
+	35, // 60: zhiplugin.v1.UIControllerService.GetMarketplaceDetail:output_type -> zhiplugin.v1.CtrlGetMarketplaceDetailResponse
+	37, // 61: zhiplugin.v1.UIControllerService.InstallPlugin:output_type -> zhiplugin.v1.CtrlInstallPluginResponse
+	39, // 62: zhiplugin.v1.UIControllerService.UninstallPlugin:output_type -> zhiplugin.v1.CtrlUninstallPluginResponse
+	42, // 63: zhiplugin.v1.UIControllerService.ListInstalledPlugins:output_type -> zhiplugin.v1.CtrlListInstalledPluginsResponse
+	45, // 64: zhiplugin.v1.UIControllerService.CheckUpdates:output_type -> zhiplugin.v1.CtrlCheckUpdatesResponse
+	47, // 65: zhiplugin.v1.UIControllerService.UpdatePlugin:output_type -> zhiplugin.v1.CtrlUpdatePluginResponse
+	49, // 66: zhiplugin.v1.UIControllerService.RatePlugin:output_type -> zhiplugin.v1.CtrlRatePluginResponse
+	53, // 67: zhiplugin.v1.UIControllerService.StoreAuthMethods:output_type -> zhiplugin.v1.CtrlStoreAuthMethodsResponse
+	55, // 68: zhiplugin.v1.UIControllerService.StoreLogin:output_type -> zhiplugin.v1.CtrlStoreLoginResponse
+	57, // 69: zhiplugin.v1.UIControllerService.StoreLoginInteractive:output_type -> zhiplugin.v1.CtrlStoreLoginInteractiveResponse
+	59, // 70: zhiplugin.v1.UIControllerService.StoreLoginInteractiveCallback:output_type -> zhiplugin.v1.CtrlStoreLoginInteractiveCallbackResponse
+	61, // 71: zhiplugin.v1.UIControllerService.StoreAuthStatus:output_type -> zhiplugin.v1.CtrlStoreAuthStatusResponse
+	63, // 72: zhiplugin.v1.UIControllerService.StoreLogout:output_type -> zhiplugin.v1.CtrlStoreLogoutResponse
+	46, // [46:73] is the sub-list for method output_type
+	19, // [19:46] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_zhiplugin_v1_ui_proto_init() }
@@ -3766,7 +4050,7 @@ func file_zhiplugin_v1_ui_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_zhiplugin_v1_ui_proto_rawDesc), len(file_zhiplugin_v1_ui_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   63,
+			NumMessages:   70,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

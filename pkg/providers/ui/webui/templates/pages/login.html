@@ -40,25 +40,54 @@
             {{if le (len $.AuthMethods) 1}}
               <input type="hidden" name="method" value="{{.Type}}">
             {{end}}
-            {{range .Fields}}
-              <div class="form-group">
-                <label for="cred_{{.Name}}">{{.Description}}</label>
-                {{if .Secret}}
-                  <input type="password" id="cred_{{.Name}}" name="cred_{{.Name}}"
-                         autocomplete="current-password"
-                         {{if .Required}}required{{end}}
-                         placeholder="{{.Description}}">
-                {{else}}
+            {{if .Interactive}}
+              {{/* Interactive methods (e.g. OIDC) show a button that opens the IdP in a new tab */}}
+              {{range .Fields}}
+                <div class="form-group">
+                  <label for="cred_{{.Name}}">{{.Description}}</label>
                   <input type="text" id="cred_{{.Name}}" name="cred_{{.Name}}"
                          {{if .Required}}required{{end}}
                          placeholder="{{.Description}}">
-                {{end}}
-              </div>
+                </div>
+              {{end}}
+            {{else}}
+              {{range .Fields}}
+                <div class="form-group">
+                  <label for="cred_{{.Name}}">{{.Description}}</label>
+                  {{if .Secret}}
+                    <input type="password" id="cred_{{.Name}}" name="cred_{{.Name}}"
+                           autocomplete="current-password"
+                           {{if .Required}}required{{end}}
+                           placeholder="{{.Description}}">
+                  {{else}}
+                    <input type="text" id="cred_{{.Name}}" name="cred_{{.Name}}"
+                           {{if .Required}}required{{end}}
+                           placeholder="{{.Description}}">
+                  {{end}}
+                </div>
+              {{end}}
             {{end}}
           {{end}}
         {{end}}
 
-        <button type="submit" class="btn btn-primary login-btn">Login</button>
+        {{$selectedIsInteractive := false}}
+        {{range .AuthMethods}}
+          {{if and (eq .Type $.SelectedMethod) .Interactive}}
+            {{$selectedIsInteractive = true}}
+          {{end}}
+        {{end}}
+
+        {{if $selectedIsInteractive}}
+          <button type="button" class="btn btn-primary login-btn" id="interactive-login-btn"
+                  data-method="{{.SelectedMethod}}">
+            {{icon "external-link"}} Login with {{.SelectedMethod}}
+          </button>
+          <div id="interactive-login-status" class="login-status" style="display:none">
+            <p>Waiting for authentication in browser...</p>
+          </div>
+        {{else}}
+          <button type="submit" class="btn btn-primary login-btn">Login</button>
+        {{end}}
       </form>
     {{else}}
       <p class="login-no-methods">No authentication methods available.</p>

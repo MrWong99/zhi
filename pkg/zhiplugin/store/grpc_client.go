@@ -42,6 +42,7 @@ func (c *GRPCClient) AuthMethods(ctx context.Context) ([]AuthMethod, error) {
 		am := AuthMethod{
 			Type:        m.GetType(),
 			Description: m.GetDescription(),
+			Interactive: m.GetInteractive(),
 		}
 		for _, f := range m.GetFields() {
 			am.Fields = append(am.Fields, AuthField{
@@ -60,6 +61,36 @@ func (c *GRPCClient) Login(ctx context.Context, method string, credentials map[s
 	resp, err := c.client.Login(ctx, &pb.LoginRequest{
 		Method:      method,
 		Credentials: credentials,
+	})
+	if err != nil {
+		return nil, statusToError(err)
+	}
+	return &Credential{
+		Token:     resp.GetToken(),
+		ExpiresAt: resp.GetExpiresAt(),
+		Metadata:  resp.GetMetadata(),
+	}, nil
+}
+
+func (c *GRPCClient) LoginInteractive(ctx context.Context, method string, params map[string]string) (*InteractiveChallenge, error) {
+	resp, err := c.client.LoginInteractive(ctx, &pb.LoginInteractiveRequest{
+		Method: method,
+		Params: params,
+	})
+	if err != nil {
+		return nil, statusToError(err)
+	}
+	return &InteractiveChallenge{
+		ChallengeID: resp.GetChallengeId(),
+		AuthURL:     resp.GetAuthUrl(),
+		ExpiresAt:   resp.GetExpiresAt(),
+	}, nil
+}
+
+func (c *GRPCClient) LoginInteractiveCallback(ctx context.Context, challengeID string, callbackParams map[string]string) (*Credential, error) {
+	resp, err := c.client.LoginInteractiveCallback(ctx, &pb.LoginInteractiveCallbackRequest{
+		ChallengeId:    challengeID,
+		CallbackParams: callbackParams,
 	})
 	if err != nil {
 		return nil, statusToError(err)

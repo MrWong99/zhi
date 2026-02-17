@@ -41,6 +41,14 @@ func (t *testPlugin) Login(context.Context, string, map[string]string) (*Credent
 	return nil, errors.New("authentication not supported")
 }
 
+func (t *testPlugin) LoginInteractive(context.Context, string, map[string]string) (*InteractiveChallenge, error) {
+	return nil, fmt.Errorf("interactive login not supported")
+}
+
+func (t *testPlugin) LoginInteractiveCallback(context.Context, string, map[string]string) (*Credential, error) {
+	return nil, fmt.Errorf("interactive login not supported")
+}
+
 func (t *testPlugin) ListTrees(_ context.Context) ([]string, error) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()

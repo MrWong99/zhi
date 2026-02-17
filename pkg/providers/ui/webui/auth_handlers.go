@@ -2,6 +2,7 @@ package webui
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 
 	"github.com/MrWong99/zhi/pkg/zhiplugin/ui"
@@ -12,6 +13,7 @@ type authMethodData struct {
 	Type        string
 	Description string
 	Fields      []authFieldData
+	Interactive bool
 }
 
 // authFieldData is the view model for a single credential field.
@@ -39,6 +41,7 @@ func toAuthMethodData(methods []ui.StoreAuthMethod) []authMethodData {
 			Type:        m.Type,
 			Description: m.Description,
 			Fields:      fields,
+			Interactive: m.Interactive,
 		})
 	}
 	return out
@@ -136,6 +139,55 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/tree", http.StatusSeeOther)
+}
+
+// handleLoginInteractive starts an interactive (browser-based) auth flow.
+// POST /login/interactive
+func (s *Server) handleLoginInteractive(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, `{"error":"invalid form data"}`, http.StatusBadRequest)
+		return
+	}
+
+	method := r.FormValue("method")
+	if method == "" {
+		http.Error(w, `{"error":"no auth method specified"}`, http.StatusBadRequest)
+		return
+	}
+
+	params := make(map[string]string)
+	// Collect method-specific parameters from the form.
+	methods, err := s.ctrl.StoreAuthMethods(ctx)
+	if err == nil {
+		for _, m := range methods {
+			if m.Type == method {
+				for _, f := range m.Fields {
+					if v := r.FormValue("cred_" + f.Name); v != "" {
+						params[f.Name] = v
+					}
+				}
+				break
+			}
+		}
+	}
+
+	challenge, err := s.ctrl.StoreLoginInteractive(ctx, method, params)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store")
+	json.NewEncoder(w).Encode(map[string]string{
+		"challenge_id": challenge.ChallengeID,
+		"auth_url":     challenge.AuthURL,
+		"expires_at":   challenge.ExpiresAt,
+	})
 }
 
 // handleLogout clears the session and redirects to /login.

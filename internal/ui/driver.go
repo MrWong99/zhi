@@ -299,9 +299,40 @@ func (c *UIController) StoreAuthMethods(ctx context.Context) ([]zhiui.StoreAuthM
 			Type:        m.Type,
 			Description: m.Description,
 			Fields:      fields,
+			Interactive: m.Interactive,
 		})
 	}
 	return result, nil
+}
+
+// StoreLoginInteractive initiates a browser-based login flow.
+func (c *UIController) StoreLoginInteractive(ctx context.Context, method string, params map[string]string) (*zhiui.StoreInteractiveChallenge, error) {
+	sess := c.engine.Session()
+	if sess == nil {
+		return nil, fmt.Errorf("no session manager available")
+	}
+	challenge, err := sess.LoginInteractive(ctx, method, params)
+	if err != nil {
+		return nil, err
+	}
+	return &zhiui.StoreInteractiveChallenge{
+		ChallengeID: challenge.ChallengeID,
+		AuthURL:     challenge.AuthURL,
+		ExpiresAt:   challenge.ExpiresAt,
+	}, nil
+}
+
+// StoreLoginInteractiveCallback completes the interactive auth flow.
+func (c *UIController) StoreLoginInteractiveCallback(ctx context.Context, challengeID string, callbackParams map[string]string) (*zhiui.StoreSession, error) {
+	sess := c.engine.Session()
+	if sess == nil {
+		return &zhiui.StoreSession{Status: zhiui.StoreSessionNone}, nil
+	}
+	s, err := sess.LoginInteractiveCallback(ctx, challengeID, callbackParams)
+	if err != nil {
+		return nil, err
+	}
+	return coreSessionToUI(s), nil
 }
 
 // StoreLogin authenticates with the store using the specified method

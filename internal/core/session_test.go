@@ -13,10 +13,14 @@ import (
 // authMockStore is a store.Plugin mock that supports authentication.
 type authMockStore struct {
 	mockStore
-	authRequired bool
-	methods      []store.AuthMethod
-	loginErr     error
-	credential   *store.Credential
+	authRequired       bool
+	methods            []store.AuthMethod
+	loginErr           error
+	credential         *store.Credential
+	interactiveErr     error
+	interactiveChall   *store.InteractiveChallenge
+	callbackErr        error
+	callbackCredential *store.Credential
 }
 
 func newAuthMockStore(authRequired bool) *authMockStore {
@@ -55,6 +59,20 @@ func (m *authMockStore) Login(_ context.Context, _ string, _ map[string]string) 
 		return nil, m.loginErr
 	}
 	return m.credential, nil
+}
+
+func (m *authMockStore) LoginInteractive(_ context.Context, _ string, _ map[string]string) (*store.InteractiveChallenge, error) {
+	if m.interactiveErr != nil {
+		return nil, m.interactiveErr
+	}
+	return m.interactiveChall, nil
+}
+
+func (m *authMockStore) LoginInteractiveCallback(_ context.Context, _ string, _ map[string]string) (*store.Credential, error) {
+	if m.callbackErr != nil {
+		return nil, m.callbackErr
+	}
+	return m.callbackCredential, nil
 }
 
 func TestSessionManager_AuthRequired_True(t *testing.T) {
@@ -321,5 +339,147 @@ func TestSessionManager_AuthMethods(t *testing.T) {
 	}
 	if methods[0].Type != "userpass" {
 		t.Fatalf("expected userpass method, got %q", methods[0].Type)
+	}
+}
+
+func TestSessionManager_LoginInteractive(t *testing.T) {
+	ms := newAuthMockStore(true)
+	ms.interactiveChall = &store.InteractiveChallenge{
+		ChallengeID: "chall-123",
+		AuthURL:     "https://idp.example.com/auth?state=abc",
+		ExpiresAt:   time.Now().Add(5 * time.Minute).Format(time.RFC3339),
+	}
+	sm := NewSessionManager(ms)
+
+	chall, err := sm.LoginInteractive(context.Background(), "oidc", nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if chall.ChallengeID != "chall-123" {
+		t.Fatalf("expected challenge ID chall-123, got %q", chall.ChallengeID)
+	}
+	if chall.AuthURL != "https://idp.example.com/auth?state=abc" {
+		t.Fatalf("unexpected auth URL: %q", chall.AuthURL)
+	}
+
+	// Session should still be unauthenticated (interactive hasn't completed).
+	s := sm.Status()
+	if s.Status != SessionUnauthenticated {
+		t.Fatalf("expected SessionUnauthenticated, got %d", s.Status)
+	}
+}
+
+func TestSessionManager_LoginInteractiveError(t *testing.T) {
+	ms := newAuthMockStore(true)
+	ms.interactiveErr = fmt.Errorf("method not supported")
+	sm := NewSessionManager(ms)
+
+	_, err := sm.LoginInteractive(context.Background(), "oidc", nil)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+}
+
+func TestSessionManager_LoginInteractiveCallback(t *testing.T) {
+	ms := newAuthMockStore(true)
+	expiry := time.Now().Add(time.Hour)
+	ms.callbackCredential = &store.Credential{
+		Token:     "oidc-token-xyz",
+		ExpiresAt: expiry.Format(time.RFC3339),
+		Metadata:  map[string]string{"email": "user@example.com"},
+	}
+	sm := NewSessionManager(ms)
+
+	s, err := sm.LoginInteractiveCallback(context.Background(), "chall-123", map[string]string{
+		"code":  "auth-code",
+		"state": "abc",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if s.Status != SessionAuthenticated {
+		t.Fatalf("expected SessionAuthenticated, got %d", s.Status)
+	}
+	if s.ID == "" {
+		t.Fatal("expected session ID to be set")
+	}
+	if s.Metadata["email"] != "user@example.com" {
+		t.Fatalf("expected email metadata, got %v", s.Metadata)
+	}
+	if s.ExpiresAt.IsZero() {
+		t.Fatal("expected ExpiresAt to be set")
+	}
+}
+
+func TestSessionManager_LoginInteractiveCallbackError(t *testing.T) {
+	ms := newAuthMockStore(true)
+	ms.callbackErr = fmt.Errorf("invalid state parameter")
+	sm := NewSessionManager(ms)
+
+	_, err := sm.LoginInteractiveCallback(context.Background(), "chall-123", map[string]string{
+		"code":  "auth-code",
+		"state": "wrong",
+	})
+	if err == nil {
+		t.Fatal("expected error")
+	}
+
+	s := sm.Status()
+	if s.Status != SessionUnauthenticated {
+		t.Fatalf("expected SessionUnauthenticated after failed callback, got %d", s.Status)
+	}
+}
+
+func TestSessionManager_InteractiveFullLifecycle(t *testing.T) {
+	ms := newAuthMockStore(true)
+	ms.interactiveChall = &store.InteractiveChallenge{
+		ChallengeID: "chall-456",
+		AuthURL:     "https://idp.example.com/auth?state=xyz",
+		ExpiresAt:   time.Now().Add(5 * time.Minute).Format(time.RFC3339),
+	}
+	ms.callbackCredential = &store.Credential{
+		Token:    "oidc-token",
+		Metadata: map[string]string{"method": "oidc"},
+	}
+	sm := NewSessionManager(ms)
+
+	// Start: Unauthenticated.
+	s := sm.Status()
+	if s.Status != SessionUnauthenticated {
+		t.Fatalf("expected SessionUnauthenticated, got %d", s.Status)
+	}
+
+	// Initiate interactive login.
+	chall, err := sm.LoginInteractive(context.Background(), "oidc", nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if chall.ChallengeID != "chall-456" {
+		t.Fatalf("unexpected challenge ID: %q", chall.ChallengeID)
+	}
+
+	// Still unauthenticated.
+	s = sm.Status()
+	if s.Status != SessionUnauthenticated {
+		t.Fatalf("expected SessionUnauthenticated during challenge, got %d", s.Status)
+	}
+
+	// Complete callback -> Authenticated.
+	s, err = sm.LoginInteractiveCallback(context.Background(), "chall-456", map[string]string{
+		"code":  "auth-code",
+		"state": "xyz",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if s.Status != SessionAuthenticated {
+		t.Fatalf("expected SessionAuthenticated, got %d", s.Status)
+	}
+
+	// Logout -> Unauthenticated.
+	sm.Logout()
+	s = sm.Status()
+	if s.Status != SessionUnauthenticated {
+		t.Fatalf("expected SessionUnauthenticated after logout, got %d", s.Status)
 	}
 }

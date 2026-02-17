@@ -213,6 +213,14 @@ func (c *ControllerAdapter) StoreLogin(ctx context.Context, method string, crede
 	return c.Inner.StoreLogin(ctx, method, credentials)
 }
 
+func (c *ControllerAdapter) StoreLoginInteractive(ctx context.Context, method string, params map[string]string) (*zhiui.StoreInteractiveChallenge, error) {
+	return c.Inner.StoreLoginInteractive(ctx, method, params)
+}
+
+func (c *ControllerAdapter) StoreLoginInteractiveCallback(ctx context.Context, challengeID string, callbackParams map[string]string) (*zhiui.StoreSession, error) {
+	return c.Inner.StoreLoginInteractiveCallback(ctx, challengeID, callbackParams)
+}
+
 func (c *ControllerAdapter) StoreAuthStatus(ctx context.Context) (*zhiui.StoreSession, error) {
 	return c.Inner.StoreAuthStatus(ctx)
 }
