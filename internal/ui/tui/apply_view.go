@@ -227,7 +227,7 @@ func (v ApplyView) View() string {
 
 	// Header with status.
 	if v.running {
-		sb.WriteString(fmt.Sprintf("  %s Running apply command...\n\n", v.spinner.View()))
+		fmt.Fprintf(&sb, "  %s Running apply command...\n\n", v.spinner.View())
 	} else {
 		sb.WriteString("  Apply Output:\n\n")
 	}

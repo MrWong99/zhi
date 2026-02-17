@@ -225,7 +225,7 @@ func (e ValueEditor) View() string {
 
 	if e.componentName != "" {
 		badge := ComponentBadgeStyle.Render("[" + e.componentName + "]")
-		sb.WriteString(fmt.Sprintf("  Component: %s\n", badge))
+		fmt.Fprintf(&sb, "  Component: %s\n", badge)
 		if e.disabled {
 			sb.WriteString(WarningStyle.Render("  Warning: This path belongs to disabled component '" + e.componentName + "'. It will not be included in exports."))
 			sb.WriteString("\n")
@@ -273,11 +273,11 @@ func (e ValueEditor) View() string {
 			if i == e.enumCursor {
 				style = ActiveStyle
 			}
-			sb.WriteString(fmt.Sprintf("  %s%s\n", marker, style.Render(opt)))
+			fmt.Fprintf(&sb, "  %s%s\n", marker, style.Render(opt))
 		}
 	} else {
 		sb.WriteString("  Value:\n")
-		sb.WriteString(fmt.Sprintf("  %s\n", e.input.View()))
+		fmt.Fprintf(&sb, "  %s\n", e.input.View())
 	}
 	sb.WriteString("\n")
 

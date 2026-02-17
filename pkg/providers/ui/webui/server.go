@@ -64,8 +64,18 @@ func (s *Server) Addr(ctx context.Context) (string, error) {
 
 // ListenAndServe starts the HTTP server and blocks until ctx is cancelled.
 func (s *Server) ListenAndServe(ctx context.Context) error {
+	// Determine TLS config first so the middleware chain can know whether
+	// the server is running over HTTPS.
+	tlsCfg := &tlsutil.Config{
+		CertFile:     s.config.TLSCert,
+		KeyFile:      s.config.TLSKey,
+		ClientCAFile: s.config.TLSClientCA,
+		MinVersion:   s.config.TLSMinVersion,
+		CipherSuites: s.config.TLSCipherSuites,
+	}
+
 	// Build the middleware chain.
-	csrf := newCSRFMiddleware()
+	csrf := newCSRFMiddleware(tlsCfg.Enabled())
 	handler := s.mux
 	var h http.Handler = handler
 
@@ -98,13 +108,6 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	}
 
 	// Wrap with TLS if configured.
-	tlsCfg := &tlsutil.Config{
-		CertFile:     s.config.TLSCert,
-		KeyFile:      s.config.TLSKey,
-		ClientCAFile: s.config.TLSClientCA,
-		MinVersion:   s.config.TLSMinVersion,
-		CipherSuites: s.config.TLSCipherSuites,
-	}
 	if tlsCfg.Enabled() {
 		tc, err := tlsCfg.TLSConfig()
 		if err != nil {

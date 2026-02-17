@@ -216,7 +216,7 @@ tools: ## Install required development tools
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 	go install github.com/goreleaser/goreleaser/v2@latest
-	curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(GOPATH)/bin v2.9.0
+	curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(GOPATH)/bin v2.10.1
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Release
