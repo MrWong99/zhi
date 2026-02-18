@@ -21,7 +21,7 @@ Core principles:
 
 - **Encrypted configuration at rest** -- store plugin layer supports encryption and key rotation
 - **Automatic validation** -- config plugins define validation rules, including cross-value checks
-- **Plugin-based extensibility** -- [gRPC-based plugin system](https://github.com/hashicorp/go-plugin) with four plugin types (config, transform, store, UI)
+- **Plugin-based extensibility** -- [gRPC-based plugin system](https://github.com/hashicorp/go-plugin) with four plugin types (config, transform, store, UI) and a [meta-plugin SDK](docs/plugin-development/meta-plugin.md) for composing plugins
 - **Auto-generated TUI** -- interactive terminal interface built with [Bubbletea](https://github.com/charmbracelet/bubbletea)
 - **Component model** -- group configuration into toggleable bundles with dependencies
 - **Template-based exports** -- render configuration to JSON, YAML, TOML, dotenv, or custom templates
@@ -153,6 +153,7 @@ zhi's plugin system supports four types: **config**, **transform**, **store**, a
 - [Transform Plugin API](docs/plugin-development/transform-plugin.md) -- mutate trees before display or after save
 - [Store Plugin API](docs/plugin-development/store-plugin.md) -- persist and retrieve trees
 - [UI Plugin API](docs/plugin-development/ui-plugin.md) -- provide interactive frontends
+- [Meta-Plugin SDK](docs/plugin-development/meta-plugin.md) -- launch, delegate, and compose child plugins
 - [Structured File Provider](docs/plugin-development/structuredfile-provider.md) -- built-in file-based config provider
 
 ### Examples
@@ -168,6 +169,7 @@ The [`examples/`](examples/) directory contains fully working plugins you can bu
 | [zhi-store-vault](examples/zhi-store-vault/) | Store | HashiCorp Vault KV v2 backend |
 | [zhi-ui-httpapi](examples/zhi-ui-httpapi/) | UI | HTTP/JSON API with SSE streaming |
 | [zhi-config-javabean](examples/zhi-config-javabean/) | Config | Java plugin with Bean Validation and GraalVM native-image |
+| [zhi-store-mirror](examples/zhi-store-mirror/) | Store (meta) | Meta-plugin: mirrors writes to memory + JSON file |
 
 All Go example plugins are published to the GitHub Container Registry on every release and can be installed directly:
 

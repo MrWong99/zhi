@@ -102,6 +102,16 @@ UI plugins use bidirectional gRPC: the host calls the plugin to start the UI, an
 
 TTY-dependent UIs (like the TUI) must set `RequiresTTY: true` and be registered as built-in plugins, since external gRPC processes lack terminal access.
 
+### Meta-Plugin SDK
+
+A meta-plugin is a regular plugin binary that internally launches and composes child plugins using `pkg/zhiplugin/launch/`. The SDK provides three building blocks:
+
+- **Launch** (`pkg/zhiplugin/launch/`) -- start child plugin processes with binary validation and integrity auditing
+- **Delegate** (`{config,transform,store}/delegate.go`) -- forward all interface calls to a base plugin, override selectively
+- **Compose** (`config/compose.go`, `store/compose.go`) -- structural patterns: `MergedPlugin` (namespace config plugins by prefix) and `MirroredPlugin` (primary + backup stores)
+
+See `docs/plugin-development/meta-plugin.md` for the full guide and `examples/zhi-store-mirror/` for a working example.
+
 ### Configuration Tree Model
 
 `config.Tree` is a flat key-value store with slash-delimited paths (e.g. `database/host`, `app/tls/cert.pem`). Path segments must match `[a-z][a-z0-9._-]*[a-z0-9]`. `Tree` implements `TreeReader` (read-only) and also exposes `GetPtr` for mutable access and `Delete` for removal. `Value` holds the data (`Val any`), optional `Metadata`, and local `Validators` (closures that never cross the gRPC wire).
@@ -130,11 +140,11 @@ Each plugin type has `grpc_client.go` (host-side) and `grpc_server.go` (plugin-s
 - `internal/core/` -- engine, registry, components, export, apply, plugin discovery
 - `internal/cli/` -- CLI subcommands (Cobra)
 - `internal/ui/` -- UI abstraction layer and TUI implementation
-- `pkg/zhiplugin/` -- public plugin framework (config, transform, store, ui, labels)
+- `pkg/zhiplugin/` -- public plugin framework (config, transform, store, ui, labels, launch)
 - `pkg/providers/` -- built-in provider implementations (structuredfile config, vault store)
 - `pkg/sharing/` -- plugin distribution: manifests, lockfiles, OCI client, verification, marketplace
 - `api/proto/zhiplugin/v1/` -- protobuf service definitions
-- `examples/` -- working plugin examples (pokedex config, memory/json/vault stores, transform, HTTP API UI)
+- `examples/` -- working plugin examples (pokedex config, memory/json/vault stores, transform, HTTP API UI, store mirror meta-plugin)
 - `docs/user-guide/` -- end-user documentation
 - `docs/plugin-development/` -- plugin developer documentation
 - `docs/design/` -- design documents (e.g., metadata-labels API)
