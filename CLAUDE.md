@@ -73,7 +73,7 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on push/PR to main:
 GitHub Actions (`.github/workflows/release-plugins.yml`) runs on tag push (`v*`) or manual dispatch:
 
 - Cross-compiles all Go example plugins for linux/darwin × amd64/arm64
-- Publishes each as a multi-platform OCI artifact to `ghcr.io/mrwong99/zhi/<plugin-name>:<tag>` using `zhi plugin publish`
+- Publishes each as a multi-platform OCI artifact to `ghcr.io/mrwong99/zhi/<plugin-name>:<tag>` using `zhi plugin publish` or `zhi workspace publish`
 - Signs artifacts with keyless cosign via Sigstore Fulcio/OIDC (GitHub Actions OIDC identity)
 - Each example plugin has a `zhi-plugin.yaml` manifest with short name + type + multi-platform binaries
 - Install published plugins: `zhi plugin install oci://ghcr.io/mrwong99/zhi/zhi-store-memory:v0.0.9`
@@ -88,48 +88,11 @@ The project builds three binaries from `cmd/`:
 - **`cmd/zhi-marketplace/`** -- marketplace/sharing registry server with auth (`auth/`), HTTP API (`server/`), and data storage (`storage/`)
 - **`cmd/zhi-mirror/`** -- enterprise air-gapped mirror with OCI storage, import/export for disconnected environments
 
-### Core Engine
-
-The engine (`internal/core/engine.go`) orchestrates the full lifecycle: load configuration from config plugins, compose via components, transform, validate, store, export to templates, and optionally apply via external commands.
-
-### Provider Registry
-
-The registry (`internal/core/registry.go`) maps provider names to factory functions. Built-in providers (like `structuredfile`) are registered at startup. External plugins are resolved lazily from `~/.zhi/plugins/` when not found in built-ins.
-
-### Component Model
-
-Components (`internal/core/component.go`) are named groups of configuration paths that users can enable/disable. They support dependencies, mandatory flags, and filtering of the tree for exports. Defined in `zhi.yaml`.
-
 ### Plugin System
 
 All plugins share a handshake (`pkg/zhiplugin/plugin.go`): magic cookie `ZHI_PLUGIN` with value `zhiplugin-v1`, protocol version 1.
 
-**Config plugins** (`pkg/zhiplugin/config/`) implement the `Plugin` interface:
-- `List(ctx) ([]string, error)` -- return all managed paths
-- `Get(ctx, path) (Value, bool, error)` -- retrieve a value
-- `Set(ctx, path, Value) error` -- store a value
-- `Validate(ctx, path, TreeReader) ([]ValidationResult, error)` -- validate with full tree context
-
-**Transform plugins** (`pkg/zhiplugin/transform/`) implement the `Plugin` interface:
-- `BeforeDisplay(ctx, *Tree) error` -- mutate tree before UI display
-- `AfterSave(ctx, *Tree) error` -- mutate tree after user saves
-- `ValidatePolicy(ctx) (ValidatePolicy, error)` -- control validation timing relative to transforms
-
-**Store plugins** (`pkg/zhiplugin/store/`) implement the `Plugin` interface with capability-gated sections:
-- *Capabilities:* `Capabilities(ctx) (*Capabilities, error)` -- reports versioning mode (`None`/`Tree`/`Value`), encryption status, auth support, and access control
-- *Authentication:* `AuthMethods`, `Login` -- credential-based auth with pluggable methods (userpass, token, OIDC)
-- *Tree management:* `ListTrees`, `DeleteTree`
-- *Value operations:* `GetValues`, `PutValues` (with CAS via `PutOptions`), `DeleteValues` -- granular per-path reads/writes
-- *Tree-level versioning:* `ListTreeVersions`, `GetTreeVersion`, `RollbackTree`, `DeleteTreeVersion`
-- *Value-level versioning:* `ListValueVersions`, `GetValueVersion`, `RollbackValue`, `DeleteValueVersion`
-- *Encryption:* `InitEncryption`, `RotateEncryption`
-- *Access control:* `GrantAccess`, `RevokeAccess`, `ListAccess` -- per-path permissions (Read/Write/Delete)
-
 Methods for unsupported capabilities should return a descriptive error.
-
-**UI plugins** (`pkg/zhiplugin/ui/`) implement the `Plugin` interface:
-- `Run(ctx, Controller) error` -- start the UI, block until exit
-- `Capabilities(ctx) (Capabilities, error)` -- report capabilities (`RequiresTTY`, `SupportsMarketplace`)
 
 UI plugins use bidirectional gRPC: the host calls the plugin to start the UI, and the plugin calls back into the host via a `Controller` interface. The Controller provides:
 - Core operations: `LoadTree`, `SetValue`, `Validate`, `SaveTree`
@@ -148,21 +111,6 @@ Validation results carry a `Severity`: Info, Warning, or Blocking.
 ### UI Abstraction Layer
 
 The `UIDriver` interface (`internal/ui/driver.go`) decouples the engine from UI frontends. The `UIController` wraps the engine with UI-relevant operations. The TUI (`internal/ui/tui/`) is the first implementation using Bubbletea with views for tree browsing, value editing, validation, export, apply, component management, and marketplace. The architecture supports adding Web, AI Chat, or headless API frontends without engine changes.
-
-### Plugin Sharing and Marketplace
-
-`pkg/sharing/` implements the plugin distribution ecosystem:
-- `manifest/` -- plugin manifest (`zhi-plugin.yaml`) parsing
-- `lockfile/` -- reproducible dependency lock files
-- `verify/` -- signature verification and trust store
-- `client/` -- OCI registry client for plugin distribution
-- `registry/` -- registry client abstraction
-- `marketplace/` -- marketplace search queries
-- `metadata/` -- plugin metadata extraction
-- `update/` -- plugin update logic
-- `semver/` -- semantic versioning utilities
-
-Plugins are distributed as OCI artifacts. The marketplace server (`cmd/zhi-marketplace/`) provides search, ratings, and verified publisher features. The mirror (`cmd/zhi-mirror/`) supports air-gapped enterprise environments with import/export.
 
 ### Export System
 
