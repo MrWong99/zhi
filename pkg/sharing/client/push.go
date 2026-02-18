@@ -561,9 +561,20 @@ func extractTarGz(data []byte, targetDir string) error {
 			return fmt.Errorf("reading tar: %w", err)
 		}
 
+		// Reject archive entries with absolute paths or ".." components before
+		// joining, to prevent zip-slip directory traversal attacks.
+		for _, part := range strings.Split(filepath.ToSlash(header.Name), "/") {
+			if part == ".." {
+				return fmt.Errorf("invalid tar entry path: %s", header.Name)
+			}
+		}
+		if filepath.IsAbs(header.Name) {
+			return fmt.Errorf("invalid tar entry path (absolute): %s", header.Name)
+		}
+
 		target := filepath.Join(targetDir, header.Name)
 
-		// Prevent path traversal.
+		// Defense-in-depth: verify the joined path is still inside targetDir.
 		if !strings.HasPrefix(filepath.Clean(target), filepath.Clean(targetDir)+string(os.PathSeparator)) &&
 			filepath.Clean(target) != filepath.Clean(targetDir) {
 			return fmt.Errorf("invalid tar entry path: %s", header.Name)

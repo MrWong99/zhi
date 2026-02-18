@@ -167,6 +167,9 @@ func (pt *prefixTree) List() []string {
 // If opts is non-nil, template functions like fileGroupID and fileMode will
 // capture their values into it.
 func renderTemplateFile(td *TreeData, path string, opts *exportFileOptions) (string, error) {
+	if containsPathTraversal(path) {
+		return "", fmt.Errorf("template path %q: path traversal (.. segments) is not allowed", path)
+	}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return "", fmt.Errorf("reading template: %w", err)
@@ -320,10 +323,12 @@ func shellQuote(s string) string {
 //   - Sets file permissions (default 0644, overridable via opts.mode)
 //   - Optionally sets file group ID via opts.groupID
 func writeExportFile(outputPath string, data []byte, opts *exportFileOptions) error {
-	// Reject path traversal.
+	// Reject path traversal in the raw (un-normalized) path.
 	if containsPathTraversal(outputPath) {
 		return fmt.Errorf("export output path %q: path traversal (.. segments) is not allowed", outputPath)
 	}
+	// Normalize to a canonical path for all subsequent operations.
+	outputPath = filepath.Clean(outputPath)
 
 	// Resolve the directory, creating it if needed.
 	dir := filepath.Dir(outputPath)

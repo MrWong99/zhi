@@ -3,7 +3,9 @@ package ui
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
+	"math"
 
 	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
 	pb "github.com/MrWong99/zhi/pkg/zhiplugin/ui/proto"
@@ -182,6 +184,12 @@ func (c *controllerGRPCClient) WorkspaceName(ctx context.Context) (string, error
 }
 
 func (c *controllerGRPCClient) SearchMarketplace(ctx context.Context, query MarketplaceQuery) (*MarketplaceResults, error) {
+	if query.Page < 0 || query.Page > math.MaxInt32 {
+		return nil, fmt.Errorf("page value %d out of int32 range", query.Page)
+	}
+	if query.PerPage < 0 || query.PerPage > math.MaxInt32 {
+		return nil, fmt.Errorf("perPage value %d out of int32 range", query.PerPage)
+	}
 	resp, err := c.client.SearchMarketplace(ctx, &pb.CtrlSearchMarketplaceRequest{
 		Query:    query.Query,
 		Type:     query.Type,

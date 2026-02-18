@@ -113,9 +113,20 @@ func extractTarball(src, dst string) error {
 			return fmt.Errorf("reading tar: %w", err)
 		}
 
+		// Reject archive entries with absolute paths or ".." components before
+		// joining, to prevent zip-slip directory traversal attacks.
+		for _, part := range strings.Split(filepath.ToSlash(header.Name), "/") {
+			if part == ".." {
+				return fmt.Errorf("invalid tar entry path: %s", header.Name)
+			}
+		}
+		if filepath.IsAbs(header.Name) {
+			return fmt.Errorf("invalid tar entry path (absolute): %s", header.Name)
+		}
+
 		target := filepath.Join(dst, header.Name)
 
-		// Prevent path traversal.
+		// Defense-in-depth: verify the joined path is still inside dst.
 		if !strings.HasPrefix(filepath.Clean(target), filepath.Clean(dst)+string(os.PathSeparator)) &&
 			filepath.Clean(target) != filepath.Clean(dst) {
 			return fmt.Errorf("invalid tar entry path: %s", header.Name)
