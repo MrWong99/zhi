@@ -28,14 +28,16 @@ jobs:
         include:
           - plugin: zhi-config-pokedex
             dir: examples/zhi-config-pokedex
-          - plugin: zhi-transform-pokedex
-            dir: examples/zhi-transform-pokedex
           - plugin: zhi-store-json
             dir: examples/zhi-store-json
           - plugin: zhi-store-memory
             dir: examples/zhi-store-memory
+          - plugin: zhi-store-mirror
+            dir: examples/zhi-store-mirror
           - plugin: zhi-store-vault
             dir: examples/zhi-store-vault
+          - plugin: zhi-transform-pokedex
+            dir: examples/zhi-transform-pokedex
           - plugin: zhi-ui-httpapi
             dir: examples/zhi-ui-httpapi
           - plugin: zhi-ui-webui
