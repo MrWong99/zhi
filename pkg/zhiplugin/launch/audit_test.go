@@ -51,8 +51,14 @@ func TestValidateBinaryPath(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if resolved != target {
-			t.Fatalf("expected resolved=%q, got %q", target, resolved)
+		// Resolve target through EvalSymlinks too, because on macOS the
+		// temp-dir path itself contains a symlink (/var -> /private/var).
+		wantTarget, err := filepath.EvalSymlinks(target)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if resolved != wantTarget {
+			t.Fatalf("expected resolved=%q, got %q", wantTarget, resolved)
 		}
 	})
 }
