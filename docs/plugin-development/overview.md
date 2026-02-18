@@ -13,6 +13,8 @@ zhi has four plugin types:
 | [Store](store-plugin.md) | Persist and retrieve configuration trees | Host -> Plugin |
 | [UI](ui-plugin.md) | Provide interactive frontends | Bidirectional |
 
+Any of the above types can be implemented as a **meta-plugin** -- a plugin that internally launches and composes child plugins using the [Meta-Plugin SDK](meta-plugin.md). From the host's perspective a meta-plugin is indistinguishable from a regular plugin.
+
 ## Shared Handshake
 
 All plugins share the same handshake defined in `pkg/zhiplugin/plugin.go`:
@@ -129,6 +131,7 @@ The [`examples/`](../../examples/) directory contains working reference implemen
 | [zhi-store-memory](../../examples/zhi-store-memory/) | Store | Minimal in-memory store |
 | [zhi-ui-httpapi](../../examples/zhi-ui-httpapi/) | UI | HTTP/JSON API with SSE streaming |
 | [zhi-config-javabean](../../examples/zhi-config-javabean/) | Config | Java bean with Bean Validation, GraalVM native-image |
+| [zhi-store-mirror](../../examples/zhi-store-mirror/) | Store (meta) | Meta-plugin: mirrors writes to memory + JSON file |
 
 All Go examples are published as OCI artifacts to `ghcr.io/mrwong99/zhi/` on every release and can be installed with `zhi plugin install oci://ghcr.io/mrwong99/zhi/<plugin-name>:<tag>`. See the [Sharing and Registries guide](../user-guide/sharing-and-registries.md#official-plugin-registry) for the full list.
 
@@ -168,5 +171,6 @@ See the [Sharing and Registries guide](../user-guide/sharing-and-registries.md) 
 - [Transform Plugin API](transform-plugin.md)
 - [Store Plugin API](store-plugin.md)
 - [UI Plugin API](ui-plugin.md)
+- [Meta-Plugin SDK](meta-plugin.md)
 - [Java Plugin Development](java-plugin.md)
 - [Sharing and Registries](../user-guide/sharing-and-registries.md)
