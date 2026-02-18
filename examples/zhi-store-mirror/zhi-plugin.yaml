@@ -1,0 +1,21 @@
+schemaVersion: "1"
+name: mirror
+type: store
+version: 0.0.1
+zhiProtocolVersion: "1"
+description: Meta-plugin that mirrors writes to two child store plugins
+author: MrWong99
+license: MIT
+homepage: https://github.com/MrWong99/zhi
+keywords:
+  - store
+  - mirror
+  - meta-plugin
+  - composition
+  - example
+
+binaries:
+  linux/amd64: dist/zhi-store-mirror_linux_amd64
+  linux/arm64: dist/zhi-store-mirror_linux_arm64
+  darwin/amd64: dist/zhi-store-mirror_darwin_amd64
+  darwin/arm64: dist/zhi-store-mirror_darwin_arm64

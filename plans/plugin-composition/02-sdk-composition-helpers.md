@@ -1,6 +1,6 @@
-# Approach 4: SDK Composition Helpers
+# SDK Composition Helpers
 
-**Status**: Draft
+**Status**: Active
 **Date**: 2026-02-18
 
 ## Summary
@@ -252,8 +252,8 @@ impl VaultManagedStore {
   composition patterns without custom code.
 - **Type-safe**: The compiler verifies all interface methods are
   satisfied. Go embedding ensures delegation is correct.
-- **Works with Approach 3**: This is the natural companion to the
-  meta-plugin approach. It makes meta-plugins practical.
+- **Works with meta-plugins**: This is the natural companion to the
+  meta-plugin pattern. It makes meta-plugins practical.
 - **Multi-language potential**: The patterns (delegation, interception)
   translate naturally to Python, Rust, Java, etc.
 - **No engine changes**: Everything is in the SDK. The engine is
@@ -275,25 +275,25 @@ impl VaultManagedStore {
 - **Testing across processes**: Unit tests can mock children, but
   integration tests require actual child binaries.
 
-## Relationship to Other Approaches
+## Relationship to Meta-Plugin Pattern
 
-This approach is a **building block**, not a complete solution. It pairs
-with:
-
-- **Approach 3 (Meta-Plugin)**: SDK helpers make meta-plugins practical.
-- **Approach 1 (Engine Multi-Provider)**: The engine could use these
-  same helpers internally to implement prefix/overlay/mirror strategies.
-- **Approach 5 (gRPC Proxy)**: The proxy could use these helpers for
-  its routing logic.
+This is a **building block** for the meta-plugin pattern
+([01-meta-plugin.md](01-meta-plugin.md)). SDK helpers make meta-plugins
+practical by eliminating boilerplate. The engine could also use these
+helpers internally if engine-level multi-provider support is added later.
 
 ## When This Approach Works Well
 
 - Plugin developers building custom composition plugins
-- Any scenario where Approach 3 is the right choice (this reduces the
-  cost of Approach 3)
+- Any scenario where the meta-plugin pattern is the right choice
 - Building reusable marketplace plugins that compose other plugins
 
 ## When This Approach Falls Short
 
 - Non-developer users who need composition via configuration only
 - When there is no SDK for the user's preferred language
+
+## Implementation Plan
+
+See the full implementation plan with phased roadmap at:
+[`docs/plans/2026-02-18-feat-plugin-composition-meta-plugin-sdk-plan.md`](../../docs/plans/2026-02-18-feat-plugin-composition-meta-plugin-sdk-plan.md)

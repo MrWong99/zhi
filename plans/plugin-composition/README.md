@@ -1,55 +1,60 @@
 # Plugin Composition Design
 
-**Status**: Draft
+**Status**: Active
 **Date**: 2026-02-18
 
 ## Overview
 
-This directory contains design proposals for a **plugin composition** feature
-in zhi. The goal is to enable users and plugin developers to combine existing
-plugins into more specialized plugins without rewriting them from scratch, even
-when the component plugins are written in different programming languages.
+This directory contains the design for **plugin composition** in zhi —
+enabling plugin developers to combine existing plugins into more
+specialized plugins without rewriting them from scratch, even when the
+component plugins are written in different programming languages.
+
+The design focuses on two complementary pieces:
+
+1. **Meta-Plugin Pattern** — a composition plugin that launches and
+   orchestrates child plugins as sub-processes, appearing as a single
+   standard plugin to the engine.
+2. **SDK Composition Helpers** — library code that eliminates boilerplate
+   when building meta-plugins (delegating base types, merge/mirror/overlay
+   helpers, plugin launcher).
 
 ## Motivating Examples
 
 ### Example 1: Extended Vault Store
 
-A store plugin that wraps the standard `zhi-store-vault` plugin but adds
-the ability to create Vault ACL policies and AppRole credentials.
-Applications deployed via this zhi stack can then use those credentials
-to access secrets stored in Vault.
+A store plugin that wraps `zhi-store-vault` but adds automatic Vault ACL
+policy and AppRole credential management.
 
 ### Example 2: Merged Config Plugins
 
-Plugin A provides a config tree for application A. Plugin B provides a
-config tree for application B. Plugin C combines both so the user can
-view and edit configs for both applications in one unified tree.
+Plugin A provides config for application A, plugin B for application B.
+Plugin C combines both under distinct path prefixes in one unified tree.
 
 ### Example 3: Store with Backup
 
-A store plugin that writes to a primary Vault store and mirrors every
-write to a secondary JSON file store as a backup.
+A store writes to a primary Vault store and mirrors every write to a
+secondary JSON file store as a backup.
 
 ### Example 4: Config with Secret Injection
 
-A config plugin that reads its base tree from a `structuredfile` provider
-but overlays secret values from a second config plugin that fetches them
-from an external secrets manager at runtime.
+A config plugin reads its base tree from `structuredfile` but overlays
+secret values from a second config plugin backed by a secrets manager.
 
 ## Cross-Language Requirement
 
 Since all zhi plugins communicate over gRPC (via hashicorp/go-plugin),
-composition must work regardless of the implementation language of each
-child plugin. A composition plugin written in Go must be able to delegate
-to a child plugin written in Python or Rust, and vice versa.
+composition works regardless of child plugin implementation language. A
+Go meta-plugin can orchestrate children written in Python, Rust, or Java.
 
 ## Design Documents
 
-| Document | Approach |
-|----------|----------|
-| [01-engine-multi-provider.md](01-engine-multi-provider.md) | Engine-level support for multiple providers per slot |
-| [02-declarative-composition.md](02-declarative-composition.md) | Composition defined declaratively in `zhi.yaml` |
-| [03-meta-plugin.md](03-meta-plugin.md) | Meta-plugin that launches and orchestrates child plugins |
-| [04-sdk-composition-helpers.md](04-sdk-composition-helpers.md) | SDK libraries for wrapping and combining plugins in code |
-| [05-grpc-proxy.md](05-grpc-proxy.md) | Generic gRPC proxy with routing rules |
-| [06-comparison.md](06-comparison.md) | Side-by-side comparison and recommendation |
+| Document | Description |
+|----------|-------------|
+| [01-meta-plugin.md](01-meta-plugin.md) | Meta-plugin architecture and pattern |
+| [02-sdk-composition-helpers.md](02-sdk-composition-helpers.md) | SDK library design for composition helpers |
+
+## Implementation Plan
+
+The full implementation plan with roadmap is at:
+[`docs/plans/2026-02-18-feat-plugin-composition-meta-plugin-sdk-plan.md`](../../docs/plans/2026-02-18-feat-plugin-composition-meta-plugin-sdk-plan.md)

@@ -1,6 +1,6 @@
-# Approach 3: Meta-Plugin (Composition Plugin)
+# Meta-Plugin (Composition Plugin)
 
-**Status**: Draft
+**Status**: Active
 **Date**: 2026-02-18
 
 ## Summary
@@ -274,10 +274,8 @@ meta-plugin runs.
   lifecycles. If a child crashes, the meta-plugin must handle it
   gracefully (or crash itself and let the engine restart).
 - **Binary discovery**: The meta-plugin needs to find child binaries
-  on disk. It must either know their absolute paths or use zhi's
-  plugin discovery mechanism. This requires either the meta-plugin to
-  link against `internal/core` (not exported) or to accept binary
-  paths in configuration.
+  on disk. The new `pkg/zhiplugin/discovery` package (see implementation
+  plan) solves this by exporting the discovery mechanism.
 
 ## When This Approach Works Well
 
@@ -288,6 +286,12 @@ meta-plugin runs.
 
 ## When This Approach Falls Short
 
-- Simple merging of config trees (too much ceremony for a simple case)
 - Non-developer users who just want to combine plugins via config
 - When process overhead matters (many children = many processes)
+
+## Relationship to SDK Composition Helpers
+
+The SDK helpers ([02-sdk-composition-helpers.md](02-sdk-composition-helpers.md))
+are the natural companion to this pattern. They make meta-plugins practical
+by eliminating boilerplate. See the full implementation plan at
+[`docs/plans/2026-02-18-feat-plugin-composition-meta-plugin-sdk-plan.md`](../../docs/plans/2026-02-18-feat-plugin-composition-meta-plugin-sdk-plan.md).
