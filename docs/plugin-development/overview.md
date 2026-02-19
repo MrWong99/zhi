@@ -141,6 +141,16 @@ Plugins communicate over gRPC, so any language with gRPC support can implement a
 
 - [Java Plugin Development](java-plugin.md) -- Gradle setup, Bean Validation, GraalVM native-image
 
+## Scaffolding a New Plugin
+
+The fastest way to start a new plugin project is the scaffolding command:
+
+```sh
+zhi plugin new --name my-config --type config --author myorg
+```
+
+This generates a complete, standalone Go project with implementation stubs, tests, a Makefile, CI/CD workflows, and a sample workspace. See the [Scaffolding Guide](scaffolding.md) for the full reference.
+
 ## Built-in Provider Reference
 
 - [Structured File Provider](structuredfile-provider.md) -- loads configuration from JSON and YAML files
@@ -149,24 +159,35 @@ Plugins communicate over gRPC, so any language with gRPC support can implement a
 
 Once your plugin is built and tested, you can share it via OCI registries.
 
-1. Create a `zhi-plugin.yaml` manifest:
+1. [Scaffold a project](scaffolding.md) (includes `zhi-plugin.yaml` and CI/CD workflow):
 
-```sh
-zhi plugin init --name my-config --type config --version 1.0.0
-```
+   ```sh
+   zhi plugin new --name my-config --type config --registry ghcr.io/myorg
+   ```
 
-2. Build binaries for your target platforms (e.g. using GoReleaser or `GOOS`/`GOARCH` cross-compilation).
+   Or create just the manifest for an existing project:
+
+   ```sh
+   zhi plugin init --name my-config --type config --version 1.0.0
+   ```
+
+2. Build binaries for your target platforms:
+
+   ```sh
+   make cross-compile  # if using the scaffolded Makefile
+   ```
 
 3. Publish to a registry:
 
-```sh
-zhi plugin publish --registry ghcr.io/myorg --sign
-```
+   ```sh
+   zhi plugin publish --registry ghcr.io/myorg --sign
+   ```
 
 See the [Sharing and Registries guide](../user-guide/sharing-and-registries.md) for the full publishing workflow, including signing, marketplace registration, and version management.
 
 ## Further Reading
 
+- [Plugin Scaffolding](scaffolding.md)
 - [Config Plugin API](config-plugin.md)
 - [Transform Plugin API](transform-plugin.md)
 - [Store Plugin API](store-plugin.md)

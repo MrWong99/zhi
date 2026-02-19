@@ -127,3 +127,4 @@ zhi edit
 - [Apply](apply.md) -- run provisioning commands
 - [Plugin Discovery](plugin-discovery.md) -- discovering and using external plugins
 - [Sharing and Registries](sharing-and-registries.md) -- installing, publishing, and updating plugins via OCI registries
+- [Plugin Scaffolding](../plugin-development/scaffolding.md) -- generate a new plugin project with `zhi plugin new`

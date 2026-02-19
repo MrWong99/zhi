@@ -295,9 +295,31 @@ zhi plugin publish --registry ghcr.io/myorg --sign --key cosign.key
 | `--sign` | Sign the artifact with cosign after pushing |
 | `--key` | Path to cosign private key (default: keyless via Fulcio/OIDC) |
 
+#### `zhi plugin new`
+
+Scaffold a complete plugin project from a template. Generates a standalone repository with implementation stubs, tests, build automation, CI/CD workflows, and a sample workspace. See the [Scaffolding Guide](../plugin-development/scaffolding.md) for the full reference.
+
+```sh
+zhi plugin new --name my-config --type config
+zhi plugin new --name my-store --type store --author myorg --license MIT
+zhi plugin new --name my-transform --type transform --registry ghcr.io/myorg
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--name` | (required) | Plugin short name, must match `[a-z][a-z0-9-]*` |
+| `--type` | (required) | Plugin type: config, transform, store, ui |
+| `--lang` | `go` | Project language |
+| `--module` | auto-derived | Go module path |
+| `--registry` | | Target OCI registry for publishing |
+| `--author` | | Author or organisation name |
+| `--license` | | SPDX license identifier |
+| `--description` | | Short description of the plugin |
+| `--output-dir`, `-o` | `./zhi-<type>-<name>` | Output directory |
+
 #### `zhi plugin init`
 
-Generate a `zhi-plugin.yaml` manifest for a new plugin.
+Generate a `zhi-plugin.yaml` manifest for an existing plugin project. For new projects, prefer [`zhi plugin new`](#zhi-plugin-new) which generates the full project structure.
 
 ```sh
 zhi plugin init --name my-config --type config --version 1.0.0
