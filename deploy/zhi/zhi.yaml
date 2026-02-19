@@ -29,10 +29,7 @@ store:
     mount: "kv"
 
 ui:
-  provider: webui
-  options:
-    addr: "127.0.0.1:9090"
-    auto_open: true
+  provider: mcp-sse
 
 export:
   templates:

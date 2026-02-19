@@ -114,6 +114,7 @@ release:
     zhi plugin install oci://ghcr.io/mrwong99/zhi/zhi-store-memory:{{ .Tag }}
     zhi plugin install oci://ghcr.io/mrwong99/zhi/zhi-transform-pokedex:{{ .Tag }}
     zhi plugin install oci://ghcr.io/mrwong99/zhi/zhi-ui-httpapi:{{ .Tag }}
+    zhi plugin install oci://ghcr.io/mrwong99/zhi/zhi-ui-mcp-sse:{{ .Tag }}
     ```
 
     ## Workspace OCI installs
