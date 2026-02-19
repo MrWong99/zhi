@@ -10,8 +10,10 @@ import (
 	"context"
 	"errors"
 	"maps"
+	"os"
 	"sync"
 
+	"github.com/hashicorp/go-hclog"
 	goplugin "github.com/hashicorp/go-plugin"
 
 	"github.com/MrWong99/zhi/pkg/zhiplugin"
@@ -180,11 +182,23 @@ func (m *memoryStore) ListAccess(_ context.Context, _ string) (map[string][]stor
 }
 
 func main() {
+	level := hclog.LevelFromString(os.Getenv("ZHI_LOG_LEVEL"))
+	if level == hclog.NoLevel {
+		level = hclog.Info
+	}
+	logger := hclog.New(&hclog.LoggerOptions{
+		Name:   "zhi-store-memory",
+		Level:  level,
+		Output: os.Stderr,
+	})
+	logger.Info("starting memory store plugin")
+
 	goplugin.Serve(&goplugin.ServeConfig{
 		HandshakeConfig: zhiplugin.Handshake,
 		Plugins: map[string]goplugin.Plugin{
 			"store": &store.GRPCPlugin{Impl: newMemoryStore()},
 		},
 		GRPCServer: goplugin.DefaultGRPCServer,
+		Logger:     logger,
 	})
 }

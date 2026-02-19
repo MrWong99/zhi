@@ -34,6 +34,8 @@ func NewEngine(registry *Registry, workspace *WorkspaceConfig) (*Engine, error) 
 	}
 
 	// Resolve config provider.
+	Logger().Info("resolving config provider", "provider", workspace.Config.Provider)
+	Logger().Debug("config provider options", "provider", workspace.Config.Provider, "options", workspace.Config.Options)
 	cp, err := registry.ConfigProvider(workspace.Dir, workspace.Config.Provider, workspace.Config.Options)
 	if err != nil {
 		return nil, fmt.Errorf("resolving config provider: %w", err)
@@ -42,6 +44,8 @@ func NewEngine(registry *Registry, workspace *WorkspaceConfig) (*Engine, error) 
 
 	// Resolve transform providers.
 	for _, t := range workspace.Transform {
+		Logger().Info("resolving transform provider", "provider", t.Provider)
+		Logger().Debug("transform provider options", "provider", t.Provider, "options", t.Options)
 		tp, err := registry.TransformProvider(workspace.Dir, t.Provider, t.Options)
 		if err != nil {
 			return nil, fmt.Errorf("resolving transform provider %q: %w", t.Provider, err)
@@ -51,6 +55,8 @@ func NewEngine(registry *Registry, workspace *WorkspaceConfig) (*Engine, error) 
 
 	// Resolve store provider (optional).
 	if workspace.Store.Provider != "" {
+		Logger().Info("resolving store provider", "provider", workspace.Store.Provider)
+		Logger().Debug("store provider options", "provider", workspace.Store.Provider, "options", workspace.Store.Options)
 		sp, err := registry.StoreProvider(workspace.Dir, workspace.Store.Provider, workspace.Store.Options)
 		if err != nil {
 			return nil, fmt.Errorf("resolving store provider: %w", err)
@@ -70,16 +76,23 @@ func NewEngine(registry *Registry, workspace *WorkspaceConfig) (*Engine, error) 
 	}
 	e.components = cm
 
+	Logger().Info("engine initialized",
+		"configProvider", workspace.Config.Provider,
+		"transformCount", len(e.transformPlugins),
+		"hasStore", e.storePlugin != nil)
+
 	return e, nil
 }
 
 // LoadTree assembles a configuration tree by calling List() and then Get()
 // for each path on the config provider.
 func (e *Engine) LoadTree(ctx context.Context) (*config.Tree, error) {
+	Logger().Info("loading configuration tree")
 	paths, err := e.configPlugin.List(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("listing config paths: %w", err)
 	}
+	Logger().Debug("config paths discovered", "count", len(paths))
 
 	tree := config.NewTree()
 	for _, path := range paths {
@@ -125,7 +138,8 @@ func (e *Engine) LoadTree(ctx context.Context) (*config.Tree, error) {
 // TransformForDisplay applies all transform plugins' BeforeDisplay
 // operations to the tree in order.
 func (e *Engine) TransformForDisplay(ctx context.Context, tree *config.Tree) error {
-	for _, tp := range e.transformPlugins {
+	for i, tp := range e.transformPlugins {
+		Logger().Debug("applying BeforeDisplay transform", "index", i)
 		if err := tp.BeforeDisplay(ctx, tree); err != nil {
 			return fmt.Errorf("transform BeforeDisplay: %w", err)
 		}
@@ -136,7 +150,8 @@ func (e *Engine) TransformForDisplay(ctx context.Context, tree *config.Tree) err
 // TransformForSave applies all transform plugins' AfterSave operations
 // to the tree in order.
 func (e *Engine) TransformForSave(ctx context.Context, tree *config.Tree) error {
-	for _, tp := range e.transformPlugins {
+	for i, tp := range e.transformPlugins {
+		Logger().Debug("applying AfterSave transform", "index", i)
 		if err := tp.AfterSave(ctx, tree); err != nil {
 			return fmt.Errorf("transform AfterSave: %w", err)
 		}
@@ -150,6 +165,7 @@ func (e *Engine) TransformForSave(ctx context.Context, tree *config.Tree) error 
 // (reported as Blocking severity under the special path
 // "_components/<name>").
 func (e *Engine) Validate(ctx context.Context, tree *config.Tree) ([]config.ValidationResult, error) {
+	Logger().Debug("starting validation")
 	var results []config.ValidationResult
 
 	for _, path := range tree.List() {
@@ -168,12 +184,14 @@ func (e *Engine) Validate(ctx context.Context, tree *config.Tree) ([]config.Vali
 		})
 	}
 
+	Logger().Info("validation complete", "resultCount", len(results))
 	return results, nil
 }
 
 // SetValue stores a value at the given path via the config provider.
 // The path is validated before being sent to the plugin.
 func (e *Engine) SetValue(ctx context.Context, path string, value config.Value) error {
+	Logger().Debug("setting value", "path", path)
 	if err := config.ValidatePath(path); err != nil {
 		return fmt.Errorf("invalid path: %w", err)
 	}
@@ -194,6 +212,8 @@ func (e *Engine) SaveTree(ctx context.Context, tree *config.Tree) error {
 			values[path] = v
 		}
 	}
+	Logger().Info("saving tree", "valueCount", len(values))
+	Logger().Debug("saving tree details", "treeID", e.TreeID())
 	return e.storePlugin.PutValues(ctx, e.TreeID(), values, nil)
 }
 
@@ -202,6 +222,7 @@ func (e *Engine) SaveTree(ctx context.Context, tree *config.Tree) error {
 // The tree is loaded using the workspace's derived TreeID.
 // Returns an error if no store is configured.
 func (e *Engine) LoadStoredTree(ctx context.Context) (*config.Tree, bool, error) {
+	Logger().Debug("loading stored tree", "treeID", e.TreeID())
 	if e.storePlugin == nil {
 		return nil, false, fmt.Errorf("no store provider configured")
 	}
@@ -287,6 +308,7 @@ func (e *Engine) DeleteValues(ctx context.Context, id string, paths []string) er
 // ListTreeVersions returns version identifiers for a stored tree,
 // ordered newest first. Returns an error if no store is configured.
 func (e *Engine) ListTreeVersions(ctx context.Context, id string) ([]string, error) {
+	Logger().Debug("listing tree versions", "treeID", id)
 	if e.storePlugin == nil {
 		return nil, fmt.Errorf("no store provider configured")
 	}
@@ -297,6 +319,7 @@ func (e *Engine) ListTreeVersions(ctx context.Context, id string) ([]string, err
 // The config plugin's path list determines which values to request.
 // Returns an error if no store is configured.
 func (e *Engine) GetTreeVersion(ctx context.Context, id string, version string) (*config.Tree, bool, error) {
+	Logger().Debug("getting tree version", "treeID", id, "version", version)
 	if e.storePlugin == nil {
 		return nil, false, fmt.Errorf("no store provider configured")
 	}
@@ -324,6 +347,7 @@ func (e *Engine) GetTreeVersion(ctx context.Context, id string, version string) 
 // RollbackTree restores a stored tree to a previous version. Returns an
 // error if no store is configured.
 func (e *Engine) RollbackTree(ctx context.Context, id string, version string) error {
+	Logger().Debug("rolling back tree", "treeID", id, "version", version)
 	if e.storePlugin == nil {
 		return fmt.Errorf("no store provider configured")
 	}
@@ -333,6 +357,7 @@ func (e *Engine) RollbackTree(ctx context.Context, id string, version string) er
 // DeleteTreeVersion permanently removes a single tree version. Returns
 // an error if no store is configured.
 func (e *Engine) DeleteTreeVersion(ctx context.Context, id string, version string) error {
+	Logger().Debug("deleting tree version", "treeID", id, "version", version)
 	if e.storePlugin == nil {
 		return fmt.Errorf("no store provider configured")
 	}
@@ -344,6 +369,7 @@ func (e *Engine) DeleteTreeVersion(ctx context.Context, id string, version strin
 // ListValueVersions returns version identifiers for a specific value,
 // ordered newest first. Returns an error if no store is configured.
 func (e *Engine) ListValueVersions(ctx context.Context, id string, path string) ([]string, error) {
+	Logger().Debug("listing value versions", "treeID", id, "path", path)
 	if e.storePlugin == nil {
 		return nil, fmt.Errorf("no store provider configured")
 	}
@@ -353,6 +379,7 @@ func (e *Engine) ListValueVersions(ctx context.Context, id string, path string) 
 // GetValueVersion retrieves a specific version of a single value from
 // the store. Returns an error if no store is configured.
 func (e *Engine) GetValueVersion(ctx context.Context, id string, path string, version string) (config.Value, bool, error) {
+	Logger().Debug("getting value version", "treeID", id, "path", path, "version", version)
 	if e.storePlugin == nil {
 		return config.Value{}, false, fmt.Errorf("no store provider configured")
 	}
@@ -362,6 +389,7 @@ func (e *Engine) GetValueVersion(ctx context.Context, id string, path string, ve
 // RollbackValue restores a value to a previous version. Returns an
 // error if no store is configured.
 func (e *Engine) RollbackValue(ctx context.Context, id string, path string, version string) error {
+	Logger().Debug("rolling back value", "treeID", id, "path", path, "version", version)
 	if e.storePlugin == nil {
 		return fmt.Errorf("no store provider configured")
 	}
@@ -371,6 +399,7 @@ func (e *Engine) RollbackValue(ctx context.Context, id string, path string, vers
 // DeleteValueVersion permanently removes a single value version.
 // Returns an error if no store is configured.
 func (e *Engine) DeleteValueVersion(ctx context.Context, id string, path string, version string) error {
+	Logger().Debug("deleting value version", "treeID", id, "path", path, "version", version)
 	if e.storePlugin == nil {
 		return fmt.Errorf("no store provider configured")
 	}
@@ -379,6 +408,7 @@ func (e *Engine) DeleteValueVersion(ctx context.Context, id string, path string,
 
 // Close shuts down the engine, killing all external plugin processes.
 func (e *Engine) Close() {
+	Logger().Info("closing engine")
 	if e.registry != nil {
 		e.registry.Close()
 	}
@@ -392,6 +422,7 @@ func (e *Engine) Components() *ComponentManager {
 // FilteredTree loads the configuration tree and filters it to only include
 // paths belonging to enabled components (plus unmanaged paths).
 func (e *Engine) FilteredTree(ctx context.Context) (*config.Tree, error) {
+	Logger().Debug("loading filtered tree")
 	tree, err := e.LoadTree(ctx)
 	if err != nil {
 		return nil, err
@@ -459,6 +490,7 @@ func (e *Engine) SetTestWorkspaceDir(dir string) {
 // configuration and the current component state. The target parameter
 // selects a named apply target (empty = "default").
 func (e *Engine) BuildApplyRunConfig(target string) (ApplyRunConfig, error) {
+	Logger().Debug("building apply run config", "target", target)
 	ws := e.Workspace()
 	if ws == nil {
 		return ApplyRunConfig{}, fmt.Errorf("no workspace loaded")

@@ -4,11 +4,11 @@ package cli
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/hashicorp/go-hclog"
 	"github.com/spf13/cobra"
 
 	"github.com/MrWong99/zhi/internal/core"
@@ -68,7 +68,7 @@ func Execute() error {
 	origPreRun := rootCmd.PersistentPreRun
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
 		if verbose {
-			core.SetLogLevel(slog.LevelDebug)
+			core.SetLogLevel(hclog.Trace)
 			core.Logger().Debug("verbose logging enabled")
 		}
 		if origPreRun != nil {
@@ -131,22 +131,29 @@ func withEngine(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("loading workspace: %w", err)
 	}
-	log.Debug("workspace loaded", "dir", ws.Dir, "version", ws.Version)
+	log.Info("workspace loaded", "dir", ws.Dir, "version", ws.Version)
 
 	// Discover external plugins from workspace-configured directories.
+	pluginDirs := ws.PluginDirectories()
+	log.Debug("discovering external plugins", "directories", pluginDirs)
 	_ = reg.RefreshExternal(core.DiscoveryConfig{
-		Directories: ws.PluginDirectories(),
+		Directories: pluginDirs,
 	})
 
+	log.Debug("creating engine",
+		"config_provider", ws.Config.Provider,
+		"store_provider", ws.Store.Provider,
+		"transform_count", len(ws.Transform))
 	eng, err := core.NewEngine(reg, ws)
 	if err != nil {
 		return fmt.Errorf("initializing engine: %w", err)
 	}
+	log.Info("engine initialized")
 
 	// Register cleanup to kill plugin processes on shutdown.
 	go func() {
 		<-cmd.Context().Done()
-		log.Debug("shutting down engine, killing plugin processes")
+		log.Info("shutting down engine, killing plugin processes")
 		eng.Close()
 	}()
 

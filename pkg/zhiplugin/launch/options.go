@@ -6,7 +6,7 @@
 package launch
 
 import (
-	"log/slog"
+	"github.com/hashicorp/go-hclog"
 )
 
 // AuditMode controls how binary integrity verification failures are handled.
@@ -22,7 +22,7 @@ const (
 
 // options holds configuration for launching a plugin process.
 type options struct {
-	logger      *slog.Logger
+	logger      hclog.Logger
 	isolatedEnv map[string]string
 	auditMode   AuditMode
 }
@@ -32,7 +32,9 @@ type Option func(*options)
 
 // WithLogger sets a structured logger for the child process. The logger
 // is used to report binary audit results and child process lifecycle events.
-func WithLogger(l *slog.Logger) Option {
+// It is also passed to go-plugin's ClientConfig so that plugin stderr output
+// is captured and forwarded through this logger with per-plugin naming.
+func WithLogger(l hclog.Logger) Option {
 	return func(o *options) {
 		o.logger = l
 	}
@@ -67,9 +69,9 @@ func applyOptions(opts []Option) *options {
 	return o
 }
 
-func (o *options) log() *slog.Logger {
+func (o *options) log() hclog.Logger {
 	if o.logger != nil {
 		return o.logger
 	}
-	return slog.Default()
+	return hclog.Default()
 }

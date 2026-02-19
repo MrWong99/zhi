@@ -16,11 +16,11 @@ package main
 
 import (
 	"fmt"
-	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
 
+	"github.com/hashicorp/go-hclog"
 	goplugin "github.com/hashicorp/go-plugin"
 
 	"github.com/MrWong99/zhi/pkg/zhiplugin"
@@ -29,7 +29,16 @@ import (
 )
 
 func main() {
-	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	level := hclog.LevelFromString(os.Getenv("ZHI_LOG_LEVEL"))
+	if level == hclog.NoLevel {
+		level = hclog.Info
+	}
+	logger := hclog.New(&hclog.LoggerOptions{
+		Name:   "zhi-store-mirror",
+		Level:  level,
+		Output: os.Stderr,
+	})
+	logger.Info("starting mirror store plugin")
 
 	// Find sibling plugin binaries in the same directory as this binary.
 	selfPath, err := os.Executable()
@@ -76,6 +85,7 @@ func main() {
 			"store": &store.GRPCPlugin{Impl: composed},
 		},
 		GRPCServer: goplugin.DefaultGRPCServer,
+		Logger:     logger,
 	})
 }
 

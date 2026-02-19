@@ -14,6 +14,7 @@ package main
 import (
 	"os"
 
+	"github.com/hashicorp/go-hclog"
 	goplugin "github.com/hashicorp/go-plugin"
 
 	"github.com/MrWong99/zhi/pkg/providers/store/vault"
@@ -22,6 +23,17 @@ import (
 )
 
 func main() {
+	level := hclog.LevelFromString(os.Getenv("ZHI_LOG_LEVEL"))
+	if level == hclog.NoLevel {
+		level = hclog.Info
+	}
+	logger := hclog.New(&hclog.LoggerOptions{
+		Name:   "zhi-store-vault",
+		Level:  level,
+		Output: os.Stderr,
+	})
+	logger.Info("starting vault store plugin")
+
 	cfg := vault.DefaultConfig()
 	if mount := os.Getenv("ZHI_VAULT_MOUNT"); mount != "" {
 		cfg.Mount = mount
@@ -32,7 +44,7 @@ func main() {
 
 	s, err := vault.New(cfg)
 	if err != nil {
-		os.Stderr.WriteString("vault store: " + err.Error() + "\n")
+		logger.Error("failed to create vault store", "error", err)
 		os.Exit(1)
 	}
 
@@ -42,5 +54,6 @@ func main() {
 			"store": &store.GRPCPlugin{Impl: s},
 		},
 		GRPCServer: goplugin.DefaultGRPCServer,
+		Logger:     logger,
 	})
 }

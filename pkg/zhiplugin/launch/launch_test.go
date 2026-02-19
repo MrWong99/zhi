@@ -1,14 +1,14 @@
 package launch
 
 import (
-	"log/slog"
-	"os"
 	"testing"
+
+	"github.com/hashicorp/go-hclog"
 )
 
 func TestWithLogger(t *testing.T) {
 	t.Parallel()
-	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	logger := hclog.New(&hclog.LoggerOptions{Name: "test"})
 	o := applyOptions([]Option{WithLogger(logger)})
 	if o.logger != logger {
 		t.Fatal("WithLogger did not set the logger")

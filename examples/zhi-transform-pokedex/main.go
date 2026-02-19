@@ -20,7 +20,9 @@ package main
 
 import (
 	"context"
+	"os"
 
+	"github.com/hashicorp/go-hclog"
 	goplugin "github.com/hashicorp/go-plugin"
 
 	"github.com/MrWong99/zhi/pkg/zhiplugin"
@@ -121,11 +123,23 @@ func (p *evolvePlugin) ValidatePolicy(_ context.Context) (transform.ValidatePoli
 }
 
 func main() {
+	level := hclog.LevelFromString(os.Getenv("ZHI_LOG_LEVEL"))
+	if level == hclog.NoLevel {
+		level = hclog.Info
+	}
+	logger := hclog.New(&hclog.LoggerOptions{
+		Name:   "zhi-transform-pokedex",
+		Level:  level,
+		Output: os.Stderr,
+	})
+	logger.Info("starting pokedex transform plugin")
+
 	goplugin.Serve(&goplugin.ServeConfig{
 		HandshakeConfig: zhiplugin.Handshake,
 		Plugins: map[string]goplugin.Plugin{
 			"transform": &transform.GRPCPlugin{Impl: &evolvePlugin{}},
 		},
 		GRPCServer: goplugin.DefaultGRPCServer,
+		Logger:     logger,
 	})
 }

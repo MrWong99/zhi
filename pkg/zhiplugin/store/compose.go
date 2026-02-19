@@ -3,19 +3,19 @@ package store
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"sync"
 
 	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
+	"github.com/hashicorp/go-hclog"
 )
 
 // MirroredPlugin writes to all stores but reads from the primary (first).
 // Mirror write errors are logged but do not fail the operation unless the
-// primary write fails. The logger is optional; if nil, slog.Default() is
+// primary write fails. The logger is optional; if nil, hclog.Default() is
 // used.
-func MirroredPlugin(logger *slog.Logger, primary Plugin, mirrors ...Plugin) Plugin {
+func MirroredPlugin(logger hclog.Logger, primary Plugin, mirrors ...Plugin) Plugin {
 	if logger == nil {
-		logger = slog.Default()
+		logger = hclog.Default()
 	}
 	return &mirroredPlugin{
 		primary: primary,
@@ -27,7 +27,7 @@ func MirroredPlugin(logger *slog.Logger, primary Plugin, mirrors ...Plugin) Plug
 type mirroredPlugin struct {
 	primary Plugin
 	mirrors []Plugin
-	log     *slog.Logger
+	log     hclog.Logger
 }
 
 // --- Capabilities ---
@@ -186,6 +186,7 @@ func (m *mirroredPlugin) ListAccess(ctx context.Context, id string) (map[string]
 // mirrorAction dispatches an action to all mirrors in parallel.
 // Errors are logged but do not fail the operation.
 func (m *mirroredPlugin) mirrorAction(_ context.Context, operation string, fn func(Plugin) error) {
+	m.log.Debug("mirroring operation to replicas", "operation", operation, "mirror_count", len(m.mirrors))
 	var wg sync.WaitGroup
 	wg.Add(len(m.mirrors))
 

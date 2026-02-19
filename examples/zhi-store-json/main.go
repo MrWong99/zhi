@@ -19,6 +19,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/hashicorp/go-hclog"
 	goplugin "github.com/hashicorp/go-plugin"
 
 	"github.com/MrWong99/zhi/pkg/zhiplugin"
@@ -256,11 +257,23 @@ func (s *jsonStore) ListAccess(_ context.Context, _ string) (map[string][]store.
 }
 
 func main() {
+	level := hclog.LevelFromString(os.Getenv("ZHI_LOG_LEVEL"))
+	if level == hclog.NoLevel {
+		level = hclog.Info
+	}
+	logger := hclog.New(&hclog.LoggerOptions{
+		Name:   "zhi-store-json",
+		Level:  level,
+		Output: os.Stderr,
+	})
+	logger.Info("starting JSON store plugin")
+
 	goplugin.Serve(&goplugin.ServeConfig{
 		HandshakeConfig: zhiplugin.Handshake,
 		Plugins: map[string]goplugin.Plugin{
 			"store": &store.GRPCPlugin{Impl: newJSONStore()},
 		},
 		GRPCServer: goplugin.DefaultGRPCServer,
+		Logger:     logger,
 	})
 }
