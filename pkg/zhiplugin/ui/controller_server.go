@@ -6,6 +6,7 @@ import (
 
 	"google.golang.org/grpc"
 
+	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
 	cfgpb "github.com/MrWong99/zhi/pkg/zhiplugin/config/proto"
 	pb "github.com/MrWong99/zhi/pkg/zhiplugin/ui/proto"
 )
@@ -28,7 +29,7 @@ func (s *controllerGRPCServer) LoadTree(ctx context.Context, _ *pb.CtrlLoadTreeR
 }
 
 func (s *controllerGRPCServer) SetValue(ctx context.Context, req *pb.CtrlSetValueRequest) (*pb.CtrlSetValueResponse, error) {
-	v, err := valueFromProto(req.GetValueJson(), req.GetMetadataJson())
+	v, err := config.ValueFromProto(req.GetValueJson(), req.GetMetadataJson())
 	if err != nil {
 		return nil, err
 	}

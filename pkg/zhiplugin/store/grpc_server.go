@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
 	configpb "github.com/MrWong99/zhi/pkg/zhiplugin/config/proto"
@@ -196,16 +195,9 @@ func (s *GRPCServer) GetValueVersion(ctx context.Context, req *pb.GetValueVersio
 	if !found {
 		return &pb.GetValueVersionResponse{Found: false}, nil
 	}
-	valJSON, err := json.Marshal(v.Val)
+	valJSON, metaJSON, err := config.ValueToProto(v)
 	if err != nil {
 		return nil, err
-	}
-	var metaJSON []byte
-	if v.Metadata != nil {
-		metaJSON, err = json.Marshal(v.Metadata)
-		if err != nil {
-			return nil, err
-		}
 	}
 	return &pb.GetValueVersionResponse{
 		Found:        true,

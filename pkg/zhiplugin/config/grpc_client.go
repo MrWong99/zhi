@@ -37,16 +37,9 @@ func (c *GRPCClient) Get(ctx context.Context, path string) (Value, bool, error) 
 }
 
 func (c *GRPCClient) Set(ctx context.Context, path string, v Value) error {
-	valJSON, err := json.Marshal(v.Val)
+	valJSON, metaJSON, err := ValueToProto(v)
 	if err != nil {
 		return err
-	}
-	var metaJSON []byte
-	if v.Metadata != nil {
-		metaJSON, err = json.Marshal(v.Metadata)
-		if err != nil {
-			return err
-		}
 	}
 	_, err = c.client.Set(ctx, &pb.SetRequest{
 		Path:         path,
@@ -78,13 +71,9 @@ func TreeToProto(tree TreeReader) []*pb.TreeEntry {
 		if !ok {
 			continue
 		}
-		valJSON, err := json.Marshal(v.Val)
+		valJSON, metaJSON, err := ValueToProto(v)
 		if err != nil {
 			continue
-		}
-		var metaJSON []byte
-		if v.Metadata != nil {
-			metaJSON, _ = json.Marshal(v.Metadata)
 		}
 		entries = append(entries, &pb.TreeEntry{
 			Path:         p,
@@ -112,6 +101,22 @@ func resultsFromProto(msgs []*pb.ValidationResultMsg) ([]ValidationResult, error
 		results = append(results, r)
 	}
 	return results, nil
+}
+
+// ValueToProto serialises a Value into JSON-encoded value and metadata bytes
+// for wire transfer.
+func ValueToProto(v Value) (valJSON, metaJSON []byte, err error) {
+	valJSON, err = json.Marshal(v.Val)
+	if err != nil {
+		return nil, nil, err
+	}
+	if v.Metadata != nil {
+		metaJSON, err = json.Marshal(v.Metadata)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+	return valJSON, metaJSON, nil
 }
 
 // ValueFromProto reconstructs a Value from JSON-encoded bytes received over

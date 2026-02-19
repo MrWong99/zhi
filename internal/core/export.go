@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 	"text/template"
 
@@ -93,7 +94,7 @@ func Export(_ context.Context, tree *TreeData, cfg ExportRunConfig) (*ExportResu
 
 // ExportAll runs all exports defined in the workspace configuration.
 func ExportAll(ctx context.Context, tree *TreeData, configs []ExportRunConfig) ([]*ExportResult, error) {
-	var results []*ExportResult
+	results := make([]*ExportResult, 0, len(configs))
 	for _, cfg := range configs {
 		r, err := Export(ctx, tree, cfg)
 		if err != nil {
@@ -297,11 +298,7 @@ func toDotenv(v any) (string, error) {
 	}
 
 	// Sort keys for deterministic output.
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
+	keys := slices.Sorted(maps.Keys(m))
 
 	var sb strings.Builder
 	for _, k := range keys {

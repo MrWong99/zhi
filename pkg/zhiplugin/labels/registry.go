@@ -2,6 +2,8 @@ package labels
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -105,9 +107,7 @@ func (r *Registry) ListByNamespace(namespace string) []*Label {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	labels := r.byNS[namespace]
-	result := make([]*Label, len(labels))
-	copy(result, labels)
+	result := slices.Clone(r.byNS[namespace])
 
 	sort.Slice(result, func(i, j int) bool {
 		return result[i].Name < result[j].Name
@@ -120,14 +120,7 @@ func (r *Registry) ListByNamespace(namespace string) []*Label {
 func (r *Registry) Namespaces() []string {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-
-	result := make([]string, 0, len(r.byNS))
-	for ns := range r.byNS {
-		result = append(result, ns)
-	}
-
-	sort.Strings(result)
-	return result
+	return slices.Sorted(maps.Keys(r.byNS))
 }
 
 // Validate checks if a metadata value is valid for the given label.

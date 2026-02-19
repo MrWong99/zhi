@@ -85,7 +85,9 @@ func (cm *ComponentManager) detectCycles() error {
 	inDegree := make(map[string]int, len(cm.definitions))
 	dependents := make(map[string][]string, len(cm.definitions))
 	for _, d := range cm.definitions {
-		inDegree[d.Name] += 0 // ensure entry exists
+		if _, exists := inDegree[d.Name]; !exists {
+			inDegree[d.Name] = 0
+		}
 		for _, dep := range d.Dependencies {
 			dependents[dep] = append(dependents[dep], d.Name)
 			inDegree[d.Name]++
@@ -204,13 +206,11 @@ func (cm *ComponentManager) IsEnabled(name string) bool {
 func (cm *ComponentManager) ListComponents() []ComponentState {
 	out := make([]ComponentState, len(cm.definitions))
 	for i, d := range cm.definitions {
-		deps := make([]string, len(d.Dependencies))
-		copy(deps, d.Dependencies)
 		out[i] = ComponentState{
 			Name:         d.Name,
 			Enabled:      cm.state[d.Name],
 			Mandatory:    d.Mandatory,
-			Dependencies: deps,
+			Dependencies: slices.Clone(d.Dependencies),
 		}
 	}
 	return out
@@ -299,9 +299,7 @@ func (cm *ComponentManager) SaveState() map[string]bool {
 
 // Definitions returns a copy of all component definitions.
 func (cm *ComponentManager) Definitions() []ComponentDef {
-	out := make([]ComponentDef, len(cm.definitions))
-	copy(out, cm.definitions)
-	return out
+	return slices.Clone(cm.definitions)
 }
 
 // Definition returns the definition of a component by name.

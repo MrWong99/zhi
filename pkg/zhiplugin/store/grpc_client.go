@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
 	configpb "github.com/MrWong99/zhi/pkg/zhiplugin/config/proto"
@@ -295,13 +294,9 @@ func (c *GRPCClient) ListAccess(ctx context.Context, id string) (map[string][]Pe
 func valuesToProto(values map[string]config.Value) []*configpb.TreeEntry {
 	entries := make([]*configpb.TreeEntry, 0, len(values))
 	for path, v := range values {
-		valJSON, err := json.Marshal(v.Val)
+		valJSON, metaJSON, err := config.ValueToProto(v)
 		if err != nil {
 			continue
-		}
-		var metaJSON []byte
-		if v.Metadata != nil {
-			metaJSON, _ = json.Marshal(v.Metadata)
 		}
 		entries = append(entries, &configpb.TreeEntry{
 			Path:         path,

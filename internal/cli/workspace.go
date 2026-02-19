@@ -119,19 +119,17 @@ func runWorkspaceInstall(cmd *cobra.Command, args []string) error {
 // checkExternalTool checks if an external tool is available on PATH.
 func checkExternalTool(w interface{ Write([]byte) (int, error) }, tool manifest.ToolRequirement) {
 	_, err := exec.LookPath(tool.Name)
+	symbol := "+"
+	status := "found"
 	if err != nil {
-		msg := fmt.Sprintf("  ! %s not found", tool.Name)
-		if tool.Version != "" {
-			msg += fmt.Sprintf(" (%s required)", tool.Version)
-		}
-		fmt.Fprintln(w, msg)
-	} else {
-		msg := fmt.Sprintf("  + %s found", tool.Name)
-		if tool.Version != "" {
-			msg += fmt.Sprintf(" (%s required)", tool.Version)
-		}
-		fmt.Fprintln(w, msg)
+		symbol = "!"
+		status = "not found"
 	}
+	msg := fmt.Sprintf("  %s %s %s", symbol, tool.Name, status)
+	if tool.Version != "" {
+		msg += fmt.Sprintf(" (%s required)", tool.Version)
+	}
+	fmt.Fprintln(w, msg)
 }
 
 // --- workspace publish ---
