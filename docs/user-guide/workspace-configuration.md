@@ -123,6 +123,36 @@ apply:
     command: "docker compose restart"
 ```
 
+### `ui`
+
+Configures which UI provider `zhi edit` uses by default and passes provider-specific options.
+
+| Field | Description |
+|-------|-------------|
+| `provider` | UI provider name (e.g., `tui`, `webui`, `mcp-stdio`). Overridden by `zhi edit --ui`. |
+| `options` | Provider-specific options passed to the factory function. |
+
+**Available built-in UI providers:**
+
+| Provider | Description |
+|----------|-------------|
+| `tui` | Terminal UI using Bubbletea (default, requires TTY) |
+| `webui` | Browser-based UI served on localhost. See [Web UI](web-ui.md). |
+| `mcp-stdio` | MCP server over stdin/stdout for LLM clients (Claude Desktop, Claude Code, Cursor) |
+
+Example for the MCP stdio provider:
+
+```yaml
+ui:
+  provider: mcp-stdio
+  options:
+    read_only: false
+```
+
+The `mcp-stdio` provider redirects `os.Stdout` to stderr internally so that stray log output does not corrupt the MCP JSON-RPC stream. LLM clients launch `zhi edit --ui mcp-stdio` as a child process and communicate over stdin/stdout.
+
+An external MCP SSE plugin (`zhi-ui-mcp-sse`) is also available for network-based access. See the [examples](../../examples/zhi-ui-mcp-sse/) directory.
+
 ### `plugins`
 
 Optional section to configure where zhi looks for external plugin binaries. Default: `~/.zhi/plugins/`.

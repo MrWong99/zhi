@@ -1,0 +1,21 @@
+schemaVersion: "1"
+name: mcp-sse
+type: ui
+version: 0.0.1
+zhiProtocolVersion: "1"
+description: MCP server UI plugin over HTTP for LLM-driven configuration management
+author: MrWong99
+license: MIT
+homepage: https://github.com/MrWong99/zhi
+keywords:
+  - ui
+  - mcp
+  - llm
+  - sse
+  - ai
+
+binaries:
+  linux/amd64: dist/zhi-ui-mcp-sse_linux_amd64
+  linux/arm64: dist/zhi-ui-mcp-sse_linux_arm64
+  darwin/amd64: dist/zhi-ui-mcp-sse_darwin_amd64
+  darwin/arm64: dist/zhi-ui-mcp-sse_darwin_arm64

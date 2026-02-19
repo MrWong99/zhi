@@ -84,3 +84,18 @@ A UI plugin that exposes the zhi configuration engine as an HTTP/JSON API. Demon
 
 See [zhi-ui-httpapi/main.go](zhi-ui-httpapi/main.go) and the
 [UI Plugin docs](../docs/plugin-development/ui-plugin.md) for details.
+
+## zhi-ui-mcp-sse
+
+A UI plugin that exposes the zhi configuration engine as an MCP (Model Context Protocol) server over HTTP. Demonstrates:
+
+- Implementing `ui.Plugin` (Run, Capabilities) with `RequiresTTY: false`
+- Using the shared `pkg/mcpbridge/` library to register all MCP tools, resources, and prompts
+- Streamable HTTP transport via `mcp.NewStreamableHTTPHandler`
+- Bearer token authentication with `crypto/subtle.ConstantTimeCompare`
+- Configurable listen address via `ZHI_MCP_ADDR` and auth token via `ZHI_MCP_TOKEN`
+
+A builtin MCP stdio plugin (`mcp-stdio`) is also available for direct use with LLM clients that support stdio transport (e.g. Claude Desktop, Claude Code). Launch it with `zhi edit --ui mcp-stdio`.
+
+See [zhi-ui-mcp-sse/main.go](zhi-ui-mcp-sse/main.go) and the
+[UI Plugin docs](../docs/plugin-development/ui-plugin.md) for details.

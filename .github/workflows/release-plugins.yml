@@ -40,6 +40,8 @@ jobs:
             dir: examples/zhi-transform-pokedex
           - plugin: zhi-ui-httpapi
             dir: examples/zhi-ui-httpapi
+          - plugin: zhi-ui-mcp-sse
+            dir: examples/zhi-ui-mcp-sse
           - plugin: zhi-ui-webui
             dir: examples/zhi-ui-webui
     steps:

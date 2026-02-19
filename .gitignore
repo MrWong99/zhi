@@ -1,6 +1,7 @@
 # Build output
 /bin/
 /zhi
+/zhi-ui-mcp-sse
 
 # Test artifacts
 coverage.out

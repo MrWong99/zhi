@@ -26,13 +26,15 @@ overridden with the --ui flag. If neither is set, the default "tui" driver
 is used.
 
 Available built-in UI providers:
-  tui     Terminal UI using Bubbletea (default, requires TTY)
-  webui   Browser-based UI served on localhost
+  tui        Terminal UI using Bubbletea (default, requires TTY)
+  webui      Browser-based UI served on localhost
+  mcp-stdio  MCP server over stdio (for LLM clients like Claude Desktop)
 
 Examples:
   zhi edit                    # launch the default UI (tui)
   zhi edit --ui tui           # explicitly select the TUI driver
   zhi edit --ui webui         # launch the web UI in your browser
+  zhi edit --ui mcp-stdio     # start MCP server over stdio for LLM clients
   zhi edit myconfig           # edit a specific stored tree`,
 	Args:              cobra.MaximumNArgs(1),
 	PersistentPreRunE: withEngine,
