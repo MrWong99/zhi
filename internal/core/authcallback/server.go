@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"sync"
+	"time"
 )
 
 // CallbackResult holds the query parameters received from the IdP callback.
@@ -71,9 +72,12 @@ func (s *CallbackServer) Wait(ctx context.Context) (CallbackResult, error) {
 }
 
 // Close shuts down the callback server. Safe to call multiple times.
+// Uses graceful shutdown to allow in-flight responses to be fully sent.
 func (s *CallbackServer) Close() {
 	s.closeOnce.Do(func() {
-		s.server.Close()
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = s.server.Shutdown(ctx)
 	})
 }
 
