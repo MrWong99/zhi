@@ -36,17 +36,19 @@ Reports what a UI plugin supports.
 
 ```go
 type Capabilities struct {
-    RequiresTTY bool
+    RequiresTTY         bool
+    SupportsMarketplace bool
 }
 ```
 
-| Field         | Meaning                                                       |
-|---------------|---------------------------------------------------------------|
-| `RequiresTTY` | UI needs direct terminal access (must run as a builtin plugin)|
+| Field                 | Meaning                                                       |
+|-----------------------|---------------------------------------------------------------|
+| `RequiresTTY`         | UI needs direct terminal access (must run as a builtin plugin)|
+| `SupportsMarketplace` | UI provides marketplace browsing and plugin management         |
 
 External gRPC plugins do not have access to the host's terminal, so any
 UI that needs a TTY (e.g. a TUI built with Bubbletea) must be registered
-as a builtin. HTTP-based UIs, AI chat interfaces, and similar
+as a builtin. HTTP-based UIs, MCP servers, and similar
 non-terminal frontends should report `RequiresTTY: false`.
 
 ### ExportRequest and ExportResult
@@ -126,6 +128,7 @@ exposes all operations the UI can perform on the zhi core engine.
 
 ```go
 type Controller interface {
+    // Core operations
     LoadTree(ctx context.Context) (*config.Tree, error)
     SetValue(ctx context.Context, path string, value config.Value) error
     Validate(ctx context.Context) ([]config.ValidationResult, error)
@@ -137,22 +140,54 @@ type Controller interface {
     EnableComponent(ctx context.Context, name string) ([]string, error)
     DisableComponent(ctx context.Context, name string) error
     WorkspaceName(ctx context.Context) (string, error)
+
+    // Marketplace
+    SearchMarketplace(ctx context.Context, query MarketplaceQuery) (*MarketplaceResults, error)
+    GetMarketplaceDetail(ctx context.Context, pluginType, publisher, name string) (*MarketplaceDetail, error)
+    InstallPlugin(ctx context.Context, ref string) (*InstallResult, error)
+    UninstallPlugin(ctx context.Context, name string, pluginType string) error
+    ListInstalledPlugins(ctx context.Context) ([]InstalledPlugin, error)
+    CheckUpdates(ctx context.Context) ([]PluginUpdate, error)
+    UpdatePlugin(ctx context.Context, name string, version string) (*InstallResult, error)
+    RatePlugin(ctx context.Context, pluginType, publisher, name string, rating Rating) error
+
+    // Store authentication
+    StoreAuthMethods(ctx context.Context) ([]StoreAuthMethod, error)
+    StoreLogin(ctx context.Context, method string, credentials map[string]string) (*StoreSession, error)
+    StoreLoginInteractive(ctx context.Context, method string, params map[string]string) (*StoreInteractiveChallenge, error)
+    StoreLoginInteractiveCallback(ctx context.Context, challengeID string, callbackParams map[string]string) (*StoreSession, error)
+    StoreAuthStatus(ctx context.Context) (*StoreSession, error)
+    StoreLogout(ctx context.Context) error
 }
 ```
 
-| Method            | Purpose                                                      |
-|-------------------|--------------------------------------------------------------|
-| `LoadTree`        | load or reload the full configuration tree (with transforms) |
-| `SetValue`        | store a configuration value at a path                        |
-| `Validate`        | run validation on the current tree                           |
-| `SaveTree`        | persist the current tree to the store                        |
-| `ExportTemplates` | return the workspace's configured export templates           |
-| `Export`          | run a single export operation                                |
-| `Apply`           | run the apply command; output streams via the callback       |
-| `ListComponents`  | list all components with their current state                 |
-| `EnableComponent` | enable a component and its dependencies                      |
-| `DisableComponent`| disable a component                                          |
-| `WorkspaceName`   | return the workspace display name                            |
+| Method | Purpose |
+|--------|---------|
+| `LoadTree` | load or reload the full configuration tree (with transforms) |
+| `SetValue` | store a configuration value at a path |
+| `Validate` | run validation on the current tree |
+| `SaveTree` | persist the current tree to the store |
+| `ExportTemplates` | return the workspace's configured export templates |
+| `Export` | run a single export operation |
+| `Apply` | run the apply command; output streams via the callback |
+| `ListComponents` | list all components with their current state |
+| `EnableComponent` | enable a component and its dependencies |
+| `DisableComponent` | disable a component |
+| `WorkspaceName` | return the workspace display name |
+| `SearchMarketplace` | search the plugin marketplace |
+| `GetMarketplaceDetail` | get detailed information about a marketplace plugin |
+| `InstallPlugin` | install a plugin from an OCI reference |
+| `UninstallPlugin` | remove an installed plugin |
+| `ListInstalledPlugins` | list all installed plugins with metadata |
+| `CheckUpdates` | check for available plugin updates |
+| `UpdatePlugin` | update a plugin to a specific or latest version |
+| `RatePlugin` | submit a rating for a marketplace plugin |
+| `StoreAuthMethods` | list authentication methods supported by the store |
+| `StoreLogin` | authenticate with the store |
+| `StoreLoginInteractive` | start a browser-based login flow |
+| `StoreLoginInteractiveCallback` | complete an interactive login flow |
+| `StoreAuthStatus` | get current authentication status |
+| `StoreLogout` | clear the current authentication session |
 
 For builtin plugins the `Controller` is backed directly by the engine.
 For external gRPC plugins it is a client that calls back to the host
@@ -206,6 +241,39 @@ See the [zhi-ui-httpapi example](../../examples/zhi-ui-httpapi/) for a
 complete, runnable plugin that exposes an HTTP/JSON API with SSE
 streaming.
 
+See the [zhi-ui-mcp-sse example](../../examples/zhi-ui-mcp-sse/) for a
+plugin that exposes an MCP server over HTTP, enabling LLM clients
+(Claude Desktop, Claude Code, Cursor) to manage configurations.
+
+## MCP bridge library
+
+The `pkg/mcpbridge/` package provides a shared MCP server factory that
+maps all Controller methods to MCP primitives (tools, resources, and
+prompts). Both the builtin `mcp-stdio` plugin and the external
+`zhi-ui-mcp-sse` plugin use this library.
+
+```go
+import "github.com/MrWong99/zhi/pkg/mcpbridge"
+
+server := mcpbridge.NewMCPServer(controller,
+    mcpbridge.WithVersion("1.0.0"),
+    mcpbridge.WithReadOnly(false),
+)
+```
+
+The library registers:
+- **17 MCP tools** -- `reload_tree`, `validate`, `set_value`, `save`, `apply`, `export`, `enable_component`, `disable_component`, `marketplace_search`, `marketplace_detail`, `marketplace_install`, `marketplace_uninstall`, `marketplace_update`, `marketplace_rate`, `check_updates`, `store_login`, `store_logout`
+- **11 MCP resources** -- `zhi://workspace/name`, `zhi://tree`, `zhi://components`, `zhi://validation`, `zhi://export/templates`, `zhi://marketplace/installed`, `zhi://store/auth/status`, `zhi://store/auth/methods`, plus templates `zhi://tree/{+path}`, `zhi://export/{name}`, `zhi://marketplace/{type}/{publisher}/{name}`
+- **5 MCP prompts** -- `explore-workspace`, `review-config`, `apply-changes`, `setup-component`, `audit-validation`
+
+A `SafeController` wrapper serializes concurrent access with a mutex,
+which is required when multiple MCP sessions share a single Controller
+(as with the SSE transport).
+
+Third-party meta-plugins can import `pkg/mcpbridge/` to add MCP
+support to custom tools without reimplementing the tool/resource/prompt
+registrations.
+
 ## How bidirectional communication works over gRPC
 
 The UI plugin uses hashicorp/go-plugin's GRPCBroker to establish two
@@ -225,7 +293,21 @@ gRPC services — one in each direction:
                                          ├─ ListComponents()
                                          ├─ EnableComponent()
                                          ├─ DisableComponent()
-                                         └─ WorkspaceName()
+                                         ├─ WorkspaceName()
+                                         ├─ SearchMarketplace()
+                                         ├─ GetMarketplaceDetail()
+                                         ├─ InstallPlugin()
+                                         ├─ UninstallPlugin()
+                                         ├─ ListInstalledPlugins()
+                                         ├─ CheckUpdates()
+                                         ├─ UpdatePlugin()
+                                         ├─ RatePlugin()
+                                         ├─ StoreAuthMethods()
+                                         ├─ StoreLogin()
+                                         ├─ StoreLoginInteractive()
+                                         ├─ StoreLoginInteractiveCallback()
+                                         ├─ StoreAuthStatus()
+                                         └─ StoreLogout()
 ```
 
 ### Startup sequence

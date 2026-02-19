@@ -23,6 +23,7 @@ Core principles:
 - **Automatic validation** -- config plugins define validation rules, including cross-value checks
 - **Plugin-based extensibility** -- [gRPC-based plugin system](https://github.com/hashicorp/go-plugin) with four plugin types (config, transform, store, UI) and a [meta-plugin SDK](docs/plugin-development/meta-plugin.md) for composing plugins
 - **Auto-generated TUI** -- interactive terminal interface built with [Bubbletea](https://github.com/charmbracelet/bubbletea)
+- **MCP server** -- expose configuration management to LLM clients (Claude Desktop, Claude Code, Cursor) via the [Model Context Protocol](https://modelcontextprotocol.io)
 - **Component model** -- group configuration into toggleable bundles with dependencies
 - **Template-based exports** -- render configuration to JSON, YAML, TOML, dotenv, or custom templates
 - **Provisioning** -- trigger external commands (Docker Compose, kubectl, Ansible, etc.) with exported configuration
@@ -101,6 +102,32 @@ zhi edit
 
 ![zhi edit webui](assets/webui.png)
 
+### MCP Server (for LLM Clients)
+
+zhi includes built-in MCP (Model Context Protocol) support, allowing LLM clients like Claude Desktop, Claude Code, and Cursor to manage configurations programmatically.
+
+**Stdio transport** (recommended for local use):
+
+```sh
+zhi edit --ui mcp-stdio
+```
+
+Configure in Claude Desktop's `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "zhi": {
+      "command": "zhi",
+      "args": ["edit", "--ui", "mcp-stdio"],
+      "cwd": "/path/to/workspace"
+    }
+  }
+}
+```
+
+**HTTP transport** (for remote/network access): install the `zhi-ui-mcp-sse` external plugin. See [`examples/zhi-ui-mcp-sse/`](examples/zhi-ui-mcp-sse/).
+
 ### Components
 
 Components group related configuration into named bundles that users can toggle:
@@ -168,6 +195,7 @@ The [`examples/`](examples/) directory contains fully working plugins you can bu
 | [zhi-store-memory](examples/zhi-store-memory/) | Store | Minimal in-memory store |
 | [zhi-store-vault](examples/zhi-store-vault/) | Store | HashiCorp Vault KV v2 backend |
 | [zhi-ui-httpapi](examples/zhi-ui-httpapi/) | UI | HTTP/JSON API with SSE streaming |
+| [zhi-ui-mcp-sse](examples/zhi-ui-mcp-sse/) | UI | MCP server over HTTP for LLM clients |
 | [zhi-config-javabean](examples/zhi-config-javabean/) | Config | Java plugin with Bean Validation and GraalVM native-image |
 | [zhi-store-mirror](examples/zhi-store-mirror/) | Store (meta) | Meta-plugin: mirrors writes to memory + JSON file |
 

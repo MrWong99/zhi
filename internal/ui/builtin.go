@@ -1,6 +1,10 @@
 package ui
 
 import (
+	"os"
+
+	mcpplugin "github.com/MrWong99/zhi/internal/ui/mcp"
+
 	"github.com/MrWong99/zhi/internal/core"
 	"github.com/MrWong99/zhi/pkg/providers/ui/webui"
 	zhiui "github.com/MrWong99/zhi/pkg/zhiplugin/ui"
@@ -30,6 +34,10 @@ func RegisterBuiltins(reg *core.Registry) {
 	// Register the web UI directly -- it implements zhiui.Plugin and does
 	// not require TTY access, so it bypasses the BuiltinAdapter.
 	_ = reg.RegisterUI("webui", NewWebUIProvider)
+
+	// Register the MCP stdio plugin -- it runs an MCP server over
+	// stdin/stdout for LLM clients (Claude Desktop, Claude Code, etc.).
+	_ = reg.RegisterUI("mcp-stdio", NewMCPStdioProvider)
 }
 
 // NewWebUIProvider is a UIFactory that creates a webui plugin. It reads
@@ -72,4 +80,34 @@ func NewWebUIProvider(_ string, options map[string]any) (zhiui.Plugin, error) {
 		}
 	}
 	return webui.New(cfg), nil
+}
+
+// NewMCPStdioProvider is a UIFactory that creates an MCP stdio plugin.
+// It saves the original os.Stdout and redirects it to os.Stderr so that
+// stray writes (log output, fmt.Println, etc.) do not corrupt the MCP
+// JSON-RPC stream on stdout.
+//
+// Supported options:
+//   - read_only: Disable mutation tools (default: false)
+//   - version:   Override the MCP server version string
+func NewMCPStdioProvider(_ string, options map[string]any) (zhiui.Plugin, error) {
+	// Save original stdout for the MCP transport and redirect os.Stdout
+	// to stderr to protect the MCP stream.
+	origStdout := os.Stdout
+	os.Stdout = os.Stderr
+
+	plugin := &mcpplugin.StdioPlugin{
+		Stdin:  os.Stdin,
+		Stdout: origStdout,
+	}
+
+	if options != nil {
+		if v, ok := options["read_only"].(bool); ok && v {
+			plugin.ReadOnly = true
+		}
+		if v, ok := options["version"].(string); ok {
+			plugin.Version = v
+		}
+	}
+	return plugin, nil
 }

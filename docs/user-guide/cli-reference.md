@@ -40,12 +40,14 @@ Launch the interactive UI to browse, edit, and manage configuration.
 zhi edit
 zhi edit --tree production
 zhi edit --ui tui
+zhi edit --ui webui
+zhi edit --ui mcp-stdio
 ```
 
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--tree` | (default tree) | Tree ID to load from store |
-| `--ui` | `tui` | UI driver to use |
+| `--ui` | `tui` | UI driver to use (`tui`, `webui`, `mcp-stdio`, or an external plugin) |
 
 **TUI key bindings:**
 
