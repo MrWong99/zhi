@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -175,7 +176,7 @@ func runListPaths(cmd *cobra.Command, _ []string) error {
 	}
 
 	paths := tree.List()
-	sortStrings(paths)
+	sort.Strings(paths)
 
 	if listJSON {
 		data, err := json.MarshalIndent(paths, "", "  ")
@@ -285,13 +286,4 @@ func runListComponents(cmd *cobra.Command, _ []string) error {
 	}
 	fprintTable(w, headers, rows)
 	return nil
-}
-
-// sortStrings sorts a string slice in place.
-func sortStrings(s []string) {
-	for i := 1; i < len(s); i++ {
-		for j := i; j > 0 && s[j] < s[j-1]; j-- {
-			s[j], s[j-1] = s[j-1], s[j]
-		}
-	}
 }

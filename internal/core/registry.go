@@ -4,6 +4,7 @@ package core
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 	"sort"
 	"sync"
@@ -151,90 +152,53 @@ func (r *Registry) UIProvider(workspace, name string, options map[string]any) (z
 // ListConfig returns the sorted names of all registered config providers
 // (built-in and external).
 func (r *Registry) ListConfig() []string {
-	names := sortedKeys(r.config)
-	for _, p := range r.externalPlugins {
-		if p.Type == PluginTypeConfig && !contains(names, p.Name) {
-			names = append(names, p.Name)
-		}
-	}
-	sort.Strings(names)
-	return names
+	return listNames(r, r.config, PluginTypeConfig)
 }
 
 // ListTransform returns the sorted names of all registered transform
 // providers (built-in and external).
 func (r *Registry) ListTransform() []string {
-	names := sortedKeys(r.transform)
-	for _, p := range r.externalPlugins {
-		if p.Type == PluginTypeTransform && !contains(names, p.Name) {
-			names = append(names, p.Name)
-		}
-	}
-	sort.Strings(names)
-	return names
+	return listNames(r, r.transform, PluginTypeTransform)
 }
 
 // ListStore returns the sorted names of all registered store providers
 // (built-in and external).
 func (r *Registry) ListStore() []string {
-	names := sortedKeys(r.store)
-	for _, p := range r.externalPlugins {
-		if p.Type == PluginTypeStore && !contains(names, p.Name) {
-			names = append(names, p.Name)
-		}
-	}
-	sort.Strings(names)
-	return names
-}
-
-// ListConfigProviders returns detailed provider info including source.
-func (r *Registry) ListConfigProviders() []ProviderInfo {
-	var infos []ProviderInfo
-	for _, name := range sortedKeys(r.config) {
-		infos = append(infos, ProviderInfo{Name: name, Source: "built-in"})
-	}
-	for _, p := range r.externalPlugins {
-		if p.Type == PluginTypeConfig && !r.isBuiltinConfig(p.Name) {
-			infos = append(infos, ProviderInfo{Name: p.Name, Source: p.Path})
-		}
-	}
-	return infos
-}
-
-// ListTransformProviders returns detailed provider info including source.
-func (r *Registry) ListTransformProviders() []ProviderInfo {
-	var infos []ProviderInfo
-	for _, name := range sortedKeys(r.transform) {
-		infos = append(infos, ProviderInfo{Name: name, Source: "built-in"})
-	}
-	for _, p := range r.externalPlugins {
-		if p.Type == PluginTypeTransform && !r.isBuiltinTransform(p.Name) {
-			infos = append(infos, ProviderInfo{Name: p.Name, Source: p.Path})
-		}
-	}
-	return infos
-}
-
-// ListStoreProviders returns detailed provider info including source.
-func (r *Registry) ListStoreProviders() []ProviderInfo {
-	var infos []ProviderInfo
-	for _, name := range sortedKeys(r.store) {
-		infos = append(infos, ProviderInfo{Name: name, Source: "built-in"})
-	}
-	for _, p := range r.externalPlugins {
-		if p.Type == PluginTypeStore && !r.isBuiltinStore(p.Name) {
-			infos = append(infos, ProviderInfo{Name: p.Name, Source: p.Path})
-		}
-	}
-	return infos
+	return listNames(r, r.store, PluginTypeStore)
 }
 
 // ListUI returns the sorted names of all registered UI providers
 // (built-in and external).
 func (r *Registry) ListUI() []string {
-	names := sortedKeys(r.ui)
+	return listNames(r, r.ui, PluginTypeUI)
+}
+
+// ListConfigProviders returns detailed provider info including source.
+func (r *Registry) ListConfigProviders() []ProviderInfo {
+	return listProviderInfos(r, r.config, PluginTypeConfig)
+}
+
+// ListTransformProviders returns detailed provider info including source.
+func (r *Registry) ListTransformProviders() []ProviderInfo {
+	return listProviderInfos(r, r.transform, PluginTypeTransform)
+}
+
+// ListStoreProviders returns detailed provider info including source.
+func (r *Registry) ListStoreProviders() []ProviderInfo {
+	return listProviderInfos(r, r.store, PluginTypeStore)
+}
+
+// ListUIProviders returns detailed provider info including source.
+func (r *Registry) ListUIProviders() []ProviderInfo {
+	return listProviderInfos(r, r.ui, PluginTypeUI)
+}
+
+// listNames returns the sorted names of all built-in and external providers
+// of the given type.
+func listNames[V any](r *Registry, builtins map[string]V, pt PluginType) []string {
+	names := sortedKeys(builtins)
 	for _, p := range r.externalPlugins {
-		if p.Type == PluginTypeUI && !contains(names, p.Name) {
+		if p.Type == pt && !slices.Contains(names, p.Name) {
 			names = append(names, p.Name)
 		}
 	}
@@ -242,14 +206,15 @@ func (r *Registry) ListUI() []string {
 	return names
 }
 
-// ListUIProviders returns detailed provider info including source.
-func (r *Registry) ListUIProviders() []ProviderInfo {
+// listProviderInfos returns detailed info for all built-in and external
+// providers of the given type.
+func listProviderInfos[V any](r *Registry, builtins map[string]V, pt PluginType) []ProviderInfo {
 	var infos []ProviderInfo
-	for _, name := range sortedKeys(r.ui) {
+	for _, name := range sortedKeys(builtins) {
 		infos = append(infos, ProviderInfo{Name: name, Source: "built-in"})
 	}
 	for _, p := range r.externalPlugins {
-		if p.Type == PluginTypeUI && !r.isBuiltinUI(p.Name) {
+		if p.Type == pt && !isBuiltin(builtins, p.Name) {
 			infos = append(infos, ProviderInfo{Name: p.Name, Source: p.Path})
 		}
 	}
@@ -400,35 +365,14 @@ func (r *Registry) findExternal(name string, pt PluginType) (PluginInfo, bool) {
 	return PluginInfo{}, false
 }
 
-func (r *Registry) isBuiltinConfig(name string) bool {
-	_, ok := r.config[name]
-	return ok
-}
-
-func (r *Registry) isBuiltinTransform(name string) bool {
-	_, ok := r.transform[name]
-	return ok
-}
-
-func (r *Registry) isBuiltinStore(name string) bool {
-	_, ok := r.store[name]
-	return ok
-}
-
-func (r *Registry) isBuiltinUI(name string) bool {
-	_, ok := r.ui[name]
+// isBuiltin reports whether the given name is registered as a built-in
+// provider in the provided factory map.
+func isBuiltin[V any](m map[string]V, name string) bool {
+	_, ok := m[name]
 	return ok
 }
 
 func sortedKeys[V any](m map[string]V) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
+	keys := slices.Sorted(maps.Keys(m))
 	return keys
-}
-
-func contains(slice []string, s string) bool {
-	return slices.Contains(slice, s)
 }

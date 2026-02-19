@@ -27,16 +27,9 @@ func (c *controllerGRPCClient) LoadTree(ctx context.Context) (*config.Tree, erro
 }
 
 func (c *controllerGRPCClient) SetValue(ctx context.Context, path string, value config.Value) error {
-	valJSON, err := json.Marshal(value.Val)
+	valJSON, metaJSON, err := config.ValueToProto(value)
 	if err != nil {
 		return err
-	}
-	var metaJSON []byte
-	if value.Metadata != nil {
-		metaJSON, err = json.Marshal(value.Metadata)
-		if err != nil {
-			return err
-		}
 	}
 	_, err = c.client.SetValue(ctx, &pb.CtrlSetValueRequest{
 		Path:         path,

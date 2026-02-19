@@ -30,16 +30,9 @@ func (s *GRPCServer) Get(ctx context.Context, req *pb.GetRequest) (*pb.GetRespon
 	if !ok {
 		return &pb.GetResponse{Found: false}, nil
 	}
-	valJSON, err := json.Marshal(v.Val)
+	valJSON, metaJSON, err := ValueToProto(v)
 	if err != nil {
 		return nil, err
-	}
-	var metaJSON []byte
-	if v.Metadata != nil {
-		metaJSON, err = json.Marshal(v.Metadata)
-		if err != nil {
-			return nil, err
-		}
 	}
 	return &pb.GetResponse{
 		Found:        true,

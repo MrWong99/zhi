@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -86,11 +87,7 @@ func (ac *ApplyConfig) ResolveTarget(name string) (ApplyTargetConfig, error) {
 	if len(ac.Targets) > 0 {
 		t, ok := ac.Targets[name]
 		if !ok {
-			available := make([]string, 0, len(ac.Targets))
-			for k := range ac.Targets {
-				available = append(available, k)
-			}
-			return ApplyTargetConfig{}, fmt.Errorf("unknown apply target %q (available: %v)", name, available)
+			return ApplyTargetConfig{}, fmt.Errorf("unknown apply target %q (available: %v)", name, slices.Sorted(maps.Keys(ac.Targets)))
 		}
 		return t, nil
 	}
