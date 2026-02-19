@@ -35,6 +35,7 @@ Subcommands:
   rate         Rate a plugin on the marketplace (1-5 stars)
   verify       Verify a plugin artifact's signature without installing
   init         Generate a zhi-plugin.yaml manifest for a new plugin
+  new          Scaffold a complete plugin project from a template
   publish      Publish a plugin to an OCI registry
   register     Register a plugin with the marketplace`,
 	Example: `  zhi plugin install ansible-config
@@ -43,6 +44,7 @@ Subcommands:
   zhi plugin info ansible-config
   zhi plugin rate zhi-project/ansible-config 5
   zhi plugin uninstall ansible-config
+  zhi plugin new --name my-config --type config --lang go
   zhi plugin register`,
 }
 

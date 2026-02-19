@@ -1,0 +1,65 @@
+// Package plugin implements the zhi ui.Plugin interface.
+//
+// UI plugins receive a Controller that provides access to the full zhi engine:
+// loading trees, setting values, validation, export, apply, components, and
+// marketplace operations.
+package plugin
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+
+	"[[.ZhiModule]]/pkg/zhiplugin/ui"
+)
+
+// Plugin implements ui.Plugin with a simple HTTP API.
+type Plugin struct{}
+
+// New creates a new Plugin instance.
+func New() *Plugin {
+	return &Plugin{}
+}
+
+// Run starts the UI. The controller provides access to the zhi engine.
+// This implementation starts a basic HTTP server. Replace with your own
+// UI implementation.
+func (p *Plugin) Run(ctx context.Context, controller ui.Controller) error {
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("GET /health", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintln(w, `{"status":"ok"}`)
+	})
+
+	mux.HandleFunc("GET /tree", func(w http.ResponseWriter, r *http.Request) {
+		tree, err := controller.LoadTree(r.Context())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintf(w, `{"paths":%d}`+"\n", len(tree.Paths()))
+	})
+
+	addr := ":9090"
+	srv := &http.Server{Addr: addr, Handler: mux}
+
+	go func() {
+		<-ctx.Done()
+		srv.Close()
+	}()
+
+	fmt.Printf("UI listening on %s\n", addr)
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		return err
+	}
+	return nil
+}
+
+// Capabilities returns the UI plugin's capabilities.
+func (p *Plugin) Capabilities(_ context.Context) (ui.Capabilities, error) {
+	return ui.Capabilities{
+		RequiresTTY: false,
+	}, nil
+}

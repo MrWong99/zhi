@@ -1,0 +1,51 @@
+// Package plugin implements the zhi transform.Plugin interface.
+//
+// Transform plugins modify the configuration tree before it is displayed
+// (BeforeDisplay) and revert those modifications before storing (AfterSave).
+package plugin
+
+import (
+	"context"
+
+	"[[.ZhiModule]]/pkg/zhiplugin/config"
+	"[[.ZhiModule]]/pkg/zhiplugin/transform"
+)
+
+// Plugin implements transform.Plugin.
+type Plugin struct{}
+
+// New creates a new Plugin instance.
+func New() *Plugin {
+	return &Plugin{}
+}
+
+// BeforeDisplay modifies the configuration tree before it is shown in the UI.
+// Add your display-time transformations here.
+func (p *Plugin) BeforeDisplay(_ context.Context, tree *config.Tree) error {
+	// Example: add a computed display value.
+	//
+	// v, ok := tree.GetPtr("myapp/name")
+	// if ok {
+	//     if name, ok := v.Val.(string); ok {
+	//         _ = tree.Set("myapp/display-name", &config.Value{
+	//             Val:      strings.ToUpper(name),
+	//             Metadata: map[string]any{"description": "uppercase display name"},
+	//         })
+	//     }
+	// }
+	return nil
+}
+
+// AfterSave reverts display-time transformations before the tree is persisted.
+// This should undo whatever BeforeDisplay changed.
+func (p *Plugin) AfterSave(_ context.Context, tree *config.Tree) error {
+	// Example: remove the computed display value before saving.
+	//
+	// tree.Delete("myapp/display-name")
+	return nil
+}
+
+// ValidatePolicy returns when validation should run relative to transforms.
+func (p *Plugin) ValidatePolicy(_ context.Context) (transform.ValidatePolicy, error) {
+	return transform.ValidateBeforeTransform, nil
+}

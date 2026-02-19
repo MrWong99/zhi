@@ -1,0 +1,78 @@
+name: Release Plugin
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Version tag to use (e.g. v0.1.0)"
+        required: true
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+jobs:
+  release:
+    name: Build and Publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: "go.mod"
+
+      - name: Determine version tag
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set plugin version in manifest
+        run: |
+          version="${{ steps.version.outputs.tag }}"
+          version="${version#v}"
+          sed -i "s/^version: .*/version: ${version}/" zhi-plugin.yaml
+
+      - name: Run tests
+        run: make test
+
+      - name: Cross-compile plugin
+        run: make cross-compile
+
+      - name: Install zhi CLI
+        run: go install [[.ZhiModule]]/cmd/zhi@latest
+
+      - name: Login to registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | \
+            zhi registry login [[if .Registry]][[.Registry]][[else]]ghcr.io[[end]] \
+              --username "${{ github.actor }}" \
+              --password-stdin
+
+      - name: Fetch OIDC token for Sigstore keyless signing
+        id: oidc
+        run: |
+          OIDC_TOKEN=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sigstore" | jq -r '.value')
+          echo "::add-mask::$OIDC_TOKEN"
+          echo "token=$OIDC_TOKEN" >> "$GITHUB_OUTPUT"
+
+      - name: Publish plugin
+        env:
+          SIGSTORE_ID_TOKEN: ${{ steps.oidc.outputs.token }}
+        run: |
+          zhi plugin publish \
+            --registry [[if .Registry]][[.Registry]][[else]]ghcr.io/${{ github.repository_owner }}[[end]] \
+            --tag "${{ steps.version.outputs.tag }}" \
+            --sign \
+            --verbose

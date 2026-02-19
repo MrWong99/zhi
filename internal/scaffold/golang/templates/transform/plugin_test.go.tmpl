@@ -1,0 +1,85 @@
+package plugin_test
+
+import (
+	"context"
+	"testing"
+
+	goplugin "github.com/hashicorp/go-plugin"
+
+	"[[.ZhiModule]]/pkg/zhiplugin/config"
+	"[[.ZhiModule]]/pkg/zhiplugin/transform"
+
+	plugin "[[.ModulePath]]/pkg/plugin"
+)
+
+// dispense starts an in-process gRPC plugin server and returns a connected
+// transform.Plugin client. No subprocess is spawned.
+func dispense(t *testing.T) transform.Plugin {
+	t.Helper()
+	client, _ := goplugin.TestPluginGRPCConn(t, false, map[string]goplugin.Plugin{
+		"transform": &transform.GRPCPlugin{Impl: plugin.New()},
+	})
+	raw, err := client.Dispense("transform")
+	if err != nil {
+		t.Fatalf("Dispense: %v", err)
+	}
+	return raw.(transform.Plugin)
+}
+
+func TestBeforeDisplayNoError(t *testing.T) {
+	p := dispense(t)
+	tree := config.NewTree()
+	_ = tree.Set("app/name", &config.Value{Val: "test"})
+
+	if err := p.BeforeDisplay(context.Background(), tree); err != nil {
+		t.Fatalf("BeforeDisplay: %v", err)
+	}
+}
+
+func TestAfterSaveNoError(t *testing.T) {
+	p := dispense(t)
+	tree := config.NewTree()
+	_ = tree.Set("app/name", &config.Value{Val: "test"})
+
+	if err := p.AfterSave(context.Background(), tree); err != nil {
+		t.Fatalf("AfterSave: %v", err)
+	}
+}
+
+func TestValidatePolicy(t *testing.T) {
+	p := dispense(t)
+	policy, err := p.ValidatePolicy(context.Background())
+	if err != nil {
+		t.Fatalf("ValidatePolicy: %v", err)
+	}
+	if policy != transform.ValidateBeforeTransform {
+		t.Errorf("policy = %v, want ValidateBeforeTransform", policy)
+	}
+}
+
+func TestRoundTrip(t *testing.T) {
+	p := dispense(t)
+	ctx := context.Background()
+
+	tree := config.NewTree()
+	_ = tree.Set("app/name", &config.Value{Val: "hello"})
+
+	// Apply display transforms.
+	if err := p.BeforeDisplay(ctx, tree); err != nil {
+		t.Fatalf("BeforeDisplay: %v", err)
+	}
+
+	// Revert for saving.
+	if err := p.AfterSave(ctx, tree); err != nil {
+		t.Fatalf("AfterSave: %v", err)
+	}
+
+	// The original value should be preserved.
+	v, ok := tree.Get("app/name")
+	if !ok {
+		t.Fatal("app/name missing after round-trip")
+	}
+	if v.Val != "hello" {
+		t.Errorf("app/name = %v, want %q", v.Val, "hello")
+	}
+}

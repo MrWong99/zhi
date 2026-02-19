@@ -1,0 +1,108 @@
+package plugin_test
+
+import (
+	"context"
+	"testing"
+
+	goplugin "github.com/hashicorp/go-plugin"
+
+	"[[.ZhiModule]]/pkg/zhiplugin/config"
+
+	plugin "[[.ModulePath]]/pkg/plugin"
+)
+
+// dispense starts an in-process gRPC plugin server and returns a connected
+// config.Plugin client. No subprocess is spawned.
+func dispense(t *testing.T) config.Plugin {
+	t.Helper()
+	client, _ := goplugin.TestPluginGRPCConn(t, false, map[string]goplugin.Plugin{
+		"config": &config.GRPCPlugin{Impl: plugin.New()},
+	})
+	raw, err := client.Dispense("config")
+	if err != nil {
+		t.Fatalf("Dispense: %v", err)
+	}
+	return raw.(config.Plugin)
+}
+
+func TestList(t *testing.T) {
+	p := dispense(t)
+	paths, err := p.List(context.Background())
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	if len(paths) == 0 {
+		t.Fatal("expected at least one path")
+	}
+}
+
+func TestGetDefault(t *testing.T) {
+	p := dispense(t)
+	ctx := context.Background()
+
+	v, ok, err := p.Get(ctx, "[[.PluginName]]/host")
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	if !ok {
+		t.Fatal("expected value to exist")
+	}
+	if v.Val != "localhost" {
+		t.Errorf("host = %v, want %q", v.Val, "localhost")
+	}
+}
+
+func TestGetMissing(t *testing.T) {
+	p := dispense(t)
+	_, ok, err := p.Get(context.Background(), "nonexistent/path")
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	if ok {
+		t.Error("expected ok=false for missing path")
+	}
+}
+
+func TestSetAndGet(t *testing.T) {
+	p := dispense(t)
+	ctx := context.Background()
+
+	err := p.Set(ctx, "[[.PluginName]]/host", config.Value{Val: "example.com"})
+	if err != nil {
+		t.Fatalf("Set: %v", err)
+	}
+
+	v, ok, err := p.Get(ctx, "[[.PluginName]]/host")
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	if !ok {
+		t.Fatal("expected value to exist after Set")
+	}
+	if v.Val != "example.com" {
+		t.Errorf("host = %v, want %q", v.Val, "example.com")
+	}
+}
+
+func TestValidatePort(t *testing.T) {
+	p := dispense(t)
+	ctx := context.Background()
+
+	// Set an invalid port.
+	_ = p.Set(ctx, "[[.PluginName]]/port", config.Value{Val: float64(99999)})
+
+	// Build a tree for validation.
+	tree := config.NewTree()
+	_ = tree.Set("[[.PluginName]]/port", &config.Value{Val: float64(99999)})
+
+	results, err := p.Validate(ctx, "[[.PluginName]]/port", tree)
+	if err != nil {
+		t.Fatalf("Validate: %v", err)
+	}
+	if len(results) == 0 {
+		t.Fatal("expected validation error for out-of-range port")
+	}
+	if results[0].Severity != config.Blocking {
+		t.Errorf("severity = %v, want Blocking", results[0].Severity)
+	}
+}

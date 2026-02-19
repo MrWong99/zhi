@@ -1,0 +1,103 @@
+MODULE   := [[.ModulePath]]
+BIN_NAME := [[.BinaryName]]
+BIN_DIR  := bin
+DIST_DIR := dist
+
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
+COMMIT  ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo none)
+DATE    ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+LDFLAGS := -s -w -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.date=$(DATE)
+
+GOFLAGS     ?=
+GOTESTFLAGS ?= -race -count=1
+
+PLATFORMS := linux/amd64 linux/arm64 darwin/amd64 darwin/arm64
+
+.DEFAULT_GOAL := help
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Build
+# ──────────────────────────────────────────────────────────────────────────────
+
+.PHONY: build
+build: ## Build the plugin binary
+	@mkdir -p $(BIN_DIR)
+	CGO_ENABLED=0 go build $(GOFLAGS) -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/$(BIN_NAME) ./cmd/$(BIN_NAME)/
+
+.PHONY: cross-compile
+cross-compile: ## Cross-compile for all supported platforms
+	@mkdir -p $(DIST_DIR)
+	@for pair in $(PLATFORMS); do \
+		os=$${pair%/*}; \
+		arch=$${pair#*/}; \
+		echo "Building $(BIN_NAME) for $${os}/$${arch}..."; \
+		CGO_ENABLED=0 GOOS=$$os GOARCH=$$arch go build $(GOFLAGS) -ldflags "$(LDFLAGS)" \
+			-o $(DIST_DIR)/$(BIN_NAME)_$${os}_$${arch} ./cmd/$(BIN_NAME)/; \
+	done
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Test
+# ──────────────────────────────────────────────────────────────────────────────
+
+.PHONY: test
+test: ## Run all tests
+	go test $(GOTESTFLAGS) ./...
+
+.PHONY: test-verbose
+test-verbose: ## Run tests with verbose output
+	go test $(GOTESTFLAGS) -v ./...
+
+.PHONY: test-cover
+test-cover: ## Run tests with coverage
+	@mkdir -p $(BIN_DIR)
+	go test $(GOTESTFLAGS) -coverprofile=$(BIN_DIR)/coverage.out ./...
+	go tool cover -func=$(BIN_DIR)/coverage.out
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Code quality
+# ──────────────────────────────────────────────────────────────────────────────
+
+.PHONY: fmt
+fmt: ## Format Go source files
+	gofmt -s -w .
+
+.PHONY: vet
+vet: ## Run go vet
+	go vet ./...
+
+.PHONY: lint
+lint: ## Run golangci-lint
+	golangci-lint run ./...
+
+.PHONY: check
+check: fmt vet lint test ## Run all checks: format, vet, lint, test
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Dependencies
+# ──────────────────────────────────────────────────────────────────────────────
+
+.PHONY: tidy
+tidy: ## Run go mod tidy
+	go mod tidy
+
+.PHONY: deps
+deps: ## Download module dependencies
+	go mod download
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Clean
+# ──────────────────────────────────────────────────────────────────────────────
+
+.PHONY: clean
+clean: ## Remove build artifacts
+	rm -rf $(BIN_DIR) $(DIST_DIR)
+	go clean -cache -testcache
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Help
+# ──────────────────────────────────────────────────────────────────────────────
+
+.PHONY: help
+help: ## Show this help
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'

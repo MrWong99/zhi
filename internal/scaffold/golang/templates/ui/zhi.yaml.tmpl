@@ -1,0 +1,27 @@
+# Sample workspace for testing the [[.BinaryName]] plugin.
+#
+# Usage:
+#   make build                  # build the plugin binary
+#   cd workspace
+#   zhi edit --ui [[.PluginName]]   # launch your UI plugin
+
+version: "1"
+
+config:
+  provider: structuredfile
+  options:
+    directory: ./config
+
+ui:
+  provider: [[.PluginName]]
+  options: {}
+
+plugins:
+  directories:
+    - ../bin
+
+export:
+  templates:
+    - name: json
+      builtin: json
+      output: ./output.json

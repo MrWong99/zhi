@@ -1,0 +1,38 @@
+// [[.BinaryName]] is a zhi store plugin.
+//
+// [[.Description]]
+package main
+
+import (
+	"os"
+
+	"github.com/hashicorp/go-hclog"
+	goplugin "github.com/hashicorp/go-plugin"
+
+	"[[.ZhiModule]]/pkg/zhiplugin"
+	"[[.ZhiModule]]/pkg/zhiplugin/store"
+
+	plugin "[[.ModulePath]]/pkg/plugin"
+)
+
+func main() {
+	level := hclog.LevelFromString(os.Getenv("ZHI_LOG_LEVEL"))
+	if level == hclog.NoLevel {
+		level = hclog.Info
+	}
+	logger := hclog.New(&hclog.LoggerOptions{
+		Name:   "[[.BinaryName]]",
+		Level:  level,
+		Output: os.Stderr,
+	})
+	logger.Info("starting [[.BinaryName]]")
+
+	goplugin.Serve(&goplugin.ServeConfig{
+		HandshakeConfig: zhiplugin.Handshake,
+		Plugins: map[string]goplugin.Plugin{
+			"store": &store.GRPCPlugin{Impl: plugin.New()},
+		},
+		GRPCServer: goplugin.DefaultGRPCServer,
+		Logger:     logger,
+	})
+}
