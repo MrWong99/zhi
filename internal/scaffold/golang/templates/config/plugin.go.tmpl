@@ -1,0 +1,103 @@
+// Package plugin implements the zhi config.Plugin interface.
+package plugin
+
+import (
+	"context"
+	"sync"
+
+	"[[.ZhiModule]]/pkg/zhiplugin/config"
+)
+
+// paths is the fixed set of configuration paths this plugin manages.
+// Update this list to match your plugin's configuration schema.
+var paths = []string{
+	"[[.PluginName]]/host",
+	"[[.PluginName]]/port",
+}
+
+// defaults returns the initial configuration values.
+func defaults() map[string]*config.Value {
+	return map[string]*config.Value{
+		"[[.PluginName]]/host": {
+			Val:      "localhost",
+			Metadata: map[string]any{"description": "Service hostname"},
+		},
+		"[[.PluginName]]/port": {
+			Val:      float64(8080),
+			Metadata: map[string]any{"description": "Service port number"},
+		},
+	}
+}
+
+// Plugin implements config.Plugin.
+type Plugin struct {
+	mu     sync.RWMutex
+	values map[string]*config.Value
+}
+
+// New creates a new Plugin instance with default values.
+func New() *Plugin {
+	return &Plugin{values: defaults()}
+}
+
+// List returns all managed configuration paths.
+func (p *Plugin) List(_ context.Context) ([]string, error) {
+	return paths, nil
+}
+
+// Get retrieves a configuration value by path.
+func (p *Plugin) Get(_ context.Context, path string) (config.Value, bool, error) {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	v, ok := p.values[path]
+	if !ok {
+		return config.Value{}, false, nil
+	}
+	return *v, true, nil
+}
+
+// Set stores a configuration value at the given path.
+func (p *Plugin) Set(_ context.Context, path string, v config.Value) error {
+	if err := config.ValidatePath(path); err != nil {
+		return err
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.values[path] = &v
+	return nil
+}
+
+// Validate checks a configuration value against the full tree for
+// consistency. Return validation results with appropriate severity.
+func (p *Plugin) Validate(_ context.Context, path string, tree config.TreeReader) ([]config.ValidationResult, error) {
+	v, ok := tree.Get(path)
+	if !ok {
+		return nil, nil
+	}
+
+	switch path {
+	case "[[.PluginName]]/host":
+		if _, ok := v.Val.(string); !ok {
+			return []config.ValidationResult{{
+				Severity: config.Blocking,
+				Message:  "host must be a string",
+			}}, nil
+		}
+	case "[[.PluginName]]/port":
+		port, ok := v.Val.(float64)
+		if !ok {
+			return []config.ValidationResult{{
+				Severity: config.Blocking,
+				Message:  "port must be a number",
+			}}, nil
+		}
+		if port < 1 || port > 65535 {
+			return []config.ValidationResult{{
+				Severity: config.Blocking,
+				Message:  "port must be between 1 and 65535",
+			}}, nil
+		}
+	}
+
+	return nil, nil
+}

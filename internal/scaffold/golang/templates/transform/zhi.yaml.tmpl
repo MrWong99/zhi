@@ -1,0 +1,31 @@
+# Sample workspace for testing the [[.BinaryName]] plugin.
+#
+# Usage:
+#   make build        # build the plugin binary
+#   cd workspace
+#   zhi list          # list configuration paths
+#   zhi validate      # validate configuration
+#
+# This workspace uses the built-in structuredfile config provider and
+# your transform plugin to modify the tree before display.
+
+version: "1"
+
+config:
+  provider: structuredfile
+  options:
+    directory: ./config
+
+transform:
+  - provider: [[.PluginName]]
+    options: {}
+
+plugins:
+  directories:
+    - ../bin
+
+export:
+  templates:
+    - name: json
+      builtin: json
+      output: ./output.json

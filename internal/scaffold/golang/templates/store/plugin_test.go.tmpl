@@ -1,0 +1,156 @@
+package plugin_test
+
+import (
+	"context"
+	"slices"
+	"testing"
+
+	goplugin "github.com/hashicorp/go-plugin"
+
+	"[[.ZhiModule]]/pkg/zhiplugin/config"
+	"[[.ZhiModule]]/pkg/zhiplugin/store"
+
+	plugin "[[.ModulePath]]/pkg/plugin"
+)
+
+// dispense starts an in-process gRPC plugin server and returns a connected
+// store.Plugin client. No subprocess is spawned.
+func dispense(t *testing.T) store.Plugin {
+	t.Helper()
+	client, _ := goplugin.TestPluginGRPCConn(t, false, map[string]goplugin.Plugin{
+		"store": &store.GRPCPlugin{Impl: plugin.New()},
+	})
+	raw, err := client.Dispense("store")
+	if err != nil {
+		t.Fatalf("Dispense: %v", err)
+	}
+	return raw.(store.Plugin)
+}
+
+func TestCapabilities(t *testing.T) {
+	p := dispense(t)
+	caps, err := p.Capabilities(context.Background())
+	if err != nil {
+		t.Fatalf("Capabilities: %v", err)
+	}
+	if caps.Versioning != store.VersioningNone {
+		t.Errorf("Versioning = %v, want VersioningNone", caps.Versioning)
+	}
+	if caps.Encryption != store.EncryptionNone {
+		t.Errorf("Encryption = %v, want EncryptionNone", caps.Encryption)
+	}
+}
+
+func TestPutAndGetValues(t *testing.T) {
+	p := dispense(t)
+	ctx := context.Background()
+
+	values := map[string]config.Value{
+		"db/host": {Val: "localhost"},
+		"db/port": {Val: float64(5432)},
+	}
+
+	if err := p.PutValues(ctx, "prod", values, nil); err != nil {
+		t.Fatalf("PutValues: %v", err)
+	}
+
+	got, err := p.GetValues(ctx, "prod", []string{"db/host", "db/port"})
+	if err != nil {
+		t.Fatalf("GetValues: %v", err)
+	}
+	if got["db/host"].Val != "localhost" {
+		t.Errorf("db/host = %v, want %q", got["db/host"].Val, "localhost")
+	}
+	if got["db/port"].Val != float64(5432) {
+		t.Errorf("db/port = %v, want %v", got["db/port"].Val, float64(5432))
+	}
+}
+
+func TestGetValuesMissing(t *testing.T) {
+	p := dispense(t)
+	got, err := p.GetValues(context.Background(), "nope", []string{"a/b"})
+	if err != nil {
+		t.Fatalf("GetValues: %v", err)
+	}
+	if len(got) != 0 {
+		t.Errorf("expected empty map, got %v", got)
+	}
+}
+
+func TestDeleteTree(t *testing.T) {
+	p := dispense(t)
+	ctx := context.Background()
+
+	_ = p.PutValues(ctx, "temp", map[string]config.Value{
+		"a/b": {Val: "x"},
+	}, nil)
+
+	if err := p.DeleteTree(ctx, "temp"); err != nil {
+		t.Fatalf("DeleteTree: %v", err)
+	}
+
+	got, err := p.GetValues(ctx, "temp", []string{"a/b"})
+	if err != nil {
+		t.Fatalf("GetValues: %v", err)
+	}
+	if len(got) != 0 {
+		t.Error("values still found after DeleteTree")
+	}
+}
+
+func TestDeleteValues(t *testing.T) {
+	p := dispense(t)
+	ctx := context.Background()
+
+	_ = p.PutValues(ctx, "t", map[string]config.Value{
+		"a/b": {Val: "1"},
+		"a/c": {Val: "2"},
+	}, nil)
+
+	if err := p.DeleteValues(ctx, "t", []string{"a/b"}); err != nil {
+		t.Fatalf("DeleteValues: %v", err)
+	}
+
+	got, err := p.GetValues(ctx, "t", []string{"a/b", "a/c"})
+	if err != nil {
+		t.Fatalf("GetValues: %v", err)
+	}
+	if _, exists := got["a/b"]; exists {
+		t.Error("a/b still found after DeleteValues")
+	}
+	if got["a/c"].Val != "2" {
+		t.Errorf("a/c = %v, want %q", got["a/c"].Val, "2")
+	}
+}
+
+func TestListTrees(t *testing.T) {
+	p := dispense(t)
+	ctx := context.Background()
+
+	_ = p.PutValues(ctx, "one", map[string]config.Value{"a/b": {Val: "x"}}, nil)
+	_ = p.PutValues(ctx, "two", map[string]config.Value{"a/b": {Val: "x"}}, nil)
+
+	ids, err := p.ListTrees(ctx)
+	if err != nil {
+		t.Fatalf("ListTrees: %v", err)
+	}
+	slices.Sort(ids)
+	if !slices.Equal(ids, []string{"one", "two"}) {
+		t.Errorf("ListTrees() = %v, want [one, two]", ids)
+	}
+}
+
+func TestVersioningNotSupported(t *testing.T) {
+	p := dispense(t)
+	ctx := context.Background()
+
+	if _, err := p.ListTreeVersions(ctx, "any"); err == nil {
+		t.Error("ListTreeVersions should return error")
+	}
+	if _, err := p.GetTreeVersion(ctx, "any", "v1", []string{"a/b"}); err == nil {
+		t.Error("GetTreeVersion should return error")
+	}
+	if err := p.RollbackTree(ctx, "any", "v1"); err == nil {
+		t.Error("RollbackTree should return error")
+	}
+}

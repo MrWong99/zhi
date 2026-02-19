@@ -25,13 +25,20 @@ Generate complete plugin projects from templates, lowering the barrier to plugin
 zhi plugin new --type config --name my-plugin --lang go
 ```
 
-Generates:
-- `main.go` with plugin interface stubs (correct handshake, interface implementation)
-- `Makefile` with cross-compilation targets for all supported platforms
+Generates a standalone Go project (`cmd/`, `pkg/`, `workspace/`) with:
+- Plugin implementation with correct interface stubs and handshake
+- Tests using in-process gRPC (`goplugin.TestPluginGRPCConn`)
+- `go.mod` with zhi dependencies
+- `Makefile` with build, test, lint, and cross-compilation targets
 - `zhi-plugin.yaml` manifest pre-populated with metadata
-- GitHub Actions workflow for automated building and publishing (uses `zhi plugin publish`)
-- README template with usage instructions
-- `.goreleaser.yaml` for GoReleaser-based builds
+- GitHub Actions workflow for automated build, sign, and publish
+- Sample workspace (`zhi.yaml`) for local testing with the plugin
+- README with usage instructions
+
+Additional flags: `--module`, `--registry`, `--author`, `--license`, `--description`, `--output-dir`.
+
+The scaffolding system (`internal/scaffold/`) is language-agnostic: implement
+the `Scaffolder` interface and register it to add support for new languages.
 
 ### Workspace Templates
 

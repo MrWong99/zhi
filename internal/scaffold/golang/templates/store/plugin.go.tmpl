@@ -1,0 +1,175 @@
+// Package plugin implements the zhi store.Plugin interface with an in-memory
+// backend. Replace the implementation with your own storage backend.
+package plugin
+
+import (
+	"context"
+	"errors"
+	"maps"
+	"sync"
+
+	"[[.ZhiModule]]/pkg/zhiplugin/config"
+	"[[.ZhiModule]]/pkg/zhiplugin/store"
+)
+
+// Plugin implements store.Plugin with an in-memory map backend.
+type Plugin struct {
+	mu    sync.RWMutex
+	trees map[string]map[string]config.Value
+}
+
+// New creates a new Plugin instance.
+func New() *Plugin {
+	return &Plugin{trees: make(map[string]map[string]config.Value)}
+}
+
+// --- Capabilities ---
+
+func (p *Plugin) Capabilities(_ context.Context) (*store.Capabilities, error) {
+	return &store.Capabilities{
+		Versioning:    store.VersioningNone,
+		Encryption:    store.EncryptionNone,
+		Auth:          false,
+		AccessControl: false,
+	}, nil
+}
+
+// --- Authentication ---
+
+func (p *Plugin) AuthMethods(_ context.Context) ([]store.AuthMethod, error) {
+	return nil, nil
+}
+
+func (p *Plugin) Login(_ context.Context, _ string, _ map[string]string) (*store.Credential, error) {
+	return nil, errors.New("authentication not supported")
+}
+
+func (p *Plugin) LoginInteractive(_ context.Context, _ string, _ map[string]string) (*store.InteractiveChallenge, error) {
+	return nil, errors.New("interactive login not supported")
+}
+
+func (p *Plugin) LoginInteractiveCallback(_ context.Context, _ string, _ map[string]string) (*store.Credential, error) {
+	return nil, errors.New("interactive login not supported")
+}
+
+// --- Tree management ---
+
+func (p *Plugin) ListTrees(_ context.Context) ([]string, error) {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	ids := make([]string, 0, len(p.trees))
+	for id := range p.trees {
+		ids = append(ids, id)
+	}
+	return ids, nil
+}
+
+func (p *Plugin) DeleteTree(_ context.Context, id string) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	delete(p.trees, id)
+	return nil
+}
+
+// --- Value operations ---
+
+func (p *Plugin) GetValues(_ context.Context, id string, paths []string) (map[string]config.Value, error) {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	tree, ok := p.trees[id]
+	if !ok {
+		return nil, nil
+	}
+	result := make(map[string]config.Value, len(paths))
+	for _, path := range paths {
+		if v, exists := tree[path]; exists {
+			result[path] = v
+		}
+	}
+	return result, nil
+}
+
+func (p *Plugin) PutValues(_ context.Context, id string, values map[string]config.Value, _ *store.PutOptions) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	tree, ok := p.trees[id]
+	if !ok {
+		tree = make(map[string]config.Value, len(values))
+		p.trees[id] = tree
+	}
+	maps.Copy(tree, values)
+	return nil
+}
+
+func (p *Plugin) DeleteValues(_ context.Context, id string, paths []string) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	tree, ok := p.trees[id]
+	if !ok {
+		return nil
+	}
+	for _, path := range paths {
+		delete(tree, path)
+	}
+	return nil
+}
+
+// --- Tree-level versioning (not supported) ---
+
+func (p *Plugin) ListTreeVersions(_ context.Context, _ string) ([]string, error) {
+	return nil, errors.New("versioning not supported")
+}
+
+func (p *Plugin) GetTreeVersion(_ context.Context, _ string, _ string, _ []string) (map[string]config.Value, error) {
+	return nil, errors.New("versioning not supported")
+}
+
+func (p *Plugin) RollbackTree(_ context.Context, _ string, _ string) error {
+	return errors.New("versioning not supported")
+}
+
+func (p *Plugin) DeleteTreeVersion(_ context.Context, _ string, _ string) error {
+	return errors.New("versioning not supported")
+}
+
+// --- Value-level versioning (not supported) ---
+
+func (p *Plugin) ListValueVersions(_ context.Context, _ string, _ string) ([]string, error) {
+	return nil, errors.New("versioning not supported")
+}
+
+func (p *Plugin) GetValueVersion(_ context.Context, _ string, _ string, _ string) (config.Value, bool, error) {
+	return config.Value{}, false, errors.New("versioning not supported")
+}
+
+func (p *Plugin) RollbackValue(_ context.Context, _ string, _ string, _ string) error {
+	return errors.New("versioning not supported")
+}
+
+func (p *Plugin) DeleteValueVersion(_ context.Context, _ string, _ string, _ string) error {
+	return errors.New("versioning not supported")
+}
+
+// --- Encryption (not supported) ---
+
+func (p *Plugin) InitEncryption(_ context.Context, _ []byte) error {
+	return errors.New("encryption not supported")
+}
+
+func (p *Plugin) RotateEncryption(_ context.Context, _, _ []byte) error {
+	return errors.New("encryption not supported")
+}
+
+// --- Access control (not supported) ---
+
+func (p *Plugin) GrantAccess(_ context.Context, _ string, _ string, _ []store.Permission) error {
+	return errors.New("access control not supported")
+}
+
+func (p *Plugin) RevokeAccess(_ context.Context, _ string, _ string, _ []string) error {
+	return errors.New("access control not supported")
+}
+
+func (p *Plugin) ListAccess(_ context.Context, _ string) (map[string][]store.Permission, error) {
+	return nil, errors.New("access control not supported")
+}

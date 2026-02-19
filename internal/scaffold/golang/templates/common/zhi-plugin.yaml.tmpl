@@ -1,0 +1,21 @@
+schemaVersion: "1"
+name: [[.PluginName]]
+type: [[.PluginType]]
+version: [[.Version]]
+zhiProtocolVersion: "1"
+description: [[.Description]]
+[[- if .Author]]
+author: [[.Author]]
+[[- end]]
+[[- if .License]]
+license: [[.License]]
+[[- end]]
+keywords:
+  - [[.PluginType]]
+  - [[.PluginName]]
+
+binaries:
+  linux/amd64: dist/[[.BinaryName]]_linux_amd64
+  linux/arm64: dist/[[.BinaryName]]_linux_arm64
+  darwin/amd64: dist/[[.BinaryName]]_darwin_amd64
+  darwin/arm64: dist/[[.BinaryName]]_darwin_arm64

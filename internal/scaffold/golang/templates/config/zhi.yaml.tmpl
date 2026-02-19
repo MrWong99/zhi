@@ -1,0 +1,26 @@
+# Sample workspace for testing the [[.BinaryName]] plugin.
+#
+# Usage:
+#   make build        # build the plugin binary
+#   cd workspace
+#   zhi list          # list configuration paths
+#   zhi validate      # validate configuration
+#   zhi export        # export configuration
+
+version: "1"
+
+config:
+  provider: [[.PluginName]]
+  options:
+    # Add plugin-specific options here.
+    directory: ./config
+
+plugins:
+  directories:
+    - ../bin
+
+export:
+  templates:
+    - name: json
+      builtin: json
+      output: ./output.json

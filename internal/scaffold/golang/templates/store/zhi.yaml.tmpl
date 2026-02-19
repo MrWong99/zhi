@@ -1,0 +1,31 @@
+# Sample workspace for testing the [[.BinaryName]] plugin.
+#
+# Usage:
+#   make build        # build the plugin binary
+#   cd workspace
+#   zhi list          # list configuration trees
+#   zhi validate      # validate configuration
+#
+# This workspace uses the built-in structuredfile config provider and
+# your store plugin for persistence.
+
+version: "1"
+
+config:
+  provider: structuredfile
+  options:
+    directory: ./config
+
+store:
+  provider: [[.PluginName]]
+  options: {}
+
+plugins:
+  directories:
+    - ../bin
+
+export:
+  templates:
+    - name: json
+      builtin: json
+      output: ./output.json

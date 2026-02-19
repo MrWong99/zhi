@@ -1,0 +1,37 @@
+package plugin_test
+
+import (
+	"context"
+	"testing"
+
+	goplugin "github.com/hashicorp/go-plugin"
+
+	"[[.ZhiModule]]/pkg/zhiplugin/ui"
+
+	plugin "[[.ModulePath]]/pkg/plugin"
+)
+
+// dispense starts an in-process gRPC plugin server and returns a connected
+// ui.Plugin client. No subprocess is spawned.
+func dispense(t *testing.T) ui.Plugin {
+	t.Helper()
+	client, _ := goplugin.TestPluginGRPCConn(t, false, map[string]goplugin.Plugin{
+		"ui": &ui.GRPCPlugin{Impl: plugin.New()},
+	})
+	raw, err := client.Dispense("ui")
+	if err != nil {
+		t.Fatalf("Dispense: %v", err)
+	}
+	return raw.(ui.Plugin)
+}
+
+func TestCapabilities(t *testing.T) {
+	p := dispense(t)
+	caps, err := p.Capabilities(context.Background())
+	if err != nil {
+		t.Fatalf("Capabilities: %v", err)
+	}
+	if caps.RequiresTTY {
+		t.Error("RequiresTTY should be false for a non-terminal UI")
+	}
+}

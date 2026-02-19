@@ -1,0 +1,66 @@
+# [[.BinaryName]]
+
+[[.Description]]
+
+A [zhi](https://github.com/MrWong99/zhi) **[[.PluginType]]** plugin.
+
+## Building
+
+```bash
+# Build for the current platform
+make build
+
+# Cross-compile for all supported platforms
+make cross-compile
+
+# Run tests
+make test
+
+# Run all checks (format, vet, lint, test)
+make check
+```
+
+## Development
+
+The plugin implementation is in `pkg/plugin/plugin.go`. A sample workspace
+is provided in `workspace/` so you can test your plugin locally:
+
+```bash
+# Build the plugin
+make build
+
+# Run the workspace (requires zhi CLI)
+cd workspace
+zhi list
+zhi validate
+```
+
+## Publishing
+
+Build cross-platform binaries and publish to an OCI registry:
+
+```bash
+make cross-compile
+zhi plugin publish --registry [[if .Registry]][[.Registry]][[else]]ghcr.io/<your-org>[[end]]
+```
+
+Or push a version tag to trigger the GitHub Actions release workflow.
+
+## Project Structure
+
+```
+[[.BinaryName]]/
+├── cmd/[[.BinaryName]]/    # Plugin entry point
+│   └── main.go
+├── pkg/plugin/              # Plugin implementation
+│   ├── plugin.go
+│   └── plugin_test.go
+├── workspace/               # Sample workspace for local testing
+│   └── zhi.yaml
+├── .github/workflows/       # CI/CD
+│   └── release.yml
+├── Makefile                  # Build automation
+├── go.mod                   # Go module definition
+├── zhi-plugin.yaml          # Plugin manifest for publishing
+└── README.md
+```
