@@ -6,6 +6,9 @@
 package main
 
 import (
+	"os"
+
+	"github.com/hashicorp/go-hclog"
 	goplugin "github.com/hashicorp/go-plugin"
 
 	"github.com/MrWong99/zhi/pkg/providers/ui/webui"
@@ -14,6 +17,17 @@ import (
 )
 
 func main() {
+	level := hclog.LevelFromString(os.Getenv("ZHI_LOG_LEVEL"))
+	if level == hclog.NoLevel {
+		level = hclog.Info
+	}
+	logger := hclog.New(&hclog.LoggerOptions{
+		Name:   "zhi-ui-webui",
+		Level:  level,
+		Output: os.Stderr,
+	})
+	logger.Info("starting web UI plugin")
+
 	cfg := webui.DefaultConfig()
 	w := webui.New(cfg)
 
@@ -23,5 +37,6 @@ func main() {
 			"ui": &ui.GRPCPlugin{Impl: w},
 		},
 		GRPCServer: goplugin.DefaultGRPCServer,
+		Logger:     logger,
 	})
 }

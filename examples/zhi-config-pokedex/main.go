@@ -13,9 +13,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
 	"slices"
 	"sync"
 
+	"github.com/hashicorp/go-hclog"
 	goplugin "github.com/hashicorp/go-plugin"
 
 	"github.com/MrWong99/zhi/pkg/zhiplugin"
@@ -216,11 +218,23 @@ func validateGoal(v config.Value) ([]config.ValidationResult, error) {
 // --- main -----------------------------------------------------------------
 
 func main() {
+	level := hclog.LevelFromString(os.Getenv("ZHI_LOG_LEVEL"))
+	if level == hclog.NoLevel {
+		level = hclog.Info
+	}
+	logger := hclog.New(&hclog.LoggerOptions{
+		Name:   "zhi-config-pokedex",
+		Level:  level,
+		Output: os.Stderr,
+	})
+	logger.Info("starting pokedex config plugin")
+
 	goplugin.Serve(&goplugin.ServeConfig{
 		HandshakeConfig: zhiplugin.Handshake,
 		Plugins: map[string]goplugin.Plugin{
 			"config": &config.GRPCPlugin{Impl: newPokedexPlugin()},
 		},
 		GRPCServer: goplugin.DefaultGRPCServer,
+		Logger:     logger,
 	})
 }

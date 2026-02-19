@@ -49,6 +49,13 @@ type ExportResult struct {
 // given tree and component manager. The tree is filtered through the
 // ComponentManager unless AllComponents is set.
 func Export(_ context.Context, tree *TreeData, cfg ExportRunConfig) (*ExportResult, error) {
+	Logger().Debug("exporting configuration",
+		"format", cfg.Format,
+		"template", cfg.TemplatePath,
+		"output", cfg.OutputPath,
+		"prefix", cfg.Prefix,
+		"dry_run", cfg.DryRun)
+
 	var content string
 	var err error
 	var opts *exportFileOptions
@@ -94,6 +101,7 @@ func Export(_ context.Context, tree *TreeData, cfg ExportRunConfig) (*ExportResu
 
 // ExportAll runs all exports defined in the workspace configuration.
 func ExportAll(ctx context.Context, tree *TreeData, configs []ExportRunConfig) ([]*ExportResult, error) {
+	Logger().Info("running all exports", "count", len(configs))
 	results := make([]*ExportResult, 0, len(configs))
 	for _, cfg := range configs {
 		r, err := Export(ctx, tree, cfg)

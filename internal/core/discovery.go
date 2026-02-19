@@ -95,7 +95,11 @@ func Discover(cfg DiscoveryConfig) ([]PluginInfo, error) {
 		}
 	}
 
-	log.Debug("plugin discovery complete", "count", len(plugins))
+	if len(plugins) > 0 {
+		log.Info("plugin discovery complete", "count", len(plugins))
+	} else {
+		log.Debug("plugin discovery complete, no external plugins found")
+	}
 	return plugins, nil
 }
 

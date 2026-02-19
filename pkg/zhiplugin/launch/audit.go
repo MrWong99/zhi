@@ -4,10 +4,11 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
-	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/hashicorp/go-hclog"
 
 	"github.com/MrWong99/zhi/pkg/sharing/metadata"
 	"github.com/MrWong99/zhi/pkg/sharing/verify"
@@ -33,7 +34,7 @@ func validateBinaryPath(path string) (string, error) {
 // AuditBinary logs the SHA-256 hash of the plugin binary, warns if the file
 // is world-writable, and verifies the digest against the stored digest from
 // installation time. Returns an error if the integrity check fails.
-func AuditBinary(log *slog.Logger, path string) error {
+func AuditBinary(log hclog.Logger, path string) error {
 	info, err := os.Stat(path)
 	if err != nil {
 		return fmt.Errorf("cannot stat plugin binary %q: %w", path, err)
@@ -67,7 +68,7 @@ func AuditBinary(log *slog.Logger, path string) error {
 // stored in metadata during installation. Returns an error if the digests
 // do not match (indicating post-install tampering). Returns nil if no
 // stored digest is available (e.g., locally-built plugins).
-func verifyBinaryIntegrity(log *slog.Logger, path, computedHex string) error {
+func verifyBinaryIntegrity(log hclog.Logger, path, computedHex string) error {
 	name := PluginNameFromPath(path)
 	if name == "" {
 		return nil // Not an installed shared plugin.

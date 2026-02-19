@@ -3,11 +3,12 @@ package core
 import (
 	"bytes"
 	"context"
-	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/hashicorp/go-hclog"
 
 	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
 )
@@ -174,8 +175,8 @@ func TestAuditPluginBinaryWorldWritable(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	SetLogOutput(&buf, slog.LevelWarn)
-	defer SetLogLevel(slog.LevelWarn) // restore
+	SetLogOutput(&buf, hclog.Warn)
+	defer SetLogLevel(hclog.Warn) // restore
 
 	auditPluginBinary(binPath)
 
@@ -192,8 +193,8 @@ func TestAuditPluginBinaryNonWorldWritable(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	SetLogOutput(&buf, slog.LevelWarn)
-	defer SetLogLevel(slog.LevelWarn) // restore
+	SetLogOutput(&buf, hclog.Warn)
+	defer SetLogLevel(hclog.Warn) // restore
 
 	auditPluginBinary(binPath)
 
@@ -210,8 +211,8 @@ func TestAuditPluginBinaryLogsHash(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	SetLogOutput(&buf, slog.LevelInfo)
-	defer SetLogLevel(slog.LevelWarn) // restore
+	SetLogOutput(&buf, hclog.Info)
+	defer SetLogLevel(hclog.Warn) // restore
 
 	auditPluginBinary(binPath)
 
@@ -468,27 +469,27 @@ func TestExportDryRunDoesNotWriteSecurityCheck(t *testing.T) {
 
 func TestSetLogLevel(t *testing.T) {
 	// Just verify it doesn't panic.
-	SetLogLevel(slog.LevelDebug)
+	SetLogLevel(hclog.Debug)
 	Logger().Debug("test debug")
-	SetLogLevel(slog.LevelWarn) // restore
+	SetLogLevel(hclog.Warn) // restore
 }
 
 func TestSetLogOutput(t *testing.T) {
 	var buf bytes.Buffer
-	SetLogOutput(&buf, slog.LevelInfo)
+	SetLogOutput(&buf, hclog.Info)
 	Logger().Info("test message")
 	if !strings.Contains(buf.String(), "test message") {
 		t.Errorf("expected log output to contain 'test message', got: %s", buf.String())
 	}
-	SetLogLevel(slog.LevelWarn) // restore
+	SetLogLevel(hclog.Warn) // restore
 }
 
 // --- Discovery Path Traversal Tests ---
 
 func TestDiscoveryRejectsPathTraversal(t *testing.T) {
 	var buf bytes.Buffer
-	SetLogOutput(&buf, slog.LevelWarn)
-	defer SetLogLevel(slog.LevelWarn) // restore
+	SetLogOutput(&buf, hclog.Warn)
+	defer SetLogLevel(hclog.Warn) // restore
 
 	plugins, err := Discover(DiscoveryConfig{
 		Directories: []string{"../../etc/evil"},

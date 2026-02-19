@@ -22,6 +22,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/hashicorp/go-hclog"
 	goplugin "github.com/hashicorp/go-plugin"
 
 	"github.com/MrWong99/zhi/pkg/zhiplugin"
@@ -517,11 +518,23 @@ func writeError(w http.ResponseWriter, status int, err error) {
 }
 
 func main() {
+	level := hclog.LevelFromString(os.Getenv("ZHI_LOG_LEVEL"))
+	if level == hclog.NoLevel {
+		level = hclog.Info
+	}
+	logger := hclog.New(&hclog.LoggerOptions{
+		Name:   "zhi-ui-httpapi",
+		Level:  level,
+		Output: os.Stderr,
+	})
+	logger.Info("starting HTTP API UI plugin")
+
 	goplugin.Serve(&goplugin.ServeConfig{
 		HandshakeConfig: zhiplugin.Handshake,
 		Plugins: map[string]goplugin.Plugin{
 			"ui": &ui.GRPCPlugin{Impl: newHTTPUI()},
 		},
 		GRPCServer: goplugin.DefaultGRPCServer,
+		Logger:     logger,
 	})
 }

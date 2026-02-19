@@ -80,6 +80,7 @@ func (r *Registry) RegisterConfig(name string, factory ConfigFactory) error {
 		return fmt.Errorf("config provider %q already registered", name)
 	}
 	r.config[name] = factory
+	Logger().Debug("registered config provider", "name", name)
 	return nil
 }
 
@@ -90,6 +91,7 @@ func (r *Registry) RegisterTransform(name string, factory TransformFactory) erro
 		return fmt.Errorf("transform provider %q already registered", name)
 	}
 	r.transform[name] = factory
+	Logger().Debug("registered transform provider", "name", name)
 	return nil
 }
 
@@ -100,6 +102,7 @@ func (r *Registry) RegisterStore(name string, factory StoreFactory) error {
 		return fmt.Errorf("store provider %q already registered", name)
 	}
 	r.store[name] = factory
+	Logger().Debug("registered store provider", "name", name)
 	return nil
 }
 
@@ -110,6 +113,7 @@ func (r *Registry) RegisterUI(name string, factory UIFactory) error {
 		return fmt.Errorf("UI provider %q already registered", name)
 	}
 	r.ui[name] = factory
+	Logger().Debug("registered UI provider", "name", name)
 	return nil
 }
 
@@ -117,25 +121,37 @@ func (r *Registry) RegisterUI(name string, factory UIFactory) error {
 // Built-in providers take precedence. If no built-in is found, discovered
 // external plugins are checked and launched lazily.
 func (r *Registry) ConfigProvider(workspace, name string, options map[string]any) (config.Plugin, error) {
+	log := Logger()
+	log.Info("resolving config provider", "name", name)
 	if factory, ok := r.config[name]; ok {
+		log.Debug("config provider is built-in", "name", name)
 		return factory(workspace, options)
 	}
+	log.Debug("config provider is external", "name", name)
 	return r.launchExternalConfig(name)
 }
 
 // TransformProvider resolves and instantiates a transform provider by name.
 func (r *Registry) TransformProvider(workspace, name string, options map[string]any) (transform.Plugin, error) {
+	log := Logger()
+	log.Info("resolving transform provider", "name", name)
 	if factory, ok := r.transform[name]; ok {
+		log.Debug("transform provider is built-in", "name", name)
 		return factory(workspace, options)
 	}
+	log.Debug("transform provider is external", "name", name)
 	return r.launchExternalTransform(name)
 }
 
 // StoreProvider resolves and instantiates a store provider by name.
 func (r *Registry) StoreProvider(workspace, name string, options map[string]any) (store.Plugin, error) {
+	log := Logger()
+	log.Info("resolving store provider", "name", name)
 	if factory, ok := r.store[name]; ok {
+		log.Debug("store provider is built-in", "name", name)
 		return factory(workspace, options)
 	}
+	log.Debug("store provider is external", "name", name)
 	return r.launchExternalStore(name)
 }
 
@@ -143,9 +159,13 @@ func (r *Registry) StoreProvider(workspace, name string, options map[string]any)
 // Built-in providers take precedence. If no built-in is found, discovered
 // external plugins are checked and launched lazily.
 func (r *Registry) UIProvider(workspace, name string, options map[string]any) (zhiui.Plugin, error) {
+	log := Logger()
+	log.Info("resolving UI provider", "name", name)
 	if factory, ok := r.ui[name]; ok {
+		log.Debug("UI provider is built-in", "name", name)
 		return factory(workspace, options)
 	}
+	log.Debug("UI provider is external", "name", name)
 	return r.launchExternalUI(name)
 }
 
@@ -231,6 +251,7 @@ func (r *Registry) RefreshExternal(cfg DiscoveryConfig) error {
 	r.mu.Lock()
 	r.externalPlugins = plugins
 	r.mu.Unlock()
+	Logger().Info("refreshed external plugins", "count", len(plugins))
 	return nil
 }
 
@@ -244,6 +265,7 @@ func (r *Registry) SetExternalPlugins(plugins []PluginInfo) {
 
 // Close kills all launched external plugin processes and clears caches.
 func (r *Registry) Close() {
+	Logger().Info("closing registry", "cleanups", len(r.cleanups))
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	for _, cleanup := range r.cleanups {
@@ -258,11 +280,14 @@ func (r *Registry) Close() {
 
 // launchExternalConfig finds and launches an external config plugin.
 func (r *Registry) launchExternalConfig(name string) (config.Plugin, error) {
+	log := Logger()
+	log.Info("launching external config plugin", "name", name)
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	// Check cache first.
 	if p, ok := r.cachedConfig[name]; ok {
+		log.Debug("using cached config plugin", "name", name)
 		return p, nil
 	}
 
@@ -279,15 +304,19 @@ func (r *Registry) launchExternalConfig(name string) (config.Plugin, error) {
 
 	r.cachedConfig[name] = p
 	r.cleanups = append(r.cleanups, cleanup)
+	log.Info("successfully launched external config plugin", "name", name, "path", info.Path)
 	return p, nil
 }
 
 // launchExternalTransform finds and launches an external transform plugin.
 func (r *Registry) launchExternalTransform(name string) (transform.Plugin, error) {
+	log := Logger()
+	log.Info("launching external transform plugin", "name", name)
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	if p, ok := r.cachedTransform[name]; ok {
+		log.Debug("using cached transform plugin", "name", name)
 		return p, nil
 	}
 
@@ -303,15 +332,19 @@ func (r *Registry) launchExternalTransform(name string) (transform.Plugin, error
 
 	r.cachedTransform[name] = p
 	r.cleanups = append(r.cleanups, cleanup)
+	log.Info("successfully launched external transform plugin", "name", name, "path", info.Path)
 	return p, nil
 }
 
 // launchExternalStore finds and launches an external store plugin.
 func (r *Registry) launchExternalStore(name string) (store.Plugin, error) {
+	log := Logger()
+	log.Info("launching external store plugin", "name", name)
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	if p, ok := r.cachedStore[name]; ok {
+		log.Debug("using cached store plugin", "name", name)
 		return p, nil
 	}
 
@@ -327,15 +360,19 @@ func (r *Registry) launchExternalStore(name string) (store.Plugin, error) {
 
 	r.cachedStore[name] = p
 	r.cleanups = append(r.cleanups, cleanup)
+	log.Info("successfully launched external store plugin", "name", name, "path", info.Path)
 	return p, nil
 }
 
 // launchExternalUI finds and launches an external UI plugin.
 func (r *Registry) launchExternalUI(name string) (zhiui.Plugin, error) {
+	log := Logger()
+	log.Info("launching external UI plugin", "name", name)
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	if p, ok := r.cachedUI[name]; ok {
+		log.Debug("using cached UI plugin", "name", name)
 		return p, nil
 	}
 
@@ -351,6 +388,7 @@ func (r *Registry) launchExternalUI(name string) (zhiui.Plugin, error) {
 
 	r.cachedUI[name] = p
 	r.cleanups = append(r.cleanups, cleanup)
+	log.Info("successfully launched external UI plugin", "name", name, "path", info.Path)
 	return p, nil
 }
 
