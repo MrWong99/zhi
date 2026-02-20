@@ -129,9 +129,12 @@ The [`examples/`](../../examples/) directory contains working reference implemen
 | [zhi-transform-pokedex](../../examples/zhi-transform-pokedex/) | Transform | Tree mutation, value mapping |
 | [zhi-store-json](../../examples/zhi-store-json/) | Store | File-based persistence |
 | [zhi-store-memory](../../examples/zhi-store-memory/) | Store | Minimal in-memory store |
-| [zhi-ui-httpapi](../../examples/zhi-ui-httpapi/) | UI | HTTP/JSON API with SSE streaming |
-| [zhi-config-javabean](../../examples/zhi-config-javabean/) | Config | Java bean with Bean Validation, GraalVM native-image |
+| [zhi-store-vault](../../examples/zhi-store-vault/) | Store | HashiCorp Vault KV v2 backend |
 | [zhi-store-mirror](../../examples/zhi-store-mirror/) | Store (meta) | Meta-plugin: mirrors writes to memory + JSON file |
+| [zhi-ui-httpapi](../../examples/zhi-ui-httpapi/) | UI | HTTP/JSON API with SSE streaming |
+| [zhi-ui-mcp-sse](../../examples/zhi-ui-mcp-sse/) | UI | MCP server over HTTP for LLM clients |
+| [zhi-ui-webui](../../examples/zhi-ui-webui/) | UI | Browser-based Web UI |
+| [zhi-config-javabean](../../examples/zhi-config-javabean/) | Config | Java bean with Bean Validation, GraalVM native-image |
 
 All Go examples are published as OCI artifacts to `ghcr.io/mrwong99/zhi/` on every release and can be installed with `zhi plugin install oci://ghcr.io/mrwong99/zhi/<plugin-name>:<tag>`. See the [Sharing and Registries guide](../user-guide/sharing-and-registries.md#official-plugin-registry) for the full list.
 

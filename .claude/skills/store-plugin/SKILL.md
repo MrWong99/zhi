@@ -45,8 +45,8 @@ package main
 
 import (
     goplugin "github.com/hashicorp/go-plugin"
-    "github.com/itsluketwist/zhi/pkg/zhiplugin"
-    "github.com/itsluketwist/zhi/pkg/zhiplugin/store"
+    "github.com/MrWong99/zhi/pkg/zhiplugin"
+    "github.com/MrWong99/zhi/pkg/zhiplugin/store"
 )
 
 func main() {

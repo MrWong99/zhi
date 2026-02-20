@@ -144,7 +144,7 @@ Each plugin type has `grpc_client.go` (host-side) and `grpc_server.go` (plugin-s
 - `pkg/providers/` -- built-in provider implementations (structuredfile config, vault store)
 - `pkg/sharing/` -- plugin distribution: manifests, lockfiles, OCI client, verification, marketplace
 - `api/proto/zhiplugin/v1/` -- protobuf service definitions
-- `examples/` -- working plugin examples (pokedex config, memory/json/vault stores, transform, HTTP API UI, store mirror meta-plugin)
+- `examples/` -- working plugin examples (pokedex config, memory/json/vault stores, transform, HTTP API UI, MCP SSE UI, Web UI, store mirror meta-plugin, Java bean config)
 - `docs/user-guide/` -- end-user documentation
 - `docs/plugin-development/` -- plugin developer documentation
 - `docs/design/` -- design documents (e.g., metadata-labels API)

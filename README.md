@@ -3,37 +3,39 @@
 # zhi
 
 [![Go](https://img.shields.io/badge/Go-1.26+-00ADD8?style=flat&logo=go)](https://go.dev)
+[![Go Reference](https://pkg.go.dev/badge/github.com/MrWong99/zhi.svg)](https://pkg.go.dev/github.com/MrWong99/zhi)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
 
 **zhi** is a modern platform for **configuration management** and **provisioning**.
-It provides an extensible plugin system that automatically generates a user-friendly terminal UI, while keeping all configurations **secure by default**.
+It gives you an extensible plugin system that auto-generates a friendly terminal UI, while keeping all your configs **secure by default**. Think of it as *"Vault meets Terraform, but for your app config"*. 🔐
 
-Core principles:
+### 🎯 Core Principles
 
-1. **Configuration & Validation** -- structured, validated settings that prevent misconfiguration before deployment.
-2. **Secure Storage** -- encrypted at rest, ensuring confidentiality and compliance without extra setup.
-3. **Modularity** -- built around an extensible plugin system, enabling support for multiple provisioning backends (Docker Compose, Kubernetes, Helm, and beyond).
-
----
-
-## Features
-
-- **Encrypted configuration at rest** -- store plugin layer supports encryption and key rotation
-- **Automatic validation** -- config plugins define validation rules, including cross-value checks
-- **Plugin-based extensibility** -- [gRPC-based plugin system](https://github.com/hashicorp/go-plugin) with four plugin types (config, transform, store, UI) and a [meta-plugin SDK](docs/plugin-development/meta-plugin.md) for composing plugins
-- **Auto-generated TUI** -- interactive terminal interface built with [Bubbletea](https://github.com/charmbracelet/bubbletea)
-- **MCP server** -- expose configuration management to LLM clients (Claude Desktop, Claude Code, Cursor) via the [Model Context Protocol](https://modelcontextprotocol.io)
-- **Component model** -- group configuration into toggleable bundles with dependencies
-- **Template-based exports** -- render configuration to JSON, YAML, TOML, dotenv, or custom templates
-- **Provisioning** -- trigger external commands (Docker Compose, kubectl, Ansible, etc.) with exported configuration
-- **Plugin sharing** -- [install, update, and publish](docs/user-guide/sharing-and-registries.md) plugins via OCI registries with signature verification, version pinning, rollback, and binary integrity checks
-- **Marketplace** -- search and rate plugins, verified publisher program, vulnerability advisories
-- **Enterprise mirror** -- [`zhi-mirror`](docs/user-guide/enterprise-mirror.md) provides a local OCI pull-through cache with policy controls, audit logging, and air-gapped export/import
+1. **🛡️ Configuration & Validation** -- structured, validated settings that catch misconfigurations before they reach production.
+2. **🔐 Secure Storage** -- encrypted at rest, so confidentiality and compliance come out of the box.
+3. **🧩 Modularity** -- an extensible plugin system that supports multiple provisioning backends (Docker Compose, Kubernetes, Helm, and beyond).
 
 ---
 
-## Getting Started
+## ✨ Features
+
+- **🔒 Encrypted configuration at rest** -- store plugin layer supports encryption and key rotation
+- **✅ Automatic validation** -- config plugins define validation rules, including cross-value checks
+- **🔌 Plugin-based extensibility** -- [gRPC-based plugin system](https://github.com/hashicorp/go-plugin) with four plugin types (config, transform, store, UI) and a [meta-plugin SDK](docs/plugin-development/meta-plugin.md) for composing plugins
+- **💻 Auto-generated TUI** -- interactive terminal interface built with [Bubbletea](https://github.com/charmbracelet/bubbletea)
+- **🌐 Web UI** -- browser-based editor served on localhost for a richer editing experience
+- **🤖 MCP server** -- expose configuration management to LLM clients (Claude Desktop, Claude Code, Cursor) via the [Model Context Protocol](https://modelcontextprotocol.io)
+- **📦 Component model** -- group configuration into toggleable bundles with dependencies
+- **📄 Template-based exports** -- render configuration to JSON, YAML, TOML, dotenv, or custom templates
+- **🚀 Provisioning** -- trigger external commands (Docker Compose, kubectl, Ansible, etc.) with exported configuration
+- **📡 Plugin sharing** -- [install, update, and publish](docs/user-guide/sharing-and-registries.md) plugins via OCI registries with signature verification, version pinning, rollback, and binary integrity checks
+- **🏪 Marketplace** -- search and rate plugins, verified publisher program, vulnerability advisories
+- **🏢 Enterprise mirror** -- [`zhi-mirror`](docs/user-guide/enterprise-mirror.md) provides a local OCI pull-through cache with policy controls, audit logging, and air-gapped export/import
+
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
 
@@ -67,7 +69,7 @@ cd zhi
 make build
 ```
 
-The binary is placed in `bin/`.
+The binary lands in `bin/`. You're ready to roll! 🎉
 
 ### Quick Start
 
@@ -94,17 +96,17 @@ zhi export --format json
 zhi edit
 ```
 
-### Interactive TUI Editor
+### 💻 Interactive TUI Editor
 
 ![zhi edit tui](assets/tui.gif)
 
-### Web UI Editor
+### 🌐 Web UI Editor
 
 ![zhi edit webui](assets/webui.png)
 
-### MCP Server (for LLM Clients)
+### 🤖 MCP Server (for LLM Clients)
 
-zhi includes built-in MCP (Model Context Protocol) support, allowing LLM clients like Claude Desktop, Claude Code, and Cursor to manage configurations programmatically.
+zhi includes built-in MCP (Model Context Protocol) support, allowing LLM clients like Claude Desktop, Claude Code, and Cursor to manage configurations programmatically. Your AI assistant can now tweak your configs -- what a time to be alive!
 
 **Stdio transport** (recommended for local use):
 
@@ -128,7 +130,7 @@ Configure in Claude Desktop's `claude_desktop_config.json`:
 
 **HTTP transport** (for remote/network access): install the `zhi-ui-mcp-sse` external plugin. See [`examples/zhi-ui-mcp-sse/`](examples/zhi-ui-mcp-sse/).
 
-### Components
+### 📦 Components
 
 Components group related configuration into named bundles that users can toggle:
 
@@ -145,7 +147,7 @@ zhi component disable monitoring
 
 Components defined in `zhi.yaml` control which paths appear in exports and the TUI. See the [Components guide](docs/user-guide/components.md) for details.
 
-### Verbose / Debug Logging
+### 🔍 Verbose / Debug Logging
 
 Pass `--verbose` to any command to enable debug-level logging to stderr:
 
@@ -155,7 +157,7 @@ zhi validate --verbose
 
 ---
 
-## User Guide
+## 📚 User Guide
 
 Detailed documentation for using zhi:
 
@@ -167,13 +169,15 @@ Detailed documentation for using zhi:
 - [Apply](docs/user-guide/apply.md) -- running provisioning commands
 - [Plugin Discovery](docs/user-guide/plugin-discovery.md) -- discovering and using external plugins
 - [Sharing and Registries](docs/user-guide/sharing-and-registries.md) -- installing, publishing, and updating plugins via OCI registries
+- [Marketplace Indexing](docs/user-guide/marketplace-indexing.md) -- adding plugins to the marketplace search index
 - [Enterprise Mirror](docs/user-guide/enterprise-mirror.md) -- local OCI mirror for air-gapped environments
+- [Web UI](docs/user-guide/web-ui.md) -- browser-based configuration editor
 
 ---
 
-## Plugin Development
+## 🔌 Plugin Development
 
-zhi's plugin system supports four types: **config**, **transform**, **store**, and **UI**. Plugins are separate binaries communicating over gRPC.
+zhi's plugin system supports four types: **config**, **transform**, **store**, and **UI**. Plugins are separate binaries communicating over gRPC -- so they can be written in any language that speaks gRPC.
 
 - [Plugin Development Overview](docs/plugin-development/overview.md) -- shared concepts, binary structure, testing
 - [Config Plugin API](docs/plugin-development/config-plugin.md) -- manage configuration values
@@ -182,22 +186,25 @@ zhi's plugin system supports four types: **config**, **transform**, **store**, a
 - [UI Plugin API](docs/plugin-development/ui-plugin.md) -- provide interactive frontends
 - [Meta-Plugin SDK](docs/plugin-development/meta-plugin.md) -- launch, delegate, and compose child plugins
 - [Structured File Provider](docs/plugin-development/structuredfile-provider.md) -- built-in file-based config provider
+- [Java Plugin Development](docs/plugin-development/java-plugin.md) -- build plugins in Java with GraalVM
+- [Plugin Scaffolding](docs/plugin-development/scaffolding.md) -- generate a new plugin project with `zhi plugin new`
 
-### Examples
+### 🧪 Examples
 
-The [`examples/`](examples/) directory contains fully working plugins you can build and experiment with:
+The [`examples/`](examples/) directory contains fully working plugins you can build and experiment with. Go ahead, break things -- that's what examples are for! 🔬
 
 | Example | Type | What it demonstrates |
 |---------|------|---------------------|
-| [zhi-config-pokedex](examples/zhi-config-pokedex/) | Config | Typed values, metadata, validation |
+| [zhi-config-pokedex](examples/zhi-config-pokedex/) | Config | Typed values, metadata, validation -- gotta validate 'em all! |
 | [zhi-transform-pokedex](examples/zhi-transform-pokedex/) | Transform | Tree mutation, value mapping |
 | [zhi-store-json](examples/zhi-store-json/) | Store | File-based persistence |
 | [zhi-store-memory](examples/zhi-store-memory/) | Store | Minimal in-memory store |
 | [zhi-store-vault](examples/zhi-store-vault/) | Store | HashiCorp Vault KV v2 backend |
+| [zhi-store-mirror](examples/zhi-store-mirror/) | Store (meta) | Meta-plugin: mirrors writes to memory + JSON file |
 | [zhi-ui-httpapi](examples/zhi-ui-httpapi/) | UI | HTTP/JSON API with SSE streaming |
 | [zhi-ui-mcp-sse](examples/zhi-ui-mcp-sse/) | UI | MCP server over HTTP for LLM clients |
+| [zhi-ui-webui](examples/zhi-ui-webui/) | UI | Browser-based Web UI |
 | [zhi-config-javabean](examples/zhi-config-javabean/) | Config | Java plugin with Bean Validation and GraalVM native-image |
-| [zhi-store-mirror](examples/zhi-store-mirror/) | Store (meta) | Meta-plugin: mirrors writes to memory + JSON file |
 
 All Go example plugins are published to the GitHub Container Registry on every release and can be installed directly:
 
@@ -217,7 +224,7 @@ See the [examples README](examples/README.md) for more details.
 
 ---
 
-## Enterprise Mirror (`zhi-mirror`)
+## 🏢 Enterprise Mirror (`zhi-mirror`)
 
 For enterprise and air-gapped environments, `zhi-mirror` provides a local registry mirror with:
 
@@ -243,13 +250,11 @@ Clients point to the mirror by setting `sharing.defaultRegistry` in `~/.zhi/conf
 
 ---
 
-## Contributing
+## 🤝 Contributing
 
-Contributions are welcome -- whether it's a bug fix, a new plugin idea, or
-improving documentation. Every contribution helps zhi evolve.
+Contributions are welcome -- whether it's a bug fix, a new plugin idea, or improving documentation. Every contribution helps zhi evolve. ❤️
 
-Please read the [Contributing Guide](CONTRIBUTING.md) to get started. The
-short version:
+Please read the [Contributing Guide](CONTRIBUTING.md) to get started. The short version:
 
 ```sh
 git clone https://github.com/MrWong99/zhi.git
@@ -262,18 +267,16 @@ Before opening a pull request, make sure `make check` passes.
 
 ---
 
-## Community
+## 🌍 Community
 
-- [**Code of Conduct**](CODE_OF_CONDUCT.md) -- how we treat each other
-  (tl;dr: be a good Trainer)
+- [**Code of Conduct**](CODE_OF_CONDUCT.md) -- how we treat each other (tl;dr: be excellent to each other 🤙)
 - [**Contributing Guide**](CONTRIBUTING.md) -- setup, workflow, and code style
 - [**Security Policy**](SECURITY.md) -- how to report vulnerabilities
-- [**Issue Templates**](.github/ISSUE_TEMPLATE/) -- bug reports, feature
-  requests, and plugin ideas
+- [**Issue Templates**](.github/ISSUE_TEMPLATE/) -- bug reports, feature requests, and plugin ideas
 
 ---
 
-## The Origin of the Name
+## 🀄 The Origin of the Name
 
 <img src="assets/logo.png" alt="zhi logo" width="200" align="right" />
 
@@ -287,6 +290,6 @@ to **arrange systems securely**, with **wisdom in design**, while remaining **fl
 
 ---
 
-## License
+## 📜 License
 
 [MIT](LICENSE) -- Copyright (c) 2025 Lukas Schmidt
