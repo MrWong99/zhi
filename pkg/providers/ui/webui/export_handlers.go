@@ -103,7 +103,7 @@ func (s *Server) handleExport(w http.ResponseWriter, r *http.Request) {
 		}
 		b, _ := json.Marshal(map[string]any{"showNotification": notif})
 		w.Header().Set("HX-Trigger", string(b))
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 

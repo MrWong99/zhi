@@ -74,8 +74,8 @@ vault-auth:
       ui.section: "Authentication"
       ui.displayName: "Admin Password"
       ui.placeholder: "Enter a strong password"
-      ui.password: "true"
-      config.required: "true"
+      ui.password: true
+      config.required: true
       core.description: "Password for the initial admin user. Will be deleted from exported files after apply."
     imports:
       - strings

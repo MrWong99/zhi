@@ -1117,14 +1117,15 @@ func TestExportExecution(t *testing.T) {
 	token, cookies := getCSRFToken(t, base)
 
 	resp := postWithCSRF(t, base+"/export", "format=json&output=/tmp/test.json", token, cookies)
-	body := bodyString(t, resp)
+	resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("status = %d, want 200; body = %s", resp.StatusCode, body)
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
 	}
-	if !strings.Contains(body, "export-result") {
-		t.Error("export response should contain export-result class")
+	trigger := resp.Header.Get("HX-Trigger")
+	if !strings.Contains(trigger, "showNotification") {
+		t.Error("export should trigger showNotification")
 	}
-	if !strings.Contains(body, "success") {
+	if !strings.Contains(trigger, "success") {
 		t.Error("export result should indicate success")
 	}
 }
@@ -2017,11 +2018,12 @@ func TestExportError(t *testing.T) {
 	base, _ := startTestServerWithCtrl(t, ctrl)
 	token, cookies := getCSRFToken(t, base)
 	resp := postWithCSRF(t, base+"/export", "format=json", token, cookies)
-	body := bodyString(t, resp)
+	resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d, want 200", resp.StatusCode)
 	}
-	if !strings.Contains(body, "export failed") {
+	trigger := resp.Header.Get("HX-Trigger")
+	if !strings.Contains(trigger, "export failed") {
 		t.Error("export result should contain error message")
 	}
 }
