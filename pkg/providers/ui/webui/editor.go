@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
+	"github.com/MrWong99/zhi/pkg/zhiplugin/labels"
 	"github.com/MrWong99/zhi/pkg/zhiplugin/ui"
 )
 
@@ -56,10 +57,6 @@ func (s *Server) handleSaveValue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rawValue := r.FormValue("value")
-	valType := r.FormValue("value_type")
-	val := parseFormValue(rawValue, valType)
-
 	tree, err := s.ctrl.LoadTree(ctx)
 	if err != nil {
 		http.Error(w, "failed to load tree", http.StatusInternalServerError)
@@ -68,6 +65,17 @@ func (s *Server) handleSaveValue(w http.ResponseWriter, r *http.Request) {
 
 	// Preserve existing metadata.
 	existing, _ := tree.Get(path)
+
+	// Reject edits to readonly or immutable values.
+	if labels.IsReadonly(existing.Metadata) || labels.IsImmutable(existing.Metadata) {
+		http.Error(w, "this value is read-only", http.StatusForbidden)
+		return
+	}
+
+	rawValue := r.FormValue("value")
+	valType := r.FormValue("value_type")
+	val := parseFormValue(rawValue, valType)
+
 	newValue := config.Value{
 		Val:      val,
 		Metadata: existing.Metadata,
@@ -98,7 +106,8 @@ func (s *Server) handleSaveValue(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Success: return display mode and mark unsaved.
-	w.Header().Set("HX-Trigger", `{"markUnsaved": true}`)
+	// Also trigger valueChanged so tree content can refresh (for showIf visibility).
+	w.Header().Set("HX-Trigger", `{"markUnsaved": true, "valueChanged": true}`)
 	ed := newEditorData(path, newValue, compMap)
 	if err := s.engine.renderFragment(w, "value_display", ed); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -189,6 +198,7 @@ type editorData struct {
 	Path              string
 	PathID            string
 	Name              string
+	DisplayName       string // ui.displayName: human-readable name shown instead of raw path segment
 	DisplayValue      string
 	EditValue         string
 	ValueType         string
@@ -196,8 +206,23 @@ type editorData struct {
 	ComponentEnabled  bool
 	Metadata          map[string]any
 	IsMultiline       bool
-	Options           []string
-	Placeholder       string
+	Options           []string // ui.enum: allowed values for dropdown
+	Placeholder       string   // ui.placeholder
+	IsReadonly        bool     // ui.readonly or config.immutable
+	IsPassword        bool     // ui.password: mask input
+	IsRequired        bool     // config.required
+	IsDeprecated      bool     // core.deprecated is set
+	DeprecatedMsg     string   // core.deprecated message text
+	ShouldConfirm     bool     // ui.confirm: require confirmation before save
+	Pattern           string   // ui.pattern: regex for input validation
+	Description       string   // core.description
+	DocURL            string   // core.doc: link to documentation
+	SemanticType      string   // core.type: email, url, hostname, etc.
+	Unit              string   // core.unit: seconds, MB, percent, etc.
+	Example           string   // core.example
+	Format            string   // ui.format: json, yaml, code, etc.
+	Section           string   // ui.section
+	Group             string   // ui.group
 	Error             string
 	ValidationResults []validationItem
 }
@@ -211,6 +236,8 @@ func newEditorData(path string, value config.Value, compMap map[string]ui.Compon
 	segments := strings.Split(path, "/")
 	name := segments[len(segments)-1]
 
+	meta := value.Metadata
+
 	ed := editorData{
 		Path:         path,
 		PathID:       pathToID(path),
@@ -218,7 +245,7 @@ func newEditorData(path string, value config.Value, compMap map[string]ui.Compon
 		DisplayValue: formatValue(value.Val),
 		EditValue:    formatEditValue(value.Val),
 		ValueType:    valueType(value.Val),
-		Metadata:     value.Metadata,
+		Metadata:     meta,
 	}
 
 	// Component ownership.
@@ -227,19 +254,40 @@ func newEditorData(path string, value config.Value, compMap map[string]ui.Compon
 		ed.ComponentEnabled = comp.Enabled
 	}
 
-	// Extract metadata hints.
-	if value.Metadata != nil {
-		if p, ok := value.Metadata["ui.placeholder"].(string); ok {
-			ed.Placeholder = p
-		}
-		if _, ok := value.Metadata["ui.multiline"]; ok {
-			ed.IsMultiline = true
-		}
-		if opts, ok := value.Metadata["ui.options"].([]any); ok {
-			for _, o := range opts {
-				ed.Options = append(ed.Options, fmt.Sprintf("%v", o))
-			}
-		}
+	// Extract all metadata labels using the labels helpers.
+	ed.DisplayName = labels.GetDisplayName(meta)
+	ed.Placeholder = labels.GetPlaceholder(meta)
+	ed.IsMultiline = labels.IsMultiline(meta)
+	ed.IsReadonly = labels.IsReadonly(meta) || labels.IsImmutable(meta)
+	ed.IsPassword = labels.IsPassword(meta)
+	ed.IsRequired = labels.IsRequired(meta)
+	ed.ShouldConfirm = labels.ShouldConfirm(meta)
+	ed.Pattern = labels.GetPattern(meta)
+	ed.Description = labels.GetDescription(meta)
+	ed.DocURL = labels.GetDocURL(meta)
+	ed.SemanticType = labels.GetSemanticType(meta)
+	ed.Unit = labels.GetString(meta, labels.LabelCoreUnit, "")
+	ed.Format = labels.GetString(meta, labels.LabelUIFormat, "")
+	ed.Section = labels.GetSection(meta)
+	ed.Group = labels.GetGroup(meta)
+
+	// core.deprecated
+	ed.DeprecatedMsg = labels.GetString(meta, labels.LabelCoreDeprecated, "")
+	ed.IsDeprecated = ed.DeprecatedMsg != ""
+
+	// core.example
+	if ex, ok := labels.GetAny(meta, labels.LabelCoreExample); ok {
+		ed.Example = fmt.Sprintf("%v", ex)
+	}
+
+	// ui.enum: dropdown options.
+	if enumOpts := labels.GetEnum(meta); len(enumOpts) > 0 {
+		ed.Options = enumOpts
+	}
+
+	// Password values: mask display.
+	if ed.IsPassword {
+		ed.DisplayValue = "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
 	}
 
 	// Multiline detection: strings with newlines.

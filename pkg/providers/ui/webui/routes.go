@@ -113,13 +113,14 @@ func (s *Server) handleTree(w http.ResponseWriter, r *http.Request) {
 
 	filter := r.URL.Query().Get("filter")
 
-	// Apply filter if present.
+	// Apply filter if present. Keep a reference to the full tree
+	// so buildNestedTree can evaluate ui.showIf conditions.
 	var reader config.TreeReader = tree
 	if filter != "" {
 		reader = filterTree(tree, filter)
 	}
 
-	nodes := buildNestedTree(reader, components)
+	nodes := buildNestedTree(reader, tree, components)
 
 	data := pageData{
 		WorkspaceName: wsName,

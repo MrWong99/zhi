@@ -3,16 +3,31 @@
   <form class="editor-form"
         hx-post="/tree/values/{{.Path}}"
         hx-target="#tree-value-{{.PathID}}"
-        hx-swap="outerHTML">
+        hx-swap="outerHTML"
+        {{if .ShouldConfirm}}hx-confirm="Are you sure you want to change this value?"{{end}}>
     <div class="editor-header">
       <span class="leaf-icon">&#9679;</span>
-      <span class="leaf-name">{{.Name}}</span>
+      <span class="leaf-name{{if .IsDeprecated}} deprecated-text{{end}}">{{if .DisplayName}}{{.DisplayName}}{{else}}{{.Name}}{{end}}</span>
+      {{if .IsReadonly}}<span class="badge badge-readonly">readonly</span>{{end}}
+      {{if .IsRequired}}<span class="badge badge-required">required</span>{{end}}
+      {{if .IsPassword}}<span class="badge badge-password">password</span>{{end}}
+      {{if .IsDeprecated}}<span class="badge badge-deprecated">deprecated</span>{{end}}
       {{if .Component}}
         <span class="badge badge-primary tree-component-badge{{if not .ComponentEnabled}} disabled{{end}}">{{.Component}}</span>
       {{end}}
+      {{if .Group}}<span class="badge badge-group">{{.Group}}</span>{{end}}
     </div>
+    {{if .Description}}
+      <div class="editor-description">{{.Description}}</div>
+    {{end}}
+    {{if .IsDeprecated}}
+      <div class="editor-deprecated-warning">Deprecated: {{.DeprecatedMsg}}</div>
+    {{end}}
     <input type="hidden" name="value_type" value="{{.ValueType}}">
-    {{if .Options}}
+    {{if .IsReadonly}}
+      {{/* Read-only display: show value but no editable input */}}
+      <div class="editor-readonly-value">{{.EditValue}}</div>
+    {{else if .Options}}
       <select name="value" class="input value-input" autofocus>
         {{range .Options}}
           <option value="{{.}}" {{if eq . $.EditValue}}selected{{end}}>{{.}}</option>
@@ -28,15 +43,27 @@
       <textarea name="value" class="input value-input value-textarea" autofocus
                 rows="4"
                 {{if .Placeholder}}placeholder="{{.Placeholder}}"{{end}}
+                {{if .Pattern}}pattern="{{.Pattern}}"{{end}}
                 hx-post="/validate/inline/{{.Path}}"
                 hx-trigger="input changed delay:500ms"
                 hx-target="#validation-inline-{{.PathID}}"
                 hx-swap="innerHTML"
                 hx-include="[name='value_type']">{{.EditValue}}</textarea>
+    {{else if .IsPassword}}
+      <input type="password" name="value" value="{{.EditValue}}"
+             class="input value-input" autofocus
+             {{if .Placeholder}}placeholder="{{.Placeholder}}"{{end}}
+             {{if .Pattern}}pattern="{{.Pattern}}"{{end}}
+             hx-post="/validate/inline/{{.Path}}"
+             hx-trigger="input changed delay:500ms"
+             hx-target="#validation-inline-{{.PathID}}"
+             hx-swap="innerHTML"
+             hx-include="[name='value_type']">
     {{else if eq .ValueType "number"}}
       <input type="number" name="value" value="{{.EditValue}}"
              class="input value-input" autofocus step="any"
              {{if .Placeholder}}placeholder="{{.Placeholder}}"{{end}}
+             {{if .Pattern}}pattern="{{.Pattern}}"{{end}}
              hx-post="/validate/inline/{{.Path}}"
              hx-trigger="input changed delay:500ms"
              hx-target="#validation-inline-{{.PathID}}"
@@ -46,11 +73,15 @@
       <input type="text" name="value" value="{{.EditValue}}"
              class="input value-input" autofocus
              {{if .Placeholder}}placeholder="{{.Placeholder}}"{{end}}
+             {{if .Pattern}}pattern="{{.Pattern}}"{{end}}
              hx-post="/validate/inline/{{.Path}}"
              hx-trigger="input changed delay:500ms"
              hx-target="#validation-inline-{{.PathID}}"
              hx-swap="innerHTML"
              hx-include="[name='value_type']">
+    {{end}}
+    {{if .Pattern}}
+      <div class="editor-hint">Pattern: <code>{{.Pattern}}</code></div>
     {{end}}
     <div id="validation-inline-{{.PathID}}" class="validation-inline">
       {{if .ValidationResults}}
@@ -64,14 +95,21 @@
     {{end}}
     <div class="editor-meta">
       <span class="meta-type">{{.ValueType}}</span>
-      {{if .Metadata}}
-        {{range $k, $v := .Metadata}}
-          <span class="meta-tag">{{$k}}: {{$v}}</span>
-        {{end}}
-      {{end}}
+      {{if .SemanticType}}<span class="meta-tag meta-semantic-type">{{.SemanticType}}</span>{{end}}
+      {{if .Unit}}<span class="meta-tag meta-unit">{{.Unit}}</span>{{end}}
+      {{if .Format}}<span class="meta-tag meta-format">{{.Format}}</span>{{end}}
+      {{if .Section}}<span class="meta-tag meta-section">{{.Section}}</span>{{end}}
     </div>
+    {{if .Example}}
+      <div class="editor-hint">Example: <code>{{.Example}}</code></div>
+    {{end}}
+    {{if .DocURL}}
+      <div class="editor-hint">Docs: <a href="{{.DocURL}}" target="_blank" rel="noopener noreferrer">{{.DocURL}}</a></div>
+    {{end}}
     <div class="editor-actions">
-      <button type="submit" class="btn btn-primary btn-sm">Save</button>
+      {{if not .IsReadonly}}
+        <button type="submit" class="btn btn-primary btn-sm">Save</button>
+      {{end}}
       <button type="button" class="btn btn-outline btn-sm"
               hx-get="/tree/display/{{.Path}}"
               hx-target="#tree-value-{{.PathID}}"

@@ -32,6 +32,7 @@
   align-items: center;
   gap: var(--space-2);
   margin-bottom: var(--space-1);
+  flex-wrap: wrap;
 }
 
 .editor-header .leaf-name {
@@ -47,6 +48,59 @@
 .value-textarea {
   resize: vertical;
   min-height: 80px;
+}
+
+/* Description shown below the editor header */
+.editor-description {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  font-family: var(--font-sans);
+  line-height: var(--leading-normal);
+}
+
+/* Deprecation warning in editor */
+.editor-deprecated-warning {
+  font-size: var(--text-sm);
+  color: #856404;
+  background: var(--color-warning-bg);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+}
+
+/* Read-only value display inside form */
+.editor-readonly-value {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  background: var(--color-bg-tertiary);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-light);
+}
+
+/* Hint text for patterns, examples, doc links */
+.editor-hint {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-family: var(--font-sans);
+}
+
+.editor-hint code {
+  font-family: var(--font-mono);
+  background: var(--color-bg-tertiary);
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+}
+
+.editor-hint a {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.editor-hint a:hover {
+  color: var(--color-primary-hover);
 }
 
 .editor-meta {
@@ -66,6 +120,25 @@
 
 .meta-tag {
   font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  background: var(--color-bg-tertiary);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+}
+
+.meta-semantic-type {
+  color: var(--color-primary);
+}
+
+.meta-unit {
+  color: var(--color-text-muted);
+}
+
+.meta-format {
+  color: var(--color-info);
+}
+
+.meta-section {
   color: var(--color-text-secondary);
 }
 
