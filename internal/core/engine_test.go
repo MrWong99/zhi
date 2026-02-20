@@ -941,16 +941,37 @@ func TestExtractStoreAuth(t *testing.T) {
 // authMockStore extends mockStore with working auth support.
 type authMockStore struct {
 	mockStore
-	authRequired     bool
-	loginCalled      bool
-	loginMethod      string
-	loginCredentials map[string]string
+	authRequired       bool
+	loginCalled        bool
+	loginMethod        string
+	loginCredentials   map[string]string
+	methods            []store.AuthMethod
+	loginErr           error
+	credential         *store.Credential
+	interactiveErr     error
+	interactiveChall   *store.InteractiveChallenge
+	callbackErr        error
+	callbackCredential *store.Credential
 }
 
 func newAuthMockStore(authRequired bool) *authMockStore {
 	return &authMockStore{
 		mockStore:    *newMockStore(),
 		authRequired: authRequired,
+		methods: []store.AuthMethod{
+			{
+				Type:        "userpass",
+				Description: "Username and password",
+				Fields: []store.AuthField{
+					{Name: "username", Required: true},
+					{Name: "password", Required: true, Secret: true},
+				},
+			},
+		},
+		credential: &store.Credential{
+			Token:    "test-token",
+			Metadata: map[string]string{"username": "admin"},
+		},
 	}
 }
 
@@ -961,21 +982,31 @@ func (m *authMockStore) Capabilities(context.Context) (*store.Capabilities, erro
 }
 
 func (m *authMockStore) AuthMethods(context.Context) ([]store.AuthMethod, error) {
-	return []store.AuthMethod{
-		{Type: "token", Description: "Token auth", Fields: []store.AuthField{
-			{Name: "token", Required: true, Secret: true},
-		}},
-	}, nil
+	return m.methods, nil
 }
 
 func (m *authMockStore) Login(_ context.Context, method string, credentials map[string]string) (*store.Credential, error) {
 	m.loginCalled = true
 	m.loginMethod = method
 	m.loginCredentials = credentials
-	return &store.Credential{
-		Token:    "session-token",
-		Metadata: map[string]string{"method": method},
-	}, nil
+	if m.loginErr != nil {
+		return nil, m.loginErr
+	}
+	return m.credential, nil
+}
+
+func (m *authMockStore) LoginInteractive(_ context.Context, _ string, _ map[string]string) (*store.InteractiveChallenge, error) {
+	if m.interactiveErr != nil {
+		return nil, m.interactiveErr
+	}
+	return m.interactiveChall, nil
+}
+
+func (m *authMockStore) LoginInteractiveCallback(_ context.Context, _ string, _ map[string]string) (*store.Credential, error) {
+	if m.callbackErr != nil {
+		return nil, m.callbackErr
+	}
+	return m.callbackCredential, nil
 }
 
 func TestEngineAutoLoginFromOptions(t *testing.T) {
