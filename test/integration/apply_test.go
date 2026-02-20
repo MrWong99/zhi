@@ -591,9 +591,10 @@ func TestApplyStderrCapture(t *testing.T) {
 
 	var stdoutLines, stderrLines []string
 	for line := range output {
-		if line.Stream == "stdout" {
+		switch line.Stream {
+		case "stdout":
 			stdoutLines = append(stdoutLines, line.Line)
-		} else if line.Stream == "stderr" {
+		case "stderr":
 			stderrLines = append(stderrLines, line.Line)
 		}
 	}
