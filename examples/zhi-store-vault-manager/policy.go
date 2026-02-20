@@ -132,31 +132,6 @@ func policyName(workspace, appName string) string {
 	return fmt.Sprintf("zhi-%s-%s", workspace, appName)
 }
 
-// bootstrapPolicyHCL generates the admin policy needed by the meta-plugin.
-func bootstrapPolicyHCL(mount, prefix string) string {
-	var b strings.Builder
-	paths := []struct {
-		path string
-		caps []string
-	}{
-		{mount + "/data/" + prefix + "/*", []string{"read", "create", "update", "delete", "list"}},
-		{mount + "/metadata/" + prefix + "/*", []string{"read", "list", "delete"}},
-		{"sys/policies/acl/zhi-*", []string{"read", "create", "update", "delete", "list"}},
-		{"auth/approle/role/zhi-*", []string{"read", "create", "update", "delete", "list"}},
-		{"auth/approle/role/zhi-*/secret-id", []string{"create", "update"}},
-		{"auth/token/create", []string{"create", "update"}},
-	}
-	for i, p := range paths {
-		if i > 0 {
-			b.WriteString("\n")
-		}
-		fmt.Fprintf(&b, "path %q {\n", p.path)
-		fmt.Fprintf(&b, "  capabilities = [%s]\n", quoteList(p.caps))
-		b.WriteString("}\n")
-	}
-	return b.String()
-}
-
 func quoteList(items []string) string {
 	quoted := make([]string, len(items))
 	for i, s := range items {
