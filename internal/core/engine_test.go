@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"slices"
 	"sort"
+	"sync"
 	"testing"
 
 	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
@@ -917,7 +918,7 @@ func TestExtractStoreAuth(t *testing.T) {
 				t.Errorf("method = %q, want %q", method, tt.wantMethod)
 			}
 			if tt.wantCreds == nil {
-				if creds != nil && len(creds) > 0 {
+				if len(creds) > 0 {
 					t.Errorf("creds = %v, want nil", creds)
 				}
 			} else {
@@ -941,6 +942,7 @@ func TestExtractStoreAuth(t *testing.T) {
 // authMockStore extends mockStore with working auth support.
 type authMockStore struct {
 	mockStore
+	mu                 sync.Mutex
 	authRequired       bool
 	loginCalled        bool
 	loginMethod        string
@@ -986,13 +988,17 @@ func (m *authMockStore) AuthMethods(context.Context) ([]store.AuthMethod, error)
 }
 
 func (m *authMockStore) Login(_ context.Context, method string, credentials map[string]string) (*store.Credential, error) {
+	m.mu.Lock()
 	m.loginCalled = true
 	m.loginMethod = method
 	m.loginCredentials = credentials
-	if m.loginErr != nil {
-		return nil, m.loginErr
+	loginErr := m.loginErr
+	credential := m.credential
+	m.mu.Unlock()
+	if loginErr != nil {
+		return nil, loginErr
 	}
-	return m.credential, nil
+	return credential, nil
 }
 
 func (m *authMockStore) LoginInteractive(_ context.Context, _ string, _ map[string]string) (*store.InteractiveChallenge, error) {
