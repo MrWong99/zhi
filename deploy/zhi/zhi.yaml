@@ -23,15 +23,21 @@ components:
     mandatory: true
 
 store:
-  provider: vault
+  provider: vault-manager
   options:
     addr: "http://127.0.0.1:8200"
     mount: "kv"
+    prefix: "zhi"
+    workspace: "zhi"
     # Uncomment to auto-login from workspace config (fallback auth):
     # auth:
     #   method: token
     #   credentials:
     #     token: "hvs.xxxxx"
+    # Uncomment and configure apps when credential management is needed:
+    # apps:
+    #   - name: my-app
+    #     auth: approle
 
 ui:
   provider: mcp-sse

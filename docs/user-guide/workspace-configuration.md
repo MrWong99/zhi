@@ -120,6 +120,8 @@ Supported auth method examples for the Vault store:
 
 If auto-login fails, a warning is logged and the session remains unauthenticated. Users can still log in interactively via the UI or MCP tools.
 
+For workspaces that need automatic credential management for deployed applications, use the `vault-manager` store provider instead of `vault`. It wraps the standard vault store and adds AppRole/token generation driven by metadata labels. See [Vault Credential Management](vault-credentials.md) for configuration details.
+
 ### `components`
 
 Defines named groups of configuration paths. See [Components](components.md) for full details.
