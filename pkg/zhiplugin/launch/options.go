@@ -22,9 +22,10 @@ const (
 
 // options holds configuration for launching a plugin process.
 type options struct {
-	logger      hclog.Logger
-	isolatedEnv map[string]string
-	auditMode   AuditMode
+	logger        hclog.Logger
+	isolatedEnv   map[string]string
+	auditMode     AuditMode
+	pluginOptions map[string]any
 }
 
 // Option configures plugin launching.
@@ -58,6 +59,17 @@ func WithIsolatedEnv(env map[string]string) Option {
 func WithAuditMode(mode AuditMode) Option {
 	return func(o *options) {
 		o.auditMode = mode
+	}
+}
+
+// WithPluginOptions passes workspace configuration options to the child
+// plugin process via the ZHI_PLUGIN_OPTIONS environment variable. The
+// options map is JSON-encoded before being set. External plugins can read
+// these options using the [github.com/MrWong99/zhi/pkg/zhiplugin/pluginopts]
+// helper package.
+func WithPluginOptions(opts map[string]any) Option {
+	return func(o *options) {
+		o.pluginOptions = opts
 	}
 }
 

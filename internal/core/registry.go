@@ -128,7 +128,7 @@ func (r *Registry) ConfigProvider(workspace, name string, options map[string]any
 		return factory(workspace, options)
 	}
 	log.Debug("config provider is external", "name", name)
-	return r.launchExternalConfig(name)
+	return r.launchExternalConfig(name, options)
 }
 
 // TransformProvider resolves and instantiates a transform provider by name.
@@ -140,7 +140,7 @@ func (r *Registry) TransformProvider(workspace, name string, options map[string]
 		return factory(workspace, options)
 	}
 	log.Debug("transform provider is external", "name", name)
-	return r.launchExternalTransform(name)
+	return r.launchExternalTransform(name, options)
 }
 
 // StoreProvider resolves and instantiates a store provider by name.
@@ -152,7 +152,7 @@ func (r *Registry) StoreProvider(workspace, name string, options map[string]any)
 		return factory(workspace, options)
 	}
 	log.Debug("store provider is external", "name", name)
-	return r.launchExternalStore(name)
+	return r.launchExternalStore(name, options)
 }
 
 // UIProvider resolves and instantiates a UI provider by name.
@@ -166,7 +166,7 @@ func (r *Registry) UIProvider(workspace, name string, options map[string]any) (z
 		return factory(workspace, options)
 	}
 	log.Debug("UI provider is external", "name", name)
-	return r.launchExternalUI(name)
+	return r.launchExternalUI(name, options)
 }
 
 // ListConfig returns the sorted names of all registered config providers
@@ -279,7 +279,7 @@ func (r *Registry) Close() {
 }
 
 // launchExternalConfig finds and launches an external config plugin.
-func (r *Registry) launchExternalConfig(name string) (config.Plugin, error) {
+func (r *Registry) launchExternalConfig(name string, options map[string]any) (config.Plugin, error) {
 	log := Logger()
 	log.Info("launching external config plugin", "name", name)
 	r.mu.Lock()
@@ -297,7 +297,7 @@ func (r *Registry) launchExternalConfig(name string) (config.Plugin, error) {
 		return nil, fmt.Errorf("unknown config provider: %q", name)
 	}
 
-	p, cleanup, err := LaunchConfig(info.Path)
+	p, cleanup, err := LaunchConfig(info.Path, options)
 	if err != nil {
 		return nil, fmt.Errorf("launching external config plugin %q: %w", name, err)
 	}
@@ -309,7 +309,7 @@ func (r *Registry) launchExternalConfig(name string) (config.Plugin, error) {
 }
 
 // launchExternalTransform finds and launches an external transform plugin.
-func (r *Registry) launchExternalTransform(name string) (transform.Plugin, error) {
+func (r *Registry) launchExternalTransform(name string, options map[string]any) (transform.Plugin, error) {
 	log := Logger()
 	log.Info("launching external transform plugin", "name", name)
 	r.mu.Lock()
@@ -325,7 +325,7 @@ func (r *Registry) launchExternalTransform(name string) (transform.Plugin, error
 		return nil, fmt.Errorf("unknown transform provider: %q", name)
 	}
 
-	p, cleanup, err := LaunchTransform(info.Path)
+	p, cleanup, err := LaunchTransform(info.Path, options)
 	if err != nil {
 		return nil, fmt.Errorf("launching external transform plugin %q: %w", name, err)
 	}
@@ -337,7 +337,7 @@ func (r *Registry) launchExternalTransform(name string) (transform.Plugin, error
 }
 
 // launchExternalStore finds and launches an external store plugin.
-func (r *Registry) launchExternalStore(name string) (store.Plugin, error) {
+func (r *Registry) launchExternalStore(name string, options map[string]any) (store.Plugin, error) {
 	log := Logger()
 	log.Info("launching external store plugin", "name", name)
 	r.mu.Lock()
@@ -353,7 +353,7 @@ func (r *Registry) launchExternalStore(name string) (store.Plugin, error) {
 		return nil, fmt.Errorf("unknown store provider: %q", name)
 	}
 
-	p, cleanup, err := LaunchStore(info.Path)
+	p, cleanup, err := LaunchStore(info.Path, options)
 	if err != nil {
 		return nil, fmt.Errorf("launching external store plugin %q: %w", name, err)
 	}
@@ -365,7 +365,7 @@ func (r *Registry) launchExternalStore(name string) (store.Plugin, error) {
 }
 
 // launchExternalUI finds and launches an external UI plugin.
-func (r *Registry) launchExternalUI(name string) (zhiui.Plugin, error) {
+func (r *Registry) launchExternalUI(name string, options map[string]any) (zhiui.Plugin, error) {
 	log := Logger()
 	log.Info("launching external UI plugin", "name", name)
 	r.mu.Lock()
@@ -381,7 +381,7 @@ func (r *Registry) launchExternalUI(name string) (zhiui.Plugin, error) {
 		return nil, fmt.Errorf("unknown UI provider: %q", name)
 	}
 
-	p, cleanup, err := LaunchUI(info.Path)
+	p, cleanup, err := LaunchUI(info.Path, options)
 	if err != nil {
 		return nil, fmt.Errorf("launching external UI plugin %q: %w", name, err)
 	}

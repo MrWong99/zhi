@@ -56,7 +56,7 @@ func TestLaunchConfigPlugin(t *testing.T) {
 	root := findProjectRoot(t)
 	bin := buildPlugin(t, filepath.Join(root, "examples", "zhi-config-pokedex"), "zhi-config-pokedex")
 
-	p, cleanup, err := LaunchConfig(bin)
+	p, cleanup, err := LaunchConfig(bin, nil)
 	if err != nil {
 		t.Fatalf("LaunchConfig: %v", err)
 	}
@@ -95,7 +95,7 @@ func TestLaunchTransformPlugin(t *testing.T) {
 	root := findProjectRoot(t)
 	bin := buildPlugin(t, filepath.Join(root, "examples", "zhi-transform-pokedex"), "zhi-transform-pokedex")
 
-	p, cleanup, err := LaunchTransform(bin)
+	p, cleanup, err := LaunchTransform(bin, nil)
 	if err != nil {
 		t.Fatalf("LaunchTransform: %v", err)
 	}
@@ -123,7 +123,7 @@ func TestLaunchStorePlugin(t *testing.T) {
 	root := findProjectRoot(t)
 	bin := buildPlugin(t, filepath.Join(root, "examples", "zhi-store-memory"), "zhi-store-memory")
 
-	p, cleanup, err := LaunchStore(bin)
+	p, cleanup, err := LaunchStore(bin, nil)
 	if err != nil {
 		t.Fatalf("LaunchStore: %v", err)
 	}
@@ -149,21 +149,21 @@ func TestLaunchStorePlugin(t *testing.T) {
 }
 
 func TestLaunchConfigInvalidPath(t *testing.T) {
-	_, _, err := LaunchConfig("/nonexistent/binary")
+	_, _, err := LaunchConfig("/nonexistent/binary", nil)
 	if err == nil {
 		t.Fatal("expected error for nonexistent binary")
 	}
 }
 
 func TestLaunchTransformInvalidPath(t *testing.T) {
-	_, _, err := LaunchTransform("/nonexistent/binary")
+	_, _, err := LaunchTransform("/nonexistent/binary", nil)
 	if err == nil {
 		t.Fatal("expected error for nonexistent binary")
 	}
 }
 
 func TestLaunchStoreInvalidPath(t *testing.T) {
-	_, _, err := LaunchStore("/nonexistent/binary")
+	_, _, err := LaunchStore("/nonexistent/binary", nil)
 	if err == nil {
 		t.Fatal("expected error for nonexistent binary")
 	}
@@ -204,7 +204,7 @@ func TestCleanupKillsProcess(t *testing.T) {
 	root := findProjectRoot(t)
 	bin := buildPlugin(t, filepath.Join(root, "examples", "zhi-store-memory"), "zhi-store-memory")
 
-	_, cleanup, err := LaunchStore(bin)
+	_, cleanup, err := LaunchStore(bin, nil)
 	if err != nil {
 		t.Fatalf("LaunchStore: %v", err)
 	}

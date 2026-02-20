@@ -3,12 +3,18 @@
 // transport. It allows MCP-compatible LLM clients (Claude Desktop, Cursor,
 // etc.) to manage configurations remotely.
 //
-// The listen address defaults to "127.0.0.1:8091" and can be overridden
-// with the ZHI_MCP_ADDR environment variable.
+// Configuration is read from the workspace options (zhi.yaml) passed via
+// ZHI_PLUGIN_OPTIONS, falling back to environment variables:
 //
-// Authentication is controlled by ZHI_MCP_TOKEN. When set, all requests
-// must include an "Authorization: Bearer <token>" header. When empty,
-// authentication is disabled (development mode).
+//	ui:
+//	  provider: mcp-sse
+//	  options:
+//	    addr: "0.0.0.0:9090"
+//	    token: "my-secret"
+//
+// Supported options / environment variable fallbacks:
+//   - addr  / ZHI_MCP_ADDR  — listen address (default: "127.0.0.1:8091")
+//   - token / ZHI_MCP_TOKEN — Bearer token for authentication (empty = dev mode)
 package main
 
 import (
@@ -27,6 +33,7 @@ import (
 
 	"github.com/MrWong99/zhi/pkg/mcpbridge"
 	"github.com/MrWong99/zhi/pkg/zhiplugin"
+	"github.com/MrWong99/zhi/pkg/zhiplugin/pluginopts"
 	"github.com/MrWong99/zhi/pkg/zhiplugin/ui"
 )
 
@@ -41,13 +48,10 @@ type mcpSSE struct {
 }
 
 func newMCPSSE() *mcpSSE {
-	addr := os.Getenv("ZHI_MCP_ADDR")
-	if addr == "" {
-		addr = "127.0.0.1:8091"
-	}
+	opts := pluginopts.Options()
 	return &mcpSSE{
-		addr:      addr,
-		authToken: os.Getenv("ZHI_MCP_TOKEN"),
+		addr:      pluginopts.String(opts, "addr", "ZHI_MCP_ADDR", "127.0.0.1:8091"),
+		authToken: pluginopts.String(opts, "token", "ZHI_MCP_TOKEN", ""),
 		ready:     make(chan struct{}),
 	}
 }

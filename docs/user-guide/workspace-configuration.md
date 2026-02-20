@@ -90,6 +90,36 @@ Specifies the storage backend for persisting configuration trees, component stat
 | `provider` | Store provider name (e.g., `zhi-store-json`). |
 | `options` | Provider-specific options. |
 
+#### Store authentication from workspace config
+
+You can configure store authentication credentials directly in the workspace options as a fallback mechanism. This avoids having to use the interactive `login` tool or set environment variables for secrets.
+
+```yaml
+store:
+  provider: vault
+  options:
+    addr: "http://127.0.0.1:8200"
+    mount: "kv"
+    auth:
+      method: token
+      credentials:
+        token: "hvs.xxxxx"
+```
+
+The `auth` section is consumed by the engine during initialization. If present, the engine attempts to auto-login after connecting to the store. The `method` must match one of the store's supported auth methods, and `credentials` is a map of key-value pairs specific to that method.
+
+Supported auth method examples for the Vault store:
+
+| Method | Credentials |
+|--------|-------------|
+| `token` | `token` |
+| `userpass` | `username`, `password` |
+| `approle` | `role_id`, `secret_id` |
+| `ldap` | `username`, `password` |
+| `kubernetes` | `role`, `jwt` |
+
+If auto-login fails, a warning is logged and the session remains unauthenticated. Users can still log in interactively via the UI or MCP tools.
+
 ### `components`
 
 Defines named groups of configuration paths. See [Components](components.md) for full details.
@@ -151,7 +181,24 @@ ui:
 
 The `mcp-stdio` provider redirects `os.Stdout` to stderr internally so that stray log output does not corrupt the MCP JSON-RPC stream. LLM clients launch `zhi edit --ui mcp-stdio` as a child process and communicate over stdin/stdout.
 
-An external MCP SSE plugin (`zhi-ui-mcp-sse`) is also available for network-based access. See the [examples](../../examples/zhi-ui-mcp-sse/) directory.
+An external MCP SSE plugin (`zhi-ui-mcp-sse`) is also available for network-based access:
+
+```yaml
+ui:
+  provider: mcp-sse
+  options:
+    addr: "0.0.0.0:9090"
+    token: "my-secret-token"
+```
+
+| Option | Env Fallback | Default | Description |
+|--------|-------------|---------|-------------|
+| `addr` | `ZHI_MCP_ADDR` | `127.0.0.1:8091` | HTTP listen address |
+| `token` | `ZHI_MCP_TOKEN` | (empty = no auth) | Bearer token for authentication |
+
+Options from `zhi.yaml` take precedence over environment variables. See the [examples](../../examples/zhi-ui-mcp-sse/) directory.
+
+**Plugin options for external plugins:** All provider options from `zhi.yaml` are propagated to external plugin processes via the `ZHI_PLUGIN_OPTIONS` environment variable (JSON-encoded). External plugins can read these using the `pluginopts` helper package from `pkg/zhiplugin/pluginopts/`.
 
 ### `plugins`
 
