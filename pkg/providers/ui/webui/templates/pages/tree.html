@@ -11,7 +11,7 @@
     hx-get="/tree"
     hx-trigger="input changed delay:300ms, search"
     hx-target="#tree-content"
-    hx-select="#tree-content"
+    hx-swap="innerHTML"
     hx-push-url="true"
   >
 </div>
@@ -19,9 +19,7 @@
 <div id="tree-content"
      hx-get="/tree"
      hx-trigger="valueChanged from:body"
-     hx-target="#tree-content"
-     hx-select="#tree-content"
-     hx-swap="outerHTML">
+     hx-swap="innerHTML">
   {{template "tree_content" .}}
 </div>
 {{end}}

@@ -32,7 +32,7 @@ vault-deploy:
     metadata:
       ui.section: "Deployment"
       ui.displayName: "Vault Version"
-      ui.placeholder: "1.19.0"
+      ui.placeholder: "1.21.2"
       core.description: "Vault version to deploy (Docker image tag / Kubernetes image tag)."
 
   unseal-shares:
