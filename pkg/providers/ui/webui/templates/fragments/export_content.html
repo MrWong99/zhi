@@ -34,8 +34,7 @@
         <button class="btn btn-sm btn-primary"
                 hx-post="/export"
                 hx-vals='{"template": "{{.Template}}", "format": "{{.Format}}", "output": "{{.Output}}", "prefix": "{{.Prefix}}"}'
-                hx-target="#export-result"
-                hx-swap="innerHTML">
+                hx-swap="none">
           Export
         </button>
       </div>

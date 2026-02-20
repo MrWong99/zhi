@@ -92,21 +92,28 @@ func (s *Server) handleExport(w http.ResponseWriter, r *http.Request) {
 	req.DryRun = false
 
 	result, err := s.ctrl.Export(ctx, req)
-
-	resultData := exportResultData{
-		Name: req.Format,
-	}
-	if result != nil {
-		resultData.Name = result.Name
-		resultData.OutputPath = result.OutputPath
-	}
 	if err != nil {
-		resultData.Error = err.Error()
+		name := req.Format
+		if result != nil && result.Name != "" {
+			name = result.Name
+		}
+		notif := notificationEvent{
+			Type:    "error",
+			Message: fmt.Sprintf("Export %s failed: %s", name, err.Error()),
+		}
+		b, _ := json.Marshal(map[string]any{"showNotification": notif})
+		w.Header().Set("HX-Trigger", string(b))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
-	if renderErr := s.engine.renderFragment(w, "export_result", resultData); renderErr != nil {
-		http.Error(w, renderErr.Error(), http.StatusInternalServerError)
+	notif := notificationEvent{
+		Type:    "success",
+		Message: fmt.Sprintf("Exported %s to %s", result.Name, result.OutputPath),
 	}
+	b, _ := json.Marshal(map[string]any{"showNotification": notif})
+	w.Header().Set("HX-Trigger", string(b))
+	w.WriteHeader(http.StatusOK)
 }
 
 // handleExportAll exports all configured templates.
