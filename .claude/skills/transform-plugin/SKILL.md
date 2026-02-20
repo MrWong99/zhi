@@ -50,9 +50,9 @@ package main
 
 import (
     goplugin "github.com/hashicorp/go-plugin"
-    "github.com/itsluketwist/zhi/pkg/zhiplugin"
-    "github.com/itsluketwist/zhi/pkg/zhiplugin/config"
-    "github.com/itsluketwist/zhi/pkg/zhiplugin/transform"
+    "github.com/MrWong99/zhi/pkg/zhiplugin"
+    "github.com/MrWong99/zhi/pkg/zhiplugin/config"
+    "github.com/MrWong99/zhi/pkg/zhiplugin/transform"
 )
 
 func main() {

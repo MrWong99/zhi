@@ -10,15 +10,12 @@ to set up a local development environment, run common tasks, and submit changes.
 | Tool | Purpose | Install |
 |------|---------|---------|
 | **Go 1.26+** | Build & test | [go.dev/dl](https://go.dev/dl/) |
-| **protoc** | Compile `.proto` files | [protobuf releases](https://github.com/protocolbuffers/protobuf/releases) |
-| **protoc-gen-go** | Go code generation for protobuf | `go install google.golang.org/protobuf/cmd/protoc-gen-go@latest` |
-| **protoc-gen-go-grpc** | Go gRPC stub generation | `go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest` |
-| **golangci-lint** *(optional)* | Linter | `go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest` |
 
-You can install all Go-based tools at once with:
+All other tools (protoc, protoc-gen-go, protoc-gen-go-grpc, golangci-lint) are managed automatically:
 
 ```sh
-make tools
+make tools   # installs protoc-gen-go, protoc-gen-go-grpc, golangci-lint v2
+make proto   # downloads protoc v33.5 automatically (no system install required)
 ```
 
 ## Getting started
@@ -144,7 +141,12 @@ Look at the `examples/` directory for working reference implementations:
 - `examples/zhi-transform-pokedex/` -- a transform plugin that evolves starter Pokemon
 - `examples/zhi-store-json/` -- a store plugin persisting trees as JSON files
 - `examples/zhi-store-memory/` -- a minimal in-memory store plugin
+- `examples/zhi-store-vault/` -- a store plugin backed by HashiCorp Vault KV v2
+- `examples/zhi-store-mirror/` -- a meta-plugin that mirrors writes to multiple stores
 - `examples/zhi-ui-httpapi/` -- a UI plugin exposing an HTTP/JSON API
+- `examples/zhi-ui-mcp-sse/` -- a UI plugin exposing an MCP server over HTTP
+- `examples/zhi-ui-webui/` -- a browser-based Web UI plugin
+- `examples/zhi-config-javabean/` -- a Java config plugin with Bean Validation
 
 Each example includes tests that use `goplugin.TestPluginGRPCConn()` for
 in-process gRPC testing without starting a subprocess.
