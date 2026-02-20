@@ -61,3 +61,45 @@ func TestLaunchStoreInvalidBinary(t *testing.T) {
 		t.Fatal("expected error for nonexistent binary")
 	}
 }
+
+func TestWithPluginOptions(t *testing.T) {
+	t.Parallel()
+	opts := map[string]any{"addr": "localhost:9090", "debug": true}
+	o := applyOptions([]Option{WithPluginOptions(opts)})
+	if o.pluginOptions == nil {
+		t.Fatal("WithPluginOptions did not set options")
+	}
+	if o.pluginOptions["addr"] != "localhost:9090" {
+		t.Errorf("addr = %v, want localhost:9090", o.pluginOptions["addr"])
+	}
+	if o.pluginOptions["debug"] != true {
+		t.Errorf("debug = %v, want true", o.pluginOptions["debug"])
+	}
+}
+
+func TestWithPluginOptionsNil(t *testing.T) {
+	t.Parallel()
+	o := applyOptions([]Option{WithPluginOptions(nil)})
+	if o.pluginOptions != nil {
+		t.Errorf("pluginOptions = %v, want nil", o.pluginOptions)
+	}
+}
+
+func TestPluginLogName(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		binary string
+		want   string
+	}{
+		{"/home/user/.zhi/plugins/zhi-store-memory", "plugin.store.memory"},
+		{"/home/user/.zhi/plugins/zhi-config-ansible", "plugin.config.ansible"},
+		{"zhi-ui-mcp-sse", "plugin.ui.mcp-sse"},
+		{"other-binary", "plugin.other-binary"},
+	}
+	for _, tt := range tests {
+		got := pluginLogName(tt.binary)
+		if got != tt.want {
+			t.Errorf("pluginLogName(%q) = %q, want %q", tt.binary, got, tt.want)
+		}
+	}
+}

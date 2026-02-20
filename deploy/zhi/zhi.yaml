@@ -27,9 +27,17 @@ store:
   options:
     addr: "http://127.0.0.1:8200"
     mount: "kv"
+    # Uncomment to auto-login from workspace config (fallback auth):
+    # auth:
+    #   method: token
+    #   credentials:
+    #     token: "hvs.xxxxx"
 
 ui:
   provider: mcp-sse
+  options:
+    addr: "127.0.0.1:8091"
+    # token: "my-secret-token"  # uncomment to enable Bearer auth
 
 export:
   templates:

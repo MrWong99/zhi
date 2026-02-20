@@ -1,6 +1,7 @@
 package launch
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -178,6 +179,19 @@ func launchClient(binary string, pluginMap map[string]goplugin.Plugin, o *option
 		}
 		cmd.Env = env
 		log.Debug("using isolated environment for plugin", "binary", resolved, "env_count", len(env))
+	}
+
+	// Inject workspace options as JSON in ZHI_PLUGIN_OPTIONS.
+	if len(o.pluginOptions) > 0 {
+		data, err := json.Marshal(o.pluginOptions)
+		if err != nil {
+			return nil, fmt.Errorf("marshalling plugin options: %w", err)
+		}
+		if cmd.Env == nil {
+			cmd.Env = os.Environ()
+		}
+		cmd.Env = append(cmd.Env, "ZHI_PLUGIN_OPTIONS="+string(data))
+		log.Debug("injecting plugin options", "binary", resolved)
 	}
 
 	// Create a named sub-logger for this plugin so its output is

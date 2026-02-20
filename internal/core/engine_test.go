@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"slices"
 	"sort"
+	"sync"
 	"testing"
 
 	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
@@ -830,5 +831,273 @@ func TestEngineTreeVersioning(t *testing.T) {
 	versions, _ = eng.ListTreeVersions(ctx, id)
 	if len(versions) != 1 {
 		t.Errorf("got %d versions after delete, want 1", len(versions))
+	}
+}
+
+// --- extractStoreAuth tests ---
+
+func TestExtractStoreAuth(t *testing.T) {
+	tests := []struct {
+		name       string
+		options    map[string]any
+		wantMethod string
+		wantCreds  map[string]string
+	}{
+		{
+			name:       "nil options",
+			options:    nil,
+			wantMethod: "",
+			wantCreds:  nil,
+		},
+		{
+			name:       "no auth key",
+			options:    map[string]any{"addr": "http://localhost:8200"},
+			wantMethod: "",
+			wantCreds:  nil,
+		},
+		{
+			name:       "auth not a map",
+			options:    map[string]any{"auth": "invalid"},
+			wantMethod: "",
+			wantCreds:  nil,
+		},
+		{
+			name: "auth without method",
+			options: map[string]any{
+				"auth": map[string]any{
+					"credentials": map[string]any{"token": "x"},
+				},
+			},
+			wantMethod: "",
+			wantCreds:  nil,
+		},
+		{
+			name: "method only",
+			options: map[string]any{
+				"auth": map[string]any{
+					"method": "token",
+				},
+			},
+			wantMethod: "token",
+			wantCreds:  nil,
+		},
+		{
+			name: "method with credentials",
+			options: map[string]any{
+				"auth": map[string]any{
+					"method": "userpass",
+					"credentials": map[string]any{
+						"username": "admin",
+						"password": "secret",
+					},
+				},
+			},
+			wantMethod: "userpass",
+			wantCreds:  map[string]string{"username": "admin", "password": "secret"},
+		},
+		{
+			name: "credentials with non-string values skipped",
+			options: map[string]any{
+				"auth": map[string]any{
+					"method": "approle",
+					"credentials": map[string]any{
+						"role_id":   "abc",
+						"secret_id": "xyz",
+						"count":     float64(5),
+					},
+				},
+			},
+			wantMethod: "approle",
+			wantCreds:  map[string]string{"role_id": "abc", "secret_id": "xyz"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			method, creds := extractStoreAuth(tt.options)
+			if method != tt.wantMethod {
+				t.Errorf("method = %q, want %q", method, tt.wantMethod)
+			}
+			if tt.wantCreds == nil {
+				if len(creds) > 0 {
+					t.Errorf("creds = %v, want nil", creds)
+				}
+			} else {
+				for k, want := range tt.wantCreds {
+					if got := creds[k]; got != want {
+						t.Errorf("creds[%q] = %q, want %q", k, got, want)
+					}
+				}
+				for k := range creds {
+					if _, ok := tt.wantCreds[k]; !ok {
+						t.Errorf("unexpected creds key %q", k)
+					}
+				}
+			}
+		})
+	}
+}
+
+// --- Engine auto-login tests ---
+
+// authMockStore extends mockStore with working auth support.
+type authMockStore struct {
+	mockStore
+	mu                 sync.Mutex
+	authRequired       bool
+	loginCalled        bool
+	loginMethod        string
+	loginCredentials   map[string]string
+	methods            []store.AuthMethod
+	loginErr           error
+	credential         *store.Credential
+	interactiveErr     error
+	interactiveChall   *store.InteractiveChallenge
+	callbackErr        error
+	callbackCredential *store.Credential
+}
+
+func newAuthMockStore(authRequired bool) *authMockStore {
+	return &authMockStore{
+		mockStore:    *newMockStore(),
+		authRequired: authRequired,
+		methods: []store.AuthMethod{
+			{
+				Type:        "userpass",
+				Description: "Username and password",
+				Fields: []store.AuthField{
+					{Name: "username", Required: true},
+					{Name: "password", Required: true, Secret: true},
+				},
+			},
+		},
+		credential: &store.Credential{
+			Token:    "test-token",
+			Metadata: map[string]string{"username": "admin"},
+		},
+	}
+}
+
+func (m *authMockStore) Capabilities(context.Context) (*store.Capabilities, error) {
+	return &store.Capabilities{
+		Auth: m.authRequired,
+	}, nil
+}
+
+func (m *authMockStore) AuthMethods(context.Context) ([]store.AuthMethod, error) {
+	return m.methods, nil
+}
+
+func (m *authMockStore) Login(_ context.Context, method string, credentials map[string]string) (*store.Credential, error) {
+	m.mu.Lock()
+	m.loginCalled = true
+	m.loginMethod = method
+	m.loginCredentials = credentials
+	loginErr := m.loginErr
+	credential := m.credential
+	m.mu.Unlock()
+	if loginErr != nil {
+		return nil, loginErr
+	}
+	return credential, nil
+}
+
+func (m *authMockStore) LoginInteractive(_ context.Context, _ string, _ map[string]string) (*store.InteractiveChallenge, error) {
+	if m.interactiveErr != nil {
+		return nil, m.interactiveErr
+	}
+	return m.interactiveChall, nil
+}
+
+func (m *authMockStore) LoginInteractiveCallback(_ context.Context, _ string, _ map[string]string) (*store.Credential, error) {
+	if m.callbackErr != nil {
+		return nil, m.callbackErr
+	}
+	return m.callbackCredential, nil
+}
+
+func TestEngineAutoLoginFromOptions(t *testing.T) {
+	mc := newMockConfig()
+	ms := newAuthMockStore(true)
+
+	reg := NewRegistry()
+	_ = reg.RegisterConfig("mock", func(string, map[string]any) (config.Plugin, error) {
+		return mc, nil
+	})
+	_ = reg.RegisterStore("authmock", func(string, map[string]any) (store.Plugin, error) {
+		return ms, nil
+	})
+
+	ws := &WorkspaceConfig{
+		Version: "1",
+		Config:  ProviderRef{Provider: "mock"},
+		Store: ProviderRef{
+			Provider: "authmock",
+			Options: map[string]any{
+				"auth": map[string]any{
+					"method": "token",
+					"credentials": map[string]any{
+						"token": "hvs.test123",
+					},
+				},
+			},
+		},
+		Dir: t.TempDir(),
+	}
+
+	eng, err := NewEngine(reg, ws)
+	if err != nil {
+		t.Fatalf("NewEngine: %v", err)
+	}
+
+	if !ms.loginCalled {
+		t.Fatal("expected Login to be called during engine init")
+	}
+	if ms.loginMethod != "token" {
+		t.Errorf("login method = %q, want token", ms.loginMethod)
+	}
+	if ms.loginCredentials["token"] != "hvs.test123" {
+		t.Errorf("login token = %q, want hvs.test123", ms.loginCredentials["token"])
+	}
+
+	// Session should be authenticated.
+	sess := eng.Session()
+	if sess == nil {
+		t.Fatal("Session() returned nil")
+	}
+	status := sess.Status()
+	if status.Status != SessionAuthenticated {
+		t.Errorf("session status = %v, want SessionAuthenticated", status.Status)
+	}
+}
+
+func TestEngineNoAutoLoginWithoutAuth(t *testing.T) {
+	mc := newMockConfig()
+	ms := newAuthMockStore(false)
+
+	reg := NewRegistry()
+	_ = reg.RegisterConfig("mock", func(string, map[string]any) (config.Plugin, error) {
+		return mc, nil
+	})
+	_ = reg.RegisterStore("authmock", func(string, map[string]any) (store.Plugin, error) {
+		return ms, nil
+	})
+
+	ws := &WorkspaceConfig{
+		Version: "1",
+		Config:  ProviderRef{Provider: "mock"},
+		Store: ProviderRef{
+			Provider: "authmock",
+			Options:  map[string]any{"addr": "http://localhost:8200"},
+		},
+		Dir: t.TempDir(),
+	}
+
+	_, err := NewEngine(reg, ws)
+	if err != nil {
+		t.Fatalf("NewEngine: %v", err)
+	}
+
+	if ms.loginCalled {
+		t.Error("Login should not be called when no auth section in options")
 	}
 }

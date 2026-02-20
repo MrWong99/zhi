@@ -67,6 +67,16 @@ func NewEngine(registry *Registry, workspace *WorkspaceConfig) (*Engine, error) 
 	// Initialize session manager for authenticated stores.
 	if e.storePlugin != nil {
 		e.session = NewSessionManager(e.storePlugin)
+
+		// Attempt auto-login from workspace store options (fallback auth).
+		if method, creds := extractStoreAuth(workspace.Store.Options); method != "" {
+			Logger().Info("attempting auto-login from workspace config", "method", method)
+			if _, err := e.session.Login(context.Background(), method, creds); err != nil {
+				Logger().Warn("auto-login from workspace config failed", "method", method, "error", err)
+			} else {
+				Logger().Info("auto-login from workspace config succeeded", "method", method)
+			}
+		}
 	}
 
 	// Initialize component manager.
@@ -518,4 +528,51 @@ func (e *Engine) BuildApplyRunConfig(target string) (ApplyRunConfig, error) {
 		EnabledComponents:  enabled,
 		DisabledComponents: disabled,
 	}, nil
+}
+
+// extractStoreAuth reads the "auth" key from store options. The expected
+// format in zhi.yaml is:
+//
+//	store:
+//	  provider: vault
+//	  options:
+//	    addr: "http://127.0.0.1:8200"
+//	    auth:
+//	      method: token
+//	      credentials:
+//	        token: "hvs.xxxxx"
+//
+// Returns the method name and credentials map. Returns ("", nil) if no
+// auth section is present.
+func extractStoreAuth(options map[string]any) (string, map[string]string) {
+	if options == nil {
+		return "", nil
+	}
+	authRaw, ok := options["auth"]
+	if !ok {
+		return "", nil
+	}
+	auth, ok := authRaw.(map[string]any)
+	if !ok {
+		return "", nil
+	}
+	method, _ := auth["method"].(string)
+	if method == "" {
+		return "", nil
+	}
+	credsRaw, ok := auth["credentials"]
+	if !ok {
+		return method, nil
+	}
+	credsMap, ok := credsRaw.(map[string]any)
+	if !ok {
+		return method, nil
+	}
+	creds := make(map[string]string, len(credsMap))
+	for k, v := range credsMap {
+		if s, ok := v.(string); ok {
+			creds[k] = s
+		}
+	}
+	return method, creds
 }
