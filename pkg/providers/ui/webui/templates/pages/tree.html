@@ -16,7 +16,12 @@
   >
 </div>
 
-<div id="tree-content">
+<div id="tree-content"
+     hx-get="/tree"
+     hx-trigger="valueChanged from:body"
+     hx-target="#tree-content"
+     hx-select="#tree-content"
+     hx-swap="outerHTML">
   {{template "tree_content" .}}
 </div>
 {{end}}

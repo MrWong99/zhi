@@ -264,6 +264,22 @@
   registerShortcut("Esc", "Close edit form / Cancel", function () {});
   registerShortcut("?", "Show shortcut overlay", function () {});
 
+  // ---------- Boolean Toggle Text Sync ----------
+  // When a boolean toggle checkbox is changed via HTMX-swapped content,
+  // update the adjacent text label to match.
+  document.body.addEventListener("change", function (e) {
+    if (
+      e.target &&
+      e.target.classList.contains("toggle-input") &&
+      e.target.type === "checkbox"
+    ) {
+      var textSpan = e.target.parentElement.querySelector(".toggle-text");
+      if (textSpan) {
+        textSpan.textContent = e.target.checked ? "true" : "false";
+      }
+    }
+  });
+
   // ---------- Login Page Auth Method Selector ----------
 
   var authMethodSelect = document.getElementById("auth-method-select");

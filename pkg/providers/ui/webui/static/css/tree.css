@@ -61,6 +61,7 @@
   padding: var(--space-1) var(--space-2);
   margin-left: var(--space-4);
   border-radius: var(--radius-sm);
+  flex-wrap: wrap;
 }
 
 .tree-leaf:hover {
@@ -99,6 +100,30 @@
   color: var(--color-warning);
 }
 
+.tree-leaf .leaf-value .value-password {
+  color: var(--color-text-muted);
+  letter-spacing: 0.1em;
+}
+
+/* Deprecated leaf styling */
+.tree-leaf-deprecated {
+  opacity: 0.7;
+}
+
+.deprecated-text {
+  text-decoration: line-through;
+  color: var(--color-text-muted);
+}
+
+/* Description shown below the leaf line */
+.leaf-description {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-left: var(--space-8);
+  padding: 0 var(--space-2) var(--space-1) var(--space-2);
+  font-family: var(--font-sans);
+}
+
 /* Component badges */
 .tree-component-badge {
   margin-left: var(--space-2);
@@ -106,6 +131,77 @@
 
 .tree-component-badge.disabled {
   opacity: 0.5;
+}
+
+/* Metadata label badges in tree */
+.badge-readonly {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-medium);
+}
+
+.badge-required {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  font-size: var(--text-xs);
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-medium);
+}
+
+.badge-deprecated {
+  background: var(--color-warning-bg);
+  color: #856404;
+  font-size: var(--text-xs);
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-medium);
+}
+
+.badge-password {
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+  font-size: var(--text-xs);
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-medium);
+}
+
+.badge-group {
+  background: var(--color-info-bg);
+  color: var(--color-info);
+  font-size: var(--text-xs);
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-medium);
+}
+
+/* Section headers in tree */
+.tree-section-header {
+  margin-left: var(--space-4);
+  margin-top: var(--space-3);
+  margin-bottom: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.tree-section-header .section-label {
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-family: var(--font-sans);
+}
+
+/* Value unit display */
+.value-unit {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-left: var(--space-1);
 }
 
 /* Filter input */

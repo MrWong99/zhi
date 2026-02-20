@@ -452,7 +452,7 @@ func TestBuildNestedTree(t *testing.T) {
 	_ = tree.Set("db/port", &config.Value{Val: float64(5432)})
 	_ = tree.Set("app/name", &config.Value{Val: "myapp"})
 
-	nodes := buildNestedTree(tree, nil)
+	nodes := buildNestedTree(tree, tree, nil)
 	if len(nodes) != 2 {
 		t.Fatalf("got %d root nodes, want 2", len(nodes))
 	}
@@ -483,7 +483,7 @@ func TestBuildNestedTreeWithComponents(t *testing.T) {
 		{Name: "database", Enabled: true, Paths: []string{"db"}},
 	}
 
-	nodes := buildNestedTree(tree, components)
+	nodes := buildNestedTree(tree, tree, components)
 	if len(nodes) != 1 {
 		t.Fatalf("got %d nodes, want 1", len(nodes))
 	}
@@ -1050,7 +1050,7 @@ func TestTreeNodeHasPathID(t *testing.T) {
 	tree := config.NewTree()
 	_ = tree.Set("db/host", &config.Value{Val: "localhost"})
 
-	nodes := buildNestedTree(tree, nil)
+	nodes := buildNestedTree(tree, tree, nil)
 	leaf := nodes[0].Children[0]
 	if leaf.PathID != "db--host" {
 		t.Errorf("PathID = %q, want 'db--host'", leaf.PathID)
@@ -2391,7 +2391,7 @@ func BenchmarkTemplateRenderPage(b *testing.B) {
 	_ = tree.Set("db/host", &config.Value{Val: "localhost"})
 	_ = tree.Set("db/port", &config.Value{Val: float64(5432)})
 	_ = tree.Set("app/name", &config.Value{Val: "myapp"})
-	nodes := buildNestedTree(tree, nil)
+	nodes := buildNestedTree(tree, tree, nil)
 
 	data := pageData{
 		WorkspaceName: "bench",
@@ -2415,7 +2415,7 @@ func BenchmarkTemplateRenderFragment(b *testing.B) {
 	tree := config.NewTree()
 	_ = tree.Set("db/host", &config.Value{Val: "localhost"})
 	_ = tree.Set("db/port", &config.Value{Val: float64(5432)})
-	nodes := buildNestedTree(tree, nil)
+	nodes := buildNestedTree(tree, tree, nil)
 
 	data := pageData{
 		TreeNodes: nodes,
@@ -2437,7 +2437,7 @@ func BenchmarkBuildNestedTree(b *testing.B) {
 
 	b.ResetTimer()
 	for b.Loop() {
-		buildNestedTree(tree, nil)
+		buildNestedTree(tree, tree, nil)
 	}
 }
 
