@@ -21,7 +21,8 @@
      hx-trigger="valueChanged from:body"
      hx-target="#tree-content"
      hx-select="#tree-content"
-     hx-swap="outerHTML">
+     hx-swap="outerHTML"
+     hx-disinherit="hx-select">
   {{template "tree_content" .}}
 </div>
 {{end}}
