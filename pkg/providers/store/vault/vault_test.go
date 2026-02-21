@@ -1480,6 +1480,95 @@ func TestBuildHTTPClientDefault(t *testing.T) {
 	}
 }
 
+func TestEncodeValueError(t *testing.T) {
+	// A channel is not JSON-marshalable.
+	v := config.Value{Val: make(chan int)}
+	_, err := encodeValue(v)
+	if err == nil {
+		t.Fatal("expected error for unmarshalable value, got nil")
+	}
+	if !strings.Contains(err.Error(), "marshaling value") {
+		t.Errorf("error = %q, want to contain %q", err, "marshaling value")
+	}
+
+	// Unmarshalable metadata.
+	v2 := config.Value{
+		Val:      "ok",
+		Metadata: map[string]any{"bad": make(chan int)},
+	}
+	_, err = encodeValue(v2)
+	if err == nil {
+		t.Fatal("expected error for unmarshalable metadata, got nil")
+	}
+	if !strings.Contains(err.Error(), "marshaling metadata") {
+		t.Errorf("error = %q, want to contain %q", err, "marshaling metadata")
+	}
+
+	// Valid value should succeed.
+	v3 := config.Value{Val: "hello", Metadata: map[string]any{"key": "val"}}
+	encoded, err := encodeValue(v3)
+	if err != nil {
+		t.Fatalf("encodeValue: %v", err)
+	}
+	if encoded["zhi_val"] != `"hello"` {
+		t.Errorf("zhi_val = %q, want %q", encoded["zhi_val"], `"hello"`)
+	}
+}
+
+func TestExtractQueryParam(t *testing.T) {
+	tests := []struct {
+		name   string
+		rawURL string
+		param  string
+		want   string
+	}{
+		{
+			name:   "basic",
+			rawURL: "https://example.com/auth?state=abc123&code=xyz",
+			param:  "state",
+			want:   "abc123",
+		},
+		{
+			name:   "url encoded value",
+			rawURL: "https://example.com/auth?state=abc%3D123&code=xyz",
+			param:  "state",
+			want:   "abc=123",
+		},
+		{
+			name:   "substring param name",
+			rawURL: "https://example.com/auth?substate=wrong&state=correct",
+			param:  "state",
+			want:   "correct",
+		},
+		{
+			name:   "missing param",
+			rawURL: "https://example.com/auth?code=xyz",
+			param:  "state",
+			want:   "",
+		},
+		{
+			name:   "with fragment",
+			rawURL: "https://example.com/auth?state=abc#fragment",
+			param:  "state",
+			want:   "abc",
+		},
+		{
+			name:   "invalid URL",
+			rawURL: "://not-a-url",
+			param:  "state",
+			want:   "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := extractQueryParam(tt.rawURL, tt.param)
+			if got != tt.want {
+				t.Errorf("extractQueryParam(%q, %q) = %q, want %q", tt.rawURL, tt.param, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestBuildHTTPClientWithSkipVerify(t *testing.T) {
 	client, err := buildHTTPClient(Config{
 		Address:    "https://vault.example.com:8200",
@@ -1494,5 +1583,63 @@ func TestBuildHTTPClientWithSkipVerify(t *testing.T) {
 	}
 	if !tr.TLSClientConfig.InsecureSkipVerify {
 		t.Error("InsecureSkipVerify should be true")
+	}
+}
+
+func TestStartRenewal_CancelledContext(t *testing.T) {
+	renewCalls := make(chan struct{}, 10)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "renew-self") {
+			renewCalls <- struct{}{}
+			json.NewEncoder(w).Encode(map[string]any{
+				"auth": map[string]any{
+					"client_token":   "tok",
+					"renewable":      true,
+					"lease_duration": 2, // 2s lease → 1s renewal interval
+				},
+			})
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	s := &Store{
+		client: &vaultClient{
+			addr:       srv.URL,
+			httpClient: srv.Client(),
+			token:      "test-token",
+		},
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// Start renewal with a short lease so the goroutine tries to renew quickly.
+	s.startRenewal(ctx, 2)
+
+	// Wait for at least one renewal call to confirm the goroutine is running.
+	select {
+	case <-renewCalls:
+		// Good, goroutine is active.
+	case <-time.After(5 * time.Second):
+		t.Fatal("renewal goroutine did not fire within timeout")
+	}
+
+	// Cancel the context and verify the goroutine stops (no more renewal calls).
+	cancel()
+	time.Sleep(200 * time.Millisecond) // give goroutine time to exit
+
+	// Drain any in-flight call.
+	for len(renewCalls) > 0 {
+		<-renewCalls
+	}
+
+	// No further calls should arrive.
+	select {
+	case <-renewCalls:
+		t.Error("renewal goroutine continued after context cancellation")
+	case <-time.After(3 * time.Second):
+		// Good, no more calls.
 	}
 }

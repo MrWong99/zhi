@@ -165,6 +165,11 @@ Validation code can use Go standard library packages by listing them in the
 package names (e.g. `strings`, `math`, `regexp`, `fmt`, `strconv`,
 `net/url`, etc.). Any package from the Go standard library is supported.
 
+> **Security note:** The Yaegi interpreter loads the full Go standard library,
+> which means validation code can call `os/exec`, `net/http`, `os.Remove`,
+> and any other stdlib function. Configuration authors are considered trusted;
+> never load configuration files from untrusted sources without review.
+
 ### Example
 
 ```yaml

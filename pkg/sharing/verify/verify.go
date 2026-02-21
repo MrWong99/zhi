@@ -246,6 +246,9 @@ type VerifySignatureOptions struct {
 	RequireCTLog bool
 	// RequireTLog requires Artifact Transparency log entry (Rekor).
 	RequireTLog bool
+	// Policy is the trust policy used to check if the signer is a trusted
+	// publisher. If nil, TrustedPublisher in the result will always be false.
+	Policy *Policy
 }
 
 // VerifySignature verifies a Sigstore bundle against an artifact digest.
@@ -317,7 +320,7 @@ func VerifySignature(ctx context.Context, bundlePath string, artifactDigest stri
 	if err != nil {
 		return &Result{
 			Signed:        true,
-			SigningMethod: SigningMethodKeyless, // Assume keyless for now
+			SigningMethod: detectBundleSigningMethod(b),
 			Level:         LevelSigned,
 			Error:         fmt.Errorf("signature verification failed: %w", err),
 		}, nil
@@ -327,12 +330,29 @@ func VerifySignature(ctx context.Context, bundlePath string, artifactDigest stri
 	// The verification result contains the certificate subject or key ID.
 	signingIdentity := extractSigningIdentity(verifyResult)
 
+	// Detect signing method: keyless uses a Fulcio certificate, key-based does not.
+	method := SigningMethodKey
+	if verifyResult.Signature != nil && verifyResult.Signature.Certificate != nil {
+		method = SigningMethodKeyless
+	}
+
+	// Check whether the signer is a trusted publisher.
+	trusted := false
+	if opts.Policy != nil && signingIdentity != "" {
+		trusted = opts.Policy.IsTrustedPublisher(signingIdentity)
+	}
+
+	level := LevelSigned
+	if trusted {
+		level = LevelStrict
+	}
+
 	return &Result{
 		Signed:           true,
 		SigningIdentity:  signingIdentity,
-		SigningMethod:    SigningMethodKeyless, // TODO: detect key-based vs keyless
-		TrustedPublisher: false,                // TODO: check against trusted publisher list
-		Level:            LevelSigned,
+		SigningMethod:    method,
+		TrustedPublisher: trusted,
+		Level:            level,
 	}, nil
 }
 
@@ -354,6 +374,19 @@ func parseDigest(digest string) ([]byte, error) {
 }
 
 // extractSigningIdentity extracts the signing identity from a verification result.
+// detectBundleSigningMethod inspects the bundle's verification material to
+// determine whether the artifact was signed with a key or keyless (Fulcio).
+func detectBundleSigningMethod(b *bundle.Bundle) SigningMethod {
+	vc, err := b.VerificationContent()
+	if err != nil {
+		return SigningMethodKeyless // default assumption
+	}
+	if _, ok := vc.(*bundle.Certificate); ok {
+		return SigningMethodKeyless
+	}
+	return SigningMethodKey
+}
+
 func extractSigningIdentity(result *verify.VerificationResult) string {
 	// The VerificationResult contains certificate information.
 	// For keyless signing, the identity is in the certificate's SAN.

@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"slices"
+	"sync"
 	"testing"
 )
 
@@ -274,4 +275,69 @@ func TestValidationResultMetadata(t *testing.T) {
 	if results[0].Metadata["doc"] != "https://example.com" {
 		t.Errorf("metadata[doc] = %v, want URL", results[0].Metadata["doc"])
 	}
+}
+
+func TestTreeConcurrentAccess(t *testing.T) {
+	tree := NewTree()
+
+	// Pre-populate some values with validators that read from the tree.
+	crossReader := func(value any, reader TreeReader) []ValidationResult {
+		_ = reader.List()
+		_, _ = reader.Get("db/host")
+		return nil
+	}
+	_ = tree.Set("db/host", &Value{Val: "localhost", Validators: []ValidateFunc{crossReader}})
+	_ = tree.Set("db/port", &Value{Val: float64(5432), Validators: []ValidateFunc{crossReader}})
+
+	var wg sync.WaitGroup
+	const goroutines = 8
+	const iterations = 200
+
+	// Writers
+	wg.Add(goroutines)
+	for g := range goroutines {
+		go func() {
+			defer wg.Done()
+			for i := range iterations {
+				path := fmt.Sprintf("worker%d/key%d", g, i%10)
+				_ = tree.Set(path, &Value{Val: i})
+			}
+		}()
+	}
+
+	// Readers (Get + List)
+	wg.Add(goroutines)
+	for range goroutines {
+		go func() {
+			defer wg.Done()
+			for range iterations {
+				_, _ = tree.Get("db/host")
+				_ = tree.List()
+			}
+		}()
+	}
+
+	// Validators (exercises cross-value reads under RLock)
+	wg.Add(goroutines)
+	for range goroutines {
+		go func() {
+			defer wg.Done()
+			for range iterations {
+				_ = tree.Validate()
+			}
+		}()
+	}
+
+	// Deleters
+	wg.Add(goroutines)
+	for g := range goroutines {
+		go func() {
+			defer wg.Done()
+			for i := range iterations {
+				tree.Delete(fmt.Sprintf("worker%d/key%d", g, i%10))
+			}
+		}()
+	}
+
+	wg.Wait()
 }

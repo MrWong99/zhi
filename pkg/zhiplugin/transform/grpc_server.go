@@ -19,8 +19,12 @@ func (s *GRPCServer) BeforeDisplay(ctx context.Context, req *pb.BeforeDisplayReq
 	if err := s.Impl.BeforeDisplay(ctx, tree); err != nil {
 		return nil, err
 	}
+	entries, err := config.TreeToProto(tree)
+	if err != nil {
+		return nil, err
+	}
 	return &pb.BeforeDisplayResponse{
-		Tree: config.TreeToProto(tree),
+		Tree: entries,
 	}, nil
 }
 
@@ -29,8 +33,12 @@ func (s *GRPCServer) AfterSave(ctx context.Context, req *pb.AfterSaveRequest) (*
 	if err := s.Impl.AfterSave(ctx, tree); err != nil {
 		return nil, err
 	}
+	entries, err := config.TreeToProto(tree)
+	if err != nil {
+		return nil, err
+	}
 	return &pb.AfterSaveResponse{
-		Tree: config.TreeToProto(tree),
+		Tree: entries,
 	}, nil
 }
 

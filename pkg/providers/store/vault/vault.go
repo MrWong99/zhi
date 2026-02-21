@@ -21,6 +21,7 @@ import (
 	"log/slog"
 	"maps"
 	"net/http"
+	"net/url"
 	"os"
 	"slices"
 	"sort"
@@ -310,7 +311,7 @@ func (s *Store) loginToken(ctx context.Context, creds map[string]string) (*store
 				cred.ExpiresAt = lookup.ExpireTime
 			}
 			if lookup.Renewable && lookup.TTL > 0 {
-				s.startRenewal(lookup.TTL)
+				s.startRenewal(ctx, lookup.TTL)
 			}
 		}
 	}
@@ -330,7 +331,7 @@ func (s *Store) loginUserpass(ctx context.Context, creds map[string]string) (*st
 	if err != nil {
 		return nil, s.mapAuthError(err)
 	}
-	return s.processAuthResponse(resp)
+	return s.processAuthResponse(ctx, resp)
 }
 
 func (s *Store) loginAppRole(ctx context.Context, creds map[string]string) (*store.Credential, error) {
@@ -347,7 +348,7 @@ func (s *Store) loginAppRole(ctx context.Context, creds map[string]string) (*sto
 	if err != nil {
 		return nil, s.mapAuthError(err)
 	}
-	return s.processAuthResponse(resp)
+	return s.processAuthResponse(ctx, resp)
 }
 
 func (s *Store) loginLDAP(ctx context.Context, creds map[string]string) (*store.Credential, error) {
@@ -363,7 +364,7 @@ func (s *Store) loginLDAP(ctx context.Context, creds map[string]string) (*store.
 	if err != nil {
 		return nil, s.mapAuthError(err)
 	}
-	return s.processAuthResponse(resp)
+	return s.processAuthResponse(ctx, resp)
 }
 
 func (s *Store) loginKubernetes(ctx context.Context, creds map[string]string) (*store.Credential, error) {
@@ -380,7 +381,7 @@ func (s *Store) loginKubernetes(ctx context.Context, creds map[string]string) (*
 	if err != nil {
 		return nil, s.mapAuthError(err)
 	}
-	return s.processAuthResponse(resp)
+	return s.processAuthResponse(ctx, resp)
 }
 
 // LoginInteractive starts an OIDC browser-based authentication flow.
@@ -439,25 +440,21 @@ func (s *Store) LoginInteractiveCallback(ctx context.Context, _ string, callback
 	if err != nil {
 		return nil, s.mapAuthError(err)
 	}
-	return s.processAuthResponse(resp)
+	return s.processAuthResponse(ctx, resp)
 }
 
 // extractQueryParam extracts a query parameter from a URL string.
 func extractQueryParam(rawURL, param string) string {
-	idx := strings.Index(rawURL, param+"=")
-	if idx < 0 {
+	u, err := url.Parse(rawURL)
+	if err != nil {
 		return ""
 	}
-	val := rawURL[idx+len(param)+1:]
-	if end := strings.IndexByte(val, '&'); end >= 0 {
-		val = val[:end]
-	}
-	return val
+	return u.Query().Get(param)
 }
 
 // processAuthResponse extracts the token from a login response, stores it,
 // starts renewal if applicable, and returns a Credential.
-func (s *Store) processAuthResponse(resp *vaultResponse) (*store.Credential, error) {
+func (s *Store) processAuthResponse(ctx context.Context, resp *vaultResponse) (*store.Credential, error) {
 	if resp.Auth == nil {
 		return nil, &store.ErrAuthRequired{Reason: "no auth data in response"}
 	}
@@ -475,15 +472,16 @@ func (s *Store) processAuthResponse(resp *vaultResponse) (*store.Credential, err
 	}
 
 	if resp.Auth.Renewable && resp.Auth.LeaseDuration > 0 {
-		s.startRenewal(resp.Auth.LeaseDuration)
+		s.startRenewal(ctx, resp.Auth.LeaseDuration)
 	}
 
 	return cred, nil
 }
 
 // startRenewal starts a background goroutine that renews the Vault token
-// at half the lease duration interval.
-func (s *Store) startRenewal(leaseDuration int) {
+// at half the lease duration interval. The goroutine exits when the parent
+// context is cancelled, Stop() is called, or renewal fails.
+func (s *Store) startRenewal(parent context.Context, leaseDuration int) {
 	s.renewMu.Lock()
 	defer s.renewMu.Unlock()
 
@@ -504,12 +502,14 @@ func (s *Store) startRenewal(leaseDuration int) {
 			select {
 			case <-stop:
 				return
+			case <-parent.Done():
+				return
 			case <-timer.C:
-				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+				ctx, cancel := context.WithTimeout(parent, 30*time.Second)
 				_, err := s.client.request(ctx, http.MethodPost, "auth/token/renew-self", nil)
 				cancel()
 				if err != nil {
-					// Renewal failed; stop trying. The user can re-login.
+					slog.Warn("vault token renewal failed, token will expire", "error", err)
 					return
 				}
 				timer.Reset(renewInterval)
@@ -599,8 +599,13 @@ func (s *Store) PutValues(ctx context.Context, id string, values map[string]conf
 			return err
 		}
 
+		encoded, err := encodeValue(v)
+		if err != nil {
+			return fmt.Errorf("encoding value for path %q: %w", p, err)
+		}
+
 		body := map[string]any{
-			"data": encodeValue(v),
+			"data": encoded,
 		}
 
 		// Wire CAS: explicit PutOptions take precedence, then fall back
@@ -625,7 +630,7 @@ func (s *Store) PutValues(ctx context.Context, id string, values map[string]conf
 			body["options"] = map[string]any{"cas": casVersion}
 		}
 
-		_, err := s.client.request(ctx, http.MethodPost, s.dataPath(id, p), body)
+		_, err = s.client.request(ctx, http.MethodPost, s.dataPath(id, p), body)
 		if err != nil {
 			return s.mapWriteError(err, p)
 		}
@@ -757,8 +762,12 @@ func (s *Store) RollbackValue(ctx context.Context, id string, path string, versi
 	}
 
 	// Write it as a new version.
+	encoded, err := encodeValue(val)
+	if err != nil {
+		return fmt.Errorf("encoding value for rollback of %q: %w", path, err)
+	}
 	body := map[string]any{
-		"data": encodeValue(val),
+		"data": encoded,
 	}
 	_, err = s.client.request(ctx, http.MethodPost, s.dataPath(id, path), body)
 	if err != nil {
@@ -975,13 +984,19 @@ func isVaultNotFound(err error) bool {
 // --- Value encoding/decoding ---
 
 // encodeValue serializes a config.Value into a Vault KV v2 data map.
-func encodeValue(v config.Value) map[string]any {
-	valJSON, _ := json.Marshal(v.Val)
-	metaJSON, _ := json.Marshal(v.Metadata)
+func encodeValue(v config.Value) (map[string]any, error) {
+	valJSON, err := json.Marshal(v.Val)
+	if err != nil {
+		return nil, fmt.Errorf("marshaling value: %w", err)
+	}
+	metaJSON, err := json.Marshal(v.Metadata)
+	if err != nil {
+		return nil, fmt.Errorf("marshaling metadata: %w", err)
+	}
 	return map[string]any{
 		"zhi_val":  string(valJSON),
 		"zhi_meta": string(metaJSON),
-	}
+	}, nil
 }
 
 // decodeKVResponse parses the KV v2 read response into a config.Value.

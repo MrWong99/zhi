@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
 	configpb "github.com/MrWong99/zhi/pkg/zhiplugin/config/proto"
@@ -130,7 +131,10 @@ func (c *GRPCClient) GetValues(ctx context.Context, id string, paths []string) (
 }
 
 func (c *GRPCClient) PutValues(ctx context.Context, id string, values map[string]config.Value, opts *PutOptions) error {
-	entries := valuesToProto(values)
+	entries, err := valuesToProto(values)
+	if err != nil {
+		return fmt.Errorf("serializing values for PutValues: %w", err)
+	}
 	req := &pb.PutValuesRequest{
 		Id:     id,
 		Values: entries,
@@ -139,7 +143,7 @@ func (c *GRPCClient) PutValues(ctx context.Context, id string, values map[string
 		req.CasVersion = opts.CASVersion
 		req.CasVersions = opts.CASVersions
 	}
-	_, err := c.client.PutValues(ctx, req)
+	_, err = c.client.PutValues(ctx, req)
 	return statusToError(err)
 }
 
@@ -291,12 +295,12 @@ func (c *GRPCClient) ListAccess(ctx context.Context, id string) (map[string][]Pe
 // --- helpers ---
 
 // valuesToProto serialises a map of path->Value into proto TreeEntry messages.
-func valuesToProto(values map[string]config.Value) []*configpb.TreeEntry {
+func valuesToProto(values map[string]config.Value) ([]*configpb.TreeEntry, error) {
 	entries := make([]*configpb.TreeEntry, 0, len(values))
 	for path, v := range values {
 		valJSON, metaJSON, err := config.ValueToProto(v)
 		if err != nil {
-			continue
+			return nil, fmt.Errorf("serializing value at %q: %w", path, err)
 		}
 		entries = append(entries, &configpb.TreeEntry{
 			Path:         path,
@@ -305,7 +309,7 @@ func valuesToProto(values map[string]config.Value) []*configpb.TreeEntry {
 			Version:      v.Version,
 		})
 	}
-	return entries
+	return entries, nil
 }
 
 // entriesFromProto converts proto TreeEntry messages back into a map of

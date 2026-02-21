@@ -134,6 +134,34 @@ func TestParseImportsField(t *testing.T) {
 	}
 }
 
+func TestFlattenSliceAliasing(t *testing.T) {
+	entries, err := parseFile(filepath.Join("testdata", "siblings.yaml"))
+	if err != nil {
+		t.Fatalf("parseFile: %v", err)
+	}
+
+	// There should be exactly 4 entries at the same nesting depth.
+	want := map[string]any{
+		"pokedex/region/nested/alpha":   "a",
+		"pokedex/region/nested/bravo":   "b",
+		"pokedex/region/nested/charlie": "c",
+		"pokedex/region/nested/delta":   "d",
+	}
+	if len(entries) != len(want) {
+		t.Fatalf("got %d entries, want %d: %v", len(entries), len(want), entries)
+	}
+	for path, wantVal := range want {
+		e, ok := entries[path]
+		if !ok {
+			t.Errorf("missing path %q", path)
+			continue
+		}
+		if e.Val != wantVal {
+			t.Errorf("entries[%q].Val = %v, want %v", path, e.Val, wantVal)
+		}
+	}
+}
+
 // --- overlap tests --------------------------------------------------------
 
 func TestLoadDirOverlap(t *testing.T) {

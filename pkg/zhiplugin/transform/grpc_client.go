@@ -14,7 +14,10 @@ type GRPCClient struct {
 }
 
 func (c *GRPCClient) BeforeDisplay(ctx context.Context, tree *config.Tree) error {
-	entries := config.TreeToProto(tree)
+	entries, err := config.TreeToProto(tree)
+	if err != nil {
+		return err
+	}
 	resp, err := c.client.BeforeDisplay(ctx, &pb.BeforeDisplayRequest{Tree: entries})
 	if err != nil {
 		return err
@@ -24,7 +27,10 @@ func (c *GRPCClient) BeforeDisplay(ctx context.Context, tree *config.Tree) error
 }
 
 func (c *GRPCClient) AfterSave(ctx context.Context, tree *config.Tree) error {
-	entries := config.TreeToProto(tree)
+	entries, err := config.TreeToProto(tree)
+	if err != nil {
+		return err
+	}
 	resp, err := c.client.AfterSave(ctx, &pb.AfterSaveRequest{Tree: entries})
 	if err != nil {
 		return err

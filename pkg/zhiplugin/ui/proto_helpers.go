@@ -9,7 +9,7 @@ import (
 )
 
 // treeToProto delegates to config.TreeToProto.
-func treeToProto(tree config.TreeReader) []*cfgpb.TreeEntry {
+func treeToProto(tree config.TreeReader) ([]*cfgpb.TreeEntry, error) {
 	return config.TreeToProto(tree)
 }
 

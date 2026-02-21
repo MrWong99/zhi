@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 
@@ -18,9 +19,10 @@ func TestCredManager_ReconcilePolicies(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == http.MethodPut && startsWith(r.URL.Path, "/v1/sys/policies/acl/"):
+		case r.Method == http.MethodPut && strings.HasPrefix(r.URL.Path, "/v1/sys/policies/acl/"):
 			mu.Lock()
-			policiesWritten = append(policiesWritten, lastSegment(r.URL.Path))
+			parts := strings.Split(r.URL.Path, "/")
+			policiesWritten = append(policiesWritten, parts[len(parts)-1])
 			mu.Unlock()
 			w.WriteHeader(http.StatusNoContent)
 		case r.Method == "LIST" && r.URL.Path == "/v1/sys/policies/acl":
@@ -68,27 +70,64 @@ func TestCredManager_InjectCredentials(t *testing.T) {
 		"database/host": {Val: "localhost"},
 	}
 
-	creds := map[string]*appCredentials{
-		"web-api": {
-			AuthMethod:      "approle",
-			RoleID:          "role-123",
-			WrappedSecretID: "hvs.wrapped",
-		},
-	}
+	t.Run("wrapped", func(t *testing.T) {
+		creds := map[string]*appCredentials{
+			"web-api": {
+				AuthMethod: "approle",
+				RoleID:     "role-123",
+				SecretID:   "hvs.wrapped",
+				Wrapped:    true,
+			},
+		}
 
-	result := injectCredentials(values, creds)
+		result := injectCredentials(values, creds)
 
-	roleID, ok := result["vault/credentials/web-api/role-id"]
-	if !ok {
-		t.Fatal("missing role-id")
-	}
-	if roleID.Val != "role-123" {
-		t.Errorf("role-id = %v", roleID.Val)
-	}
-	if !labels.IsHidden(roleID.Metadata) {
-		t.Error("role-id should be ui.hidden")
-	}
-	if !labels.IsEphemeral(roleID.Metadata) {
-		t.Error("role-id should be store.ephemeral")
-	}
+		roleID, ok := result["vault/credentials/web-api/role-id"]
+		if !ok {
+			t.Fatal("missing role-id")
+		}
+		if roleID.Val != "role-123" {
+			t.Errorf("role-id = %v", roleID.Val)
+		}
+		if !labels.IsHidden(roleID.Metadata) {
+			t.Error("role-id should be ui.hidden")
+		}
+		if !labels.IsEphemeral(roleID.Metadata) {
+			t.Error("role-id should be store.ephemeral")
+		}
+
+		wrappedSID, ok := result["vault/credentials/web-api/wrapped-secret-id"]
+		if !ok {
+			t.Fatal("missing wrapped-secret-id")
+		}
+		if wrappedSID.Val != "hvs.wrapped" {
+			t.Errorf("wrapped-secret-id = %v", wrappedSID.Val)
+		}
+	})
+
+	t.Run("unwrapped", func(t *testing.T) {
+		creds := map[string]*appCredentials{
+			"web-api": {
+				AuthMethod: "approle",
+				RoleID:     "role-123",
+				SecretID:   "plain-secret-id",
+				Wrapped:    false,
+			},
+		}
+
+		result := injectCredentials(values, creds)
+
+		sid, ok := result["vault/credentials/web-api/secret-id"]
+		if !ok {
+			t.Fatal("missing secret-id for unwrapped mode")
+		}
+		if sid.Val != "plain-secret-id" {
+			t.Errorf("secret-id = %v", sid.Val)
+		}
+
+		_, hasWrapped := result["vault/credentials/web-api/wrapped-secret-id"]
+		if hasWrapped {
+			t.Error("should not have wrapped-secret-id in unwrapped mode")
+		}
+	})
 }

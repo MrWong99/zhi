@@ -2,13 +2,18 @@
 // KV v2 secrets engine. It demonstrates how to use the vault store provider
 // as an external plugin binary.
 //
-// Configuration is read from environment variables:
+// Configuration is read from ZHI_PLUGIN_OPTIONS (JSON), falling back to
+// environment variables:
 //
-//	VAULT_ADDR       — Vault server address (default: http://127.0.0.1:8200)
-//	VAULT_TOKEN      — Initial Vault token
-//	ZHI_VAULT_MOUNT  — KV v2 mount point (default: secret)
-//	ZHI_VAULT_PREFIX — Key prefix within the mount (default: zhi)
-//	VAULT_NAMESPACE  — Vault namespace (optional, enterprise only)
+//	addr / VAULT_ADDR       — Vault server address (default: http://127.0.0.1:8200)
+//	token / VAULT_TOKEN     — Initial Vault token
+//	mount / ZHI_VAULT_MOUNT — KV v2 mount point (default: secret)
+//	prefix / ZHI_VAULT_PREFIX — Key prefix within the mount (default: zhi)
+//	namespace / VAULT_NAMESPACE — Vault namespace (optional, enterprise only)
+//	ca_cert / VAULT_CACERT      — CA certificate path (optional)
+//	client_cert / VAULT_CLIENT_CERT — Client certificate path (optional)
+//	client_key / VAULT_CLIENT_KEY   — Client private key path (optional)
+//	skip_verify / VAULT_SKIP_VERIFY — Disable TLS verification (optional)
 package main
 
 import (
@@ -19,8 +24,24 @@ import (
 
 	"github.com/MrWong99/zhi/pkg/providers/store/vault"
 	"github.com/MrWong99/zhi/pkg/zhiplugin"
+	"github.com/MrWong99/zhi/pkg/zhiplugin/pluginopts"
 	"github.com/MrWong99/zhi/pkg/zhiplugin/store"
 )
+
+func parseConfig(opts map[string]any) vault.Config {
+	skipVerify := pluginopts.String(opts, "skip_verify", "VAULT_SKIP_VERIFY", "")
+	return vault.Config{
+		Address:    pluginopts.String(opts, "addr", "VAULT_ADDR", "http://127.0.0.1:8200"),
+		Token:      pluginopts.String(opts, "token", "VAULT_TOKEN", ""),
+		Mount:      pluginopts.String(opts, "mount", "ZHI_VAULT_MOUNT", "secret"),
+		Prefix:     pluginopts.String(opts, "prefix", "ZHI_VAULT_PREFIX", "zhi"),
+		Namespace:  pluginopts.String(opts, "namespace", "VAULT_NAMESPACE", ""),
+		CACert:     pluginopts.String(opts, "ca_cert", "VAULT_CACERT", ""),
+		ClientCert: pluginopts.String(opts, "client_cert", "VAULT_CLIENT_CERT", ""),
+		ClientKey:  pluginopts.String(opts, "client_key", "VAULT_CLIENT_KEY", ""),
+		SkipVerify: skipVerify == "true" || skipVerify == "1",
+	}
+}
 
 func main() {
 	level := hclog.LevelFromString(os.Getenv("ZHI_LOG_LEVEL"))
@@ -34,13 +55,8 @@ func main() {
 	})
 	logger.Info("starting vault store plugin")
 
-	cfg := vault.DefaultConfig()
-	if mount := os.Getenv("ZHI_VAULT_MOUNT"); mount != "" {
-		cfg.Mount = mount
-	}
-	if prefix := os.Getenv("ZHI_VAULT_PREFIX"); prefix != "" {
-		cfg.Prefix = prefix
-	}
+	opts := pluginopts.Options()
+	cfg := parseConfig(opts)
 
 	s, err := vault.New(cfg)
 	if err != nil {

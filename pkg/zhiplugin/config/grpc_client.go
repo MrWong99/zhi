@@ -3,6 +3,7 @@ package config
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	pb "github.com/MrWong99/zhi/pkg/zhiplugin/config/proto"
 )
@@ -50,7 +51,10 @@ func (c *GRPCClient) Set(ctx context.Context, path string, v Value) error {
 }
 
 func (c *GRPCClient) Validate(ctx context.Context, path string, tree TreeReader) ([]ValidationResult, error) {
-	entries := TreeToProto(tree)
+	entries, err := TreeToProto(tree)
+	if err != nil {
+		return nil, fmt.Errorf("serializing tree for validation: %w", err)
+	}
 	resp, err := c.client.Validate(ctx, &pb.ValidateRequest{
 		Path: path,
 		Tree: entries,
@@ -63,7 +67,7 @@ func (c *GRPCClient) Validate(ctx context.Context, path string, tree TreeReader)
 
 // TreeToProto serialises a TreeReader into a slice of proto TreeEntry
 // messages for transmission over the wire.
-func TreeToProto(tree TreeReader) []*pb.TreeEntry {
+func TreeToProto(tree TreeReader) ([]*pb.TreeEntry, error) {
 	paths := tree.List()
 	entries := make([]*pb.TreeEntry, 0, len(paths))
 	for _, p := range paths {
@@ -73,7 +77,7 @@ func TreeToProto(tree TreeReader) []*pb.TreeEntry {
 		}
 		valJSON, metaJSON, err := ValueToProto(v)
 		if err != nil {
-			continue
+			return nil, fmt.Errorf("serializing value at %q: %w", p, err)
 		}
 		entries = append(entries, &pb.TreeEntry{
 			Path:         p,
@@ -81,7 +85,7 @@ func TreeToProto(tree TreeReader) []*pb.TreeEntry {
 			MetadataJson: metaJSON,
 		})
 	}
-	return entries
+	return entries, nil
 }
 
 // resultsFromProto converts proto ValidationResultMsg messages back into

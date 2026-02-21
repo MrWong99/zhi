@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
@@ -97,5 +98,5 @@ func TestParseCapabilities(t *testing.T) {
 }
 
 func containsLine(s, substr string) bool {
-	return len(s) > 0 && contains(s, substr)
+	return len(s) > 0 && strings.Contains(s, substr)
 }

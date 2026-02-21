@@ -7,6 +7,7 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
@@ -66,7 +67,7 @@ func isLeaf(m map[string]any) bool {
 // by slash-delimited configuration paths.
 func flatten(m map[string]any, prefix []string, out map[string]*entry) error {
 	for key, val := range m {
-		segments := append(prefix, key)
+		segments := slices.Concat(prefix, []string{key})
 
 		child, isMap := val.(map[string]any)
 		if !isMap {

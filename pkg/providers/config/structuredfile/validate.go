@@ -61,6 +61,12 @@ func Validate(v config.Value, tree config.TreeReader) ([]config.ValidationResult
 }
 `, extraImports.String(), body)
 
+	// SECURITY: Yaegi loads the full Go stdlib (stdlib.Symbols), which means
+	// validation code embedded in configuration files can execute arbitrary
+	// system calls (os/exec, net/http, os.Remove, etc.). This is a deliberate
+	// trade-off for maximum flexibility: configuration authors are considered
+	// trusted. If untrusted input is ever accepted, a restricted symbol set
+	// must replace stdlib.Symbols.
 	i := interp.New(interp.Options{})
 	if err := i.Use(configSymbols); err != nil {
 		return nil, fmt.Errorf("compiling validation for %s: loading symbols: %w", path, err)

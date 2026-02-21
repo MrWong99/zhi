@@ -76,6 +76,12 @@ func runSet(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("loading tree: %w", err)
 	}
 
+	// Override the path on the loaded tree with the user's value so that
+	// stale stored values don't overwrite what was just set.
+	if err := tree.Set(path, &config.Value{Val: val}); err != nil {
+		return fmt.Errorf("re-applying value after load: %w", err)
+	}
+
 	// Validate if requested — abort save on blocking errors.
 	if setValidate {
 		results, err := eng.Validate(ctx, tree)

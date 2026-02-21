@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"google.golang.org/grpc"
 
@@ -24,7 +25,10 @@ func (s *controllerGRPCServer) LoadTree(ctx context.Context, _ *pb.CtrlLoadTreeR
 	if err != nil {
 		return nil, err
 	}
-	entries := treeToProto(tree)
+	entries, err := treeToProto(tree)
+	if err != nil {
+		return nil, err
+	}
 	return &pb.CtrlLoadTreeResponse{Tree: entries}, nil
 }
 
@@ -51,7 +55,11 @@ func (s *controllerGRPCServer) Validate(ctx context.Context, _ *pb.CtrlValidateR
 			Message:  r.Message,
 		}
 		if r.Metadata != nil {
-			m.MetadataJson, _ = json.Marshal(r.Metadata)
+			metaJSON, err := json.Marshal(r.Metadata)
+			if err != nil {
+				return nil, fmt.Errorf("marshaling validation result metadata: %w", err)
+			}
+			m.MetadataJson = metaJSON
 		}
 		msgs = append(msgs, m)
 	}

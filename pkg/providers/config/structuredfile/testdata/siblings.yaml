@@ -1,0 +1,11 @@
+pokedex:
+  region:
+    nested:
+      alpha:
+        val: a
+      bravo:
+        val: b
+      charlie:
+        val: c
+      delta:
+        val: d
