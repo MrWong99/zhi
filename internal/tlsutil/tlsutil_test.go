@@ -359,6 +359,31 @@ func TestClientConfig_HTTPClient_BadCert(t *testing.T) {
 	}
 }
 
+func TestClientConfig_Enabled_InsecureSkipVerify(t *testing.T) {
+	c := &ClientConfig{InsecureSkipVerify: true}
+	if !c.Enabled() {
+		t.Error("Enabled() should be true when InsecureSkipVerify is set")
+	}
+}
+
+func TestClientConfig_HTTPClient_InsecureSkipVerify(t *testing.T) {
+	c := &ClientConfig{InsecureSkipVerify: true}
+	hc, err := c.HTTPClient(30 * time.Second)
+	if err != nil {
+		t.Fatalf("HTTPClient() error: %v", err)
+	}
+	if hc == nil {
+		t.Fatal("expected non-nil client")
+	}
+	tr, ok := hc.Transport.(*http.Transport)
+	if !ok {
+		t.Fatal("expected *http.Transport")
+	}
+	if !tr.TLSClientConfig.InsecureSkipVerify {
+		t.Error("InsecureSkipVerify should be true in TLS config")
+	}
+}
+
 func TestClientConfig_HTTPClient_BadCA(t *testing.T) {
 	dir := t.TempDir()
 	badCA := filepath.Join(dir, "bad.pem")

@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
 	"github.com/MrWong99/zhi/pkg/zhiplugin/labels"
@@ -1326,5 +1327,172 @@ func TestCombinedLabels(t *testing.T) {
 	}
 	if sm.DeleteVersionAfter != "7200s" {
 		t.Errorf("delete_version_after = %q, want %q", sm.DeleteVersionAfter, "7200s")
+	}
+}
+
+// --- TLS configuration tests ---
+
+func TestDefaultConfigReadsVaultEnvVars(t *testing.T) {
+	// Save and restore env.
+	envVars := []string{
+		"VAULT_ADDR", "VAULT_TOKEN", "VAULT_NAMESPACE",
+		"VAULT_CACERT", "VAULT_CLIENT_CERT", "VAULT_CLIENT_KEY", "VAULT_SKIP_VERIFY",
+	}
+	saved := make(map[string]string)
+	for _, k := range envVars {
+		saved[k] = os.Getenv(k)
+	}
+	t.Cleanup(func() {
+		for k, v := range saved {
+			if v == "" {
+				os.Unsetenv(k)
+			} else {
+				os.Setenv(k, v)
+			}
+		}
+	})
+
+	os.Setenv("VAULT_ADDR", "https://vault.example.com:8200")
+	os.Setenv("VAULT_TOKEN", "hvs.test")
+	os.Setenv("VAULT_NAMESPACE", "myns")
+	os.Setenv("VAULT_CACERT", "/path/to/ca.pem")
+	os.Setenv("VAULT_CLIENT_CERT", "/path/to/cert.pem")
+	os.Setenv("VAULT_CLIENT_KEY", "/path/to/key.pem")
+	os.Setenv("VAULT_SKIP_VERIFY", "true")
+
+	cfg := DefaultConfig()
+
+	if cfg.Address != "https://vault.example.com:8200" {
+		t.Errorf("Address = %q, want %q", cfg.Address, "https://vault.example.com:8200")
+	}
+	if cfg.Token != "hvs.test" {
+		t.Errorf("Token = %q, want %q", cfg.Token, "hvs.test")
+	}
+	if cfg.Namespace != "myns" {
+		t.Errorf("Namespace = %q, want %q", cfg.Namespace, "myns")
+	}
+	if cfg.CACert != "/path/to/ca.pem" {
+		t.Errorf("CACert = %q, want %q", cfg.CACert, "/path/to/ca.pem")
+	}
+	if cfg.ClientCert != "/path/to/cert.pem" {
+		t.Errorf("ClientCert = %q, want %q", cfg.ClientCert, "/path/to/cert.pem")
+	}
+	if cfg.ClientKey != "/path/to/key.pem" {
+		t.Errorf("ClientKey = %q, want %q", cfg.ClientKey, "/path/to/key.pem")
+	}
+	if !cfg.SkipVerify {
+		t.Error("SkipVerify should be true")
+	}
+}
+
+func TestDefaultConfigSkipVerifyVariants(t *testing.T) {
+	saved := os.Getenv("VAULT_SKIP_VERIFY")
+	t.Cleanup(func() {
+		if saved == "" {
+			os.Unsetenv("VAULT_SKIP_VERIFY")
+		} else {
+			os.Setenv("VAULT_SKIP_VERIFY", saved)
+		}
+	})
+
+	tests := []struct {
+		envVal string
+		want   bool
+	}{
+		{"true", true},
+		{"1", true},
+		{"false", false},
+		{"0", false},
+		{"", false},
+	}
+	for _, tt := range tests {
+		t.Run("VAULT_SKIP_VERIFY="+tt.envVal, func(t *testing.T) {
+			if tt.envVal == "" {
+				os.Unsetenv("VAULT_SKIP_VERIFY")
+			} else {
+				os.Setenv("VAULT_SKIP_VERIFY", tt.envVal)
+			}
+			cfg := DefaultConfig()
+			if cfg.SkipVerify != tt.want {
+				t.Errorf("SkipVerify = %v, want %v", cfg.SkipVerify, tt.want)
+			}
+		})
+	}
+}
+
+func TestNewWithTLSSkipVerify(t *testing.T) {
+	mock := newMockVault()
+	srv := httptest.NewServer(mock.handler())
+	t.Cleanup(srv.Close)
+
+	s, err := New(Config{
+		Address:    srv.URL,
+		Token:      "test",
+		SkipVerify: true,
+	})
+	if err != nil {
+		t.Fatalf("New with SkipVerify: %v", err)
+	}
+	t.Cleanup(s.Stop)
+
+	// Verify the client works.
+	ctx := context.Background()
+	_, err = s.Capabilities(ctx)
+	if err != nil {
+		t.Fatalf("Capabilities with SkipVerify: %v", err)
+	}
+}
+
+func TestNewWithBadCACertPath(t *testing.T) {
+	_, err := New(Config{
+		Address: "https://vault.example.com:8200",
+		Token:   "test",
+		CACert:  "/nonexistent/ca.pem",
+	})
+	if err == nil {
+		t.Fatal("expected error for nonexistent CA cert")
+	}
+	if !strings.Contains(err.Error(), "configuring vault TLS") {
+		t.Errorf("error = %q, want to contain 'configuring vault TLS'", err.Error())
+	}
+}
+
+func TestNewWithBadClientCertPath(t *testing.T) {
+	_, err := New(Config{
+		Address:    "https://vault.example.com:8200",
+		Token:      "test",
+		ClientCert: "/nonexistent/cert.pem",
+		ClientKey:  "/nonexistent/key.pem",
+	})
+	if err == nil {
+		t.Fatal("expected error for nonexistent client cert")
+	}
+}
+
+func TestBuildHTTPClientDefault(t *testing.T) {
+	// No TLS config should return a plain client with timeout.
+	client, err := buildHTTPClient(Config{Address: "http://localhost:8200"})
+	if err != nil {
+		t.Fatalf("buildHTTPClient: %v", err)
+	}
+	if client.Timeout != 30*time.Second {
+		t.Errorf("Timeout = %v, want 30s", client.Timeout)
+	}
+}
+
+func TestBuildHTTPClientWithSkipVerify(t *testing.T) {
+	client, err := buildHTTPClient(Config{
+		Address:    "https://vault.example.com:8200",
+		SkipVerify: true,
+	})
+	if err != nil {
+		t.Fatalf("buildHTTPClient: %v", err)
+	}
+	tr, ok := client.Transport.(*http.Transport)
+	if !ok {
+		t.Fatal("expected *http.Transport")
+	}
+	if !tr.TLSClientConfig.InsecureSkipVerify {
+		t.Error("InsecureSkipVerify should be true")
 	}
 }
