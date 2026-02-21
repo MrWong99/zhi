@@ -1585,3 +1585,61 @@ func TestBuildHTTPClientWithSkipVerify(t *testing.T) {
 		t.Error("InsecureSkipVerify should be true")
 	}
 }
+
+func TestStartRenewal_CancelledContext(t *testing.T) {
+	renewCalls := make(chan struct{}, 10)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "renew-self") {
+			renewCalls <- struct{}{}
+			json.NewEncoder(w).Encode(map[string]any{
+				"auth": map[string]any{
+					"client_token":   "tok",
+					"renewable":      true,
+					"lease_duration": 2, // 2s lease → 1s renewal interval
+				},
+			})
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	s := &Store{
+		client: &vaultClient{
+			addr:       srv.URL,
+			httpClient: srv.Client(),
+			token:      "test-token",
+		},
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// Start renewal with a short lease so the goroutine tries to renew quickly.
+	s.startRenewal(ctx, 2)
+
+	// Wait for at least one renewal call to confirm the goroutine is running.
+	select {
+	case <-renewCalls:
+		// Good, goroutine is active.
+	case <-time.After(5 * time.Second):
+		t.Fatal("renewal goroutine did not fire within timeout")
+	}
+
+	// Cancel the context and verify the goroutine stops (no more renewal calls).
+	cancel()
+	time.Sleep(200 * time.Millisecond) // give goroutine time to exit
+
+	// Drain any in-flight call.
+	for len(renewCalls) > 0 {
+		<-renewCalls
+	}
+
+	// No further calls should arrive.
+	select {
+	case <-renewCalls:
+		t.Error("renewal goroutine continued after context cancellation")
+	case <-time.After(3 * time.Second):
+		// Good, no more calls.
+	}
+}
