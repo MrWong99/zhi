@@ -3,6 +3,7 @@ package cli
 import (
 	"embed"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -39,12 +40,14 @@ var (
 	initConfigProvider string
 	initStoreProvider  string
 	initForce          bool
+	initBare           bool
 )
 
 func init() {
 	initCmd.Flags().StringVar(&initConfigProvider, "config-provider", "structuredfile", "config provider to use")
 	initCmd.Flags().StringVar(&initStoreProvider, "store-provider", "zhi-store-json", "store provider to use")
 	initCmd.Flags().BoolVar(&initForce, "force", false, "overwrite existing zhi.yaml if present")
+	initCmd.Flags().BoolVar(&initBare, "bare", false, "create a minimal workspace without demo content")
 	rootCmd.AddCommand(initCmd)
 }
 
@@ -78,6 +81,10 @@ func runInit(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("creating .zhi/store directory: %w", err)
 	}
 	created = append(created, ".zhi/store/")
+
+	if initBare {
+		return runInitBare(w, absDir, zhiYamlPath, created)
+	}
 
 	// Walk the embedded FS to create the workspace files
 	templateData := map[string]string{
@@ -182,6 +189,52 @@ func runInit(cmd *cobra.Command, _ []string) error {
 	fmt.Fprintln(w, "  - Edit configuration: zhi edit")
 	fmt.Fprintln(w, "  - See all config:     zhi list")
 	fmt.Fprintln(w, "  - Manage components:  zhi component list")
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "Add .zhi/ to your .gitignore to keep internal state out of version control.")
+
+	return nil
+}
+
+// runInitBare creates a minimal workspace without demo content.
+func runInitBare(w io.Writer, absDir, zhiYamlPath string, created []string) error {
+	// Write minimal zhi.yaml with config + store sections.
+	bareYAML := fmt.Sprintf(`version: "1"
+
+config:
+  provider: %s
+  options:
+    directory: ./config
+
+store:
+  provider: %s
+  options:
+    directory: ./.zhi/store
+`, initConfigProvider, initStoreProvider)
+
+	if err := os.WriteFile(zhiYamlPath, []byte(bareYAML), 0o644); err != nil {
+		return fmt.Errorf("creating zhi.yaml: %w", err)
+	}
+	created = append(created, "zhi.yaml")
+
+	// Create empty config/ directory.
+	configDir := filepath.Join(absDir, "config")
+	if err := os.MkdirAll(configDir, 0o755); err != nil {
+		return fmt.Errorf("creating config directory: %w", err)
+	}
+	created = append(created, "config/")
+
+	// Print summary.
+	fmt.Fprintln(w, "Initialized zhi workspace:")
+	for _, f := range created {
+		fmt.Fprintf(w, "  %s\n", f)
+	}
+
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "What's next?")
+	fmt.Fprintln(w, "  1. Add config files in:         config/")
+	fmt.Fprintln(w, "  2. See your configuration:      zhi list")
+	fmt.Fprintln(w, "  3. Edit interactively:          zhi edit")
+	fmt.Fprintln(w, "  4. Manage components:           zhi component list")
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Add .zhi/ to your .gitignore to keep internal state out of version control.")
 
