@@ -1,22 +1,68 @@
 site_name: zhi Documentation
+site_description: Security-first configuration management and provisioning platform
 repo_url: https://github.com/MrWong99/zhi
 repo_name: MrWong99/zhi
+docs_dir: docs
+
 theme:
   name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true
+
 nav:
+  - Home: index.md
   - User Guide:
-    - 'Getting Started': 'user-guide/getting-started.md'
-    - 'Workspace Configuration': 'user-guide/workspace-configuration.md'
-    - 'CLI Reference': 'user-guide/cli-reference.md'
-    - 'Components': 'user-guide/components.md'
-    - 'Export and Templates': 'user-guide/export-and-templates.md'
-    - 'Apply': 'user-guide/apply.md'
-    - 'Plugin Discovery': 'user-guide/plugin-discovery.md'
+    - Getting Started: user-guide/getting-started.md
+    - Workspace Configuration: user-guide/workspace-configuration.md
+    - CLI Reference: user-guide/cli-reference.md
+    - Components: user-guide/components.md
+    - Export and Templates: user-guide/export-and-templates.md
+    - Apply: user-guide/apply.md
+    - Plugin Discovery: user-guide/plugin-discovery.md
+    - Sharing and Registries: user-guide/sharing-and-registries.md
+    - Marketplace Indexing: user-guide/marketplace-indexing.md
+    - Enterprise Mirror: user-guide/enterprise-mirror.md
+    - Vault Credentials: user-guide/vault-credentials.md
+    - Web UI: user-guide/web-ui.md
   - Plugin Development:
-    - 'Overview': 'plugin-development/overview.md'
-    - 'Config Plugin': 'plugin-development/config-plugin.md'
-    - 'Store Plugin': 'plugin-development/store-plugin.md'
-    - 'Transform Plugin': 'plugin-development/transform-plugin.md'
-    - 'UI Plugin': 'plugin-development/ui-plugin.md'
-    - 'Structured File Provider': 'plugin-development/structuredfile-provider.md'
-docs_dir: docs
+    - Overview: plugin-development/overview.md
+    - Config Plugin: plugin-development/config-plugin.md
+    - Transform Plugin: plugin-development/transform-plugin.md
+    - Store Plugin: plugin-development/store-plugin.md
+    - UI Plugin: plugin-development/ui-plugin.md
+    - Meta-Plugin SDK: plugin-development/meta-plugin.md
+    - Structured File Provider: plugin-development/structuredfile-provider.md
+    - Java Plugin: plugin-development/java-plugin.md
+    - Plugin Scaffolding: plugin-development/scaffolding.md
