@@ -142,9 +142,12 @@ func runValidate(cmd *cobra.Command, _ []string) error {
 		}
 		fmt.Fprintln(w, string(data))
 	} else {
-		for _, r := range annotated {
-			sev := strings.ToUpper(r.Severity.String())
-			fmt.Fprintf(w, "%-10s%-20s%s\n", sev, r.Path, r.Message)
+		if len(annotated) > 0 {
+			rows := make([][]string, len(annotated))
+			for i, r := range annotated {
+				rows[i] = []string{strings.ToUpper(r.Severity.String()), r.Path, r.Message}
+			}
+			fprintTable(w, []string{"SEVERITY", "PATH", "MESSAGE"}, rows)
 		}
 
 		blocking := 0
