@@ -36,6 +36,8 @@ jobs:
             dir: examples/zhi-store-mirror
           - plugin: zhi-store-vault
             dir: examples/zhi-store-vault
+          - plugin: zhi-store-vault-manager
+            dir: examples/zhi-store-vault-manager
           - plugin: zhi-transform-pokedex
             dir: examples/zhi-transform-pokedex
           - plugin: zhi-ui-httpapi
