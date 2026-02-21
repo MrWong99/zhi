@@ -1,3 +1,6 @@
+// zhi-store-vault-manager is a meta-plugin that wraps zhi-store-vault with
+// automatic credential management for deployed applications. It uses the
+// vaultmanager package for all business logic and serves as a thin wrapper.
 package main
 
 import (
@@ -13,6 +16,7 @@ import (
 	goplugin "github.com/hashicorp/go-plugin"
 
 	"github.com/MrWong99/zhi/internal/tlsutil"
+	"github.com/MrWong99/zhi/pkg/providers/store/vaultmanager"
 	"github.com/MrWong99/zhi/pkg/zhiplugin"
 	"github.com/MrWong99/zhi/pkg/zhiplugin/launch"
 	"github.com/MrWong99/zhi/pkg/zhiplugin/pluginopts"
@@ -32,7 +36,7 @@ func main() {
 	logger.Info("starting vault manager meta-plugin")
 
 	opts := pluginopts.Options()
-	cfg, err := parseManagerConfig(opts)
+	cfg, err := vaultmanager.ParseConfig(opts)
 	if err != nil {
 		logger.Error("failed to parse configuration", "error", err)
 		os.Exit(1)
@@ -51,10 +55,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	childOpts := childVaultOptions(cfg)
+	childOpts := vaultmanager.ChildVaultOptions(cfg)
 	child, cleanup, err := launch.LaunchStore(vaultBin,
 		launch.WithLogger(logger),
-		launch.WithIsolatedEnv(childVaultEnv(cfg)),
+		launch.WithIsolatedEnv(vaultmanager.ChildVaultEnv(cfg)),
 		launch.WithPluginOptions(childOpts),
 	)
 	if err != nil {
@@ -68,16 +72,16 @@ func main() {
 		logger.Error("failed to configure TLS for admin client", "error", err)
 		os.Exit(1)
 	}
-	admin := newAdminClient(cfg.Addr, "", cfg.Namespace, adminHTTPClient)
-	cm := newCredManager(admin, cfg.Mount, cfg.Prefix, cfg.Workspace, logger)
+	admin := vaultmanager.NewAdminClient(cfg.Addr, "", cfg.Namespace, adminHTTPClient)
+	cm := vaultmanager.NewCredManager(admin, cfg.Mount, cfg.Prefix, cfg.Workspace, logger)
 
-	managerStore := &vaultManagerStore{
+	managerStore := &vaultmanager.Store{
 		DelegatingPlugin: store.NewDelegatingPlugin(child),
-		admin:            admin,
-		credManager:      cm,
-		apps:             cfg.Apps,
-		cfg:              cfg,
-		log:              logger,
+		Admin:            admin,
+		CredManager:      cm,
+		Apps:             cfg.Apps,
+		Cfg:              cfg,
+		Log:              logger,
 	}
 
 	goplugin.Serve(&goplugin.ServeConfig{
@@ -90,7 +94,7 @@ func main() {
 	})
 }
 
-func buildAdminHTTPClient(cfg *managerConfig) (*http.Client, error) {
+func buildAdminHTTPClient(cfg *vaultmanager.Config) (*http.Client, error) {
 	tlsCfg := tlsutil.ClientConfig{
 		CAFile:             cfg.CACert,
 		CertFile:           cfg.ClientCert,

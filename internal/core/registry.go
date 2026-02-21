@@ -128,7 +128,7 @@ func (r *Registry) ConfigProvider(workspace, name string, options map[string]any
 		return factory(workspace, options)
 	}
 	log.Debug("config provider is external", "name", name)
-	return r.launchExternalConfig(name, options)
+	return launchExternal(r, r.cachedConfig, name, PluginTypeConfig, LaunchConfig, options)
 }
 
 // TransformProvider resolves and instantiates a transform provider by name.
@@ -140,7 +140,7 @@ func (r *Registry) TransformProvider(workspace, name string, options map[string]
 		return factory(workspace, options)
 	}
 	log.Debug("transform provider is external", "name", name)
-	return r.launchExternalTransform(name, options)
+	return launchExternal(r, r.cachedTransform, name, PluginTypeTransform, LaunchTransform, options)
 }
 
 // StoreProvider resolves and instantiates a store provider by name.
@@ -152,7 +152,7 @@ func (r *Registry) StoreProvider(workspace, name string, options map[string]any)
 		return factory(workspace, options)
 	}
 	log.Debug("store provider is external", "name", name)
-	return r.launchExternalStore(name, options)
+	return launchExternal(r, r.cachedStore, name, PluginTypeStore, LaunchStore, options)
 }
 
 // UIProvider resolves and instantiates a UI provider by name.
@@ -166,7 +166,7 @@ func (r *Registry) UIProvider(workspace, name string, options map[string]any) (z
 		return factory(workspace, options)
 	}
 	log.Debug("UI provider is external", "name", name)
-	return r.launchExternalUI(name, options)
+	return launchExternal(r, r.cachedUI, name, PluginTypeUI, LaunchUI, options)
 }
 
 // ListConfig returns the sorted names of all registered config providers
@@ -278,117 +278,37 @@ func (r *Registry) Close() {
 	r.cachedUI = make(map[string]zhiui.Plugin)
 }
 
-// launchExternalConfig finds and launches an external config plugin.
-func (r *Registry) launchExternalConfig(name string, options map[string]any) (config.Plugin, error) {
+// launchExternal finds and launches an external plugin, using a typed cache
+// and launcher function. The launcher parameter abstracts the type-specific
+// Launch* call (LaunchConfig, LaunchTransform, LaunchStore, LaunchUI).
+func launchExternal[P any](r *Registry, cache map[string]P, name string, pluginType PluginType, launcher func(string, map[string]any) (P, func(), error), opts map[string]any) (P, error) {
 	log := Logger()
-	log.Info("launching external config plugin", "name", name)
+	log.Info("launching external plugin", "type", pluginType, "name", name)
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	// Check cache first.
-	if p, ok := r.cachedConfig[name]; ok {
-		log.Debug("using cached config plugin", "name", name)
+	if p, ok := cache[name]; ok {
+		log.Debug("using cached plugin", "type", pluginType, "name", name)
 		return p, nil
 	}
 
 	// Find the plugin in discovered list.
-	info, ok := r.findExternal(name, PluginTypeConfig)
+	info, ok := r.findExternal(name, pluginType)
 	if !ok {
-		return nil, fmt.Errorf("unknown config provider: %q", name)
+		var zero P
+		return zero, fmt.Errorf("unknown %s provider: %q", pluginType, name)
 	}
 
-	p, cleanup, err := LaunchConfig(info.Path, options)
+	p, cleanup, err := launcher(info.Path, opts)
 	if err != nil {
-		return nil, fmt.Errorf("launching external config plugin %q: %w", name, err)
+		var zero P
+		return zero, fmt.Errorf("launching external %s plugin %q: %w", pluginType, name, err)
 	}
 
-	r.cachedConfig[name] = p
+	cache[name] = p
 	r.cleanups = append(r.cleanups, cleanup)
-	log.Info("successfully launched external config plugin", "name", name, "path", info.Path)
-	return p, nil
-}
-
-// launchExternalTransform finds and launches an external transform plugin.
-func (r *Registry) launchExternalTransform(name string, options map[string]any) (transform.Plugin, error) {
-	log := Logger()
-	log.Info("launching external transform plugin", "name", name)
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	if p, ok := r.cachedTransform[name]; ok {
-		log.Debug("using cached transform plugin", "name", name)
-		return p, nil
-	}
-
-	info, ok := r.findExternal(name, PluginTypeTransform)
-	if !ok {
-		return nil, fmt.Errorf("unknown transform provider: %q", name)
-	}
-
-	p, cleanup, err := LaunchTransform(info.Path, options)
-	if err != nil {
-		return nil, fmt.Errorf("launching external transform plugin %q: %w", name, err)
-	}
-
-	r.cachedTransform[name] = p
-	r.cleanups = append(r.cleanups, cleanup)
-	log.Info("successfully launched external transform plugin", "name", name, "path", info.Path)
-	return p, nil
-}
-
-// launchExternalStore finds and launches an external store plugin.
-func (r *Registry) launchExternalStore(name string, options map[string]any) (store.Plugin, error) {
-	log := Logger()
-	log.Info("launching external store plugin", "name", name)
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	if p, ok := r.cachedStore[name]; ok {
-		log.Debug("using cached store plugin", "name", name)
-		return p, nil
-	}
-
-	info, ok := r.findExternal(name, PluginTypeStore)
-	if !ok {
-		return nil, fmt.Errorf("unknown store provider: %q", name)
-	}
-
-	p, cleanup, err := LaunchStore(info.Path, options)
-	if err != nil {
-		return nil, fmt.Errorf("launching external store plugin %q: %w", name, err)
-	}
-
-	r.cachedStore[name] = p
-	r.cleanups = append(r.cleanups, cleanup)
-	log.Info("successfully launched external store plugin", "name", name, "path", info.Path)
-	return p, nil
-}
-
-// launchExternalUI finds and launches an external UI plugin.
-func (r *Registry) launchExternalUI(name string, options map[string]any) (zhiui.Plugin, error) {
-	log := Logger()
-	log.Info("launching external UI plugin", "name", name)
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	if p, ok := r.cachedUI[name]; ok {
-		log.Debug("using cached UI plugin", "name", name)
-		return p, nil
-	}
-
-	info, ok := r.findExternal(name, PluginTypeUI)
-	if !ok {
-		return nil, fmt.Errorf("unknown UI provider: %q", name)
-	}
-
-	p, cleanup, err := LaunchUI(info.Path, options)
-	if err != nil {
-		return nil, fmt.Errorf("launching external UI plugin %q: %w", name, err)
-	}
-
-	r.cachedUI[name] = p
-	r.cleanups = append(r.cleanups, cleanup)
-	log.Info("successfully launched external UI plugin", "name", name, "path", info.Path)
+	log.Info("successfully launched external plugin", "type", pluginType, "name", name, "path", info.Path)
 	return p, nil
 }
 

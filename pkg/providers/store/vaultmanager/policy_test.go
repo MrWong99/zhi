@@ -1,4 +1,4 @@
-package main
+package vaultmanager
 
 import (
 	"strings"
@@ -23,12 +23,11 @@ func TestBuildPolicyHCL(t *testing.T) {
 		},
 	}
 
-	hcl := buildPolicyHCL("web-api", values, "secret", "zhi", "prod")
+	hcl := BuildPolicyHCL("web-api", values, "secret", "zhi", "prod")
 	if hcl == "" {
 		t.Fatal("expected non-empty HCL")
 	}
 
-	// Should contain data paths
 	if !containsLine(hcl, `path "secret/data/zhi/prod/database/host"`) {
 		t.Error("missing database/host data path")
 	}
@@ -36,7 +35,6 @@ func TestBuildPolicyHCL(t *testing.T) {
 		t.Error("missing database/host metadata path")
 	}
 
-	// read capability
 	if !containsLine(hcl, `capabilities = ["read"]`) {
 		t.Error("missing read capabilities")
 	}
@@ -49,7 +47,7 @@ func TestBuildPolicyHCL_NoLabelsForApp(t *testing.T) {
 			Metadata: map[string]any{"vault.app.other": "read"},
 		},
 	}
-	hcl := buildPolicyHCL("web-api", values, "secret", "zhi", "prod")
+	hcl := BuildPolicyHCL("web-api", values, "secret", "zhi", "prod")
 	if hcl != "" {
 		t.Errorf("expected empty HCL for app with no labels, got: %s", hcl)
 	}
@@ -67,7 +65,7 @@ func TestScanApps(t *testing.T) {
 		},
 	}
 
-	apps := scanApps(values)
+	apps := ScanApps(values)
 	if len(apps) != 2 {
 		t.Fatalf("expected 2 apps, got %d", len(apps))
 	}
@@ -90,9 +88,9 @@ func TestParseCapabilities(t *testing.T) {
 		{"write", []string{"create", "update"}},
 	}
 	for _, tt := range tests {
-		got := parseCapabilities(tt.input)
+		got := ParseCapabilities(tt.input)
 		if len(got) != len(tt.want) {
-			t.Errorf("parseCapabilities(%q) = %v, want %v", tt.input, got, tt.want)
+			t.Errorf("ParseCapabilities(%q) = %v, want %v", tt.input, got, tt.want)
 		}
 	}
 }

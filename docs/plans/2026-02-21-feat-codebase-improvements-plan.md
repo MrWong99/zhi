@@ -1,7 +1,7 @@
 ---
 title: "feat: Codebase Improvements — Deferred Architecture Tasks"
 type: feat
-status: active
+status: completed
 date: 2026-02-21
 ---
 
@@ -26,11 +26,11 @@ All 6 bug fixes (BUG-1 through BUG-6), 2 plugin promotions (jsonfile, httpapi), 
 - **Design:** Shared base client with configurable response unmarshaling. Both `vault.client` and `vaultmanager.adminClient` wrap the shared client and add their specific response handling.
 
 **Acceptance Criteria:**
-- [ ] `pkg/providers/store/vault/httpclient/` package exists
-- [ ] `vault.client` refactored to use shared client
-- [ ] `vaultmanager.adminClient` refactored to use shared client
-- [ ] All existing vault and vault-manager tests pass
-- [ ] `make check` passes
+- [x] `pkg/providers/store/vault/httpclient/` package exists
+- [x] `vault.client` refactored to use shared client
+- [x] `vaultmanager.adminClient` refactored to use shared client
+- [x] All existing vault and vault-manager tests pass
+- [x] `make check` passes
 
 ---
 
@@ -49,14 +49,14 @@ Depends on: Task 1 (shared HTTP client extracted).
   7. Update `zhi-plugin.yaml` manifest paths if needed
 
 **Acceptance Criteria:**
-- [ ] `pkg/providers/store/vaultmanager/` package exists
-- [ ] Uses shared Vault HTTP client
-- [ ] All 29 tests pass in new location
-- [ ] Non-wrapped AppRole path works (BUG-3 fix verified)
-- [ ] No dead code remains
-- [ ] Example wrapper compiles and works
-- [ ] `make build-examples` succeeds
-- [ ] `make test` passes
+- [x] `pkg/providers/store/vaultmanager/` package exists
+- [x] Uses shared Vault HTTP client
+- [x] All 29 tests pass in new location
+- [x] Non-wrapped AppRole path works (BUG-3 fix verified)
+- [x] No dead code remains
+- [x] Example wrapper compiles and works
+- [x] `make build-examples` succeeds
+- [x] `make test` passes
 
 ---
 
@@ -71,9 +71,9 @@ Depends on: Task 1 (shared HTTP client extracted).
 - **Constraint:** The `launcher` parameter abstracts the type-specific `Launch*` call.
 
 **Acceptance Criteria:**
-- [ ] Single generic `launchExternal[P]` function replaces 4 methods
-- [ ] All existing registry tests pass
-- [ ] `make check` passes
+- [x] Single generic `launchExternal[P]` function replaces 4 methods
+- [x] All existing registry tests pass
+- [x] `make check` passes
 
 ---
 
