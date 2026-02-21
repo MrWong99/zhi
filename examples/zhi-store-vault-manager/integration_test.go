@@ -169,8 +169,11 @@ func TestIntegration_FullLifecycle(t *testing.T) {
 	if webAPICreds.RoleID != "test-role-id-123" {
 		t.Errorf("role_id = %s", webAPICreds.RoleID)
 	}
-	if webAPICreds.WrappedSecretID != "hvs.wrapped-token-abc" {
-		t.Errorf("wrapped_secret_id = %s", webAPICreds.WrappedSecretID)
+	if !webAPICreds.Wrapped {
+		t.Error("expected wrapped=true for wrapped AppRole credentials")
+	}
+	if webAPICreds.SecretID != "hvs.wrapped-token-abc" {
+		t.Errorf("secret_id = %s", webAPICreds.SecretID)
 	}
 
 	// Verify token credentials

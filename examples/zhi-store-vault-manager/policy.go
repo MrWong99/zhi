@@ -140,6 +140,3 @@ func quoteList(items []string) string {
 	return strings.Join(quoted, ", ")
 }
 
-func contains(s, substr string) bool {
-	return strings.Contains(s, substr)
-}

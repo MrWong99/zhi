@@ -221,17 +221,34 @@ func (c *adminClient) readRoleID(ctx context.Context, roleName string) (string, 
 	return data.RoleID, nil
 }
 
-// generateWrappedSecretID generates a new secret_id for an AppRole role,
-// returned as a response-wrapped token.
-func (c *adminClient) generateWrappedSecretID(ctx context.Context, roleName, wrapTTL string) (string, error) {
+// generateSecretID generates a new secret_id for an AppRole role.
+// If wrapTTL is non-empty, the secret_id is returned as a response-wrapped
+// token. Otherwise, the plain secret_id is returned.
+func (c *adminClient) generateSecretID(ctx context.Context, roleName, wrapTTL string) (string, bool, error) {
 	resp, err := c.requestWithWrap(ctx, http.MethodPost, "auth/approle/role/"+roleName+"/secret-id", nil, wrapTTL)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
-	if resp.WrapInfo == nil {
-		return "", fmt.Errorf("no wrap_info in response for role %s", roleName)
+
+	if wrapTTL != "" {
+		// Response-wrapped: secret_id is in wrap_info.token
+		if resp.WrapInfo == nil {
+			return "", false, fmt.Errorf("no wrap_info in response for role %s", roleName)
+		}
+		return resp.WrapInfo.Token, true, nil
 	}
-	return resp.WrapInfo.Token, nil
+
+	// Non-wrapped: secret_id is in data.secret_id
+	var data struct {
+		SecretID string `json:"secret_id"`
+	}
+	if err := json.Unmarshal(resp.Data, &data); err != nil {
+		return "", false, fmt.Errorf("decoding secret_id for role %s: %w", roleName, err)
+	}
+	if data.SecretID == "" {
+		return "", false, fmt.Errorf("empty secret_id in response for role %s", roleName)
+	}
+	return data.SecretID, false, nil
 }
 
 // --- Token operations ---
@@ -250,14 +267,6 @@ func (c *adminClient) createToken(ctx context.Context, policies []string, ttl st
 		return "", fmt.Errorf("no auth block in token create response")
 	}
 	return resp.Auth.ClientToken, nil
-}
-
-// createScopedToken creates a short-lived token for delegating a single
-// operation to the child plugin. The policyHCL parameter is reserved for
-// future inline-policy support; currently the token inherits the parent's
-// policies and relies on the short TTL for scoping.
-func (c *adminClient) createScopedToken(ctx context.Context, _ string, ttl string) (string, error) {
-	return c.createToken(ctx, nil, ttl)
 }
 
 // --- Auth operations ---

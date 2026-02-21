@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/hashicorp/go-hclog"
 
@@ -13,10 +12,11 @@ import (
 
 // appCredentials holds generated credentials for one app.
 type appCredentials struct {
-	AuthMethod      string
-	RoleID          string // approle only
-	WrappedSecretID string // approle only
-	Token           string // token auth only
+	AuthMethod string
+	RoleID     string // approle only
+	SecretID   string // approle only (plain or wrapped)
+	Wrapped    bool   // approle only: whether SecretID is response-wrapped
+	Token      string // token auth only
 }
 
 // credManager orchestrates Vault policy, AppRole, and credential management.
@@ -174,19 +174,20 @@ func (cm *credManager) generateCredentials(ctx context.Context, apps []appConfig
 				wrapTTL = ""
 			}
 
-			wrappedSecret, err := cm.admin.generateWrappedSecretID(ctx, roleName, wrapTTL)
+			secretID, wrapped, err := cm.admin.generateSecretID(ctx, roleName, wrapTTL)
 			if err != nil {
 				if cm.log != nil {
-					cm.log.Error("failed to generate wrapped secret_id", "app", app.Name, "error", err)
+					cm.log.Error("failed to generate secret_id", "app", app.Name, "error", err)
 				}
 				errs = append(errs, fmt.Errorf("app %s secret_id: %w", app.Name, err))
 				continue
 			}
 
 			creds[app.Name] = &appCredentials{
-				AuthMethod:      "approle",
-				RoleID:          roleID,
-				WrappedSecretID: wrappedSecret,
+				AuthMethod: "approle",
+				RoleID:     roleID,
+				SecretID:   secretID,
+				Wrapped:    wrapped,
 			}
 
 		case "token":
@@ -250,9 +251,16 @@ func injectCredentials(values map[string]config.Value, creds map[string]*appCred
 				Val:      c.RoleID,
 				Metadata: meta(fmt.Sprintf("Vault AppRole role_id for %s", appName)),
 			}
-			result[prefix+"wrapped-secret-id"] = config.Value{
-				Val:      c.WrappedSecretID,
-				Metadata: meta(fmt.Sprintf("Vault response-wrapped secret_id for %s (single-use)", appName)),
+			if c.Wrapped {
+				result[prefix+"wrapped-secret-id"] = config.Value{
+					Val:      c.SecretID,
+					Metadata: meta(fmt.Sprintf("Vault response-wrapped secret_id for %s (single-use)", appName)),
+				}
+			} else {
+				result[prefix+"secret-id"] = config.Value{
+					Val:      c.SecretID,
+					Metadata: meta(fmt.Sprintf("Vault AppRole secret_id for %s", appName)),
+				}
 			}
 		case "token":
 			result[prefix+"token"] = config.Value{
@@ -290,11 +298,3 @@ func extractStringSlice(m map[string]any, key string) []string {
 	return nil
 }
 
-func startsWith(s, prefix string) bool {
-	return strings.HasPrefix(s, prefix)
-}
-
-func lastSegment(path string) string {
-	parts := strings.Split(path, "/")
-	return parts[len(parts)-1]
-}

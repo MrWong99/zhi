@@ -168,7 +168,7 @@ func TestAdminClient_ReadRoleID(t *testing.T) {
 	}
 }
 
-func TestAdminClient_GenerateWrappedSecretID(t *testing.T) {
+func TestAdminClient_GenerateSecretID_Wrapped(t *testing.T) {
 	var gotWrapTTL string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -190,15 +190,51 @@ func TestAdminClient_GenerateWrappedSecretID(t *testing.T) {
 	defer srv.Close()
 
 	c := newAdminClient(srv.URL, "test-token", "", nil)
-	token, err := c.generateWrappedSecretID(context.Background(), "zhi-myapp", "120s")
+	token, wrapped, err := c.generateSecretID(context.Background(), "zhi-myapp", "120s")
 	if err != nil {
-		t.Fatalf("generateWrappedSecretID: %v", err)
+		t.Fatalf("generateSecretID: %v", err)
+	}
+	if !wrapped {
+		t.Error("expected wrapped=true when wrapTTL is set")
 	}
 	if token != "wrapped-token" {
 		t.Errorf("token = %s, want wrapped-token", token)
 	}
 	if gotWrapTTL != "120s" {
 		t.Errorf("X-Vault-Wrap-TTL = %s, want 120s", gotWrapTTL)
+	}
+}
+
+func TestAdminClient_GenerateSecretID_Unwrapped(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("method = %s, want POST", r.Method)
+		}
+		if r.URL.Path != "/v1/auth/approle/role/zhi-myapp/secret-id" {
+			t.Errorf("path = %s, want /v1/auth/approle/role/zhi-myapp/secret-id", r.URL.Path)
+		}
+		if ttl := r.Header.Get("X-Vault-Wrap-TTL"); ttl != "" {
+			t.Errorf("expected no X-Vault-Wrap-TTL header, got %q", ttl)
+		}
+		json.NewEncoder(w).Encode(map[string]any{
+			"data": map[string]any{
+				"secret_id":          "plain-secret-id-abc",
+				"secret_id_accessor": "accessor-456",
+			},
+		})
+	}))
+	defer srv.Close()
+
+	c := newAdminClient(srv.URL, "test-token", "", nil)
+	secretID, wrapped, err := c.generateSecretID(context.Background(), "zhi-myapp", "")
+	if err != nil {
+		t.Fatalf("generateSecretID: %v", err)
+	}
+	if wrapped {
+		t.Error("expected wrapped=false when wrapTTL is empty")
+	}
+	if secretID != "plain-secret-id-abc" {
+		t.Errorf("secretID = %s, want plain-secret-id-abc", secretID)
 	}
 }
 
@@ -232,33 +268,6 @@ func TestAdminClient_CreateToken(t *testing.T) {
 	}
 	if gotBody["ttl"] != "1h" {
 		t.Errorf("unexpected ttl in body: %v", gotBody)
-	}
-}
-
-func TestAdminClient_CreateScopedToken(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			t.Errorf("method = %s, want POST", r.Method)
-		}
-		if r.URL.Path != "/v1/auth/token/create" {
-			t.Errorf("path = %s, want /v1/auth/token/create", r.URL.Path)
-		}
-		json.NewEncoder(w).Encode(map[string]any{
-			"auth": map[string]any{
-				"client_token": "scoped-token",
-				"policies":     []string{},
-			},
-		})
-	}))
-	defer srv.Close()
-
-	c := newAdminClient(srv.URL, "test-token", "", nil)
-	token, err := c.createScopedToken(context.Background(), `path "secret/*" { capabilities = ["read"] }`, "30m")
-	if err != nil {
-		t.Fatalf("createScopedToken: %v", err)
-	}
-	if token != "scoped-token" {
-		t.Errorf("token = %s, want scoped-token", token)
 	}
 }
 
