@@ -185,6 +185,7 @@ func TestConvenienceFunctions(t *testing.T) {
 		LabelCoreDoc:         "https://example.com",
 		LabelConfigEnv:       "MY_VAR",
 		LabelUIConfirm:       true,
+		LabelStoreEphemeral:  true,
 	}
 
 	tests := []struct {
@@ -203,6 +204,7 @@ func TestConvenienceFunctions(t *testing.T) {
 		{"IsImmutable", func() bool { return IsImmutable(metadata) }, true},
 		{"IsDeprecatedValue", func() bool { return IsDeprecatedValue(metadata) }, true},
 		{"ShouldConfirm", func() bool { return ShouldConfirm(metadata) }, true},
+		{"IsEphemeral", func() bool { return IsEphemeral(metadata) }, true},
 	}
 
 	for _, tt := range tests {
@@ -272,6 +274,7 @@ func TestBuilder(t *testing.T) {
 		Readonly().
 		Password().
 		Writeonly().
+		Ephemeral().
 		Required().
 		Description("Test value").
 		Pattern("[a-z]+").
@@ -289,6 +292,9 @@ func TestBuilder(t *testing.T) {
 	}
 	if !IsWriteonly(meta) {
 		t.Error("Builder.Writeonly() should set store.writeonly")
+	}
+	if !IsEphemeral(meta) {
+		t.Error("Builder.Ephemeral() should set store.ephemeral")
 	}
 	if !IsRequired(meta) {
 		t.Error("Builder.Required() should set config.required")
@@ -558,6 +564,40 @@ func TestGetPlaceholder(t *testing.T) {
 
 	if got := GetPlaceholder(nil); got != "" {
 		t.Errorf("GetPlaceholder(nil) = %v, want empty", got)
+	}
+}
+
+func TestIsEphemeral(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata map[string]any
+		want     bool
+	}{
+		{"nil metadata", nil, false},
+		{"empty metadata", map[string]any{}, false},
+		{"not set", map[string]any{"ui.hidden": true}, false},
+		{"set true", map[string]any{"store.ephemeral": true}, true},
+		{"set false", map[string]any{"store.ephemeral": false}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IsEphemeral(tt.metadata); got != tt.want {
+				t.Errorf("IsEphemeral() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestEphemeralLabelRegistered(t *testing.T) {
+	label := DefaultRegistry.Get("store.ephemeral")
+	if label == nil {
+		t.Fatal("store.ephemeral label not registered in DefaultRegistry")
+	}
+	if label.ValueType != "bool" {
+		t.Errorf("expected ValueType bool, got %s", label.ValueType)
+	}
+	if label.Namespace != "store" {
+		t.Errorf("expected Namespace store, got %s", label.Namespace)
 	}
 }
 

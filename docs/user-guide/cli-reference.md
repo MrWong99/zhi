@@ -491,6 +491,60 @@ List configured registries and their authentication status.
 zhi registry list
 ```
 
+### `zhi vault-credentials`
+
+Manage Vault credentials for applications deployed with the `zhi-store-vault-manager` meta-plugin. See [Vault Credential Management](vault-credentials.md) for the full guide.
+
+#### `zhi vault-credentials refresh`
+
+Generate fresh credentials (AppRole wrapped secret_ids or tokens) without a full export/apply cycle.
+
+```sh
+zhi vault-credentials refresh
+zhi vault-credentials refresh --app web-api --output env
+zhi vault-credentials refresh --output quiet
+zhi vault-credentials refresh --export-template docker-compose
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--app` | (all apps) | Refresh only a specific app's credentials |
+| `--output` | `json` | Output format: `json`, `env`, `quiet` |
+| `--export-template` | | Re-run a specific export template with fresh credentials |
+
+**Example JSON output:**
+
+```
+{
+  "vault/credentials/web-api/auth-method": "approle",
+  "vault/credentials/web-api/role-id": "abc-123",
+  "vault/credentials/web-api/wrapped-secret-id": "hvs.CAES..."
+}
+```
+
+**Example env output:**
+
+```
+VAULT_CREDENTIALS_WEB_API_AUTH_METHOD=approle
+VAULT_CREDENTIALS_WEB_API_ROLE_ID=abc-123
+VAULT_CREDENTIALS_WEB_API_WRAPPED_SECRET_ID=hvs.CAES...
+```
+
+#### `zhi vault-credentials bootstrap`
+
+Generate the Vault ACL policy required by the vault-manager's admin token. Run once during initial setup.
+
+```sh
+zhi vault-credentials bootstrap --dry-run
+zhi vault-credentials bootstrap
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--dry-run` | `false` | Print the policy HCL without instructions for applying it |
+
+The output includes the HCL policy and a ready-to-run `vault policy write` command.
+
 ### `zhi version`
 
 Print version, commit hash, and build date.

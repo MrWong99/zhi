@@ -248,6 +248,18 @@ var storeLabels = []*Label{
 		},
 		Since: "0.2.0",
 	},
+	{
+		Name:         "store.ephemeral",
+		Namespace:    "store",
+		Description:  "Value exists in-memory only and is never persisted to the store backend. Used for auto-generated credentials and other transient data.",
+		ValueType:    "bool",
+		DefaultValue: false,
+		AppliesTo:    []string{"store"},
+		Examples: []Example{
+			{Value: true, Description: "Mark credential as ephemeral (never written to storage)"},
+		},
+		Since: "0.2.0",
+	},
 }
 
 // Transform namespace - interpreted by transform plugins
@@ -414,6 +426,7 @@ const (
 	LabelStoreNoVersion   = "store.noversion"
 	LabelStoreTTL         = "store.ttl"
 	LabelStoreMaxVersions = "store.maxversions"
+	LabelStoreEphemeral   = "store.ephemeral"
 
 	// Transform labels
 	LabelTransformHidden = "transform.hidden"

@@ -163,6 +163,11 @@ func IsNoVersion(metadata map[string]any) bool {
 	return GetBool(metadata, LabelStoreNoVersion, false)
 }
 
+// IsEphemeral checks if store.ephemeral is set to true.
+func IsEphemeral(metadata map[string]any) bool {
+	return GetBool(metadata, LabelStoreEphemeral, false)
+}
+
 // GetMaxVersions returns the store.maxversions label value.
 // Returns 0 if not set (meaning no limit).
 func GetMaxVersions(metadata map[string]any) int {
@@ -398,6 +403,11 @@ func (b *Builder) TTL(seconds int) *Builder {
 // NoVersion sets store.noversion to true.
 func (b *Builder) NoVersion() *Builder {
 	return b.Set(LabelStoreNoVersion, true)
+}
+
+// Ephemeral sets store.ephemeral to true.
+func (b *Builder) Ephemeral() *Builder {
+	return b.Set(LabelStoreEphemeral, true)
 }
 
 // MaxVersions sets store.maxversions.

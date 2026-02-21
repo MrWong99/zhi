@@ -329,7 +329,9 @@ keywords:
 Meta-plugin binaries follow the same naming scheme as regular plugins:
 `zhi-<type>-<name>` (e.g. `zhi-store-mirror`).
 
-## Complete example
+## Complete examples
+
+### zhi-store-mirror
 
 The [`examples/zhi-store-mirror/`](../../examples/zhi-store-mirror/)
 directory contains a working meta-plugin that launches `zhi-store-memory`
@@ -343,6 +345,24 @@ make build-examples
 Both child plugin binaries must be available in the same directory as
 the meta-plugin binary (or on `PATH`).
 
+### zhi-store-vault-manager
+
+The [`examples/zhi-store-vault-manager/`](../../examples/zhi-store-vault-manager/)
+directory demonstrates a more advanced meta-plugin that wraps
+`zhi-store-vault` with automatic Vault credential management. It
+uses `DelegatingPlugin` to override `Login`, `GetValues`, and
+`PutValues` while forwarding all other store methods to the child.
+
+Key techniques shown:
+
+- **`WithIsolatedEnv`** to prevent leaking the admin token to the child
+- **`WithPluginOptions`** to forward connection options to the child
+- **`store.ephemeral` label** to inject credentials that are never persisted
+- **Policy reconciliation** driven by `vault.app.*` metadata labels
+
+See the [Vault Credential Management](../user-guide/vault-credentials.md)
+guide for end-user documentation.
+
 ## Use cases
 
 | Pattern | Use case |
@@ -351,6 +371,7 @@ the meta-plugin binary (or on `PATH`).
 | **MergedPlugin** | multi-tenant config: each tenant's config plugin mounted under a prefix |
 | **DelegatingPlugin + Launch** | add logging, caching, or access control around an existing plugin |
 | **DelegatingPlugin alone** | override specific methods of any plugin without reimplementing the full interface |
+| **DelegatingPlugin + Launch + credential management** | wrap a store with automatic policy reconciliation and credential injection (see vault-manager below) |
 
 ## Security considerations
 

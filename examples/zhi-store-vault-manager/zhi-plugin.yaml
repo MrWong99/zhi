@@ -1,0 +1,22 @@
+schemaVersion: "1"
+name: vault-manager
+type: store
+version: 0.0.1
+zhiProtocolVersion: "1"
+description: Meta-plugin that wraps zhi-store-vault with automatic credential management for deployed applications
+author: MrWong99
+license: MIT
+homepage: https://github.com/MrWong99/zhi
+keywords:
+  - store
+  - vault
+  - meta-plugin
+  - credentials
+  - approle
+  - least-privilege
+
+binaries:
+  linux/amd64: dist/zhi-store-vault-manager_linux_amd64
+  linux/arm64: dist/zhi-store-vault-manager_linux_arm64
+  darwin/amd64: dist/zhi-store-vault-manager_darwin_amd64
+  darwin/arm64: dist/zhi-store-vault-manager_darwin_arm64
