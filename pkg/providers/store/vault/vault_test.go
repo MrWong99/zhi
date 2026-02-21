@@ -1480,6 +1480,95 @@ func TestBuildHTTPClientDefault(t *testing.T) {
 	}
 }
 
+func TestEncodeValueError(t *testing.T) {
+	// A channel is not JSON-marshalable.
+	v := config.Value{Val: make(chan int)}
+	_, err := encodeValue(v)
+	if err == nil {
+		t.Fatal("expected error for unmarshalable value, got nil")
+	}
+	if !strings.Contains(err.Error(), "marshaling value") {
+		t.Errorf("error = %q, want to contain %q", err, "marshaling value")
+	}
+
+	// Unmarshalable metadata.
+	v2 := config.Value{
+		Val:      "ok",
+		Metadata: map[string]any{"bad": make(chan int)},
+	}
+	_, err = encodeValue(v2)
+	if err == nil {
+		t.Fatal("expected error for unmarshalable metadata, got nil")
+	}
+	if !strings.Contains(err.Error(), "marshaling metadata") {
+		t.Errorf("error = %q, want to contain %q", err, "marshaling metadata")
+	}
+
+	// Valid value should succeed.
+	v3 := config.Value{Val: "hello", Metadata: map[string]any{"key": "val"}}
+	encoded, err := encodeValue(v3)
+	if err != nil {
+		t.Fatalf("encodeValue: %v", err)
+	}
+	if encoded["zhi_val"] != `"hello"` {
+		t.Errorf("zhi_val = %q, want %q", encoded["zhi_val"], `"hello"`)
+	}
+}
+
+func TestExtractQueryParam(t *testing.T) {
+	tests := []struct {
+		name   string
+		rawURL string
+		param  string
+		want   string
+	}{
+		{
+			name:   "basic",
+			rawURL: "https://example.com/auth?state=abc123&code=xyz",
+			param:  "state",
+			want:   "abc123",
+		},
+		{
+			name:   "url encoded value",
+			rawURL: "https://example.com/auth?state=abc%3D123&code=xyz",
+			param:  "state",
+			want:   "abc=123",
+		},
+		{
+			name:   "substring param name",
+			rawURL: "https://example.com/auth?substate=wrong&state=correct",
+			param:  "state",
+			want:   "correct",
+		},
+		{
+			name:   "missing param",
+			rawURL: "https://example.com/auth?code=xyz",
+			param:  "state",
+			want:   "",
+		},
+		{
+			name:   "with fragment",
+			rawURL: "https://example.com/auth?state=abc#fragment",
+			param:  "state",
+			want:   "abc",
+		},
+		{
+			name:   "invalid URL",
+			rawURL: "://not-a-url",
+			param:  "state",
+			want:   "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := extractQueryParam(tt.rawURL, tt.param)
+			if got != tt.want {
+				t.Errorf("extractQueryParam(%q, %q) = %q, want %q", tt.rawURL, tt.param, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestBuildHTTPClientWithSkipVerify(t *testing.T) {
 	client, err := buildHTTPClient(Config{
 		Address:    "https://vault.example.com:8200",
