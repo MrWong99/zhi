@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/MrWong99/zhi/internal/core"
 	"github.com/MrWong99/zhi/pkg/sharing/marketplace"
@@ -26,8 +27,10 @@ type UIDriver interface {
 // UIController is the engine-facing API that all UIs consume. It wraps the
 // core engine and provides a stable surface for UI operations.
 type UIController struct {
+	mu             sync.RWMutex
 	engine         *core.Engine
 	tree           *config.Tree
+	dirtyPaths     map[string]bool // paths modified by SetValue but not yet persisted
 	marketplace    *marketplace.Client
 	marketplaceErr error
 }
@@ -55,8 +58,18 @@ func (c *UIController) SetMarketplaceError(err error) {
 }
 
 // LoadTree loads or reloads the full configuration tree from the config
-// provider, applying display transforms.
+// provider, applying display transforms. Dirty (unsaved) values are
+// preserved across reloads so that the store merge does not overwrite
+// in-memory edits.
 func (c *UIController) LoadTree(ctx context.Context) (*config.Tree, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.loadTreeLocked(ctx)
+}
+
+// loadTreeLocked is the internal implementation of LoadTree. The caller
+// must hold c.mu.
+func (c *UIController) loadTreeLocked(ctx context.Context) (*config.Tree, error) {
 	tree, err := c.engine.LoadTree(ctx)
 	if err != nil {
 		c.handleAuthError(err)
@@ -65,6 +78,17 @@ func (c *UIController) LoadTree(ctx context.Context) (*config.Tree, error) {
 	if err := c.engine.TransformForDisplay(ctx, tree); err != nil {
 		return nil, fmt.Errorf("transforming tree: %w", err)
 	}
+
+	// Restore dirty (unsaved) values that would be overwritten by the
+	// store merge in engine.LoadTree.
+	if c.tree != nil && len(c.dirtyPaths) > 0 {
+		for path := range c.dirtyPaths {
+			if dirtyVal, ok := c.tree.Get(path); ok {
+				_ = tree.Set(path, &dirtyVal)
+			}
+		}
+	}
+
 	c.tree = tree
 	return tree, nil
 }
@@ -72,7 +96,9 @@ func (c *UIController) LoadTree(ctx context.Context) (*config.Tree, error) {
 // FilteredTree returns the tree filtered to only include paths belonging
 // to enabled components (plus unmanaged paths).
 func (c *UIController) FilteredTree(ctx context.Context) (*config.Tree, error) {
-	tree, err := c.LoadTree(ctx)
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	tree, err := c.loadTreeLocked(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -81,11 +107,15 @@ func (c *UIController) FilteredTree(ctx context.Context) (*config.Tree, error) {
 
 // Tree returns the currently cached tree without reloading.
 func (c *UIController) Tree() *config.Tree {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	return c.tree
 }
 
 // GetValue retrieves a single value from the cached tree.
 func (c *UIController) GetValue(path string) (config.Value, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	if c.tree == nil {
 		return config.Value{}, false
 	}
@@ -93,33 +123,47 @@ func (c *UIController) GetValue(path string) (config.Value, bool) {
 }
 
 // SetValue stores a value at the given path via the config provider and
-// updates the cached tree.
+// updates the cached tree. The path is marked dirty so that subsequent
+// LoadTree calls do not overwrite it with the stale store value.
 func (c *UIController) SetValue(ctx context.Context, path string, value config.Value) error {
 	if err := c.engine.SetValue(ctx, path, value); err != nil {
 		return err
 	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	// Update the cached tree.
 	if c.tree != nil {
 		if err := c.tree.Set(path, &value); err != nil {
 			return err
 		}
 	}
+	if c.dirtyPaths == nil {
+		c.dirtyPaths = make(map[string]bool)
+	}
+	c.dirtyPaths[path] = true
 	return nil
 }
 
 // Validate runs config provider validation for all paths and component
 // dependency validation. Returns all validation results.
 func (c *UIController) Validate(ctx context.Context) ([]config.ValidationResult, error) {
+	c.mu.Lock()
 	if c.tree == nil {
-		if _, err := c.LoadTree(ctx); err != nil {
+		if _, err := c.loadTreeLocked(ctx); err != nil {
+			c.mu.Unlock()
 			return nil, err
 		}
 	}
-	return c.engine.Validate(ctx, c.tree)
+	tree := c.tree
+	c.mu.Unlock()
+	return c.engine.Validate(ctx, tree)
 }
 
 // SaveTree persists the current tree and component state to the store.
+// On success the dirty-path set is cleared.
 func (c *UIController) SaveTree(ctx context.Context) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	if c.tree == nil {
 		return fmt.Errorf("no tree loaded")
 	}
@@ -130,8 +174,10 @@ func (c *UIController) SaveTree(ctx context.Context) error {
 	err := c.engine.SaveTree(ctx, c.tree)
 	if err != nil {
 		c.handleAuthError(err)
+		return err
 	}
-	return err
+	c.dirtyPaths = nil
+	return nil
 }
 
 // ListComponents returns all components with their current state.

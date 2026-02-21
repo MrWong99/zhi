@@ -370,6 +370,99 @@ func TestUIController_SaveTree(t *testing.T) {
 	}
 }
 
+func TestUIController_SetValueSurvivesLoadTree(t *testing.T) {
+	ctrl := setupTestController(t)
+	ctx := context.Background()
+
+	// Initial load.
+	if _, err := ctrl.LoadTree(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	// Set a new value (dirty, not yet saved to store).
+	if err := ctrl.SetValue(ctx, "database/host", config.Value{Val: "newhost"}); err != nil {
+		t.Fatalf("SetValue: %v", err)
+	}
+
+	// Reload the tree — the store merge should NOT overwrite the dirty value.
+	tree, err := ctrl.LoadTree(ctx)
+	if err != nil {
+		t.Fatalf("LoadTree after SetValue: %v", err)
+	}
+
+	v, ok := tree.Get("database/host")
+	if !ok {
+		t.Fatal("expected database/host in tree")
+	}
+	if v.Val != "newhost" {
+		t.Errorf("expected newhost after reload, got %v", v.Val)
+	}
+}
+
+func TestUIController_SetMultipleValuesSurviveLoadTree(t *testing.T) {
+	ctrl := setupTestController(t)
+	ctx := context.Background()
+
+	if _, err := ctrl.LoadTree(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	// Set two values.
+	if err := ctrl.SetValue(ctx, "database/host", config.Value{Val: "host2"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := ctrl.SetValue(ctx, "app/name", config.Value{Val: "newapp"}); err != nil {
+		t.Fatal(err)
+	}
+
+	// Reload — both dirty values should survive.
+	tree, err := ctrl.LoadTree(ctx)
+	if err != nil {
+		t.Fatalf("LoadTree: %v", err)
+	}
+
+	v, ok := tree.Get("database/host")
+	if !ok || v.Val != "host2" {
+		t.Errorf("expected host2, got %v (ok=%v)", v.Val, ok)
+	}
+	v, ok = tree.Get("app/name")
+	if !ok || v.Val != "newapp" {
+		t.Errorf("expected newapp, got %v (ok=%v)", v.Val, ok)
+	}
+}
+
+func TestUIController_SaveTreeClearsDirtyPaths(t *testing.T) {
+	ctrl := setupTestController(t)
+	ctx := context.Background()
+
+	if _, err := ctrl.LoadTree(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	// Set a value and save.
+	if err := ctrl.SetValue(ctx, "database/host", config.Value{Val: "saved-host"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := ctrl.SaveTree(ctx); err != nil {
+		t.Fatalf("SaveTree: %v", err)
+	}
+
+	// After save, the dirty set is cleared. LoadTree should now read
+	// from the store (which has the saved value).
+	tree, err := ctrl.LoadTree(ctx)
+	if err != nil {
+		t.Fatalf("LoadTree after save: %v", err)
+	}
+
+	v, ok := tree.Get("database/host")
+	if !ok {
+		t.Fatal("expected database/host")
+	}
+	if v.Val != "saved-host" {
+		t.Errorf("expected saved-host from store, got %v", v.Val)
+	}
+}
+
 func TestUIController_WorkspaceName(t *testing.T) {
 	ctrl := setupTestController(t)
 
