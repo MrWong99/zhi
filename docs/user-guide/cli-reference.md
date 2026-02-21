@@ -32,7 +32,7 @@ Creates `zhi.yaml`, starter configuration files, sample export templates, and th
 
 ### `zhi edit`
 
-![tui-gif](../../assets/tui.gif)
+![tui-gif](../assets/tui.gif)
 
 Launch the interactive UI to browse, edit, and manage configuration.
 

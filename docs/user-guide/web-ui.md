@@ -2,7 +2,7 @@
 
 The zhi Web UI is a browser-based interface for managing configuration. It provides a visual tree browser, value editor, validation dashboard, export/apply controls, component management, and a plugin marketplace.
 
-![webui](../../assets/webui.png)
+![webui](../assets/webui.png)
 
 ## Setup
 
