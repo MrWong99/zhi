@@ -11,7 +11,7 @@
     {{end}}
     <span class="leaf-value">
       {{if .IsPassword}}<span class="value-password">{{.DisplayValue}}</span>
-      {{else if eq .ValueType "string"}}<span class="value-string">"{{.DisplayValue}}"</span>
+      {{else if eq .ValueType "string"}}{{if eq .DisplayValue ""}}<span class="value-string value-empty">(empty)</span>{{else}}<span class="value-string">"{{.DisplayValue}}"</span>{{end}}
       {{else if eq .ValueType "number"}}<span class="value-number">{{.DisplayValue}}</span>
       {{else if eq .ValueType "bool"}}<span class="value-bool">{{.DisplayValue}}</span>
       {{else}}<span>{{.DisplayValue}}</span>
