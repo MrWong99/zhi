@@ -244,8 +244,8 @@ func TestAdminClient_CreateToken(t *testing.T) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %s, want POST", r.Method)
 		}
-		if r.URL.Path != "/v1/auth/token/create" {
-			t.Errorf("path = %s, want /v1/auth/token/create", r.URL.Path)
+		if r.URL.Path != "/v1/auth/token/create-orphan" {
+			t.Errorf("path = %s, want /v1/auth/token/create-orphan", r.URL.Path)
 		}
 		json.NewDecoder(r.Body).Decode(&gotBody)
 		json.NewEncoder(w).Encode(map[string]any{

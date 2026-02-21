@@ -132,9 +132,11 @@ func (c *AdminClient) GenerateSecretID(ctx context.Context, roleName, wrapTTL st
 
 // --- Token operations ---
 
-// CreateToken creates a new Vault token with the given policies and TTL.
+// CreateToken creates a new orphan Vault token with the given policies and TTL.
+// It uses the auth/token/create-orphan endpoint so the child token's policies
+// do not need to be a subset of the parent token's policies.
 func (c *AdminClient) CreateToken(ctx context.Context, policies []string, ttl string) (string, error) {
-	resp, err := c.Request(ctx, http.MethodPost, "auth/token/create", map[string]any{
+	resp, err := c.Request(ctx, http.MethodPost, "auth/token/create-orphan", map[string]any{
 		"policies": policies,
 		"ttl":      ttl,
 		"num_uses": 0,

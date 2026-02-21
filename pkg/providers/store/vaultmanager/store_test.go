@@ -109,7 +109,7 @@ func TestStore_Login_AuthenticatesChild(t *testing.T) {
 			policyWritten = body.Policy
 			w.WriteHeader(http.StatusNoContent)
 
-		case path == "auth/token/create" && r.Method == http.MethodPost:
+		case path == "auth/token/create-orphan" && r.Method == http.MethodPost:
 			json.NewEncoder(w).Encode(map[string]any{
 				"auth": map[string]any{
 					"client_token": childToken,

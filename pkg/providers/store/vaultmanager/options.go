@@ -42,9 +42,9 @@ func ParseConfig(opts map[string]any) (*Config, error) {
 		Mount:      pluginopts.String(opts, "mount", "ZHI_VAULT_MOUNT", "secret"),
 		Prefix:     pluginopts.String(opts, "prefix", "ZHI_VAULT_PREFIX", "zhi"),
 		Namespace:  pluginopts.String(opts, "namespace", "VAULT_NAMESPACE", ""),
-		CACert:     pluginopts.String(opts, "ca_cert", "VAULT_CACERT", ""),
-		ClientCert: pluginopts.String(opts, "client_cert", "VAULT_CLIENT_CERT", ""),
-		ClientKey:  pluginopts.String(opts, "client_key", "VAULT_CLIENT_KEY", ""),
+		CACert:     pluginopts.StringAlias(opts, []string{"cacert", "ca_cert"}, "VAULT_CACERT", ""),
+		ClientCert: pluginopts.StringAlias(opts, []string{"clientcert", "client_cert"}, "VAULT_CLIENT_CERT", ""),
+		ClientKey:  pluginopts.StringAlias(opts, []string{"clientkey", "client_key"}, "VAULT_CLIENT_KEY", ""),
 		SkipVerify: skipVerify == "true" || skipVerify == "1",
 		Workspace:  pluginopts.String(opts, "workspace", "", "default"),
 	}

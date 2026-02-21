@@ -139,9 +139,19 @@ func runVaultCredentialsRefresh(cmd *cobra.Command, _ []string) error {
 func runVaultCredentialsBootstrap(cmd *cobra.Command, _ []string) error {
 	w := cmd.OutOrStdout()
 
-	// Default mount and prefix for the vault-manager plugin.
+	// Read mount and prefix from workspace config, falling back to defaults.
 	mount := "secret"
 	prefix := "zhi"
+	if eng, err := engineFromCmd(cmd); err == nil {
+		if ws := eng.Workspace(); ws != nil {
+			if v, ok := ws.Store.Options["mount"].(string); ok && v != "" {
+				mount = v
+			}
+			if v, ok := ws.Store.Options["prefix"].(string); ok && v != "" {
+				prefix = v
+			}
+		}
+	}
 
 	policy := bootstrapPolicyHCLForCLI(mount, prefix)
 
@@ -180,7 +190,7 @@ func bootstrapPolicyHCLForCLI(mount, prefix string) string {
 		{"sys/policies/acl/zhi-*", []string{"read", "create", "update", "delete", "list"}},
 		{"auth/approle/role/zhi-*", []string{"read", "create", "update", "delete", "list"}},
 		{"auth/approle/role/zhi-*/secret-id", []string{"create", "update"}},
-		{"auth/token/create", []string{"create", "update"}},
+		{"auth/token/create-orphan", []string{"create", "update"}},
 	}
 	for i, p := range paths {
 		if i > 0 {

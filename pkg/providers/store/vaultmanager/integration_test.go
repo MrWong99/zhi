@@ -71,7 +71,7 @@ func TestIntegration_FullLifecycle(t *testing.T) {
 				},
 			})
 
-		case r.Method == http.MethodPost && path == "/v1/auth/token/create":
+		case r.Method == http.MethodPost && path == "/v1/auth/token/create-orphan":
 			tokensCreated++
 			json.NewEncoder(w).Encode(map[string]any{
 				"auth": map[string]any{

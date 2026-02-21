@@ -52,6 +52,26 @@ func String(opts map[string]any, key, envKey, defaultVal string) string {
 	return defaultVal
 }
 
+// StringAlias works like String but checks multiple option keys in order
+// before falling back to the environment variable and default value.
+// This is useful when an option has been renamed or has a common alias
+// (e.g. "cacert" vs "ca_cert").
+func StringAlias(opts map[string]any, keys []string, envKey, defaultVal string) string {
+	if opts != nil {
+		for _, key := range keys {
+			if v, ok := opts[key].(string); ok {
+				return v
+			}
+		}
+	}
+	if envKey != "" {
+		if v := os.Getenv(envKey); v != "" {
+			return v
+		}
+	}
+	return defaultVal
+}
+
 // Bool returns a boolean option value for key. If the key is absent or
 // not a bool, it returns defaultVal.
 func Bool(opts map[string]any, key string, defaultVal bool) bool {

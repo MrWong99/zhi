@@ -76,6 +76,38 @@ func TestParseConfig_TLSFields(t *testing.T) {
 	}
 }
 
+func TestParseConfig_CACertAlias(t *testing.T) {
+	opts := map[string]any{
+		"cacert": "/path/to/ca.pem",
+	}
+
+	cfg, err := ParseConfig(opts)
+	if err != nil {
+		t.Fatalf("ParseConfig: %v", err)
+	}
+	if cfg.CACert != "/path/to/ca.pem" {
+		t.Errorf("CACert = %q, want /path/to/ca.pem (cacert alias should work)", cfg.CACert)
+	}
+}
+
+func TestParseConfig_ClientCertAliases(t *testing.T) {
+	opts := map[string]any{
+		"clientcert": "/path/to/client.pem",
+		"clientkey":  "/path/to/client-key.pem",
+	}
+
+	cfg, err := ParseConfig(opts)
+	if err != nil {
+		t.Fatalf("ParseConfig: %v", err)
+	}
+	if cfg.ClientCert != "/path/to/client.pem" {
+		t.Errorf("ClientCert = %q, want /path/to/client.pem", cfg.ClientCert)
+	}
+	if cfg.ClientKey != "/path/to/client-key.pem" {
+		t.Errorf("ClientKey = %q, want /path/to/client-key.pem", cfg.ClientKey)
+	}
+}
+
 func TestChildVaultOptions_IncludesTLS(t *testing.T) {
 	cfg := &Config{
 		Addr:       "https://vault:8200",
