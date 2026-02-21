@@ -1606,11 +1606,7 @@ func TestStartRenewal_CancelledContext(t *testing.T) {
 	defer srv.Close()
 
 	s := &Store{
-		client: &vaultClient{
-			addr:       srv.URL,
-			httpClient: srv.Client(),
-			token:      "test-token",
-		},
+		client: newVaultClient(srv.URL, "test-token", "", srv.Client()),
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())

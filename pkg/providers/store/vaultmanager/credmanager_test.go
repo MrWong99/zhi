@@ -1,4 +1,4 @@
-package main
+package vaultmanager
 
 import (
 	"context"
@@ -37,8 +37,8 @@ func TestCredManager_ReconcilePolicies(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	admin := newAdminClient(srv.URL, "token", "", nil)
-	cm := &credManager{
+	admin := NewAdminClient(srv.URL, "token", "", nil)
+	cm := &CredManager{
 		admin:     admin,
 		mount:     "secret",
 		prefix:    "zhi",
@@ -51,11 +51,11 @@ func TestCredManager_ReconcilePolicies(t *testing.T) {
 			Metadata: map[string]any{"vault.app.web-api": "read"},
 		},
 	}
-	apps := []appConfig{{Name: "web-api", Auth: "approle"}}
+	apps := []AppConfig{{Name: "web-api", Auth: "approle"}}
 
-	err := cm.reconcilePolicies(context.Background(), values, apps)
+	err := cm.ReconcilePolicies(context.Background(), values, apps)
 	if err != nil {
-		t.Fatalf("reconcilePolicies: %v", err)
+		t.Fatalf("ReconcilePolicies: %v", err)
 	}
 
 	mu.Lock()
@@ -71,7 +71,7 @@ func TestCredManager_InjectCredentials(t *testing.T) {
 	}
 
 	t.Run("wrapped", func(t *testing.T) {
-		creds := map[string]*appCredentials{
+		creds := map[string]*AppCredentials{
 			"web-api": {
 				AuthMethod: "approle",
 				RoleID:     "role-123",
@@ -80,7 +80,7 @@ func TestCredManager_InjectCredentials(t *testing.T) {
 			},
 		}
 
-		result := injectCredentials(values, creds)
+		result := InjectCredentials(values, creds)
 
 		roleID, ok := result["vault/credentials/web-api/role-id"]
 		if !ok {
@@ -106,7 +106,7 @@ func TestCredManager_InjectCredentials(t *testing.T) {
 	})
 
 	t.Run("unwrapped", func(t *testing.T) {
-		creds := map[string]*appCredentials{
+		creds := map[string]*AppCredentials{
 			"web-api": {
 				AuthMethod: "approle",
 				RoleID:     "role-123",
@@ -115,7 +115,7 @@ func TestCredManager_InjectCredentials(t *testing.T) {
 			},
 		}
 
-		result := injectCredentials(values, creds)
+		result := InjectCredentials(values, creds)
 
 		sid, ok := result["vault/credentials/web-api/secret-id"]
 		if !ok {

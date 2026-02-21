@@ -1,4 +1,4 @@
-package main
+package vaultmanager
 
 import (
 	"context"
@@ -10,8 +10,8 @@ import (
 	"github.com/MrWong99/zhi/pkg/zhiplugin/labels"
 )
 
-// appCredentials holds generated credentials for one app.
-type appCredentials struct {
+// AppCredentials holds generated credentials for one app.
+type AppCredentials struct {
 	AuthMethod string
 	RoleID     string // approle only
 	SecretID   string // approle only (plain or wrapped)
@@ -19,20 +19,21 @@ type appCredentials struct {
 	Token      string // token auth only
 }
 
-// credManager orchestrates Vault policy, AppRole, and credential management.
-type credManager struct {
-	admin     *adminClient
+// CredManager orchestrates Vault policy, AppRole, and credential management.
+type CredManager struct {
+	admin     *AdminClient
 	mount     string
 	prefix    string
 	workspace string
 	log       hclog.Logger
 }
 
-func newCredManager(admin *adminClient, mount, prefix, workspace string, log hclog.Logger) *credManager {
+// NewCredManager creates a new credential manager.
+func NewCredManager(admin *AdminClient, mount, prefix, workspace string, log hclog.Logger) *CredManager {
 	if log == nil {
 		log = hclog.Default()
 	}
-	return &credManager{
+	return &CredManager{
 		admin:     admin,
 		mount:     mount,
 		prefix:    prefix,
@@ -41,20 +42,20 @@ func newCredManager(admin *adminClient, mount, prefix, workspace string, log hcl
 	}
 }
 
-// reconcilePolicies creates/updates/deletes Vault policies based on tree labels.
-func (cm *credManager) reconcilePolicies(ctx context.Context, values map[string]config.Value, apps []appConfig) error {
+// ReconcilePolicies creates/updates/deletes Vault policies based on tree labels.
+func (cm *CredManager) ReconcilePolicies(ctx context.Context, values map[string]config.Value, apps []AppConfig) error {
 	policyPrefix := fmt.Sprintf("zhi-%s-", cm.workspace)
 
 	// Build desired policies.
 	desired := make(map[string]string) // policy name -> HCL
 	for _, app := range apps {
-		name := policyName(cm.workspace, app.Name)
-		hcl := buildPolicyHCL(app.Name, values, cm.mount, cm.prefix, cm.treeID(values))
+		name := PolicyName(cm.workspace, app.Name)
+		hcl := BuildPolicyHCL(app.Name, values, cm.mount, cm.prefix, cm.treeID(values))
 		desired[name] = hcl
 	}
 
 	// List existing managed policies.
-	existing, err := cm.admin.listPolicies(ctx, policyPrefix)
+	existing, err := cm.admin.ListPolicies(ctx, policyPrefix)
 	if err != nil {
 		return fmt.Errorf("listing existing policies: %w", err)
 	}
@@ -62,7 +63,7 @@ func (cm *credManager) reconcilePolicies(ctx context.Context, values map[string]
 	// Create or update desired policies.
 	var errs []error
 	for name, hcl := range desired {
-		if err := cm.admin.putPolicy(ctx, name, hcl); err != nil {
+		if err := cm.admin.PutPolicy(ctx, name, hcl); err != nil {
 			if cm.log != nil {
 				cm.log.Error("failed to write policy", "policy", name, "error", err)
 			}
@@ -75,7 +76,7 @@ func (cm *credManager) reconcilePolicies(ctx context.Context, values map[string]
 	// Delete stale policies.
 	for _, name := range existing {
 		if _, ok := desired[name]; !ok {
-			if err := cm.admin.deletePolicy(ctx, name); err != nil {
+			if err := cm.admin.DeletePolicy(ctx, name); err != nil {
 				if cm.log != nil {
 					cm.log.Warn("failed to delete stale policy", "policy", name, "error", err)
 				}
@@ -91,17 +92,17 @@ func (cm *credManager) reconcilePolicies(ctx context.Context, values map[string]
 	return nil
 }
 
-// ensureAppRoles creates or updates AppRole roles for approle-type apps.
-func (cm *credManager) ensureAppRoles(ctx context.Context, apps []appConfig) error {
+// EnsureAppRoles creates or updates AppRole roles for approle-type apps.
+func (cm *CredManager) EnsureAppRoles(ctx context.Context, apps []AppConfig) error {
 	var errs []error
 	for _, app := range apps {
 		if app.Auth != "approle" {
 			continue
 		}
-		roleName := policyName(cm.workspace, app.Name)
-		polName := policyName(cm.workspace, app.Name)
+		roleName := PolicyName(cm.workspace, app.Name)
+		polName := PolicyName(cm.workspace, app.Name)
 
-		existing, err := cm.admin.readAppRole(ctx, roleName)
+		existing, err := cm.admin.ReadAppRole(ctx, roleName)
 		if err != nil {
 			// Role doesn't exist, create it.
 			if cm.log != nil {
@@ -110,7 +111,7 @@ func (cm *credManager) ensureAppRoles(ctx context.Context, apps []appConfig) err
 			params := map[string]any{
 				"token_policies": []string{polName},
 			}
-			if err := cm.admin.writeAppRole(ctx, roleName, params); err != nil {
+			if err := cm.admin.WriteAppRole(ctx, roleName, params); err != nil {
 				if cm.log != nil {
 					cm.log.Error("failed to create AppRole", "role", roleName, "error", err)
 				}
@@ -120,7 +121,7 @@ func (cm *credManager) ensureAppRoles(ctx context.Context, apps []appConfig) err
 		}
 
 		// Role exists -- ensure our policy is in the list.
-		policies := extractStringSlice(existing, "token_policies")
+		policies := ExtractStringSlice(existing, "token_policies")
 		found := false
 		for _, p := range policies {
 			if p == polName {
@@ -133,7 +134,7 @@ func (cm *credManager) ensureAppRoles(ctx context.Context, apps []appConfig) err
 			params := map[string]any{
 				"token_policies": policies,
 			}
-			if err := cm.admin.writeAppRole(ctx, roleName, params); err != nil {
+			if err := cm.admin.WriteAppRole(ctx, roleName, params); err != nil {
 				if cm.log != nil {
 					cm.log.Error("failed to update AppRole policies", "role", roleName, "error", err)
 				}
@@ -150,17 +151,17 @@ func (cm *credManager) ensureAppRoles(ctx context.Context, apps []appConfig) err
 	return nil
 }
 
-// generateCredentials creates fresh credentials for each app.
-func (cm *credManager) generateCredentials(ctx context.Context, apps []appConfig) (map[string]*appCredentials, error) {
-	creds := make(map[string]*appCredentials)
+// GenerateCredentials creates fresh credentials for each app.
+func (cm *CredManager) GenerateCredentials(ctx context.Context, apps []AppConfig) (map[string]*AppCredentials, error) {
+	creds := make(map[string]*AppCredentials)
 	var errs []error
 
 	for _, app := range apps {
-		roleName := policyName(cm.workspace, app.Name)
+		roleName := PolicyName(cm.workspace, app.Name)
 
 		switch app.Auth {
 		case "approle":
-			roleID, err := cm.admin.readRoleID(ctx, roleName)
+			roleID, err := cm.admin.ReadRoleID(ctx, roleName)
 			if err != nil {
 				if cm.log != nil {
 					cm.log.Error("failed to read role_id", "app", app.Name, "error", err)
@@ -174,7 +175,7 @@ func (cm *credManager) generateCredentials(ctx context.Context, apps []appConfig
 				wrapTTL = ""
 			}
 
-			secretID, wrapped, err := cm.admin.generateSecretID(ctx, roleName, wrapTTL)
+			secretID, wrapped, err := cm.admin.GenerateSecretID(ctx, roleName, wrapTTL)
 			if err != nil {
 				if cm.log != nil {
 					cm.log.Error("failed to generate secret_id", "app", app.Name, "error", err)
@@ -183,7 +184,7 @@ func (cm *credManager) generateCredentials(ctx context.Context, apps []appConfig
 				continue
 			}
 
-			creds[app.Name] = &appCredentials{
+			creds[app.Name] = &AppCredentials{
 				AuthMethod: "approle",
 				RoleID:     roleID,
 				SecretID:   secretID,
@@ -191,10 +192,10 @@ func (cm *credManager) generateCredentials(ctx context.Context, apps []appConfig
 			}
 
 		case "token":
-			polName := policyName(cm.workspace, app.Name)
+			polName := PolicyName(cm.workspace, app.Name)
 			policies := append([]string{polName}, app.TokenPolicies...)
 
-			token, err := cm.admin.createToken(ctx, policies, app.TokenTTL)
+			token, err := cm.admin.CreateToken(ctx, policies, app.TokenTTL)
 			if err != nil {
 				if cm.log != nil {
 					cm.log.Error("failed to create token", "app", app.Name, "error", err)
@@ -203,7 +204,7 @@ func (cm *credManager) generateCredentials(ctx context.Context, apps []appConfig
 				continue
 			}
 
-			creds[app.Name] = &appCredentials{
+			creds[app.Name] = &AppCredentials{
 				AuthMethod: "token",
 				Token:      token,
 			}
@@ -220,8 +221,8 @@ func (cm *credManager) generateCredentials(ctx context.Context, apps []appConfig
 	return creds, nil
 }
 
-// injectCredentials adds ephemeral credential values to the values map.
-func injectCredentials(values map[string]config.Value, creds map[string]*appCredentials) map[string]config.Value {
+// InjectCredentials adds ephemeral credential values to the values map.
+func InjectCredentials(values map[string]config.Value, creds map[string]*AppCredentials) map[string]config.Value {
 	result := make(map[string]config.Value, len(values)+len(creds)*3)
 	for k, v := range values {
 		result[k] = v
@@ -274,11 +275,12 @@ func injectCredentials(values map[string]config.Value, creds map[string]*appCred
 }
 
 // treeID derives the tree ID from workspace config.
-func (cm *credManager) treeID(_ map[string]config.Value) string {
+func (cm *CredManager) treeID(_ map[string]config.Value) string {
 	return cm.workspace
 }
 
-func extractStringSlice(m map[string]any, key string) []string {
+// ExtractStringSlice extracts a string slice from a map value.
+func ExtractStringSlice(m map[string]any, key string) []string {
 	raw, ok := m[key]
 	if !ok {
 		return nil

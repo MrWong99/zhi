@@ -1,4 +1,4 @@
-package main
+package vaultmanager
 
 import (
 	"fmt"
@@ -6,8 +6,8 @@ import (
 	"github.com/MrWong99/zhi/pkg/zhiplugin/pluginopts"
 )
 
-// appConfig holds the configuration for a single managed application.
-type appConfig struct {
+// AppConfig holds the configuration for a single managed application.
+type AppConfig struct {
 	Name          string
 	Auth          string   // "approle" or "token"
 	Wrapped       bool     // Use response-wrapping for secret_id (default: true for approle)
@@ -16,8 +16,8 @@ type appConfig struct {
 	TokenPolicies []string // Additional policies beyond the generated one
 }
 
-// managerConfig holds the full meta-plugin configuration.
-type managerConfig struct {
+// Config holds the full meta-plugin configuration.
+type Config struct {
 	Addr      string
 	Mount     string
 	Prefix    string
@@ -29,14 +29,15 @@ type managerConfig struct {
 	ClientKey  string
 	SkipVerify bool
 
-	Apps []appConfig
+	Apps []AppConfig
 
 	Workspace string
 }
 
-func parseManagerConfig(opts map[string]any) (*managerConfig, error) {
+// ParseConfig parses the manager configuration from plugin options.
+func ParseConfig(opts map[string]any) (*Config, error) {
 	skipVerify := pluginopts.String(opts, "skip_verify", "VAULT_SKIP_VERIFY", "")
-	cfg := &managerConfig{
+	cfg := &Config{
 		Addr:       pluginopts.String(opts, "addr", "VAULT_ADDR", "http://127.0.0.1:8200"),
 		Mount:      pluginopts.String(opts, "mount", "ZHI_VAULT_MOUNT", "secret"),
 		Prefix:     pluginopts.String(opts, "prefix", "ZHI_VAULT_PREFIX", "zhi"),
@@ -48,7 +49,7 @@ func parseManagerConfig(opts map[string]any) (*managerConfig, error) {
 		Workspace:  pluginopts.String(opts, "workspace", "", "default"),
 	}
 
-	apps, err := parseAppConfigs(opts)
+	apps, err := ParseAppConfigs(opts)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +58,8 @@ func parseManagerConfig(opts map[string]any) (*managerConfig, error) {
 	return cfg, nil
 }
 
-func parseAppConfigs(opts map[string]any) ([]appConfig, error) {
+// ParseAppConfigs parses the apps section from plugin options.
+func ParseAppConfigs(opts map[string]any) ([]AppConfig, error) {
 	appsRaw, ok := opts["apps"]
 	if !ok {
 		return nil, nil
@@ -68,7 +70,7 @@ func parseAppConfigs(opts map[string]any) ([]appConfig, error) {
 		return nil, fmt.Errorf("apps must be a list")
 	}
 
-	var apps []appConfig
+	var apps []AppConfig
 	for i, raw := range appsList {
 		m, ok := raw.(map[string]any)
 		if !ok {
@@ -88,7 +90,7 @@ func parseAppConfigs(opts map[string]any) ([]appConfig, error) {
 			return nil, fmt.Errorf("apps[%d]: auth must be 'approle' or 'token', got %q", i, auth)
 		}
 
-		app := appConfig{
+		app := AppConfig{
 			Name: name,
 			Auth: auth,
 		}
@@ -123,8 +125,8 @@ func parseAppConfigs(opts map[string]any) ([]appConfig, error) {
 	return apps, nil
 }
 
-// childVaultOptions returns the options map to forward to the child vault plugin.
-func childVaultOptions(cfg *managerConfig) map[string]any {
+// ChildVaultOptions returns the options map to forward to the child vault plugin.
+func ChildVaultOptions(cfg *Config) map[string]any {
 	opts := map[string]any{
 		"addr":   cfg.Addr,
 		"mount":  cfg.Mount,
@@ -148,8 +150,8 @@ func childVaultOptions(cfg *managerConfig) map[string]any {
 	return opts
 }
 
-// childVaultEnv returns the environment variables to pass to the child vault plugin.
-func childVaultEnv(cfg *managerConfig) map[string]string {
+// ChildVaultEnv returns the environment variables to pass to the child vault plugin.
+func ChildVaultEnv(cfg *Config) map[string]string {
 	env := map[string]string{
 		"VAULT_ADDR":       cfg.Addr,
 		"ZHI_VAULT_MOUNT":  cfg.Mount,

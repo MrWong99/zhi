@@ -1,4 +1,4 @@
-package main
+package vaultmanager
 
 import (
 	"context"
@@ -19,10 +19,10 @@ func TestAdminClient_PutPolicy(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := newAdminClient(srv.URL, "test-token", "", nil)
-	err := c.putPolicy(context.Background(), "zhi-ws-myapp", `path "secret/data/zhi/*" { capabilities = ["read"] }`)
+	c := NewAdminClient(srv.URL, "test-token", "", nil)
+	err := c.PutPolicy(context.Background(), "zhi-ws-myapp", `path "secret/data/zhi/*" { capabilities = ["read"] }`)
 	if err != nil {
-		t.Fatalf("putPolicy: %v", err)
+		t.Fatalf("PutPolicy: %v", err)
 	}
 	if gotMethod != http.MethodPut {
 		t.Errorf("method = %s, want PUT", gotMethod)
@@ -44,10 +44,10 @@ func TestAdminClient_DeletePolicy(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := newAdminClient(srv.URL, "test-token", "", nil)
-	err := c.deletePolicy(context.Background(), "zhi-ws-myapp")
+	c := NewAdminClient(srv.URL, "test-token", "", nil)
+	err := c.DeletePolicy(context.Background(), "zhi-ws-myapp")
 	if err != nil {
-		t.Fatalf("deletePolicy: %v", err)
+		t.Fatalf("DeletePolicy: %v", err)
 	}
 	if gotMethod != http.MethodDelete {
 		t.Errorf("method = %s, want DELETE", gotMethod)
@@ -67,10 +67,10 @@ func TestAdminClient_ListPolicies(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := newAdminClient(srv.URL, "test-token", "", nil)
-	policies, err := c.listPolicies(context.Background(), "zhi-ws-")
+	c := NewAdminClient(srv.URL, "test-token", "", nil)
+	policies, err := c.ListPolicies(context.Background(), "zhi-ws-")
 	if err != nil {
-		t.Fatalf("listPolicies: %v", err)
+		t.Fatalf("ListPolicies: %v", err)
 	}
 	if len(policies) != 2 {
 		t.Fatalf("expected 2 policies, got %d: %v", len(policies), policies)
@@ -96,10 +96,10 @@ func TestAdminClient_ReadAppRole(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := newAdminClient(srv.URL, "test-token", "", nil)
-	data, err := c.readAppRole(context.Background(), "zhi-myapp")
+	c := NewAdminClient(srv.URL, "test-token", "", nil)
+	data, err := c.ReadAppRole(context.Background(), "zhi-myapp")
 	if err != nil {
-		t.Fatalf("readAppRole: %v", err)
+		t.Fatalf("ReadAppRole: %v", err)
 	}
 	policies, ok := data["token_policies"]
 	if !ok {
@@ -122,14 +122,14 @@ func TestAdminClient_WriteAppRole(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := newAdminClient(srv.URL, "test-token", "", nil)
+	c := NewAdminClient(srv.URL, "test-token", "", nil)
 	params := map[string]any{
 		"token_policies": []string{"zhi-ws-myapp"},
 		"token_ttl":      "1h",
 	}
-	err := c.writeAppRole(context.Background(), "zhi-myapp", params)
+	err := c.WriteAppRole(context.Background(), "zhi-myapp", params)
 	if err != nil {
-		t.Fatalf("writeAppRole: %v", err)
+		t.Fatalf("WriteAppRole: %v", err)
 	}
 	if gotMethod != http.MethodPost {
 		t.Errorf("method = %s, want POST", gotMethod)
@@ -158,10 +158,10 @@ func TestAdminClient_ReadRoleID(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := newAdminClient(srv.URL, "test-token", "", nil)
-	roleID, err := c.readRoleID(context.Background(), "zhi-myapp")
+	c := NewAdminClient(srv.URL, "test-token", "", nil)
+	roleID, err := c.ReadRoleID(context.Background(), "zhi-myapp")
 	if err != nil {
-		t.Fatalf("readRoleID: %v", err)
+		t.Fatalf("ReadRoleID: %v", err)
 	}
 	if roleID != "test-role-id" {
 		t.Errorf("roleID = %s, want test-role-id", roleID)
@@ -189,10 +189,10 @@ func TestAdminClient_GenerateSecretID_Wrapped(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := newAdminClient(srv.URL, "test-token", "", nil)
-	token, wrapped, err := c.generateSecretID(context.Background(), "zhi-myapp", "120s")
+	c := NewAdminClient(srv.URL, "test-token", "", nil)
+	token, wrapped, err := c.GenerateSecretID(context.Background(), "zhi-myapp", "120s")
 	if err != nil {
-		t.Fatalf("generateSecretID: %v", err)
+		t.Fatalf("GenerateSecretID: %v", err)
 	}
 	if !wrapped {
 		t.Error("expected wrapped=true when wrapTTL is set")
@@ -225,10 +225,10 @@ func TestAdminClient_GenerateSecretID_Unwrapped(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := newAdminClient(srv.URL, "test-token", "", nil)
-	secretID, wrapped, err := c.generateSecretID(context.Background(), "zhi-myapp", "")
+	c := NewAdminClient(srv.URL, "test-token", "", nil)
+	secretID, wrapped, err := c.GenerateSecretID(context.Background(), "zhi-myapp", "")
 	if err != nil {
-		t.Fatalf("generateSecretID: %v", err)
+		t.Fatalf("GenerateSecretID: %v", err)
 	}
 	if wrapped {
 		t.Error("expected wrapped=false when wrapTTL is empty")
@@ -258,10 +258,10 @@ func TestAdminClient_CreateToken(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := newAdminClient(srv.URL, "test-token", "", nil)
-	token, err := c.createToken(context.Background(), []string{"zhi-ws-myapp"}, "1h")
+	c := NewAdminClient(srv.URL, "test-token", "", nil)
+	token, err := c.CreateToken(context.Background(), []string{"zhi-ws-myapp"}, "1h")
 	if err != nil {
-		t.Fatalf("createToken: %v", err)
+		t.Fatalf("CreateToken: %v", err)
 	}
 	if token != "new-token" {
 		t.Errorf("token = %s, want new-token", token)
@@ -290,12 +290,12 @@ func TestAdminClient_LoginToken(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := newAdminClient(srv.URL, "", "", nil)
-	auth, err := c.login(context.Background(), "token", map[string]string{
+	c := NewAdminClient(srv.URL, "", "", nil)
+	auth, err := c.Login(context.Background(), "token", map[string]string{
 		"token": "admin-token-123",
 	})
 	if err != nil {
-		t.Fatalf("login: %v", err)
+		t.Fatalf("Login: %v", err)
 	}
 	if auth.ClientToken != "admin-token-123" {
 		t.Errorf("client_token = %s, want admin-token-123", auth.ClientToken)
@@ -304,7 +304,7 @@ func TestAdminClient_LoginToken(t *testing.T) {
 		t.Errorf("expected 2 policies, got %d: %v", len(auth.Policies), auth.Policies)
 	}
 	// Verify the token was persisted on the client.
-	if c.getToken() != "admin-token-123" {
+	if c.Token() != "admin-token-123" {
 		t.Errorf("client token not updated after login")
 	}
 }
@@ -318,13 +318,13 @@ func TestAdminClient_ErrorHandling(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := newAdminClient(srv.URL, "bad-token", "", nil)
-	err := c.putPolicy(context.Background(), "test", "policy data")
+	c := NewAdminClient(srv.URL, "bad-token", "", nil)
+	err := c.PutPolicy(context.Background(), "test", "policy data")
 	if err == nil {
 		t.Fatal("expected error for 403 response")
 	}
-	if got := err.Error(); got != "vault: permission denied (403)" {
-		t.Errorf("error = %q, want vault: permission denied (403)", got)
+	if got := err.Error(); got != "vault: permission denied (HTTP 403)" {
+		t.Errorf("error = %q, want vault: permission denied (HTTP 403)", got)
 	}
 }
 
@@ -336,10 +336,10 @@ func TestAdminClient_VaultTokenHeader(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := newAdminClient(srv.URL, "my-secret-token", "", nil)
-	err := c.deletePolicy(context.Background(), "test-policy")
+	c := NewAdminClient(srv.URL, "my-secret-token", "", nil)
+	err := c.DeletePolicy(context.Background(), "test-policy")
 	if err != nil {
-		t.Fatalf("deletePolicy: %v", err)
+		t.Fatalf("DeletePolicy: %v", err)
 	}
 	if gotToken != "my-secret-token" {
 		t.Errorf("X-Vault-Token = %q, want %q", gotToken, "my-secret-token")
@@ -354,10 +354,10 @@ func TestAdminClient_NamespaceHeader(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := newAdminClient(srv.URL, "test-token", "engineering/team-a", nil)
-	err := c.deletePolicy(context.Background(), "test-policy")
+	c := NewAdminClient(srv.URL, "test-token", "engineering/team-a", nil)
+	err := c.DeletePolicy(context.Background(), "test-policy")
 	if err != nil {
-		t.Fatalf("deletePolicy: %v", err)
+		t.Fatalf("DeletePolicy: %v", err)
 	}
 	if gotNamespace != "engineering/team-a" {
 		t.Errorf("X-Vault-Namespace = %q, want %q", gotNamespace, "engineering/team-a")
@@ -374,10 +374,10 @@ func TestAdminClient_NamespaceHeaderAbsentWhenEmpty(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := newAdminClient(srv.URL, "test-token", "", nil)
-	err := c.deletePolicy(context.Background(), "test-policy")
+	c := NewAdminClient(srv.URL, "test-token", "", nil)
+	err := c.DeletePolicy(context.Background(), "test-policy")
 	if err != nil {
-		t.Fatalf("deletePolicy: %v", err)
+		t.Fatalf("DeletePolicy: %v", err)
 	}
 	if hasNamespaceHeader {
 		t.Errorf("X-Vault-Namespace should not be set when namespace is empty, got %q", gotNamespace)

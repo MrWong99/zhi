@@ -1,4 +1,4 @@
-package main
+package vaultmanager
 
 import (
 	"context"
@@ -16,9 +16,9 @@ import (
 	"github.com/MrWong99/zhi/pkg/zhiplugin/store"
 )
 
-func TestVaultManagerStore_PutValues_FiltersEphemeral(t *testing.T) {
+func TestStore_PutValues_FiltersEphemeral(t *testing.T) {
 	mock := &mockStorePlugin{}
-	s := &vaultManagerStore{
+	s := &Store{
 		DelegatingPlugin: store.NewDelegatingPlugin(mock),
 	}
 
@@ -86,8 +86,7 @@ func (m *mockStorePlugin) Login(_ context.Context, method string, creds map[stri
 	return &store.Credential{Token: creds["token"]}, nil
 }
 
-func TestVaultManagerStore_Login_AuthenticatesChild(t *testing.T) {
-	// Mock Vault server handling token-lookup-self, policy-put, and token-create.
+func TestStore_Login_AuthenticatesChild(t *testing.T) {
 	childToken := "s.child-scoped-token"
 	var policyWritten string
 
@@ -96,7 +95,6 @@ func TestVaultManagerStore_Login_AuthenticatesChild(t *testing.T) {
 
 		switch {
 		case path == "auth/token/lookup-self" && r.Method == http.MethodGet:
-			// Token validation for admin login.
 			json.NewEncoder(w).Encode(map[string]any{
 				"data": map[string]any{
 					"policies": []string{"root"},
@@ -104,7 +102,6 @@ func TestVaultManagerStore_Login_AuthenticatesChild(t *testing.T) {
 			})
 
 		case strings.HasPrefix(path, "sys/policies/acl/") && r.Method == http.MethodPut:
-			// Policy creation.
 			var body struct {
 				Policy string `json:"policy"`
 			}
@@ -113,7 +110,6 @@ func TestVaultManagerStore_Login_AuthenticatesChild(t *testing.T) {
 			w.WriteHeader(http.StatusNoContent)
 
 		case path == "auth/token/create" && r.Method == http.MethodPost:
-			// Token creation — return the child token.
 			json.NewEncoder(w).Encode(map[string]any{
 				"auth": map[string]any{
 					"client_token": childToken,
@@ -128,21 +124,21 @@ func TestVaultManagerStore_Login_AuthenticatesChild(t *testing.T) {
 	defer vaultServer.Close()
 
 	mock := &mockStorePlugin{}
-	admin := newAdminClient(vaultServer.URL, "", "", vaultServer.Client())
+	admin := NewAdminClient(vaultServer.URL, "", "", vaultServer.Client())
 
-	cfg := &managerConfig{
+	cfg := &Config{
 		Addr:   vaultServer.URL,
 		Mount:  "secret",
 		Prefix: "zhi",
 	}
 
-	s := &vaultManagerStore{
+	s := &Store{
 		DelegatingPlugin: store.NewDelegatingPlugin(mock),
-		admin:            admin,
-		credManager:      nil,
-		apps:             nil,
-		cfg:              cfg,
-		log:              hclog.NewNullLogger(),
+		Admin:            admin,
+		CredManager:      nil,
+		Apps:             nil,
+		Cfg:              cfg,
+		Log:              hclog.NewNullLogger(),
 	}
 
 	cred, err := s.Login(context.Background(), "token", map[string]string{"token": "s.admin-token"})
@@ -153,7 +149,6 @@ func TestVaultManagerStore_Login_AuthenticatesChild(t *testing.T) {
 		t.Errorf("admin credential token = %q, want s.admin-token", cred.Token)
 	}
 
-	// Verify the child plugin was authenticated.
 	if !mock.loginCalled {
 		t.Fatal("child Login was not called")
 	}
@@ -164,7 +159,6 @@ func TestVaultManagerStore_Login_AuthenticatesChild(t *testing.T) {
 		t.Errorf("child token = %q, want %q", mock.loginCredentials["token"], childToken)
 	}
 
-	// Verify policy was written with expected paths.
 	if policyWritten == "" {
 		t.Fatal("no policy was written")
 	}
@@ -177,7 +171,7 @@ func TestVaultManagerStore_Login_AuthenticatesChild(t *testing.T) {
 }
 
 func TestBuildChildStorePolicy(t *testing.T) {
-	policy := buildChildStorePolicy("secret", "zhi")
+	policy := BuildChildStorePolicy("secret", "zhi")
 
 	expected := []string{
 		`secret/data/zhi/*`,
@@ -191,7 +185,7 @@ func TestBuildChildStorePolicy(t *testing.T) {
 	}
 
 	// Custom mount/prefix.
-	policy = buildChildStorePolicy("kv", "myapp")
+	policy = BuildChildStorePolicy("kv", "myapp")
 	if !strings.Contains(policy, "kv/data/myapp/*") {
 		t.Errorf("policy missing kv/data/myapp/*, got:\n%s", policy)
 	}

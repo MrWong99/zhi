@@ -1,4 +1,4 @@
-package main
+package vaultmanager
 
 import "testing"
 
@@ -19,9 +19,9 @@ func TestParseAppConfigs(t *testing.T) {
 		},
 	}
 
-	apps, err := parseAppConfigs(opts)
+	apps, err := ParseAppConfigs(opts)
 	if err != nil {
-		t.Fatalf("parseAppConfigs: %v", err)
+		t.Fatalf("ParseAppConfigs: %v", err)
 	}
 	if len(apps) != 2 {
 		t.Fatalf("expected 2 apps, got %d", len(apps))
@@ -50,7 +50,7 @@ func TestParseAppConfigs(t *testing.T) {
 	}
 }
 
-func TestParseManagerConfig_TLSFields(t *testing.T) {
+func TestParseConfig_TLSFields(t *testing.T) {
 	opts := map[string]any{
 		"ca_cert":     "/path/to/ca.pem",
 		"client_cert": "/path/to/client.pem",
@@ -58,9 +58,9 @@ func TestParseManagerConfig_TLSFields(t *testing.T) {
 		"skip_verify": "true",
 	}
 
-	cfg, err := parseManagerConfig(opts)
+	cfg, err := ParseConfig(opts)
 	if err != nil {
-		t.Fatalf("parseManagerConfig: %v", err)
+		t.Fatalf("ParseConfig: %v", err)
 	}
 	if cfg.CACert != "/path/to/ca.pem" {
 		t.Errorf("CACert = %q, want /path/to/ca.pem", cfg.CACert)
@@ -77,7 +77,7 @@ func TestParseManagerConfig_TLSFields(t *testing.T) {
 }
 
 func TestChildVaultOptions_IncludesTLS(t *testing.T) {
-	cfg := &managerConfig{
+	cfg := &Config{
 		Addr:       "https://vault:8200",
 		Mount:      "secret",
 		Prefix:     "zhi",
@@ -87,7 +87,7 @@ func TestChildVaultOptions_IncludesTLS(t *testing.T) {
 		SkipVerify: true,
 	}
 
-	opts := childVaultOptions(cfg)
+	opts := ChildVaultOptions(cfg)
 	if opts["ca_cert"] != "/ca.pem" {
 		t.Errorf("ca_cert = %v", opts["ca_cert"])
 	}
@@ -103,13 +103,13 @@ func TestChildVaultOptions_IncludesTLS(t *testing.T) {
 }
 
 func TestChildVaultOptions_OmitsTLSWhenEmpty(t *testing.T) {
-	cfg := &managerConfig{
+	cfg := &Config{
 		Addr:   "https://vault:8200",
 		Mount:  "secret",
 		Prefix: "zhi",
 	}
 
-	opts := childVaultOptions(cfg)
+	opts := ChildVaultOptions(cfg)
 	if _, ok := opts["ca_cert"]; ok {
 		t.Error("ca_cert should not be set when empty")
 	}
@@ -119,7 +119,7 @@ func TestChildVaultOptions_OmitsTLSWhenEmpty(t *testing.T) {
 }
 
 func TestChildVaultEnv_IncludesTLS(t *testing.T) {
-	cfg := &managerConfig{
+	cfg := &Config{
 		Addr:       "https://vault:8200",
 		Namespace:  "engineering",
 		CACert:     "/ca.pem",
@@ -128,7 +128,7 @@ func TestChildVaultEnv_IncludesTLS(t *testing.T) {
 		SkipVerify: true,
 	}
 
-	env := childVaultEnv(cfg)
+	env := ChildVaultEnv(cfg)
 	if env["VAULT_ADDR"] != "https://vault:8200" {
 		t.Errorf("VAULT_ADDR = %s", env["VAULT_ADDR"])
 	}
@@ -150,11 +150,11 @@ func TestChildVaultEnv_IncludesTLS(t *testing.T) {
 }
 
 func TestChildVaultEnv_OmitsTLSWhenEmpty(t *testing.T) {
-	cfg := &managerConfig{
+	cfg := &Config{
 		Addr: "http://vault:8200",
 	}
 
-	env := childVaultEnv(cfg)
+	env := ChildVaultEnv(cfg)
 	if _, ok := env["VAULT_CACERT"]; ok {
 		t.Error("VAULT_CACERT should not be set")
 	}
@@ -167,13 +167,13 @@ func TestChildVaultEnv_OmitsTLSWhenEmpty(t *testing.T) {
 }
 
 func TestChildVaultEnv_IncludesMountAndPrefix(t *testing.T) {
-	cfg := &managerConfig{
+	cfg := &Config{
 		Addr:   "https://vault:8200",
 		Mount:  "kv",
 		Prefix: "myapp",
 	}
 
-	env := childVaultEnv(cfg)
+	env := ChildVaultEnv(cfg)
 	if env["ZHI_VAULT_MOUNT"] != "kv" {
 		t.Errorf("ZHI_VAULT_MOUNT = %q, want kv", env["ZHI_VAULT_MOUNT"])
 	}
@@ -183,13 +183,13 @@ func TestChildVaultEnv_IncludesMountAndPrefix(t *testing.T) {
 }
 
 func TestChildVaultEnv_IncludesDefaultMountAndPrefix(t *testing.T) {
-	cfg := &managerConfig{
+	cfg := &Config{
 		Addr:   "https://vault:8200",
 		Mount:  "secret",
 		Prefix: "zhi",
 	}
 
-	env := childVaultEnv(cfg)
+	env := ChildVaultEnv(cfg)
 	if env["ZHI_VAULT_MOUNT"] != "secret" {
 		t.Errorf("ZHI_VAULT_MOUNT = %q, want secret", env["ZHI_VAULT_MOUNT"])
 	}
@@ -208,9 +208,9 @@ func TestParseAppConfigs_Defaults(t *testing.T) {
 		},
 	}
 
-	apps, err := parseAppConfigs(opts)
+	apps, err := ParseAppConfigs(opts)
 	if err != nil {
-		t.Fatalf("parseAppConfigs: %v", err)
+		t.Fatalf("ParseAppConfigs: %v", err)
 	}
 	app := apps[0]
 	if !app.Wrapped {

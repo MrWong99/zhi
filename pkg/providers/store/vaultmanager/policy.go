@@ -1,4 +1,4 @@
-package main
+package vaultmanager
 
 import (
 	"fmt"
@@ -11,8 +11,8 @@ import (
 
 const vaultAppLabelPrefix = "vault.app."
 
-// scanApps extracts all unique app names from vault.app.* labels in the values map.
-func scanApps(values map[string]config.Value) map[string][]string {
+// ScanApps extracts all unique app names from vault.app.* labels in the values map.
+func ScanApps(values map[string]config.Value) map[string][]string {
 	apps := make(map[string][]string)
 	for path, val := range values {
 		if val.Metadata == nil {
@@ -30,8 +30,8 @@ func scanApps(values map[string]config.Value) map[string][]string {
 	return apps
 }
 
-// parseCapabilities converts a comma-separated capability string to Vault capabilities.
-func parseCapabilities(raw string) []string {
+// ParseCapabilities converts a comma-separated capability string to Vault capabilities.
+func ParseCapabilities(raw string) []string {
 	parts := strings.Split(raw, ",")
 	seen := make(map[string]bool)
 	var caps []string
@@ -62,16 +62,16 @@ func parseCapabilities(raw string) []string {
 	return caps
 }
 
-// metadataCapabilities returns the Vault capabilities needed for the metadata path.
-func metadataCapabilities(dataCaps []string) []string {
+// MetadataCapabilities returns the Vault capabilities needed for the metadata path.
+func MetadataCapabilities(dataCaps []string) []string {
 	if slices.Contains(dataCaps, "read") {
 		return []string{"read", "list"}
 	}
 	return nil
 }
 
-// buildPolicyHCL generates Vault HCL policy for an app based on vault.app.{name} labels.
-func buildPolicyHCL(appName string, values map[string]config.Value, mount, prefix, treeID string) string {
+// BuildPolicyHCL generates Vault HCL policy for an app based on vault.app.{name} labels.
+func BuildPolicyHCL(appName string, values map[string]config.Value, mount, prefix, treeID string) string {
 	labelKey := vaultAppLabelPrefix + appName
 
 	type pathRule struct {
@@ -93,7 +93,7 @@ func buildPolicyHCL(appName string, values map[string]config.Value, mount, prefi
 			continue
 		}
 
-		dataCaps := parseCapabilities(capStr)
+		dataCaps := ParseCapabilities(capStr)
 		if len(dataCaps) == 0 {
 			continue
 		}
@@ -101,7 +101,7 @@ func buildPolicyHCL(appName string, values map[string]config.Value, mount, prefi
 		dataPath := fmt.Sprintf("%s/data/%s/%s/%s", mount, prefix, treeID, configPath)
 		rules = append(rules, pathRule{path: dataPath, caps: dataCaps})
 
-		metaCaps := metadataCapabilities(dataCaps)
+		metaCaps := MetadataCapabilities(dataCaps)
 		if len(metaCaps) > 0 {
 			metaPath := fmt.Sprintf("%s/metadata/%s/%s/%s", mount, prefix, treeID, configPath)
 			rules = append(rules, pathRule{path: metaPath, caps: metaCaps})
@@ -127,9 +127,26 @@ func buildPolicyHCL(appName string, values map[string]config.Value, mount, prefi
 	return b.String()
 }
 
-// policyName returns the Vault policy name for an app in a workspace.
-func policyName(workspace, appName string) string {
+// PolicyName returns the Vault policy name for an app in a workspace.
+func PolicyName(workspace, appName string) string {
 	return fmt.Sprintf("zhi-%s-%s", workspace, appName)
+}
+
+// BuildChildStorePolicy generates a Vault ACL policy HCL granting KV v2 CRUD
+// on the child plugin's mount and prefix paths.
+func BuildChildStorePolicy(mount, prefix string) string {
+	return fmt.Sprintf(`path "%s/data/%s/*" {
+  capabilities = ["create", "read", "update", "delete", "list"]
+}
+
+path "%s/metadata/%s/*" {
+  capabilities = ["create", "read", "update", "delete", "list"]
+}
+
+path "%s/destroy/%s/*" {
+  capabilities = ["create", "update"]
+}
+`, mount, prefix, mount, prefix, mount, prefix)
 }
 
 func quoteList(items []string) string {
