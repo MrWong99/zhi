@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"maps"
 	"net/http"
 	"os"
@@ -28,6 +29,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/MrWong99/zhi/internal/tlsutil"
 	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
 	"github.com/MrWong99/zhi/pkg/zhiplugin/labels"
 	"github.com/MrWong99/zhi/pkg/zhiplugin/store"
@@ -54,6 +56,26 @@ type Config struct {
 	// Namespace is the Vault namespace (enterprise feature).
 	// Defaults to the VAULT_NAMESPACE environment variable.
 	Namespace string
+
+	// CACert is the path to a PEM-encoded CA certificate for verifying
+	// the Vault server's TLS certificate.
+	// Defaults to the VAULT_CACERT environment variable.
+	CACert string
+
+	// ClientCert is the path to a PEM-encoded client certificate for
+	// mutual TLS authentication with Vault.
+	// Defaults to the VAULT_CLIENT_CERT environment variable.
+	ClientCert string
+
+	// ClientKey is the path to a PEM-encoded client private key for
+	// mutual TLS authentication with Vault.
+	// Defaults to the VAULT_CLIENT_KEY environment variable.
+	ClientKey string
+
+	// SkipVerify disables TLS certificate verification. This should
+	// only be used for development and testing.
+	// Defaults to the VAULT_SKIP_VERIFY environment variable.
+	SkipVerify bool
 }
 
 // DefaultConfig returns a Config populated from environment variables
@@ -63,12 +85,17 @@ func DefaultConfig() Config {
 	if addr == "" {
 		addr = "http://127.0.0.1:8200"
 	}
+	skipVerify := os.Getenv("VAULT_SKIP_VERIFY")
 	return Config{
-		Address:   addr,
-		Token:     os.Getenv("VAULT_TOKEN"),
-		Mount:     "secret",
-		Prefix:    "zhi",
-		Namespace: os.Getenv("VAULT_NAMESPACE"),
+		Address:    addr,
+		Token:      os.Getenv("VAULT_TOKEN"),
+		Mount:      "secret",
+		Prefix:     "zhi",
+		Namespace:  os.Getenv("VAULT_NAMESPACE"),
+		CACert:     os.Getenv("VAULT_CACERT"),
+		ClientCert: os.Getenv("VAULT_CLIENT_CERT"),
+		ClientKey:  os.Getenv("VAULT_CLIENT_KEY"),
+		SkipVerify: skipVerify == "true" || skipVerify == "1",
 	}
 }
 
@@ -94,12 +121,39 @@ func New(cfg Config) (*Store, error) {
 		cfg.Prefix = "zhi"
 	}
 
+	httpClient, err := buildHTTPClient(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("configuring vault TLS: %w", err)
+	}
+
 	s := &Store{
-		client: newVaultClient(cfg.Address, cfg.Token, cfg.Namespace),
+		client: newVaultClient(cfg.Address, cfg.Token, cfg.Namespace, httpClient),
 		mount:  cfg.Mount,
 		prefix: cfg.Prefix,
 	}
 	return s, nil
+}
+
+// buildHTTPClient constructs an [http.Client] with TLS settings from
+// the Config. When TLS fields (CACert, ClientCert, ClientKey, SkipVerify)
+// are set, it builds a custom transport using [tlsutil.ClientConfig].
+// Otherwise, it returns a plain client with a default timeout.
+func buildHTTPClient(cfg Config) (*http.Client, error) {
+	tlsCfg := tlsutil.ClientConfig{
+		CAFile:             cfg.CACert,
+		CertFile:           cfg.ClientCert,
+		KeyFile:            cfg.ClientKey,
+		InsecureSkipVerify: cfg.SkipVerify,
+	}
+
+	if tlsCfg.Enabled() {
+		if cfg.SkipVerify {
+			slog.Warn("VAULT_SKIP_VERIFY is enabled, TLS certificate verification disabled")
+		}
+		return tlsCfg.HTTPClient(30 * time.Second)
+	}
+
+	return &http.Client{Timeout: 30 * time.Second}, nil
 }
 
 // Stop cancels background token renewal. It is safe to call multiple times.

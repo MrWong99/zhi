@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/MrWong99/zhi/internal/core"
+	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
 )
 
 func TestSetValue(t *testing.T) {
@@ -27,6 +28,7 @@ func TestSetValue(t *testing.T) {
 	cmd.SetOut(buf)
 
 	setValidate = false
+	setNoSave = false
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("runSet: %v", err)
@@ -35,6 +37,10 @@ func TestSetValue(t *testing.T) {
 	output := buf.String()
 	if !strings.Contains(output, "Set database/host") {
 		t.Errorf("expected confirmation in output, got: %s", output)
+	}
+	// Default behavior saves the value.
+	if !strings.Contains(output, "(saved)") {
+		t.Errorf("expected (saved) in output, got: %s", output)
 	}
 
 	// Verify the value was actually set.
@@ -45,6 +51,35 @@ func TestSetValue(t *testing.T) {
 	v, ok := tree.Get("database/host")
 	if !ok || v.Val != "remotehost" {
 		t.Errorf("database/host = %v (ok=%v), want remotehost", v.Val, ok)
+	}
+}
+
+func TestSetValueNoSave(t *testing.T) {
+	eng := setupTestEngine(t, nil)
+	ctx := context.WithValue(context.Background(), engineKey, eng)
+
+	cmd := &cobra.Command{
+		Use:  "set",
+		Args: cobra.ExactArgs(2),
+		RunE: runSet,
+	}
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"database/host", "remotehost"})
+
+	buf := new(bytes.Buffer)
+	cmd.SetOut(buf)
+
+	setValidate = false
+	setNoSave = true
+	defer func() { setNoSave = false }()
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("runSet --no-save: %v", err)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, "(in-memory only)") {
+		t.Errorf("expected (in-memory only) in output, got: %s", output)
 	}
 }
 
@@ -64,11 +99,87 @@ func TestSetValueWithValidation(t *testing.T) {
 	cmd.SetArgs([]string{"database/host", "remotehost"})
 
 	setValidate = true
+	setNoSave = false
 	defer func() { setValidate = false }()
 
 	// Should succeed since remotehost doesn't trigger the "localhost" warning.
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("runSet with validation: %v", err)
+	}
+}
+
+func TestSetValueWithBlockingValidation(t *testing.T) {
+	components := []core.ComponentDef{
+		{Name: "database", Paths: []string{"database/"}, Mandatory: true},
+	}
+	eng := setupTestEngine(t, components)
+	ctx := context.WithValue(context.Background(), engineKey, eng)
+
+	cmd := &cobra.Command{
+		Use:  "set",
+		Args: cobra.ExactArgs(2),
+		RunE: runSet,
+	}
+	cmd.SetContext(ctx)
+	// Port 80 triggers a blocking validation error in the mock.
+	cmd.SetArgs([]string{"database/port", "80"})
+
+	buf := new(bytes.Buffer)
+	cmd.SetOut(buf)
+
+	setValidate = true
+	setNoSave = false
+	defer func() { setValidate = false }()
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for blocking validation")
+	}
+	if !strings.Contains(err.Error(), "value not saved") {
+		t.Errorf("expected 'value not saved' in error, got: %v", err)
+	}
+}
+
+func TestSetValueNoStore(t *testing.T) {
+	// Create engine without a store provider.
+	mc := newMockConfig()
+	reg := core.NewRegistry()
+	_ = reg.RegisterConfig("mock", func(string, map[string]any) (config.Plugin, error) {
+		return mc, nil
+	})
+	ws := &core.WorkspaceConfig{
+		Version: "1",
+		Config:  core.ProviderRef{Provider: "mock"},
+	}
+	eng, err := core.NewEngine(reg, ws)
+	if err != nil {
+		t.Fatalf("NewEngine: %v", err)
+	}
+
+	ctx := context.WithValue(context.Background(), engineKey, eng)
+
+	cmd := &cobra.Command{
+		Use:  "set",
+		Args: cobra.ExactArgs(2),
+		RunE: runSet,
+	}
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"database/host", "remotehost"})
+
+	buf := new(bytes.Buffer)
+	cmd.SetOut(buf)
+
+	setValidate = false
+	setNoSave = false
+
+	// Should succeed with a warning, not error.
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("runSet without store should not error: %v", err)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, "not persisted") {
+		t.Errorf("expected 'not persisted' warning in output, got: %s", output)
 	}
 }
 
@@ -85,6 +196,7 @@ func TestSetIntegerValue(t *testing.T) {
 	cmd.SetArgs([]string{"database/port", "3306"})
 
 	setValidate = false
+	setNoSave = false
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("runSet integer: %v", err)
@@ -98,9 +210,9 @@ func TestSetIntegerValue(t *testing.T) {
 	if !ok {
 		t.Fatal("expected database/port to exist")
 	}
-	// parseValue should convert "3306" to int64.
-	if v.Val != int64(3306) {
-		t.Errorf("database/port = %v (%T), want int64(3306)", v.Val, v.Val)
+	// parseValue converts "3306" to int (matching yaml.v3 behavior).
+	if v.Val != 3306 {
+		t.Errorf("database/port = %v (%T), want int(3306)", v.Val, v.Val)
 	}
 }
 
@@ -117,6 +229,7 @@ func TestSetBooleanValue(t *testing.T) {
 	cmd.SetArgs([]string{"app/debug", "true"})
 
 	setValidate = false
+	setNoSave = false
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("runSet boolean: %v", err)
@@ -143,7 +256,7 @@ func TestParseValue(t *testing.T) {
 		{"hello", "hello"},
 		{"true", true},
 		{"false", false},
-		{"42", int64(42)},
+		{"42", 42},
 		{"3.14", 3.14},
 		{`{"key":"val"}`, map[string]any{"key": "val"}},
 		{`[1,2,3]`, []any{float64(1), float64(2), float64(3)}},

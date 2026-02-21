@@ -23,12 +23,15 @@ type adminClient struct {
 	token string
 }
 
-func newAdminClient(addr, token, namespace string) *adminClient {
+func newAdminClient(addr, token, namespace string, httpClient *http.Client) *adminClient {
+	if httpClient == nil {
+		httpClient = &http.Client{}
+	}
 	return &adminClient{
 		addr:       strings.TrimRight(addr, "/"),
 		namespace:  namespace,
 		token:      token,
-		httpClient: &http.Client{},
+		httpClient: httpClient,
 	}
 }
 

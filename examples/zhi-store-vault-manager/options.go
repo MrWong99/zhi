@@ -23,18 +23,29 @@ type managerConfig struct {
 	Prefix    string
 	Namespace string
 
+	// TLS fields for Vault connection.
+	CACert     string
+	ClientCert string
+	ClientKey  string
+	SkipVerify bool
+
 	Apps []appConfig
 
 	Workspace string
 }
 
 func parseManagerConfig(opts map[string]any) (*managerConfig, error) {
+	skipVerify := pluginopts.String(opts, "skip_verify", "VAULT_SKIP_VERIFY", "")
 	cfg := &managerConfig{
-		Addr:      pluginopts.String(opts, "addr", "VAULT_ADDR", "http://127.0.0.1:8200"),
-		Mount:     pluginopts.String(opts, "mount", "ZHI_VAULT_MOUNT", "secret"),
-		Prefix:    pluginopts.String(opts, "prefix", "ZHI_VAULT_PREFIX", "zhi"),
-		Namespace: pluginopts.String(opts, "namespace", "VAULT_NAMESPACE", ""),
-		Workspace: pluginopts.String(opts, "workspace", "", "default"),
+		Addr:       pluginopts.String(opts, "addr", "VAULT_ADDR", "http://127.0.0.1:8200"),
+		Mount:      pluginopts.String(opts, "mount", "ZHI_VAULT_MOUNT", "secret"),
+		Prefix:     pluginopts.String(opts, "prefix", "ZHI_VAULT_PREFIX", "zhi"),
+		Namespace:  pluginopts.String(opts, "namespace", "VAULT_NAMESPACE", ""),
+		CACert:     pluginopts.String(opts, "ca_cert", "VAULT_CACERT", ""),
+		ClientCert: pluginopts.String(opts, "client_cert", "VAULT_CLIENT_CERT", ""),
+		ClientKey:  pluginopts.String(opts, "client_key", "VAULT_CLIENT_KEY", ""),
+		SkipVerify: skipVerify == "true" || skipVerify == "1",
+		Workspace:  pluginopts.String(opts, "workspace", "", "default"),
 	}
 
 	apps, err := parseAppConfigs(opts)
@@ -122,5 +133,40 @@ func childVaultOptions(cfg *managerConfig) map[string]any {
 	if cfg.Namespace != "" {
 		opts["namespace"] = cfg.Namespace
 	}
+	if cfg.CACert != "" {
+		opts["ca_cert"] = cfg.CACert
+	}
+	if cfg.ClientCert != "" {
+		opts["client_cert"] = cfg.ClientCert
+	}
+	if cfg.ClientKey != "" {
+		opts["client_key"] = cfg.ClientKey
+	}
+	if cfg.SkipVerify {
+		opts["skip_verify"] = "true"
+	}
 	return opts
+}
+
+// childVaultEnv returns the environment variables to pass to the child vault plugin.
+func childVaultEnv(cfg *managerConfig) map[string]string {
+	env := map[string]string{
+		"VAULT_ADDR": cfg.Addr,
+	}
+	if cfg.CACert != "" {
+		env["VAULT_CACERT"] = cfg.CACert
+	}
+	if cfg.ClientCert != "" {
+		env["VAULT_CLIENT_CERT"] = cfg.ClientCert
+	}
+	if cfg.ClientKey != "" {
+		env["VAULT_CLIENT_KEY"] = cfg.ClientKey
+	}
+	if cfg.SkipVerify {
+		env["VAULT_SKIP_VERIFY"] = "true"
+	}
+	if cfg.Namespace != "" {
+		env["VAULT_NAMESPACE"] = cfg.Namespace
+	}
+	return env
 }

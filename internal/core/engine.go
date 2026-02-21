@@ -129,11 +129,17 @@ func (e *Engine) LoadTree(ctx context.Context) (*config.Tree, error) {
 			if !found {
 				continue // should not happen since we used "List()"
 			}
-			// Check stored value has same type as current value
+			// Check stored value has same type as current value, attempting
+			// lossless numeric conversion when types differ (e.g. float64 from
+			// JSON store vs int from YAML config).
 			if reflect.TypeOf(storedVal.Val) != reflect.TypeOf(currentVal.Val) {
-				Logger().Warn("stored value has different type and won't be updated",
-					"path", path, "storedType", reflect.TypeOf(storedVal.Val), "newType", reflect.TypeOf(currentVal.Val))
-				continue
+				converted, ok := tryNumericConvert(storedVal.Val, reflect.TypeOf(currentVal.Val))
+				if !ok {
+					Logger().Warn("stored value has different type and won't be updated",
+						"path", path, "storedType", reflect.TypeOf(storedVal.Val), "newType", reflect.TypeOf(currentVal.Val))
+					continue
+				}
+				storedVal.Val = converted
 			}
 			currentVal.Val = storedVal.Val
 			Logger().Debug("updated value from stored value", "path", path)

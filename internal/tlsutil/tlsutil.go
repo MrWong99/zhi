@@ -126,11 +126,14 @@ type ClientConfig struct {
 	// CAFile is the path to a CA PEM file to trust for server
 	// verification. When empty, the system certificate pool is used.
 	CAFile string
+	// InsecureSkipVerify disables TLS certificate verification.
+	// This should only be used for development and testing.
+	InsecureSkipVerify bool
 }
 
 // Enabled reports whether any client TLS setting is configured.
 func (c *ClientConfig) Enabled() bool {
-	return (c.CertFile != "" && c.KeyFile != "") || c.CAFile != ""
+	return (c.CertFile != "" && c.KeyFile != "") || c.CAFile != "" || c.InsecureSkipVerify
 }
 
 // HTTPClient returns an [http.Client] configured with the client TLS
@@ -154,7 +157,8 @@ func (c *ClientConfig) HTTPClient(timeout time.Duration) (*http.Client, error) {
 // tlsConfig builds a [tls.Config] for client-side connections.
 func (c *ClientConfig) tlsConfig() (*tls.Config, error) {
 	cfg := &tls.Config{
-		MinVersion: tls.VersionTLS12,
+		MinVersion:         tls.VersionTLS12,
+		InsecureSkipVerify: c.InsecureSkipVerify, //nolint:gosec // user-requested via explicit opt-in
 	}
 
 	// Client certificate for mTLS.

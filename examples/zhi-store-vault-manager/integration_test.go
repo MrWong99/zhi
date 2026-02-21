@@ -98,7 +98,7 @@ func TestIntegration_FullLifecycle(t *testing.T) {
 	defer srv.Close()
 
 	// Setup
-	admin := newAdminClient(srv.URL, "", "")
+	admin := newAdminClient(srv.URL, "", "", nil)
 	_, err := admin.login(context.Background(), "token", map[string]string{"token": "root-token"})
 	if err != nil {
 		t.Fatalf("admin login: %v", err)

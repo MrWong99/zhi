@@ -51,12 +51,12 @@ func (e *vaultAPIError) Error() string {
 	return fmt.Sprintf("vault: %s (HTTP %d)", e.Message, e.StatusCode)
 }
 
-func newVaultClient(addr, token, namespace string) *vaultClient {
+func newVaultClient(addr, token, namespace string, httpClient *http.Client) *vaultClient {
 	return &vaultClient{
 		addr:       strings.TrimRight(addr, "/"),
 		namespace:  namespace,
 		token:      token,
-		httpClient: &http.Client{},
+		httpClient: httpClient,
 	}
 }
 

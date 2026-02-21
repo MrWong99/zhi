@@ -135,6 +135,51 @@ func TestValidateSpecificPath(t *testing.T) {
 	}
 }
 
+func TestValidateOutputAlignment(t *testing.T) {
+	// Verify that the table output aligns correctly even with long paths.
+	// The fprintTable helper should compute dynamic column widths.
+	components := []core.ComponentDef{
+		{Name: "database", Paths: []string{"database/"}, Mandatory: true},
+	}
+	eng := setupTestEngine(t, components)
+
+	ctx := context.WithValue(context.Background(), engineKey, eng)
+
+	cmd := &cobra.Command{
+		Use:  "validate",
+		RunE: runValidate,
+	}
+	cmd.SetContext(ctx)
+
+	buf := new(bytes.Buffer)
+	cmd.SetOut(buf)
+
+	validatePath = ""
+	validateJSON = false
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("validate: %v", err)
+	}
+
+	output := buf.String()
+
+	// Should have a header row.
+	if !strings.Contains(output, "SEVERITY") {
+		t.Error("expected SEVERITY header in output")
+	}
+	if !strings.Contains(output, "PATH") {
+		t.Error("expected PATH header in output")
+	}
+	if !strings.Contains(output, "MESSAGE") {
+		t.Error("expected MESSAGE header in output")
+	}
+
+	// Should still contain the validation summary.
+	if !strings.Contains(output, "Validation:") {
+		t.Error("expected validation summary in output")
+	}
+}
+
 func TestValidateComponentDependencyViolation(t *testing.T) {
 	// Use non-mandatory components so LoadState can actually create a violation.
 	// "cache" is not mandatory and "session" depends on "cache".
