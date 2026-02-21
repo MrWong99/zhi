@@ -2,13 +2,17 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"time"
 
 	"github.com/hashicorp/go-hclog"
 	goplugin "github.com/hashicorp/go-plugin"
 
+	"github.com/MrWong99/zhi/internal/tlsutil"
 	"github.com/MrWong99/zhi/pkg/zhiplugin"
 	"github.com/MrWong99/zhi/pkg/zhiplugin/launch"
 	"github.com/MrWong99/zhi/pkg/zhiplugin/pluginopts"
@@ -50,9 +54,7 @@ func main() {
 	childOpts := childVaultOptions(cfg)
 	child, cleanup, err := launch.LaunchStore(vaultBin,
 		launch.WithLogger(logger),
-		launch.WithIsolatedEnv(map[string]string{
-			"VAULT_ADDR": cfg.Addr,
-		}),
+		launch.WithIsolatedEnv(childVaultEnv(cfg)),
 		launch.WithPluginOptions(childOpts),
 	)
 	if err != nil {
@@ -61,7 +63,12 @@ func main() {
 	}
 	defer cleanup()
 
-	admin := newAdminClient(cfg.Addr, "", cfg.Namespace)
+	adminHTTPClient, err := buildAdminHTTPClient(cfg)
+	if err != nil {
+		logger.Error("failed to configure TLS for admin client", "error", err)
+		os.Exit(1)
+	}
+	admin := newAdminClient(cfg.Addr, "", cfg.Namespace, adminHTTPClient)
 	cm := newCredManager(admin, cfg.Mount, cfg.Prefix, cfg.Workspace, logger)
 
 	managerStore := &vaultManagerStore{
@@ -81,6 +88,22 @@ func main() {
 		GRPCServer: goplugin.DefaultGRPCServer,
 		Logger:     logger,
 	})
+}
+
+func buildAdminHTTPClient(cfg *managerConfig) (*http.Client, error) {
+	tlsCfg := tlsutil.ClientConfig{
+		CAFile:             cfg.CACert,
+		CertFile:           cfg.ClientCert,
+		KeyFile:            cfg.ClientKey,
+		InsecureSkipVerify: cfg.SkipVerify,
+	}
+	if tlsCfg.Enabled() {
+		if cfg.SkipVerify {
+			slog.Warn("VAULT_SKIP_VERIFY is enabled, TLS certificate verification disabled")
+		}
+		return tlsCfg.HTTPClient(30 * time.Second)
+	}
+	return &http.Client{Timeout: 30 * time.Second}, nil
 }
 
 func findBinary(dir, name string) string {

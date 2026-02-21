@@ -35,7 +35,7 @@ func TestCredManager_ReconcilePolicies(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	admin := newAdminClient(srv.URL, "token", "")
+	admin := newAdminClient(srv.URL, "token", "", nil)
 	cm := &credManager{
 		admin:     admin,
 		mount:     "secret",

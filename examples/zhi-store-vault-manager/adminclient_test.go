@@ -19,7 +19,7 @@ func TestAdminClient_PutPolicy(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := newAdminClient(srv.URL, "test-token", "")
+	c := newAdminClient(srv.URL, "test-token", "", nil)
 	err := c.putPolicy(context.Background(), "zhi-ws-myapp", `path "secret/data/zhi/*" { capabilities = ["read"] }`)
 	if err != nil {
 		t.Fatalf("putPolicy: %v", err)
@@ -44,7 +44,7 @@ func TestAdminClient_DeletePolicy(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := newAdminClient(srv.URL, "test-token", "")
+	c := newAdminClient(srv.URL, "test-token", "", nil)
 	err := c.deletePolicy(context.Background(), "zhi-ws-myapp")
 	if err != nil {
 		t.Fatalf("deletePolicy: %v", err)
@@ -67,7 +67,7 @@ func TestAdminClient_ListPolicies(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := newAdminClient(srv.URL, "test-token", "")
+	c := newAdminClient(srv.URL, "test-token", "", nil)
 	policies, err := c.listPolicies(context.Background(), "zhi-ws-")
 	if err != nil {
 		t.Fatalf("listPolicies: %v", err)
@@ -96,7 +96,7 @@ func TestAdminClient_ReadAppRole(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := newAdminClient(srv.URL, "test-token", "")
+	c := newAdminClient(srv.URL, "test-token", "", nil)
 	data, err := c.readAppRole(context.Background(), "zhi-myapp")
 	if err != nil {
 		t.Fatalf("readAppRole: %v", err)
@@ -122,7 +122,7 @@ func TestAdminClient_WriteAppRole(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := newAdminClient(srv.URL, "test-token", "")
+	c := newAdminClient(srv.URL, "test-token", "", nil)
 	params := map[string]any{
 		"token_policies": []string{"zhi-ws-myapp"},
 		"token_ttl":      "1h",
@@ -158,7 +158,7 @@ func TestAdminClient_ReadRoleID(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := newAdminClient(srv.URL, "test-token", "")
+	c := newAdminClient(srv.URL, "test-token", "", nil)
 	roleID, err := c.readRoleID(context.Background(), "zhi-myapp")
 	if err != nil {
 		t.Fatalf("readRoleID: %v", err)
@@ -189,7 +189,7 @@ func TestAdminClient_GenerateWrappedSecretID(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := newAdminClient(srv.URL, "test-token", "")
+	c := newAdminClient(srv.URL, "test-token", "", nil)
 	token, err := c.generateWrappedSecretID(context.Background(), "zhi-myapp", "120s")
 	if err != nil {
 		t.Fatalf("generateWrappedSecretID: %v", err)
@@ -222,7 +222,7 @@ func TestAdminClient_CreateToken(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := newAdminClient(srv.URL, "test-token", "")
+	c := newAdminClient(srv.URL, "test-token", "", nil)
 	token, err := c.createToken(context.Background(), []string{"zhi-ws-myapp"}, "1h")
 	if err != nil {
 		t.Fatalf("createToken: %v", err)
@@ -252,7 +252,7 @@ func TestAdminClient_CreateScopedToken(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := newAdminClient(srv.URL, "test-token", "")
+	c := newAdminClient(srv.URL, "test-token", "", nil)
 	token, err := c.createScopedToken(context.Background(), `path "secret/*" { capabilities = ["read"] }`, "30m")
 	if err != nil {
 		t.Fatalf("createScopedToken: %v", err)
@@ -281,7 +281,7 @@ func TestAdminClient_LoginToken(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := newAdminClient(srv.URL, "", "")
+	c := newAdminClient(srv.URL, "", "", nil)
 	auth, err := c.login(context.Background(), "token", map[string]string{
 		"token": "admin-token-123",
 	})
@@ -309,7 +309,7 @@ func TestAdminClient_ErrorHandling(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := newAdminClient(srv.URL, "bad-token", "")
+	c := newAdminClient(srv.URL, "bad-token", "", nil)
 	err := c.putPolicy(context.Background(), "test", "policy data")
 	if err == nil {
 		t.Fatal("expected error for 403 response")
@@ -327,7 +327,7 @@ func TestAdminClient_VaultTokenHeader(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := newAdminClient(srv.URL, "my-secret-token", "")
+	c := newAdminClient(srv.URL, "my-secret-token", "", nil)
 	err := c.deletePolicy(context.Background(), "test-policy")
 	if err != nil {
 		t.Fatalf("deletePolicy: %v", err)
@@ -345,7 +345,7 @@ func TestAdminClient_NamespaceHeader(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := newAdminClient(srv.URL, "test-token", "engineering/team-a")
+	c := newAdminClient(srv.URL, "test-token", "engineering/team-a", nil)
 	err := c.deletePolicy(context.Background(), "test-policy")
 	if err != nil {
 		t.Fatalf("deletePolicy: %v", err)
@@ -365,7 +365,7 @@ func TestAdminClient_NamespaceHeaderAbsentWhenEmpty(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := newAdminClient(srv.URL, "test-token", "")
+	c := newAdminClient(srv.URL, "test-token", "", nil)
 	err := c.deletePolicy(context.Background(), "test-policy")
 	if err != nil {
 		t.Fatalf("deletePolicy: %v", err)
