@@ -188,6 +188,7 @@ func (s *Server) renderError(w http.ResponseWriter, r *http.Request, code int, m
 		Message:       message,
 	}
 
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(code)
 	if err := s.engine.renderPage(w, "error", data); err != nil {
 		http.Error(w, http.StatusText(code), code)

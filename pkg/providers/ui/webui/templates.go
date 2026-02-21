@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 )
 
@@ -35,18 +36,19 @@ type templateEngine struct {
 // templateFuncMap returns the shared template function map.
 func templateFuncMap() template.FuncMap {
 	return template.FuncMap{
-		"csrfToken":    csrfTokenFunc,
-		"csrfField":    csrfFieldFunc,
-		"nonce":        nonceFunc,
-		"icon":         iconFunc,
-		"activeNav":    activeNavFunc,
-		"json":         jsonFunc,
-		"pathSegments": pathSegmentsFunc,
-		"pathID":       pathToID,
-		"seq":          seqFunc,
-		"sub":          func(a, b int) int { return a - b },
-		"add":          func(a, b int) int { return a + b },
-		"assetPath":    assetPathFunc,
+		"csrfToken":        csrfTokenFunc,
+		"csrfField":        csrfFieldFunc,
+		"nonce":            nonceFunc,
+		"icon":             iconFunc,
+		"activeNav":        activeNavFunc,
+		"json":             jsonFunc,
+		"pathSegments":     pathSegmentsFunc,
+		"pathID":           pathToID,
+		"seq":              seqFunc,
+		"sub":              func(a, b int) int { return a - b },
+		"add":              func(a, b int) int { return a + b },
+		"assetPath":        assetPathFunc,
+		"formatValidation": formatValidationMessage,
 	}
 }
 
@@ -279,6 +281,19 @@ func jsonFunc(v any) string {
 	return string(b)
 }
 
+// backtickRe matches backtick-wrapped inline code in validation messages.
+var backtickRe = regexp.MustCompile("`([^`]+)`")
+
+// formatValidationMessage converts backtick-wrapped text to <code> tags
+// for display in validation results. The message is HTML-escaped first
+// to prevent XSS, then backtick patterns are replaced.
+func formatValidationMessage(msg string) template.HTML {
+	escaped := template.HTMLEscapeString(msg)
+	formatted := backtickRe.ReplaceAllString(escaped, "<code>$1</code>")
+	//nolint:gosec // Content is HTML-escaped before code tag wrapping.
+	return template.HTML(formatted)
+}
+
 func pathSegmentsFunc(path string) []string {
 	return strings.Split(path, "/")
 }
@@ -341,10 +356,11 @@ type pageData struct {
 	PluginUpdates    int
 
 	// Login page data.
-	AuthMethods    []authMethodData
-	SelectedMethod string
-	LoginError     string
-	Authenticated  bool
+	AuthMethods         []authMethodData
+	SelectedMethod      string
+	LoginError          string
+	PreviousCredentials map[string]string // non-secret credential values preserved on login failure
+	Authenticated       bool
 
 	// Error page data.
 	StatusCode int

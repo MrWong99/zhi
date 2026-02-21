@@ -180,6 +180,7 @@ func recoveryMiddleware(engine *templateEngine) func(http.Handler) http.Handler 
 			defer func() {
 				if rec := recover(); rec != nil {
 					log.Printf("PANIC: %v\n%s", rec, debug.Stack())
+					w.Header().Set("Content-Type", "text/html; charset=utf-8")
 					w.WriteHeader(http.StatusInternalServerError)
 					data := pageData{
 						StatusCode: 500,

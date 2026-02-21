@@ -86,7 +86,7 @@
     <div id="validation-inline-{{.PathID}}" class="validation-inline">
       {{if .ValidationResults}}
         {{range .ValidationResults}}
-          <div class="validation-msg validation-{{.Severity}}">{{.Message}}</div>
+          <div class="validation-msg validation-{{.Severity}}">{{formatValidation .Message}}</div>
         {{end}}
       {{end}}
     </div>
@@ -108,7 +108,7 @@
     {{end}}
     <div class="editor-actions">
       {{if not .IsReadonly}}
-        <button type="submit" class="btn btn-primary btn-sm">Save</button>
+        <button type="submit" class="btn btn-primary btn-sm">Apply</button>
       {{end}}
       <button type="button" class="btn btn-outline btn-sm"
               hx-get="/tree/display/{{.Path}}"

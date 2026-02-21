@@ -2,6 +2,7 @@ package webui
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -19,14 +20,15 @@ func (s *Server) handleMarketplacePage(w http.ResponseWriter, r *http.Request) {
 
 	results, err := s.ctrl.SearchMarketplace(ctx, query)
 	if err != nil {
-		// Marketplace unavailable: show the page with an error message.
+		// Marketplace unavailable: show user-friendly message, log technical details.
+		log.Printf("marketplace search error: %v", err)
 		data := pageData{
 			WorkspaceName:      wsName,
 			ActiveNav:          "marketplace",
 			Nonce:              nonceFromCtx(ctx),
 			CSRFToken:          csrfFromCtx(ctx),
 			Authenticated:      authenticatedFromCtx(ctx),
-			MarketplaceError:   "Marketplace is currently unavailable: " + err.Error(),
+			MarketplaceError:   "Marketplace is currently unavailable. Please check your marketplace configuration.",
 			MarketplaceQuery:   query.Query,
 			MarketplaceType:    query.Type,
 			MarketplaceSort:    query.Sort,

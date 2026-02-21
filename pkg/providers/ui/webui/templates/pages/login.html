@@ -62,7 +62,8 @@
                   {{else}}
                     <input type="text" id="cred_{{.Name}}" name="cred_{{.Name}}"
                            {{if .Required}}required{{end}}
-                           placeholder="{{.Description}}">
+                           placeholder="{{.Description}}"
+                           {{if and $.PreviousCredentials (index $.PreviousCredentials .Name)}}value="{{index $.PreviousCredentials .Name}}"{{end}}>
                   {{end}}
                 </div>
               {{end}}

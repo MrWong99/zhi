@@ -92,6 +92,11 @@
   color: var(--color-success);
 }
 
+.tree-leaf .leaf-value .value-empty {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
 .tree-leaf .leaf-value .value-number {
   color: var(--color-primary);
 }

@@ -202,6 +202,12 @@ details summary::before {
         white-space: nowrap;
         font-size: var(--text-xs);
     }
+    .sidebar-nav .nav-label {
+        display: none;
+    }
+    .sidebar-nav a svg {
+        margin: 0;
+    }
     .sidebar-footer {
         display: none;
     }

@@ -113,14 +113,25 @@ View all installed plugins, check for updates, and manage the plugin lifecycle:
 
 ## Keyboard Shortcuts
 
+### Navigation
+
+| Shortcut | Action |
+|----------|--------|
+| `g t` | Go to Configuration Tree |
+| `g c` | Go to Components |
+| `g v` | Go to Validation |
+| `g e` | Go to Export |
+| `g a` | Go to Apply |
+| `g m` | Go to Marketplace |
+| `g p` | Go to Plugins |
+
+### Actions
+
 | Shortcut | Action |
 |----------|--------|
 | `Ctrl+S` | Save configuration |
-| `Ctrl+E` | Go to Export |
-| `Ctrl+Shift+A` | Go to Apply |
-| `Ctrl+M` | Go to Marketplace |
-| `Ctrl+P` | Go to Plugins |
 | `/` | Focus search/filter |
+| `Esc` | Close edit form / Cancel |
 | `?` | Show keyboard shortcuts |
 
 ## Developer Mode

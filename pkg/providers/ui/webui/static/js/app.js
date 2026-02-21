@@ -101,22 +101,33 @@
   // ---------- Unsaved Changes Indicator ----------
 
   var unsavedIndicator = null;
+  var hasUnsaved = false;
 
   function markUnsaved() {
+    hasUnsaved = true;
     if (!unsavedIndicator) {
       unsavedIndicator = document.getElementById("unsaved-indicator");
     }
     if (unsavedIndicator) {
       unsavedIndicator.classList.add("visible");
     }
+    var saveBtn = document.getElementById("save-tree-btn");
+    if (saveBtn) {
+      saveBtn.disabled = false;
+    }
   }
 
   function markSaved() {
+    hasUnsaved = false;
     if (!unsavedIndicator) {
       unsavedIndicator = document.getElementById("unsaved-indicator");
     }
     if (unsavedIndicator) {
       unsavedIndicator.classList.remove("visible");
+    }
+    var saveBtn = document.getElementById("save-tree-btn");
+    if (saveBtn) {
+      saveBtn.disabled = true;
     }
   }
 
@@ -125,6 +136,13 @@
   });
   document.body.addEventListener("markSaved", function () {
     markSaved();
+  });
+
+  // Warn before navigating away with unsaved changes.
+  window.addEventListener("beforeunload", function (e) {
+    if (hasUnsaved) {
+      e.preventDefault();
+    }
   });
 
   // ---------- Keyboard Shortcuts ----------
