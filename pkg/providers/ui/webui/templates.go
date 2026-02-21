@@ -36,19 +36,19 @@ type templateEngine struct {
 // templateFuncMap returns the shared template function map.
 func templateFuncMap() template.FuncMap {
 	return template.FuncMap{
-		"csrfToken":    csrfTokenFunc,
-		"csrfField":    csrfFieldFunc,
-		"nonce":        nonceFunc,
-		"icon":         iconFunc,
-		"activeNav":    activeNavFunc,
-		"json":         jsonFunc,
-		"pathSegments": pathSegmentsFunc,
-		"pathID":       pathToID,
-		"seq":          seqFunc,
-		"sub":                func(a, b int) int { return a - b },
-		"add":                func(a, b int) int { return a + b },
-		"assetPath":          assetPathFunc,
-		"formatValidation":   formatValidationMessage,
+		"csrfToken":        csrfTokenFunc,
+		"csrfField":        csrfFieldFunc,
+		"nonce":            nonceFunc,
+		"icon":             iconFunc,
+		"activeNav":        activeNavFunc,
+		"json":             jsonFunc,
+		"pathSegments":     pathSegmentsFunc,
+		"pathID":           pathToID,
+		"seq":              seqFunc,
+		"sub":              func(a, b int) int { return a - b },
+		"add":              func(a, b int) int { return a + b },
+		"assetPath":        assetPathFunc,
+		"formatValidation": formatValidationMessage,
 	}
 }
 
