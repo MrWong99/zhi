@@ -131,6 +131,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 			LoginError:     loginErr.Error(),
 		}
 		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusUnauthorized)
 		if err := s.engine.renderPage(w, "login", data); err != nil {
 			s.renderError(w, r, http.StatusInternalServerError, err.Error())
