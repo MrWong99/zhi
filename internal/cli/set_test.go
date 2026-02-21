@@ -98,9 +98,9 @@ func TestSetIntegerValue(t *testing.T) {
 	if !ok {
 		t.Fatal("expected database/port to exist")
 	}
-	// parseValue should convert "3306" to int64.
-	if v.Val != int64(3306) {
-		t.Errorf("database/port = %v (%T), want int64(3306)", v.Val, v.Val)
+	// parseValue converts "3306" to int (matching yaml.v3 behavior).
+	if v.Val != 3306 {
+		t.Errorf("database/port = %v (%T), want int(3306)", v.Val, v.Val)
 	}
 }
 
@@ -143,7 +143,7 @@ func TestParseValue(t *testing.T) {
 		{"hello", "hello"},
 		{"true", true},
 		{"false", false},
-		{"42", int64(42)},
+		{"42", 42},
 		{"3.14", 3.14},
 		{`{"key":"val"}`, map[string]any{"key": "val"}},
 		{`[1,2,3]`, []any{float64(1), float64(2), float64(3)}},

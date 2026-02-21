@@ -3,6 +3,7 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"strconv"
 
 	"github.com/spf13/cobra"
@@ -103,8 +104,12 @@ func parseValue(raw string) any {
 		return false
 	}
 
-	// Try integer.
+	// Try integer. Return int (not int64) for consistency with yaml.v3
+	// which unmarshals integers as Go int.
 	if i, err := strconv.ParseInt(raw, 10, 64); err == nil {
+		if i >= math.MinInt && i <= math.MaxInt {
+			return int(i)
+		}
 		return i
 	}
 
