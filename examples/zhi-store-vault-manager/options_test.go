@@ -166,6 +166,38 @@ func TestChildVaultEnv_OmitsTLSWhenEmpty(t *testing.T) {
 	}
 }
 
+func TestChildVaultEnv_IncludesMountAndPrefix(t *testing.T) {
+	cfg := &managerConfig{
+		Addr:   "https://vault:8200",
+		Mount:  "kv",
+		Prefix: "myapp",
+	}
+
+	env := childVaultEnv(cfg)
+	if env["ZHI_VAULT_MOUNT"] != "kv" {
+		t.Errorf("ZHI_VAULT_MOUNT = %q, want kv", env["ZHI_VAULT_MOUNT"])
+	}
+	if env["ZHI_VAULT_PREFIX"] != "myapp" {
+		t.Errorf("ZHI_VAULT_PREFIX = %q, want myapp", env["ZHI_VAULT_PREFIX"])
+	}
+}
+
+func TestChildVaultEnv_IncludesDefaultMountAndPrefix(t *testing.T) {
+	cfg := &managerConfig{
+		Addr:   "https://vault:8200",
+		Mount:  "secret",
+		Prefix: "zhi",
+	}
+
+	env := childVaultEnv(cfg)
+	if env["ZHI_VAULT_MOUNT"] != "secret" {
+		t.Errorf("ZHI_VAULT_MOUNT = %q, want secret", env["ZHI_VAULT_MOUNT"])
+	}
+	if env["ZHI_VAULT_PREFIX"] != "zhi" {
+		t.Errorf("ZHI_VAULT_PREFIX = %q, want zhi", env["ZHI_VAULT_PREFIX"])
+	}
+}
+
 func TestParseAppConfigs_Defaults(t *testing.T) {
 	opts := map[string]any{
 		"apps": []any{

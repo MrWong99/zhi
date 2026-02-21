@@ -54,6 +54,50 @@ func TestSetValue(t *testing.T) {
 	}
 }
 
+func TestSetValueOverridesStoredValue(t *testing.T) {
+	eng := setupTestEngine(t, nil)
+
+	// Step 1: Save the default tree so the store has database/host = "localhost".
+	tree, err := eng.LoadTree(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := eng.SaveTree(context.Background(), tree); err != nil {
+		t.Fatal(err)
+	}
+
+	// Step 2: Run "zhi set database/host remotehost".
+	ctx := context.WithValue(context.Background(), engineKey, eng)
+	cmd := &cobra.Command{
+		Use:  "set",
+		Args: cobra.ExactArgs(2),
+		RunE: runSet,
+	}
+	cmd.SetContext(ctx)
+	cmd.SetArgs([]string{"database/host", "remotehost"})
+	cmd.SetOut(new(bytes.Buffer))
+
+	setValidate = false
+	setNoSave = false
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("runSet: %v", err)
+	}
+
+	// Step 3: Load tree and assert the new value is "remotehost", not "localhost".
+	tree, err = eng.LoadTree(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	v, ok := tree.Get("database/host")
+	if !ok {
+		t.Fatal("expected database/host to exist")
+	}
+	if v.Val != "remotehost" {
+		t.Errorf("database/host = %v, want \"remotehost\" (stale store value overwrote the set)", v.Val)
+	}
+}
+
 func TestSetValueNoSave(t *testing.T) {
 	eng := setupTestEngine(t, nil)
 	ctx := context.WithValue(context.Background(), engineKey, eng)

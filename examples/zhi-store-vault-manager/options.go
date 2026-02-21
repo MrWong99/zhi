@@ -151,7 +151,9 @@ func childVaultOptions(cfg *managerConfig) map[string]any {
 // childVaultEnv returns the environment variables to pass to the child vault plugin.
 func childVaultEnv(cfg *managerConfig) map[string]string {
 	env := map[string]string{
-		"VAULT_ADDR": cfg.Addr,
+		"VAULT_ADDR":       cfg.Addr,
+		"ZHI_VAULT_MOUNT":  cfg.Mount,
+		"ZHI_VAULT_PREFIX": cfg.Prefix,
 	}
 	if cfg.CACert != "" {
 		env["VAULT_CACERT"] = cfg.CACert
