@@ -20,21 +20,29 @@ The path must be a valid slash-delimited configuration path where each
 segment matches [a-z][a-z0-9._-]*[a-z0-9].
 
 Values are parsed as JSON objects/arrays, booleans, numbers, or strings
-(in that order of precedence).`,
+(in that order of precedence).
+
+By default, the value is persisted to the store after being set. Use
+--no-save to set the value in-memory only (useful for scripting).`,
 	Example: `  zhi set database/host localhost
   zhi set database/port 5432
   zhi set app/debug true
   zhi set app/tags '["web","api"]'
-  zhi set database/host myhost --validate`,
+  zhi set database/host myhost --validate
+  zhi set database/port 3306 --no-save`,
 	Args:              cobra.ExactArgs(2),
 	PersistentPreRunE: withEngine,
 	RunE:              runSet,
 }
 
-var setValidate bool
+var (
+	setValidate bool
+	setNoSave   bool
+)
 
 func init() {
 	setCmd.Flags().BoolVar(&setValidate, "validate", false, "validate after setting the value")
+	setCmd.Flags().BoolVar(&setNoSave, "no-save", false, "set value in-memory only without persisting to store")
 	rootCmd.AddCommand(setCmd)
 }
 
@@ -57,14 +65,19 @@ func runSet(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("setting value: %w", err)
 	}
 
-	fmt.Fprintf(w, "Set %s = %v\n", path, val)
+	if setNoSave {
+		fmt.Fprintf(w, "Set %s = %v (in-memory only)\n", path, val)
+		return nil
+	}
 
+	// Load the full tree (config + stored values merged).
+	tree, err := eng.LoadTree(ctx)
+	if err != nil {
+		return fmt.Errorf("loading tree: %w", err)
+	}
+
+	// Validate if requested — abort save on blocking errors.
 	if setValidate {
-		tree, err := eng.LoadTree(ctx)
-		if err != nil {
-			return fmt.Errorf("loading tree for validation: %w", err)
-		}
-
 		results, err := eng.Validate(ctx, tree)
 		if err != nil {
 			return fmt.Errorf("validation error: %w", err)
@@ -78,10 +91,22 @@ func runSet(cmd *cobra.Command, args []string) error {
 			}
 		}
 		if hasBlocking {
-			return fmt.Errorf("validation failed with blocking errors")
+			return fmt.Errorf("validation failed with blocking errors, value not saved")
 		}
 	}
 
+	// Apply save transforms (matching TUI behavior).
+	if err := eng.TransformForSave(ctx, tree); err != nil {
+		return fmt.Errorf("applying save transforms: %w", err)
+	}
+
+	// Persist to store. Graceful handling for no-store workspaces.
+	if err := eng.SaveTree(ctx, tree); err != nil {
+		fmt.Fprintf(w, "Set %s = %v (not persisted: %v)\n", path, val, err)
+		return nil
+	}
+
+	fmt.Fprintf(w, "Set %s = %v (saved)\n", path, val)
 	return nil
 }
 
