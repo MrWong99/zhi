@@ -2056,7 +2056,7 @@ func TestSearchMarketplaceError(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d, want 200", resp.StatusCode)
 	}
-	if !strings.Contains(body, "marketplace down") {
+	if !strings.Contains(body, "Marketplace is currently unavailable") {
 		t.Error("marketplace page should show error message")
 	}
 }
