@@ -28,13 +28,21 @@
 <body hx-headers='{"X-CSRF-Token": "{{csrfToken .}}"}'>
   <a href="#main-content" class="skip-link">Skip to content</a>
   <div class="app">
-    {{template "sidebar" .}}
-    <div class="main">
-      {{template "topbar" .}}
-      <div class="content" id="main-content" role="main">
-        {{block "content" .}}{{end}}
+    {{if .ActiveNav}}
+      {{template "sidebar" .}}
+      <div class="main">
+        {{template "topbar" .}}
+        <div class="content" id="main-content" role="main">
+          {{block "content" .}}{{end}}
+        </div>
       </div>
-    </div>
+    {{else}}
+      <div class="main main-full">
+        <div class="content" id="main-content" role="main">
+          {{block "content" .}}{{end}}
+        </div>
+      </div>
+    {{end}}
   </div>
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
   <script src="{{assetPath "js/app.js"}}" nonce="{{nonce .}}"></script>
