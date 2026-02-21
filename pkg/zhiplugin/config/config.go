@@ -5,6 +5,7 @@ import (
 	"errors"
 	"regexp"
 	"strings"
+	"sync"
 )
 
 // pathSegment matches a single path segment: starts with a lowercase letter,
@@ -113,7 +114,10 @@ func (v *Value) Validate(tree TreeReader) []ValidationResult {
 
 // Tree is a configuration tree. Paths are slash-delimited
 // (e.g. "database/host" or "app/tls/cert.pem").
+//
+// All exported methods are safe for concurrent use by multiple goroutines.
 type Tree struct {
+	mu     sync.RWMutex
 	values map[string]*Value
 }
 
@@ -128,22 +132,33 @@ func (t *Tree) Set(path string, v *Value) error {
 	if err := ValidatePath(path); err != nil {
 		return err
 	}
+	t.mu.Lock()
 	t.values[path] = v
+	t.mu.Unlock()
 	return nil
 }
 
 // GetPtr returns a pointer to the Value stored at path. The bool reports
 // whether the path exists. Because a pointer is returned the caller can
 // mutate the value in place. Use Get for a safe, read-only copy instead.
+//
+// Thread safety: the map access is protected, but the returned pointer
+// allows unsynchronized mutation. Callers that write to the returned
+// *Value while other goroutines may access the tree must provide their
+// own synchronization.
 func (t *Tree) GetPtr(path string) (*Value, bool) {
+	t.mu.RLock()
 	v, ok := t.values[path]
+	t.mu.RUnlock()
 	return v, ok
 }
 
 // Get returns a copy of the Value at path. The bool reports whether the
 // path exists.
 func (t *Tree) Get(path string) (Value, bool) {
-	v, ok := t.GetPtr(path)
+	t.mu.RLock()
+	v, ok := t.values[path]
+	t.mu.RUnlock()
 	if !ok {
 		return Value{}, false
 	}
@@ -153,26 +168,56 @@ func (t *Tree) Get(path string) (Value, bool) {
 // Delete removes the value at path from the tree. It is a no-op if the
 // path does not exist.
 func (t *Tree) Delete(path string) {
+	t.mu.Lock()
 	delete(t.values, path)
+	t.mu.Unlock()
 }
 
 // List returns all paths present in the tree in no guaranteed order.
 func (t *Tree) List() []string {
+	t.mu.RLock()
 	paths := make([]string, 0, len(t.values))
 	for p := range t.values {
 		paths = append(paths, p)
 	}
+	t.mu.RUnlock()
 	return paths
 }
 
 // Validate runs every value's validators and returns all results keyed by
-// path.
+// path. Validator callbacks receive a lock-free TreeReader so they can
+// call Get/List without deadlocking.
 func (t *Tree) Validate() map[string][]ValidationResult {
+	t.mu.RLock()
+	reader := &unsafeTreeReader{values: t.values}
 	out := make(map[string][]ValidationResult)
 	for path, v := range t.values {
-		if results := v.Validate(t); len(results) > 0 {
+		if results := v.Validate(reader); len(results) > 0 {
 			out[path] = results
 		}
 	}
+	t.mu.RUnlock()
 	return out
+}
+
+// unsafeTreeReader is a lock-free TreeReader used inside Validate while
+// the caller already holds RLock. It must not escape beyond that scope.
+type unsafeTreeReader struct {
+	values map[string]*Value
+}
+
+func (r *unsafeTreeReader) Get(path string) (Value, bool) {
+	v, ok := r.values[path]
+	if !ok {
+		return Value{}, false
+	}
+	return *v, true
+}
+
+func (r *unsafeTreeReader) List() []string {
+	paths := make([]string, 0, len(r.values))
+	for p := range r.values {
+		paths = append(paths, p)
+	}
+	return paths
 }

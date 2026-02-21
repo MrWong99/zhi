@@ -8,7 +8,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"maps"
 	"os"
 	"sync"
@@ -48,15 +47,15 @@ func (m *memoryStore) AuthMethods(_ context.Context) ([]store.AuthMethod, error)
 }
 
 func (m *memoryStore) Login(_ context.Context, _ string, _ map[string]string) (*store.Credential, error) {
-	return nil, errors.New("authentication not supported")
+	return nil, &store.ErrNotSupported{Feature: "authentication"}
 }
 
 func (m *memoryStore) LoginInteractive(_ context.Context, _ string, _ map[string]string) (*store.InteractiveChallenge, error) {
-	return nil, errors.New("interactive login not supported")
+	return nil, &store.ErrNotSupported{Feature: "interactive login"}
 }
 
 func (m *memoryStore) LoginInteractiveCallback(_ context.Context, _ string, _ map[string]string) (*store.Credential, error) {
-	return nil, errors.New("interactive login not supported")
+	return nil, &store.ErrNotSupported{Feature: "interactive login"}
 }
 
 // --- Tree management ---
@@ -124,61 +123,61 @@ func (m *memoryStore) DeleteValues(_ context.Context, id string, paths []string)
 // --- Tree-level versioning ---
 
 func (m *memoryStore) ListTreeVersions(_ context.Context, _ string) ([]string, error) {
-	return nil, errors.New("versioning not supported")
+	return nil, &store.ErrNotSupported{Feature: "versioning"}
 }
 
 func (m *memoryStore) GetTreeVersion(_ context.Context, _ string, _ string, _ []string) (map[string]config.Value, error) {
-	return nil, errors.New("versioning not supported")
+	return nil, &store.ErrNotSupported{Feature: "versioning"}
 }
 
 func (m *memoryStore) RollbackTree(_ context.Context, _ string, _ string) error {
-	return errors.New("versioning not supported")
+	return &store.ErrNotSupported{Feature: "versioning"}
 }
 
 func (m *memoryStore) DeleteTreeVersion(_ context.Context, _ string, _ string) error {
-	return errors.New("versioning not supported")
+	return &store.ErrNotSupported{Feature: "versioning"}
 }
 
 // --- Value-level versioning ---
 
 func (m *memoryStore) ListValueVersions(_ context.Context, _ string, _ string) ([]string, error) {
-	return nil, errors.New("versioning not supported")
+	return nil, &store.ErrNotSupported{Feature: "versioning"}
 }
 
 func (m *memoryStore) GetValueVersion(_ context.Context, _ string, _ string, _ string) (config.Value, bool, error) {
-	return config.Value{}, false, errors.New("versioning not supported")
+	return config.Value{}, false, &store.ErrNotSupported{Feature: "versioning"}
 }
 
 func (m *memoryStore) RollbackValue(_ context.Context, _ string, _ string, _ string) error {
-	return errors.New("versioning not supported")
+	return &store.ErrNotSupported{Feature: "versioning"}
 }
 
 func (m *memoryStore) DeleteValueVersion(_ context.Context, _ string, _ string, _ string) error {
-	return errors.New("versioning not supported")
+	return &store.ErrNotSupported{Feature: "versioning"}
 }
 
 // --- Encryption ---
 
 func (m *memoryStore) InitEncryption(_ context.Context, _ []byte) error {
-	return errors.New("encryption not supported")
+	return &store.ErrNotSupported{Feature: "encryption"}
 }
 
 func (m *memoryStore) RotateEncryption(_ context.Context, _, _ []byte) error {
-	return errors.New("encryption not supported")
+	return &store.ErrNotSupported{Feature: "encryption"}
 }
 
 // --- Access control ---
 
 func (m *memoryStore) GrantAccess(_ context.Context, _ string, _ string, _ []store.Permission) error {
-	return errors.New("access control not supported")
+	return &store.ErrNotSupported{Feature: "access control"}
 }
 
 func (m *memoryStore) RevokeAccess(_ context.Context, _ string, _ string, _ []string) error {
-	return errors.New("access control not supported")
+	return &store.ErrNotSupported{Feature: "access control"}
 }
 
 func (m *memoryStore) ListAccess(_ context.Context, _ string) (map[string][]store.Permission, error) {
-	return nil, errors.New("access control not supported")
+	return nil, &store.ErrNotSupported{Feature: "access control"}
 }
 
 func main() {

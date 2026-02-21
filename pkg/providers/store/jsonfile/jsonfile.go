@@ -93,15 +93,15 @@ func (s *Store) AuthMethods(_ context.Context) ([]store.AuthMethod, error) {
 }
 
 func (s *Store) Login(_ context.Context, _ string, _ map[string]string) (*store.Credential, error) {
-	return nil, errors.New("authentication not supported")
+	return nil, &store.ErrNotSupported{Feature: "authentication"}
 }
 
 func (s *Store) LoginInteractive(_ context.Context, _ string, _ map[string]string) (*store.InteractiveChallenge, error) {
-	return nil, errors.New("interactive login not supported")
+	return nil, &store.ErrNotSupported{Feature: "interactive login"}
 }
 
 func (s *Store) LoginInteractiveCallback(_ context.Context, _ string, _ map[string]string) (*store.Credential, error) {
-	return nil, errors.New("interactive login not supported")
+	return nil, &store.ErrNotSupported{Feature: "interactive login"}
 }
 
 // --- Tree management ---

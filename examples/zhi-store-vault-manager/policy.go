@@ -139,4 +139,3 @@ func quoteList(items []string) string {
 	}
 	return strings.Join(quoted, ", ")
 }
-
