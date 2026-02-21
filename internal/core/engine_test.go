@@ -352,6 +352,50 @@ func TestEngineSaveAndLoadTree(t *testing.T) {
 	}
 }
 
+func TestEngineLoadTreeNumericConversion(t *testing.T) {
+	// Simulate the YAML int -> JSON float64 round-trip: config provides
+	// int values but the store returns float64 (as JSON decoding does).
+	eng, _, _, ms := setupTestEngine(t)
+	ctx := context.Background()
+
+	// Pre-populate the store with float64 values (as if they went through
+	// a JSON round-trip).
+	treeID := eng.TreeID()
+	ms.trees[treeID] = map[string]config.Value{
+		"database/port": {Val: float64(3306)}, // stored as float64
+		"database/host": {Val: "remote"},      // string, same type
+	}
+
+	tree, err := eng.LoadTree(ctx)
+	if err != nil {
+		t.Fatalf("LoadTree: %v", err)
+	}
+
+	// database/port: config has int(5432), store has float64(3306).
+	// After numeric conversion, the stored float64 should be converted
+	// to int and used.
+	v, ok := tree.Get("database/port")
+	if !ok {
+		t.Fatal("expected database/port to exist")
+	}
+	intVal, isInt := v.Val.(int)
+	if !isInt {
+		t.Errorf("database/port type = %T, want int", v.Val)
+	}
+	if intVal != 3306 {
+		t.Errorf("database/port = %v, want 3306", v.Val)
+	}
+
+	// database/host: both are strings, normal merge.
+	v, ok = tree.Get("database/host")
+	if !ok {
+		t.Fatal("expected database/host to exist")
+	}
+	if v.Val != "remote" {
+		t.Errorf("database/host = %v, want remote", v.Val)
+	}
+}
+
 func TestEngineListTrees(t *testing.T) {
 	eng, _, _, _ := setupTestEngine(t)
 	ctx := context.Background()
