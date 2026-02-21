@@ -15,7 +15,7 @@
             {{if .Path}}
               <a href="/tree?filter={{.Path}}" class="validation-path mono">{{.Path}}</a>
             {{end}}
-            <span class="validation-message">{{.Message}}</span>
+            <span class="validation-message">{{formatValidation .Message}}</span>
           </div>
         {{end}}
       </div>

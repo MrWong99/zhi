@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 )
 
@@ -44,9 +45,10 @@ func templateFuncMap() template.FuncMap {
 		"pathSegments": pathSegmentsFunc,
 		"pathID":       pathToID,
 		"seq":          seqFunc,
-		"sub":          func(a, b int) int { return a - b },
-		"add":          func(a, b int) int { return a + b },
-		"assetPath":    assetPathFunc,
+		"sub":                func(a, b int) int { return a - b },
+		"add":                func(a, b int) int { return a + b },
+		"assetPath":          assetPathFunc,
+		"formatValidation":   formatValidationMessage,
 	}
 }
 
@@ -277,6 +279,19 @@ func activeNavFunc(data any, name string) string {
 func jsonFunc(v any) string {
 	b, _ := json.Marshal(v)
 	return string(b)
+}
+
+// backtickRe matches backtick-wrapped inline code in validation messages.
+var backtickRe = regexp.MustCompile("`([^`]+)`")
+
+// formatValidationMessage converts backtick-wrapped text to <code> tags
+// for display in validation results. The message is HTML-escaped first
+// to prevent XSS, then backtick patterns are replaced.
+func formatValidationMessage(msg string) template.HTML {
+	escaped := template.HTMLEscapeString(msg)
+	formatted := backtickRe.ReplaceAllString(escaped, "<code>$1</code>")
+	//nolint:gosec // Content is HTML-escaped before code tag wrapping.
+	return template.HTML(formatted)
 }
 
 func pathSegmentsFunc(path string) []string {
