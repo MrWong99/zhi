@@ -120,15 +120,31 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	_, loginErr := s.ctrl.StoreLogin(ctx, method, credentials)
 	if loginErr != nil {
+		// Preserve non-secret credential values for re-rendering.
+		prevCreds := make(map[string]string)
+		for _, m := range methods {
+			if m.Type == method {
+				for _, f := range m.Fields {
+					if !f.Secret {
+						if v := r.FormValue("cred_" + f.Name); v != "" {
+							prevCreds[f.Name] = v
+						}
+					}
+				}
+				break
+			}
+		}
+
 		// Re-render login page with error.
 		wsName, _ := s.ctrl.WorkspaceName(ctx)
 		data := pageData{
-			WorkspaceName:  wsName,
-			Nonce:          nonceFromCtx(ctx),
-			CSRFToken:      csrfFromCtx(ctx),
-			AuthMethods:    toAuthMethodData(methods),
-			SelectedMethod: method,
-			LoginError:     loginErr.Error(),
+			WorkspaceName:       wsName,
+			Nonce:               nonceFromCtx(ctx),
+			CSRFToken:           csrfFromCtx(ctx),
+			AuthMethods:         toAuthMethodData(methods),
+			SelectedMethod:      method,
+			LoginError:          loginErr.Error(),
+			PreviousCredentials: prevCreds,
 		}
 		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")

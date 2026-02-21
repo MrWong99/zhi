@@ -341,10 +341,11 @@ type pageData struct {
 	PluginUpdates    int
 
 	// Login page data.
-	AuthMethods    []authMethodData
-	SelectedMethod string
-	LoginError     string
-	Authenticated  bool
+	AuthMethods         []authMethodData
+	SelectedMethod      string
+	LoginError          string
+	PreviousCredentials map[string]string // non-secret credential values preserved on login failure
+	Authenticated       bool
 
 	// Error page data.
 	StatusCode int
