@@ -42,6 +42,29 @@ func (c *Config) Enabled() bool {
 	return c.CertFile != "" && c.KeyFile != ""
 }
 
+// Validate checks that all configured file paths exist and are accessible.
+// It is called automatically by [TLSConfig] but can also be called early
+// at startup to catch configuration errors before they cause opaque
+// failures deep in the TLS handshake.
+func (c *Config) Validate() error {
+	if c.CertFile != "" {
+		if _, err := os.Stat(c.CertFile); err != nil {
+			return fmt.Errorf("TLS certificate file not found at %q: %w", c.CertFile, err)
+		}
+	}
+	if c.KeyFile != "" {
+		if _, err := os.Stat(c.KeyFile); err != nil {
+			return fmt.Errorf("TLS key file not found at %q: %w", c.KeyFile, err)
+		}
+	}
+	if c.ClientCAFile != "" {
+		if _, err := os.Stat(c.ClientCAFile); err != nil {
+			return fmt.Errorf("client CA file not found at %q: %w", c.ClientCAFile, err)
+		}
+	}
+	return nil
+}
+
 // TLSConfig builds a [tls.Config] from the configuration. It returns an
 // error if the certificate cannot be loaded, the client CA cannot be
 // parsed, an unknown cipher suite name is given, or the minimum version
@@ -49,6 +72,9 @@ func (c *Config) Enabled() bool {
 //
 // The caller should only call TLSConfig when [Enabled] returns true.
 func (c *Config) TLSConfig() (*tls.Config, error) {
+	if err := c.Validate(); err != nil {
+		return nil, err
+	}
 	cert, err := tls.LoadX509KeyPair(c.CertFile, c.KeyFile)
 	if err != nil {
 		return nil, fmt.Errorf("loading TLS certificate: %w", err)
@@ -136,11 +162,37 @@ func (c *ClientConfig) Enabled() bool {
 	return (c.CertFile != "" && c.KeyFile != "") || c.CAFile != "" || c.InsecureSkipVerify
 }
 
+// Validate checks that all configured file paths exist and are accessible.
+// It is called automatically by [HTTPClient] but can also be called early
+// at startup to catch configuration errors before they cause opaque
+// failures deep in the TLS handshake.
+func (c *ClientConfig) Validate() error {
+	if c.CAFile != "" {
+		if _, err := os.Stat(c.CAFile); err != nil {
+			return fmt.Errorf("CA certificate file not found at %q: %w", c.CAFile, err)
+		}
+	}
+	if c.CertFile != "" {
+		if _, err := os.Stat(c.CertFile); err != nil {
+			return fmt.Errorf("client certificate file not found at %q: %w", c.CertFile, err)
+		}
+	}
+	if c.KeyFile != "" {
+		if _, err := os.Stat(c.KeyFile); err != nil {
+			return fmt.Errorf("client key file not found at %q: %w", c.KeyFile, err)
+		}
+	}
+	return nil
+}
+
 // HTTPClient returns an [http.Client] configured with the client TLS
 // settings. If no settings are configured it returns nil.
 func (c *ClientConfig) HTTPClient(timeout time.Duration) (*http.Client, error) {
 	if !c.Enabled() {
 		return nil, nil
+	}
+	if err := c.Validate(); err != nil {
+		return nil, err
 	}
 	tc, err := c.tlsConfig()
 	if err != nil {

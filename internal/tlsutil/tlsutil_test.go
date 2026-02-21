@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -277,6 +278,67 @@ func TestRegisterFlags(t *testing.T) {
 	}
 }
 
+// --- Config.Validate tests ---
+
+func TestConfig_Validate_Empty(t *testing.T) {
+	c := &Config{}
+	if err := c.Validate(); err != nil {
+		t.Fatalf("Validate() on empty config: %v", err)
+	}
+}
+
+func TestConfig_Validate_ValidFiles(t *testing.T) {
+	dir := t.TempDir()
+	certFile, keyFile := generateTestCert(t, dir, "")
+
+	c := &Config{CertFile: certFile, KeyFile: keyFile}
+	if err := c.Validate(); err != nil {
+		t.Fatalf("Validate() with valid files: %v", err)
+	}
+}
+
+func TestConfig_Validate_MissingCert(t *testing.T) {
+	c := &Config{CertFile: "/nonexistent/cert.pem", KeyFile: "/nonexistent/key.pem"}
+	err := c.Validate()
+	if err == nil {
+		t.Fatal("expected error for missing cert file")
+	}
+	if !strings.Contains(err.Error(), "TLS certificate file not found") {
+		t.Errorf("error should mention TLS certificate file, got: %v", err)
+	}
+	if !strings.Contains(err.Error(), "/nonexistent/cert.pem") {
+		t.Errorf("error should include file path, got: %v", err)
+	}
+}
+
+func TestConfig_Validate_MissingKey(t *testing.T) {
+	dir := t.TempDir()
+	certFile, _ := generateTestCert(t, dir, "")
+
+	c := &Config{CertFile: certFile, KeyFile: "/nonexistent/key.pem"}
+	err := c.Validate()
+	if err == nil {
+		t.Fatal("expected error for missing key file")
+	}
+	if !strings.Contains(err.Error(), "TLS key file not found") {
+		t.Errorf("error should mention TLS key file, got: %v", err)
+	}
+}
+
+func TestConfig_Validate_MissingClientCA(t *testing.T) {
+	dir := t.TempDir()
+	certFile, keyFile := generateTestCert(t, dir, "")
+
+	c := &Config{CertFile: certFile, KeyFile: keyFile, ClientCAFile: "/nonexistent/ca.pem"}
+	err := c.Validate()
+	if err == nil {
+		t.Fatal("expected error for missing client CA file")
+	}
+	if !strings.Contains(err.Error(), "client CA file not found") {
+		t.Errorf("error should mention client CA file, got: %v", err)
+	}
+}
+
 // --- ClientConfig tests ---
 
 func TestClientConfig_Enabled(t *testing.T) {
@@ -381,6 +443,65 @@ func TestClientConfig_HTTPClient_InsecureSkipVerify(t *testing.T) {
 	}
 	if !tr.TLSClientConfig.InsecureSkipVerify {
 		t.Error("InsecureSkipVerify should be true in TLS config")
+	}
+}
+
+// --- ClientConfig.Validate tests ---
+
+func TestClientConfig_Validate_Empty(t *testing.T) {
+	c := &ClientConfig{}
+	if err := c.Validate(); err != nil {
+		t.Fatalf("Validate() on empty config: %v", err)
+	}
+}
+
+func TestClientConfig_Validate_ValidCA(t *testing.T) {
+	dir := t.TempDir()
+	caFile, _ := generateTestCert(t, dir, "ca-")
+
+	c := &ClientConfig{CAFile: caFile}
+	if err := c.Validate(); err != nil {
+		t.Fatalf("Validate() with valid CA: %v", err)
+	}
+}
+
+func TestClientConfig_Validate_MissingCA(t *testing.T) {
+	c := &ClientConfig{CAFile: "/nonexistent/ca.pem"}
+	err := c.Validate()
+	if err == nil {
+		t.Fatal("expected error for missing CA file")
+	}
+	if !strings.Contains(err.Error(), "CA certificate file not found") {
+		t.Errorf("error should mention CA certificate file, got: %v", err)
+	}
+	if !strings.Contains(err.Error(), "/nonexistent/ca.pem") {
+		t.Errorf("error should include file path, got: %v", err)
+	}
+}
+
+func TestClientConfig_Validate_MissingCert(t *testing.T) {
+	c := &ClientConfig{CertFile: "/nonexistent/c.pem", KeyFile: "/nonexistent/k.pem"}
+	err := c.Validate()
+	if err == nil {
+		t.Fatal("expected error for missing cert file")
+	}
+	// CA is checked first (empty here), then cert.
+	if !strings.Contains(err.Error(), "client certificate file not found") {
+		t.Errorf("error should mention client certificate file, got: %v", err)
+	}
+}
+
+func TestClientConfig_Validate_MissingKey(t *testing.T) {
+	dir := t.TempDir()
+	certFile, _ := generateTestCert(t, dir, "client-")
+
+	c := &ClientConfig{CertFile: certFile, KeyFile: "/nonexistent/k.pem"}
+	err := c.Validate()
+	if err == nil {
+		t.Fatal("expected error for missing key file")
+	}
+	if !strings.Contains(err.Error(), "client key file not found") {
+		t.Errorf("error should mention client key file, got: %v", err)
 	}
 }
 
