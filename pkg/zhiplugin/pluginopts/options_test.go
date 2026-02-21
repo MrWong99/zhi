@@ -59,6 +59,46 @@ func TestStringFallbackToDefault(t *testing.T) {
 	}
 }
 
+func TestStringAlias_FirstKeyMatches(t *testing.T) {
+	opts := map[string]any{"cacert": "/path/to/ca.pem"}
+	got := StringAlias(opts, []string{"cacert", "ca_cert"}, "VAULT_CACERT", "")
+	if got != "/path/to/ca.pem" {
+		t.Errorf("StringAlias() = %q, want /path/to/ca.pem", got)
+	}
+}
+
+func TestStringAlias_SecondKeyMatches(t *testing.T) {
+	opts := map[string]any{"ca_cert": "/path/to/ca.pem"}
+	got := StringAlias(opts, []string{"cacert", "ca_cert"}, "VAULT_CACERT", "")
+	if got != "/path/to/ca.pem" {
+		t.Errorf("StringAlias() = %q, want /path/to/ca.pem", got)
+	}
+}
+
+func TestStringAlias_FirstKeyTakesPrecedence(t *testing.T) {
+	opts := map[string]any{"cacert": "/first", "ca_cert": "/second"}
+	got := StringAlias(opts, []string{"cacert", "ca_cert"}, "", "")
+	if got != "/first" {
+		t.Errorf("StringAlias() = %q, want /first (first key should take precedence)", got)
+	}
+}
+
+func TestStringAlias_FallbackToEnv(t *testing.T) {
+	t.Setenv("VAULT_CACERT", "/from-env")
+	opts := map[string]any{"other": "val"}
+	got := StringAlias(opts, []string{"cacert", "ca_cert"}, "VAULT_CACERT", "")
+	if got != "/from-env" {
+		t.Errorf("StringAlias() = %q, want /from-env", got)
+	}
+}
+
+func TestStringAlias_FallbackToDefault(t *testing.T) {
+	got := StringAlias(nil, []string{"cacert", "ca_cert"}, "", "default-val")
+	if got != "default-val" {
+		t.Errorf("StringAlias() = %q, want default-val", got)
+	}
+}
+
 func TestBool(t *testing.T) {
 	opts := map[string]any{"debug": true}
 	if !Bool(opts, "debug", false) {

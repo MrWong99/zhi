@@ -10,9 +10,9 @@
 //	mount / ZHI_VAULT_MOUNT — KV v2 mount point (default: secret)
 //	prefix / ZHI_VAULT_PREFIX — Key prefix within the mount (default: zhi)
 //	namespace / VAULT_NAMESPACE — Vault namespace (optional, enterprise only)
-//	ca_cert / VAULT_CACERT      — CA certificate path (optional)
-//	client_cert / VAULT_CLIENT_CERT — Client certificate path (optional)
-//	client_key / VAULT_CLIENT_KEY   — Client private key path (optional)
+//	cacert (or ca_cert) / VAULT_CACERT      — CA certificate path (optional)
+//	clientcert (or client_cert) / VAULT_CLIENT_CERT — Client certificate path (optional)
+//	clientkey (or client_key) / VAULT_CLIENT_KEY   — Client private key path (optional)
 //	skip_verify / VAULT_SKIP_VERIFY — Disable TLS verification (optional)
 package main
 
@@ -36,9 +36,9 @@ func parseConfig(opts map[string]any) vault.Config {
 		Mount:      pluginopts.String(opts, "mount", "ZHI_VAULT_MOUNT", "secret"),
 		Prefix:     pluginopts.String(opts, "prefix", "ZHI_VAULT_PREFIX", "zhi"),
 		Namespace:  pluginopts.String(opts, "namespace", "VAULT_NAMESPACE", ""),
-		CACert:     pluginopts.String(opts, "ca_cert", "VAULT_CACERT", ""),
-		ClientCert: pluginopts.String(opts, "client_cert", "VAULT_CLIENT_CERT", ""),
-		ClientKey:  pluginopts.String(opts, "client_key", "VAULT_CLIENT_KEY", ""),
+		CACert:     pluginopts.StringAlias(opts, []string{"cacert", "ca_cert"}, "VAULT_CACERT", ""),
+		ClientCert: pluginopts.StringAlias(opts, []string{"clientcert", "client_cert"}, "VAULT_CLIENT_CERT", ""),
+		ClientKey:  pluginopts.StringAlias(opts, []string{"clientkey", "client_key"}, "VAULT_CLIENT_KEY", ""),
 		SkipVerify: skipVerify == "true" || skipVerify == "1",
 	}
 }

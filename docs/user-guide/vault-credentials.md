@@ -161,7 +161,7 @@ path "auth/approle/role/zhi-*/secret-id" {
   capabilities = ["create", "update"]
 }
 
-path "auth/token/create" {
+path "auth/token/create-orphan" {
   capabilities = ["create", "update"]
 }
 EOF
