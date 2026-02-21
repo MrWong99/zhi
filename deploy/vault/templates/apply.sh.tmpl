@@ -19,7 +19,13 @@ SECRET_ENGINES="{{ .Get "vault-secrets/engines" }}"
 {{- end }}
 TLS_ENABLED={{ .Get "vault-server/tls/enabled" }}
 {{- if eq (.Get "vault-server/tls/enabled" | toString) "true" }}
-TLS_CA_FILE="{{ .Get "vault-server/tls/client-ca-file" }}"
+{{- if .Get "vault-server/tls/server-ca-file" }}
+TLS_SERVER_CA_FILE="{{ .Get "vault-server/tls/server-ca-file" }}"
+{{- end }}
+{{- if .Get "vault-server/tls/client-ca-file" }}
+TLS_CLIENT_CERT="{{ .Get "vault-server/tls/cert-file" }}"
+TLS_CLIENT_KEY="{{ .Get "vault-server/tls/key-file" }}"
+{{- end }}
 {{- end }}
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -46,8 +52,11 @@ vault_curl() {
     local method="$1"; shift
     local path="$1"; shift
     local curl_opts=(-s -S --fail-with-body -X "$method")
-    if [ "$TLS_ENABLED" = "true" ] && [ -n "${TLS_CA_FILE:-}" ]; then
-        curl_opts+=(--cacert "$TLS_CA_FILE")
+    if [ "$TLS_ENABLED" = "true" ] && [ -n "${TLS_SERVER_CA_FILE:-}" ]; then
+        curl_opts+=(--cacert "$TLS_SERVER_CA_FILE")
+    fi
+    if [ -n "${TLS_CLIENT_CERT:-}" ] && [ -n "${TLS_CLIENT_KEY:-}" ]; then
+        curl_opts+=(--cert "$TLS_CLIENT_CERT" --key "$TLS_CLIENT_KEY")
     fi
     if [ -n "${VAULT_TOKEN:-}" ]; then
         curl_opts+=(-H "X-Vault-Token: $VAULT_TOKEN")
@@ -119,7 +128,8 @@ for i in $(seq 1 30); do
     # 503 if sealed. We accept any of these as "available".
     HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${VAULT_ADDR}/v1/sys/health" \
         {{- if eq (.Get "vault-server/tls/enabled" | toString) "true" }}
-        --cacert "$TLS_CA_FILE" \
+        ${TLS_SERVER_CA_FILE:+--cacert "$TLS_SERVER_CA_FILE"} \
+        ${TLS_CLIENT_CERT:+--cert "$TLS_CLIENT_CERT"} ${TLS_CLIENT_KEY:+--key "$TLS_CLIENT_KEY"} \
         {{- end }}
         --connect-timeout 2 2>/dev/null || echo "000")
     if [ "$HTTP_CODE" != "000" ]; then
@@ -362,7 +372,13 @@ echo ""
 echo "  Login with:"
 {{- if eq (.Get "vault-server/tls/enabled" | toString) "true" }}
 echo '    curl -s -X POST '"$VAULT_ADDR"'/v1/auth/userpass/login/'"$ADMIN_USER"' \'
-echo '      --cacert '"{{ .Get "vault-server/tls/client-ca-file" }}"' \'
+{{- if .Get "vault-server/tls/server-ca-file" }}
+echo '      --cacert '"{{ .Get "vault-server/tls/server-ca-file" }}"' \'
+{{- end }}
+{{- if .Get "vault-server/tls/client-ca-file" }}
+echo '      --cert '"{{ .Get "vault-server/tls/cert-file" }}"' \'
+echo '      --key '"{{ .Get "vault-server/tls/key-file" }}"' \'
+{{- end }}
 echo '      -d '"'"'{"password": "<your-password>"}'"'"
 {{- else }}
 echo '    curl -s -X POST '"$VAULT_ADDR"'/v1/auth/userpass/login/'"$ADMIN_USER"' \'

@@ -27,6 +27,17 @@ vault-server:
           Message:  "api-addr must be a valid HTTP(S) URL",
         }}, nil
       }
+      tlsEnabled, ok := tree.Get("vault-server/tls/enabled")
+      if !ok {
+        return nil, nil
+      }
+      enabled, _ := tlsEnabled.Val.(bool)
+      if enabled && u.Scheme != "https" {
+        return []config.ValidationResult{{
+          Severity: config.Blocking,
+          Message:  "https:// must be used with TLS enabled",
+        }}, nil
+      }
       return nil, nil
 
   cluster-addr:
@@ -153,6 +164,14 @@ vault-server:
           }}, nil
         }
         return nil, nil
+
+    server-ca-file:
+      val: ""
+      metadata:
+        ui.section: "TLS"
+        ui.displayName: "Server CA File"
+        ui.placeholder: "/path/to/ca.pem"
+        core.description: "Path to CA certificate that signed the server certificate. Only needed for self-signed certificates."
 
     client-ca-file:
       val: ""

@@ -7,10 +7,10 @@ ui = {{ .Get "vault-server/ui" }}
 listener "tcp" {
   address     = "0.0.0.0:8200"
 {{- if eq (.Get "vault-server/tls/enabled" | toString) "true" }}
-  tls_cert_file      = "{{ .Get "vault-server/tls/cert-file" }}"
-  tls_key_file       = "{{ .Get "vault-server/tls/key-file" }}"
+  tls_cert_file      = "/vault/tls/cert.pem"
+  tls_key_file       = "/vault/tls/key.pem"
   {{- with .Get "vault-server/tls/client-ca-file" }}
-  tls_client_ca_file = "{{ . }}"
+  tls_client_ca_file = "/vault/tls/client-ca.pem"
   {{- end }}
   tls_disable = false
 {{- else }}

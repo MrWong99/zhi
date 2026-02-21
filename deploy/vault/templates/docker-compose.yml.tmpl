@@ -6,9 +6,20 @@ services:
     image: hashicorp/vault:{{ .Get "vault-deploy/vault-version" }}
     container_name: vault-init
     user: root
-    command: ["sh", "-c", "chown -R vault:vault {{ .Get "vault-server/storage-path" }}"]
+    command: ["sh", "-c", "chown -R vault:vault {{ .Get "vault-server/storage-path" }}{{ if eq (.Get "vault-server/tls/enabled" | toString) "true" }} && cp /tmp/*.pem /vault/tls && chown -R vault:vault /vault/tls{{ end }}"]
     volumes:
       - {{ .Get "vault-deploy/docker/volume-name" }}:{{ .Get "vault-server/storage-path" }}
+{{- if eq (.Get "vault-server/tls/enabled" | toString) "true" }}
+      - {{ .Get "vault-server/tls/cert-file" }}:/tmp/cert.pem:ro
+      - {{ .Get "vault-server/tls/key-file" }}:/tmp/key.pem:ro
+      - vault-certs:/vault/tls
+  {{- with .Get "vault-server/tls/client-ca-file" }}
+      - {{ . }}:/tmp/client-ca.pem:ro
+  {{- end }}
+  {{- with .Get "vault-server/tls/server-ca-file" }}
+      - {{ . }}:/tmp/server-ca.pem:ro
+  {{- end }}
+{{- end }}
 
   vault:
     image: hashicorp/vault:{{ .Get "vault-deploy/vault-version" }}
@@ -23,20 +34,25 @@ services:
       - {{ .Get "vault-deploy/docker/volume-name" }}:{{ .Get "vault-server/storage-path" }}
       - ./vault-config.hcl:/vault/config/vault.hcl:ro
 {{- if eq (.Get "vault-server/tls/enabled" | toString) "true" }}
-      - {{ .Get "vault-server/tls/cert-file" }}:/vault/tls/cert.pem:ro
-      - {{ .Get "vault-server/tls/key-file" }}:/vault/tls/key.pem:ro
-  {{- with .Get "vault-server/tls/client-ca-file" }}
-      - {{ . }}:/vault/tls/ca.pem:ro
-  {{- end }}
+      - vault-certs:/vault/tls
 {{- end }}
     environment:
-      VAULT_ADDR: "http://127.0.0.1:8200"
+      VAULT_ADDR: "{{ .Get "vault-server/api-addr" }}"
       VAULT_API_ADDR: "{{ .Get "vault-server/api-addr" }}"
+{{- if eq (.Get "vault-server/tls/enabled" | toString) "true" }}
+  {{- with .Get "vault-server/tls/client-ca-file" }}
+      VAULT_CLIENT_CERT: "/vault/tls/cert.pem"
+      VAULT_CLIENT_KEY: "/vault/tls/key.pem"
+  {{- end }}
+  {{- with .Get "vault-server/tls/server-ca-file" }}
+      VAULT_CACERT: "/vault/tls/server-ca.pem"
+  {{- end }}
+{{- end }}
     cap_add:
       - IPC_LOCK
     command: ["server"]
     healthcheck:
-      test: ["CMD-SHELL", "vault status -address http://127.0.0.1:8200 || [ $$? -ne 1 ]"]
+      test: ["CMD-SHELL", "vault status -address {{ .Get "vault-server/api-addr" }} || [ $$? -ne 1 ]"]
       interval: 5s
       timeout: 3s
       retries: 12
@@ -44,3 +60,6 @@ services:
 
 volumes:
   {{ .Get "vault-deploy/docker/volume-name" }}:
+{{- if eq (.Get "vault-server/tls/enabled" | toString) "true" }}
+  vault-certs:
+{{- end }}
