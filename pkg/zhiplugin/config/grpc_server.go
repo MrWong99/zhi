@@ -3,6 +3,7 @@ package config
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	pb "github.com/MrWong99/zhi/pkg/zhiplugin/config/proto"
 )
@@ -65,7 +66,11 @@ func (s *GRPCServer) Validate(ctx context.Context, req *pb.ValidateRequest) (*pb
 			Message:  r.Message,
 		}
 		if r.Metadata != nil {
-			m.MetadataJson, _ = json.Marshal(r.Metadata)
+			metaJSON, err := json.Marshal(r.Metadata)
+			if err != nil {
+				return nil, fmt.Errorf("marshaling validation result metadata: %w", err)
+			}
+			m.MetadataJson = metaJSON
 		}
 		msgs = append(msgs, m)
 	}

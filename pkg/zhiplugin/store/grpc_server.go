@@ -117,7 +117,11 @@ func (s *GRPCServer) GetValues(ctx context.Context, req *pb.GetValuesRequest) (*
 	if err != nil {
 		return nil, errorToStatus(err)
 	}
-	return &pb.GetValuesResponse{Values: valuesToProto(values)}, nil
+	entries, err := valuesToProto(values)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.GetValuesResponse{Values: entries}, nil
 }
 
 func (s *GRPCServer) PutValues(ctx context.Context, req *pb.PutValuesRequest) (*pb.PutValuesResponse, error) {
@@ -160,7 +164,11 @@ func (s *GRPCServer) GetTreeVersion(ctx context.Context, req *pb.GetTreeVersionR
 	if err != nil {
 		return nil, errorToStatus(err)
 	}
-	return &pb.GetTreeVersionResponse{Values: valuesToProto(values)}, nil
+	entries, err := valuesToProto(values)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.GetTreeVersionResponse{Values: entries}, nil
 }
 
 func (s *GRPCServer) RollbackTree(ctx context.Context, req *pb.RollbackTreeRequest) (*pb.RollbackTreeResponse, error) {
