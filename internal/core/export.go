@@ -100,8 +100,29 @@ func Export(_ context.Context, tree *TreeData, cfg ExportRunConfig) (*ExportResu
 }
 
 // ExportAll runs all exports defined in the workspace configuration.
+// If workspaceDir is provided in any config and no configs are dry-run,
+// a rollback snapshot is saved before writing files.
 func ExportAll(ctx context.Context, tree *TreeData, configs []ExportRunConfig) ([]*ExportResult, error) {
 	Logger().Info("running all exports", "count", len(configs))
+
+	// Save rollback snapshot before writing (skip for dry-run).
+	anyWrite := false
+	var outputPaths []string
+	for _, cfg := range configs {
+		if !cfg.DryRun && cfg.OutputPath != "" && cfg.OutputPath != "-" {
+			anyWrite = true
+		}
+		outputPaths = append(outputPaths, cfg.OutputPath)
+	}
+	if anyWrite && len(outputPaths) > 0 {
+		// Determine workspace dir from first output path's parent.
+		wsDir := filepath.Dir(outputPaths[0])
+		if err := SaveRollbackSnapshot(wsDir, outputPaths); err != nil {
+			Logger().Warn("failed to save rollback snapshot", "error", err)
+			// Non-fatal: continue with export even if snapshot fails.
+		}
+	}
+
 	results := make([]*ExportResult, 0, len(configs))
 	for _, cfg := range configs {
 		r, err := Export(ctx, tree, cfg)
