@@ -16,8 +16,8 @@ const (
 
 // RollbackManifest records which files were backed up before an export.
 type RollbackManifest struct {
-	Timestamp time.Time        `json:"timestamp"`
-	Files     []RollbackEntry  `json:"files"`
+	Timestamp time.Time       `json:"timestamp"`
+	Files     []RollbackEntry `json:"files"`
 }
 
 // RollbackEntry records a single file backup.
