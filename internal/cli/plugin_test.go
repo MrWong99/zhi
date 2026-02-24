@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -250,6 +251,212 @@ func TestPluginInfoOutput(t *testing.T) {
 	}
 	if out.BinaryDigest != "sha256:def456" {
 		t.Errorf("BinaryDigest = %q, want sha256:def456", out.BinaryDigest)
+	}
+}
+
+func TestRunPluginInstallLocal(t *testing.T) {
+	dir := t.TempDir()
+	pluginDir := filepath.Join(dir, "plugins")
+	if err := os.MkdirAll(pluginDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a fake binary.
+	binDir := filepath.Join(dir, "src")
+	if err := os.MkdirAll(binDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	binaryPath := filepath.Join(binDir, "my-plugin")
+	if err := os.WriteFile(binaryPath, []byte("#!/bin/sh\necho hello"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a manifest next to the binary.
+	manifestContent := `schemaVersion: "1"
+name: my-plugin
+type: store
+version: 1.0.0
+author: test-author
+`
+	if err := os.WriteFile(filepath.Join(binDir, "zhi-plugin.yaml"), []byte(manifestContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Override core.DefaultPluginDir and metadata dir for testing.
+	// We test via the internal function directly.
+	t.Setenv("HOME", dir)
+
+	// Ensure plugin dir exists at the expected path.
+	zhiPluginDir := filepath.Join(dir, ".zhi", "plugins")
+	zhiMetaDir := filepath.Join(dir, ".zhi", "metadata")
+	if err := os.MkdirAll(zhiPluginDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Run the install command.
+	cmd := pluginInstallCmd
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{"--path", binaryPath})
+
+	// Reset flags.
+	pluginInstallForce = false
+	pluginInstallPath = binaryPath
+
+	err := runPluginInstallLocal(cmd, binaryPath)
+	if err != nil {
+		t.Fatalf("runPluginInstallLocal: %v", err)
+	}
+
+	// Verify binary was copied.
+	destPath := filepath.Join(zhiPluginDir, "zhi-store-my-plugin")
+	if _, err := os.Stat(destPath); err != nil {
+		t.Fatalf("expected binary at %s: %v", destPath, err)
+	}
+
+	// Verify binary content.
+	content, err := os.ReadFile(destPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(content) != "#!/bin/sh\necho hello" {
+		t.Errorf("unexpected binary content: %q", content)
+	}
+
+	// Verify metadata was saved.
+	metaStore := metadata.NewStore(zhiMetaDir)
+	meta, err := metaStore.Load("my-plugin")
+	if err != nil {
+		t.Fatalf("Load metadata: %v", err)
+	}
+	if meta == nil {
+		t.Fatal("expected metadata to exist")
+	}
+	if meta.Name != "my-plugin" {
+		t.Errorf("Name = %q, want my-plugin", meta.Name)
+	}
+	if meta.Type != "store" {
+		t.Errorf("Type = %q, want store", meta.Type)
+	}
+	if meta.Version != "1.0.0" {
+		t.Errorf("Version = %q, want 1.0.0", meta.Version)
+	}
+	if meta.Publisher != "test-author" {
+		t.Errorf("Publisher = %q, want test-author", meta.Publisher)
+	}
+	if !strings.HasPrefix(meta.Ref, "local://") {
+		t.Errorf("Ref = %q, want local:// prefix", meta.Ref)
+	}
+	if meta.BinaryDigest == "" {
+		t.Error("expected non-empty BinaryDigest")
+	}
+
+	// Cleanup flag state.
+	pluginInstallPath = ""
+}
+
+func TestRunPluginInstallLocalErrors(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+
+	// Ensure plugin dir exists.
+	if err := os.MkdirAll(filepath.Join(dir, ".zhi", "plugins"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := pluginInstallCmd
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+
+	t.Run("binary not found", func(t *testing.T) {
+		err := runPluginInstallLocal(cmd, filepath.Join(dir, "nonexistent"))
+		if err == nil || !strings.Contains(err.Error(), "binary not found") {
+			t.Errorf("expected 'binary not found' error, got: %v", err)
+		}
+	})
+
+	t.Run("path is directory", func(t *testing.T) {
+		err := runPluginInstallLocal(cmd, dir)
+		if err == nil || !strings.Contains(err.Error(), "directory") {
+			t.Errorf("expected 'directory' error, got: %v", err)
+		}
+	})
+
+	t.Run("not executable", func(t *testing.T) {
+		nonExec := filepath.Join(dir, "nonexec")
+		os.WriteFile(nonExec, []byte("data"), 0o644)
+		err := runPluginInstallLocal(cmd, nonExec)
+		if err == nil || !strings.Contains(err.Error(), "not executable") {
+			t.Errorf("expected 'not executable' error, got: %v", err)
+		}
+	})
+
+	t.Run("missing manifest", func(t *testing.T) {
+		binDir := filepath.Join(dir, "noManifest")
+		os.MkdirAll(binDir, 0o755)
+		bin := filepath.Join(binDir, "plugin")
+		os.WriteFile(bin, []byte("data"), 0o755)
+		err := runPluginInstallLocal(cmd, bin)
+		if err == nil || !strings.Contains(err.Error(), "manifest") {
+			t.Errorf("expected manifest error, got: %v", err)
+		}
+	})
+
+	t.Run("already exists without force", func(t *testing.T) {
+		binDir := filepath.Join(dir, "exists")
+		os.MkdirAll(binDir, 0o755)
+		bin := filepath.Join(binDir, "plugin")
+		os.WriteFile(bin, []byte("data"), 0o755)
+		os.WriteFile(filepath.Join(binDir, "zhi-plugin.yaml"), []byte("schemaVersion: \"1\"\nname: existing\ntype: config\nversion: 1.0.0\n"), 0o644)
+
+		// Pre-create the destination binary.
+		dest := filepath.Join(dir, ".zhi", "plugins", "zhi-config-existing")
+		os.WriteFile(dest, []byte("old"), 0o755)
+
+		pluginInstallForce = false
+		err := runPluginInstallLocal(cmd, bin)
+		if err == nil || !strings.Contains(err.Error(), "already exists") {
+			t.Errorf("expected 'already exists' error, got: %v", err)
+		}
+	})
+}
+
+func TestRunPluginInstallLocalScheme(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+
+	binDir := filepath.Join(dir, "src")
+	os.MkdirAll(binDir, 0o755)
+
+	bin := filepath.Join(binDir, "my-plugin")
+	os.WriteFile(bin, []byte("binary"), 0o755)
+	os.WriteFile(filepath.Join(binDir, "zhi-plugin.yaml"), []byte("schemaVersion: \"1\"\nname: scheme-test\ntype: config\nversion: 0.1.0\n"), 0o644)
+
+	os.MkdirAll(filepath.Join(dir, ".zhi", "plugins"), 0o755)
+
+	cmd := pluginInstallCmd
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+
+	// Test local:// scheme parsing.
+	ref := "local://" + bin
+	localPath := strings.TrimPrefix(ref, "local://")
+	if localPath != bin {
+		t.Fatalf("expected %q, got %q", bin, localPath)
+	}
+
+	err := runPluginInstallLocal(cmd, localPath)
+	if err != nil {
+		t.Fatalf("runPluginInstallLocal: %v", err)
+	}
+
+	// Verify installed.
+	destPath := filepath.Join(dir, ".zhi", "plugins", "zhi-config-scheme-test")
+	if _, err := os.Stat(destPath); err != nil {
+		t.Fatalf("expected binary at %s: %v", destPath, err)
 	}
 }
 
