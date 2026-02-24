@@ -11,9 +11,13 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"crypto/sha256"
+	"runtime"
+
 	"github.com/MrWong99/zhi/internal/core"
 	"github.com/MrWong99/zhi/internal/tlsutil"
 	"github.com/MrWong99/zhi/pkg/sharing/client"
+	"github.com/MrWong99/zhi/pkg/sharing/manifest"
 	"github.com/MrWong99/zhi/pkg/sharing/marketplace"
 	"github.com/MrWong99/zhi/pkg/sharing/metadata"
 	"github.com/MrWong99/zhi/pkg/sharing/registry"
@@ -68,8 +72,10 @@ Signature verification is performed by default. Use --skip-verify to disable.`,
 	Example: `  zhi plugin install ansible-config
   zhi plugin install ansible-config@1.2.0
   zhi plugin install oci://ghcr.io/zhi-project/zhi-config-ansible:v1.2.0
-  zhi plugin install ghcr.io/org/zhi-config-custom:v1.0.0 --force`,
-	Args: cobra.ExactArgs(1),
+  zhi plugin install ghcr.io/org/zhi-config-custom:v1.0.0 --force
+  zhi plugin install --path ./my-plugin
+  zhi plugin install local://./my-plugin`,
+	Args: cobra.MaximumNArgs(1),
 	RunE: runPluginInstall,
 }
 
@@ -77,12 +83,14 @@ var (
 	pluginInstallPlatform   string
 	pluginInstallForce      bool
 	pluginInstallSkipVerify bool
+	pluginInstallPath       string
 )
 
 func init() {
 	pluginInstallCmd.Flags().StringVar(&pluginInstallPlatform, "platform", "", "override platform detection (e.g. \"linux/amd64\")")
 	pluginInstallCmd.Flags().BoolVar(&pluginInstallForce, "force", false, "overwrite existing plugin even if same version")
 	pluginInstallCmd.Flags().BoolVar(&pluginInstallSkipVerify, "skip-verify", false, "skip signature verification (not recommended)")
+	pluginInstallCmd.Flags().StringVar(&pluginInstallPath, "path", "", "install a plugin from a local binary (requires adjacent zhi-plugin.yaml)")
 
 	pluginCmd.AddCommand(pluginInstallCmd)
 	pluginCmd.AddCommand(pluginUninstallCmd)
@@ -95,8 +103,22 @@ func init() {
 }
 
 func runPluginInstall(cmd *cobra.Command, args []string) error {
-	ref := args[0]
 	w := cmd.OutOrStdout()
+
+	// Determine if this is a local install via --path or local:// scheme.
+	localPath := pluginInstallPath
+	if len(args) > 0 && strings.HasPrefix(args[0], "local://") {
+		localPath = strings.TrimPrefix(args[0], "local://")
+	}
+	if localPath != "" {
+		return runPluginInstallLocal(cmd, localPath)
+	}
+
+	if len(args) == 0 {
+		return fmt.Errorf("requires a plugin reference argument or --path flag")
+	}
+
+	ref := args[0]
 
 	// Resolve short name via marketplace if necessary.
 	if client.IsShortName(ref) {
@@ -169,6 +191,114 @@ func runPluginInstall(cmd *cobra.Command, args []string) error {
 		fmt.Fprintf(w, "\nPlugin is ready to use. Add to your workspace:\n")
 		fmt.Fprintf(w, "  %s:\n", result.Manifest.Type)
 		fmt.Fprintf(w, "    provider: %s\n", result.Manifest.Name)
+	}
+	return nil
+}
+
+// runPluginInstallLocal handles installing a plugin from a local binary path.
+// It expects an adjacent zhi-plugin.yaml manifest next to the binary.
+func runPluginInstallLocal(cmd *cobra.Command, localPath string) error {
+	w := cmd.OutOrStdout()
+
+	// Resolve to absolute path.
+	absPath, err := filepath.Abs(localPath)
+	if err != nil {
+		return fmt.Errorf("resolving path: %w", err)
+	}
+
+	// Validate the binary exists.
+	info, err := os.Stat(absPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("binary not found: %s", absPath)
+		}
+		return fmt.Errorf("accessing binary: %w", err)
+	}
+	if info.IsDir() {
+		return fmt.Errorf("path is a directory, not a binary: %s", absPath)
+	}
+
+	// Check executable permission.
+	if info.Mode()&0o111 == 0 {
+		return fmt.Errorf("binary is not executable: %s", absPath)
+	}
+
+	// Find and load the manifest from an adjacent zhi-plugin.yaml.
+	manifestPath := filepath.Join(filepath.Dir(absPath), "zhi-plugin.yaml")
+	m, err := manifest.LoadFile(manifestPath)
+	if err != nil {
+		return fmt.Errorf("loading manifest: %w\n\nA zhi-plugin.yaml file must exist next to the binary.", err)
+	}
+
+	pluginDir := core.DefaultPluginDir()
+	if err := os.MkdirAll(pluginDir, 0o755); err != nil {
+		return fmt.Errorf("creating plugin directory: %w", err)
+	}
+
+	binaryName := m.BinaryName()
+	destPath := filepath.Join(pluginDir, binaryName)
+
+	// Check if already installed (unless --force).
+	if !pluginInstallForce {
+		if _, err := os.Stat(destPath); err == nil {
+			return fmt.Errorf("plugin %q already exists at %s (use --force to overwrite)", m.Name, destPath)
+		}
+	}
+
+	// Copy the binary to the plugins directory.
+	fmt.Fprintf(w, "Installing %s v%s from local path...\n", m.Name, m.Version)
+
+	srcFile, err := os.Open(absPath)
+	if err != nil {
+		return fmt.Errorf("opening binary: %w", err)
+	}
+	defer srcFile.Close()
+
+	destFile, err := os.OpenFile(destPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o755)
+	if err != nil {
+		return fmt.Errorf("creating destination binary: %w", err)
+	}
+
+	// Compute SHA-256 digest while copying.
+	h := sha256.New()
+	tee := io.TeeReader(srcFile, h)
+
+	if _, err := io.Copy(destFile, tee); err != nil {
+		destFile.Close()
+		os.Remove(destPath)
+		return fmt.Errorf("copying binary: %w", err)
+	}
+	if err := destFile.Close(); err != nil {
+		return fmt.Errorf("closing binary: %w", err)
+	}
+
+	binaryDigest := fmt.Sprintf("sha256:%x", h.Sum(nil))
+
+	// Save metadata.
+	metaDir := metadata.DefaultMetadataDir()
+	metaStore := metadata.NewStore(metaDir)
+
+	platform := fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)
+	meta := &metadata.InstalledPlugin{
+		Name:         m.Name,
+		Type:         m.Type,
+		Version:      m.Version,
+		Ref:          "local://" + absPath,
+		Platform:     platform,
+		InstalledAt:  time.Now(),
+		Publisher:    m.Author,
+		BinaryDigest: binaryDigest,
+	}
+	if err := metaStore.Save(meta); err != nil {
+		return fmt.Errorf("saving metadata: %w", err)
+	}
+
+	fmt.Fprintf(w, "Installed %s v%s (%s)\n", m.Name, m.Version, platform)
+	fmt.Fprintf(w, "Binary: %s\n", destPath)
+	if m.Type != "" {
+		fmt.Fprintf(w, "\nPlugin is ready to use. Add to your workspace:\n")
+		fmt.Fprintf(w, "  %s:\n", m.Type)
+		fmt.Fprintf(w, "    provider: %s\n", m.Name)
 	}
 	return nil
 }
