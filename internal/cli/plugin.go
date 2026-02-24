@@ -227,7 +227,7 @@ func runPluginInstallLocal(cmd *cobra.Command, localPath string) error {
 	manifestPath := filepath.Join(filepath.Dir(absPath), "zhi-plugin.yaml")
 	m, err := manifest.LoadFile(manifestPath)
 	if err != nil {
-		return fmt.Errorf("loading manifest: %w\n\nA zhi-plugin.yaml file must exist next to the binary.", err)
+		return fmt.Errorf("loading manifest: %w\n\nA zhi-plugin.yaml file must exist next to the binary", err)
 	}
 
 	pluginDir := core.DefaultPluginDir()
