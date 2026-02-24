@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"path/filepath"
 	"reflect"
 
 	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
@@ -60,6 +61,17 @@ func NewEngine(registry *Registry, workspace *WorkspaceConfig) (*Engine, error) 
 		sp, err := registry.StoreProvider(workspace.Dir, workspace.Store.Provider, workspace.Store.Options)
 		if err != nil {
 			return nil, fmt.Errorf("resolving store provider: %w", err)
+		}
+		e.storePlugin = sp
+	} else if workspace.Dir != "" {
+		// No store configured — use built-in jsonfile store as fallback so
+		// that "zhi set" persists values instead of silently discarding them.
+		Logger().Warn("no store provider configured, using built-in plaintext JSON file store as fallback",
+			"directory", filepath.Join(workspace.Dir, DefaultStoreDir))
+		Logger().Warn("values will be stored in PLAINTEXT on disk — do not use for secrets in production")
+		sp, err := NewJSONFileStoreProvider(workspace.Dir, nil)
+		if err != nil {
+			return nil, fmt.Errorf("initializing fallback file store: %w", err)
 		}
 		e.storePlugin = sp
 	}

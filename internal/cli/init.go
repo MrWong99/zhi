@@ -31,7 +31,7 @@ This creates:
 
 Run 'zhi export' to generate the final docker-compose.yml.`,
 	Example: `  zhi init
-  zhi init --config-provider structuredfile --store-provider zhi-store-json
+  zhi init --config-provider structuredfile --store-provider jsonfile
   zhi init --force`,
 	RunE: runInit,
 }
@@ -45,7 +45,7 @@ var (
 
 func init() {
 	initCmd.Flags().StringVar(&initConfigProvider, "config-provider", "structuredfile", "config provider to use")
-	initCmd.Flags().StringVar(&initStoreProvider, "store-provider", "zhi-store-json", "store provider to use")
+	initCmd.Flags().StringVar(&initStoreProvider, "store-provider", "jsonfile", "store provider to use (built-in: jsonfile)")
 	initCmd.Flags().BoolVar(&initForce, "force", false, "overwrite existing zhi.yaml if present")
 	initCmd.Flags().BoolVar(&initBare, "bare", false, "create a minimal workspace without demo content")
 	rootCmd.AddCommand(initCmd)
