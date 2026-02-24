@@ -30,6 +30,7 @@ var (
 	exportPrefix        string
 	exportAllComponents bool
 	exportDryRun        bool
+	exportDiff          bool
 )
 
 func init() {
@@ -39,6 +40,7 @@ func init() {
 	exportCmd.Flags().StringVar(&exportPrefix, "prefix", "", "only export paths under this prefix")
 	exportCmd.Flags().BoolVar(&exportAllComponents, "all-components", false, "include all components regardless of enabled/disabled state")
 	exportCmd.Flags().BoolVar(&exportDryRun, "dry-run", false, "print rendered output without writing to disk")
+	exportCmd.Flags().BoolVar(&exportDiff, "diff", false, "show unified diff between current files and what would be exported (implies --dry-run)")
 	rootCmd.AddCommand(exportCmd)
 }
 
@@ -50,6 +52,11 @@ func runExport(cmd *cobra.Command, _ []string) error {
 
 	ctx := cmd.Context()
 	w := cmd.OutOrStdout()
+
+	// --diff implies --dry-run
+	if exportDiff {
+		exportDryRun = true
+	}
 
 	td, err := core.PrepareTreeData(ctx, eng, exportAllComponents, exportPrefix)
 	if err != nil {
@@ -136,6 +143,12 @@ func runExport(cmd *cobra.Command, _ []string) error {
 	}
 
 	for _, r := range results {
+		if exportDiff && r.OutputPath != "" && r.OutputPath != "-" {
+			if err := printDiffResult(cmd, r); err != nil {
+				return err
+			}
+			continue
+		}
 		if exportDryRun || r.OutputPath == "" || r.OutputPath == "-" {
 			fmt.Fprintf(w, "--- %s ---\n", r.Name)
 			fmt.Fprint(w, r.Content)
@@ -151,6 +164,11 @@ func runExport(cmd *cobra.Command, _ []string) error {
 
 func printExportResult(cmd *cobra.Command, result *core.ExportResult) error {
 	w := cmd.OutOrStdout()
+
+	if exportDiff && result.OutputPath != "" && result.OutputPath != "-" {
+		return printDiffResult(cmd, result)
+	}
+
 	if exportDryRun || result.OutputPath == "" || result.OutputPath == "-" {
 		fmt.Fprint(w, result.Content)
 		if len(result.Content) > 0 && result.Content[len(result.Content)-1] != '\n' {
@@ -159,5 +177,22 @@ func printExportResult(cmd *cobra.Command, result *core.ExportResult) error {
 	} else {
 		fmt.Fprintf(w, "Exported: %s -> %s\n", result.Name, result.OutputPath)
 	}
+	return nil
+}
+
+func printDiffResult(cmd *cobra.Command, result *core.ExportResult) error {
+	w := cmd.OutOrStdout()
+	diff, err := core.DiffExport(result.OutputPath, result.Content)
+	if err != nil {
+		return err
+	}
+	if !diff.HasChanges {
+		fmt.Fprintf(w, "%s: no changes\n", result.OutputPath)
+		return nil
+	}
+	if diff.IsNew {
+		fmt.Fprintf(w, "%s: new file\n", result.OutputPath)
+	}
+	fmt.Fprint(w, diff.Diff)
 	return nil
 }

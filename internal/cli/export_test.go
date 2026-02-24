@@ -25,6 +25,7 @@ func newExportCmd() *cobra.Command {
 	cmd.Flags().StringVar(&exportPrefix, "prefix", "", "only export paths under this prefix")
 	cmd.Flags().BoolVar(&exportAllComponents, "all-components", false, "include all components")
 	cmd.Flags().BoolVar(&exportDryRun, "dry-run", false, "print without writing")
+	cmd.Flags().BoolVar(&exportDiff, "diff", false, "show unified diff")
 	return cmd
 }
 
@@ -35,6 +36,7 @@ func resetExportFlags() {
 	exportPrefix = ""
 	exportAllComponents = false
 	exportDryRun = false
+	exportDiff = false
 }
 
 func TestExportFormatJSON(t *testing.T) {
@@ -288,5 +290,77 @@ func TestExportComponentConditionalTemplate(t *testing.T) {
 	}
 	if strings.Contains(output, "monitoring=true") {
 		t.Errorf("monitoring should not appear (disabled): %s", output)
+	}
+}
+
+func TestExportDiff_NoChanges(t *testing.T) {
+	resetExportFlags()
+	dir := t.TempDir()
+
+	tmplContent := `name={{ .Get "app/name" }}`
+	tmplPath := filepath.Join(dir, "test.tmpl")
+	if err := os.WriteFile(tmplPath, []byte(tmplContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	outputPath := filepath.Join(dir, "output.txt")
+	// Write the expected output first.
+	if err := os.WriteFile(outputPath, []byte("name=myapp"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	eng := setupTestEngine(t, nil)
+	eng.SetTestWorkspaceDir(dir)
+	reg := core.NewRegistry()
+
+	cmd := newExportCmd()
+	setEngineContext(cmd, eng, reg)
+
+	output, err := executeCommand(cmd, "--template", tmplPath, "--output", outputPath, "--diff")
+	if err != nil {
+		t.Fatalf("export --diff: %v\nOutput: %s", err, output)
+	}
+	if !strings.Contains(output, "no changes") {
+		t.Errorf("expected 'no changes' message, got: %s", output)
+	}
+	// Verify file was not modified (dry-run implied).
+	data, _ := os.ReadFile(outputPath)
+	if string(data) != "name=myapp" {
+		t.Errorf("file should not be modified in diff mode: %q", string(data))
+	}
+}
+
+func TestExportDiff_WithChanges(t *testing.T) {
+	resetExportFlags()
+	dir := t.TempDir()
+
+	tmplContent := `name={{ .Get "app/name" }}`
+	tmplPath := filepath.Join(dir, "test.tmpl")
+	if err := os.WriteFile(tmplPath, []byte(tmplContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	outputPath := filepath.Join(dir, "output.txt")
+	// Write different content.
+	if err := os.WriteFile(outputPath, []byte("name=oldapp"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	eng := setupTestEngine(t, nil)
+	eng.SetTestWorkspaceDir(dir)
+	reg := core.NewRegistry()
+
+	cmd := newExportCmd()
+	setEngineContext(cmd, eng, reg)
+
+	output, err := executeCommand(cmd, "--template", tmplPath, "--output", outputPath, "--diff")
+	if err != nil {
+		t.Fatalf("export --diff: %v\nOutput: %s", err, output)
+	}
+	if !strings.Contains(output, "-name=oldapp") {
+		t.Errorf("diff should show removal: %s", output)
+	}
+	if !strings.Contains(output, "+name=myapp") {
+		t.Errorf("diff should show addition: %s", output)
 	}
 }
