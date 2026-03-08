@@ -533,6 +533,12 @@ func (e ValueEditor) View() string {
 		sb.WriteString("\n\n")
 	}
 
+	// YAML schema hint.
+	if schema := labels.GetYAMLSchema(e.metadata); schema != "" {
+		sb.WriteString(DimStyle.Render(fmt.Sprintf("  Expected: %s", schema)))
+		sb.WriteString("\n\n")
+	}
+
 	// Map editor mode.
 	if e.isMap {
 		sb.WriteString("  Entries (j/k: navigate, a: add, d: delete, enter: edit value, e: edit key):\n")
