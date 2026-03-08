@@ -626,3 +626,50 @@ func TestValueEditor_ListEmptyDisplay(t *testing.T) {
 		t.Error("expected empty list message")
 	}
 }
+
+func TestValueEditor_YAMLSchemaHint(t *testing.T) {
+	t.Parallel()
+	val := &config.Value{
+		Val:      "key: value",
+		Metadata: map[string]any{"core.type": "yaml", "ui.yamlSchema": "List of {key, effect, value} objects"},
+	}
+
+	editor := tui.NewValueEditorFor("test/tolerations", val, "", false)
+
+	view := editor.View()
+	if !strings.Contains(view, "Expected: List of {key, effect, value} objects") {
+		t.Error("expected YAML schema hint in editor view")
+	}
+	if !strings.Contains(view, "type: yaml") {
+		t.Error("expected yaml type badge")
+	}
+}
+
+func TestValueEditor_YAMLNoSchemaHint(t *testing.T) {
+	t.Parallel()
+	val := &config.Value{
+		Val:      "foo: bar",
+		Metadata: map[string]any{"core.type": "yaml"},
+	}
+
+	editor := tui.NewValueEditorFor("test/yaml-no-schema", val, "", false)
+
+	view := editor.View()
+	if strings.Contains(view, "Expected:") {
+		t.Error("should not show Expected hint when no schema is set")
+	}
+}
+
+func TestValueEditor_YAMLIsNotCollectionEditor(t *testing.T) {
+	t.Parallel()
+	val := &config.Value{
+		Val:      "key: value",
+		Metadata: map[string]any{"core.type": "yaml"},
+	}
+
+	editor := tui.NewValueEditorFor("test/yaml", val, "", false)
+
+	if editor.IsCollectionEditor() {
+		t.Error("yaml editor should not be a collection editor")
+	}
+}
