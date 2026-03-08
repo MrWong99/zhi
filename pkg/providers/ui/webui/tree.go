@@ -228,7 +228,44 @@ func formatValue(v any) string {
 	if v == nil {
 		return "null"
 	}
-	return fmt.Sprintf("%v", v)
+	switch val := v.(type) {
+	case map[string]any:
+		if len(val) == 0 {
+			return "{}"
+		}
+		parts := make([]string, 0, len(val))
+		for k, v := range val {
+			parts = append(parts, fmt.Sprintf("%s: %v", k, v))
+		}
+		sort.Strings(parts)
+		return "{" + strings.Join(parts, ", ") + "}"
+	case map[string]string:
+		if len(val) == 0 {
+			return "{}"
+		}
+		parts := make([]string, 0, len(val))
+		for k, v := range val {
+			parts = append(parts, fmt.Sprintf("%s: %s", k, v))
+		}
+		sort.Strings(parts)
+		return "{" + strings.Join(parts, ", ") + "}"
+	case []any:
+		if len(val) == 0 {
+			return "[]"
+		}
+		parts := make([]string, 0, len(val))
+		for _, item := range val {
+			parts = append(parts, fmt.Sprintf("%v", item))
+		}
+		return "[" + strings.Join(parts, ", ") + "]"
+	case []string:
+		if len(val) == 0 {
+			return "[]"
+		}
+		return "[" + strings.Join(val, ", ") + "]"
+	default:
+		return fmt.Sprintf("%v", v)
+	}
 }
 
 func valueType(v any) string {
@@ -239,6 +276,10 @@ func valueType(v any) string {
 		return "number"
 	case bool:
 		return "bool"
+	case map[string]any, map[string]string:
+		return "map"
+	case []any, []string:
+		return "list"
 	default:
 		return "other"
 	}

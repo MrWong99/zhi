@@ -188,6 +188,50 @@ var uiLabels = []*Label{
 		},
 		Since: "0.2.0",
 	},
+	{
+		Name:        "ui.mapKeyPlaceholder",
+		Namespace:   "ui",
+		Description: "Placeholder text for the key input field in map-type value editors.",
+		ValueType:   "string",
+		AppliesTo:   []string{"ui"},
+		Examples: []Example{
+			{Value: "label key", Description: "Placeholder for Kubernetes label keys"},
+		},
+		Since: "0.3.0",
+	},
+	{
+		Name:        "ui.mapValuePlaceholder",
+		Namespace:   "ui",
+		Description: "Placeholder text for the value input field in map-type value editors.",
+		ValueType:   "string",
+		AppliesTo:   []string{"ui"},
+		Examples: []Example{
+			{Value: "label value", Description: "Placeholder for Kubernetes label values"},
+		},
+		Since: "0.3.0",
+	},
+	{
+		Name:        "ui.listItemPlaceholder",
+		Namespace:   "ui",
+		Description: "Placeholder text for item input fields in list-type value editors.",
+		ValueType:   "string",
+		AppliesTo:   []string{"ui"},
+		Examples: []Example{
+			{Value: "secret name", Description: "Placeholder for Kubernetes secret names"},
+		},
+		Since: "0.3.0",
+	},
+	{
+		Name:        "ui.yamlSchema",
+		Namespace:   "ui",
+		Description: "Human-readable description of the expected YAML structure for yaml-type values. Displayed as help text in the editor.",
+		ValueType:   "string",
+		AppliesTo:   []string{"ui"},
+		Examples: []Example{
+			{Value: "List of {key, effect, value} objects", Description: "Kubernetes tolerations schema hint"},
+		},
+		Since: "0.3.0",
+	},
 }
 
 // Store namespace - interpreted by store plugins
@@ -356,6 +400,7 @@ var coreLabels = []*Label{
 				"email", "url", "hostname", "port", "filepath",
 				"duration", "bytes", "date", "datetime",
 				"ip", "cidr", "uuid",
+				"map", "list", "yaml",
 			},
 		},
 		AppliesTo: []string{"ui", "config", "store"},
@@ -405,20 +450,24 @@ var coreLabels = []*Label{
 // Well-known label name constants for use in code.
 const (
 	// UI labels
-	LabelUIReadonly    = "ui.readonly"
-	LabelUIPassword    = "ui.password"
-	LabelUIHidden      = "ui.hidden"
-	LabelUIPattern     = "ui.pattern"
-	LabelUIMultiline   = "ui.multiline"
-	LabelUIOrder       = "ui.order"
-	LabelUIGroup       = "ui.group"
-	LabelUIPlaceholder = "ui.placeholder"
-	LabelUIFormat      = "ui.format"
-	LabelUIConfirm     = "ui.confirm"
-	LabelUIShowIf      = "ui.showIf"
-	LabelUIDisplayName = "ui.displayName"
-	LabelUIEnum        = "ui.enum"
-	LabelUISection     = "ui.section"
+	LabelUIReadonly            = "ui.readonly"
+	LabelUIPassword            = "ui.password"
+	LabelUIHidden              = "ui.hidden"
+	LabelUIPattern             = "ui.pattern"
+	LabelUIMultiline           = "ui.multiline"
+	LabelUIOrder               = "ui.order"
+	LabelUIGroup               = "ui.group"
+	LabelUIPlaceholder         = "ui.placeholder"
+	LabelUIFormat              = "ui.format"
+	LabelUIConfirm             = "ui.confirm"
+	LabelUIShowIf              = "ui.showIf"
+	LabelUIDisplayName         = "ui.displayName"
+	LabelUIEnum                = "ui.enum"
+	LabelUISection             = "ui.section"
+	LabelUIMapKeyPlaceholder   = "ui.mapKeyPlaceholder"
+	LabelUIMapValuePlaceholder = "ui.mapValuePlaceholder"
+	LabelUIListItemPlaceholder = "ui.listItemPlaceholder"
+	LabelUIYAMLSchema          = "ui.yamlSchema"
 
 	// Store labels
 	LabelStoreWriteonly   = "store.writeonly"

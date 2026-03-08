@@ -3,6 +3,7 @@ package webui
 import (
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -72,9 +73,8 @@ func (s *Server) handleSaveValue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rawValue := r.FormValue("value")
 	valType := r.FormValue("value_type")
-	val := parseFormValue(rawValue, valType)
+	val := parseFormValueFromRequest(r, valType)
 
 	newValue := config.Value{
 		Val:      val,
@@ -160,9 +160,8 @@ func (s *Server) handleInlineValidation(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	rawValue := r.FormValue("value")
 	valType := r.FormValue("value_type")
-	val := parseFormValue(rawValue, valType)
+	val := parseFormValueFromRequest(r, valType)
 
 	tree, err := s.ctrl.LoadTree(ctx)
 	if err != nil {
@@ -225,6 +224,27 @@ type editorData struct {
 	Group             string   // ui.group
 	Error             string
 	ValidationResults []validationItem
+
+	// Map editor fields (core.type: map)
+	IsMap               bool
+	MapEntries          []mapEntry
+	MapKeyPlaceholder   string
+	MapValuePlaceholder string
+
+	// List editor fields (core.type: list)
+	IsList              bool
+	ListItems           []string
+	ListItemPlaceholder string
+
+	// YAML editor fields (core.type: yaml)
+	IsYAML     bool
+	YAMLSchema string
+}
+
+// mapEntry is a single key-value pair for the map editor.
+type mapEntry struct {
+	Key   string
+	Value string
 }
 
 // validationBadgeData holds data for the validation_badge fragment.
@@ -295,7 +315,66 @@ func newEditorData(path string, value config.Value, compMap map[string]ui.Compon
 		ed.IsMultiline = true
 	}
 
+	// Map type support.
+	if labels.IsMapType(meta) {
+		ed.IsMap = true
+		ed.MapKeyPlaceholder = labels.GetMapKeyPlaceholder(meta)
+		ed.MapValuePlaceholder = labels.GetMapValuePlaceholder(meta)
+		ed.MapEntries = extractMapEntries(value.Val)
+		ed.ValueType = "map"
+	}
+
+	// List type support.
+	if labels.IsListType(meta) {
+		ed.IsList = true
+		ed.ListItemPlaceholder = labels.GetListItemPlaceholder(meta)
+		ed.ListItems = extractListItems(value.Val)
+		ed.ValueType = "list"
+	}
+
+	// YAML type support: implies multiline.
+	if labels.IsYAMLType(meta) {
+		ed.IsYAML = true
+		ed.IsMultiline = true
+		ed.YAMLSchema = labels.GetYAMLSchema(meta)
+		ed.ValueType = "string"
+	}
+
 	return ed
+}
+
+// extractMapEntries converts a value to a sorted slice of mapEntry.
+func extractMapEntries(v any) []mapEntry {
+	var entries []mapEntry
+	switch m := v.(type) {
+	case map[string]any:
+		for k, val := range m {
+			entries = append(entries, mapEntry{Key: k, Value: fmt.Sprintf("%v", val)})
+		}
+	case map[string]string:
+		for k, val := range m {
+			entries = append(entries, mapEntry{Key: k, Value: val})
+		}
+	}
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].Key < entries[j].Key
+	})
+	return entries
+}
+
+// extractListItems converts a value to a slice of strings.
+func extractListItems(v any) []string {
+	switch items := v.(type) {
+	case []string:
+		return items
+	case []any:
+		result := make([]string, 0, len(items))
+		for _, item := range items {
+			result = append(result, fmt.Sprintf("%v", item))
+		}
+		return result
+	}
+	return nil
 }
 
 // formatEditValue returns the value formatted for form input fields.
@@ -331,6 +410,39 @@ func parseFormValue(raw string, valType string) any {
 		return raw == "true" || raw == "on"
 	default:
 		return raw
+	}
+}
+
+// parseFormValueFromRequest extracts the value from the request, handling
+// map and list types which use multiple form fields.
+func parseFormValueFromRequest(r *http.Request, valType string) any {
+	switch valType {
+	case "map":
+		keys := r.Form["map_key"]
+		values := r.Form["map_value"]
+		result := make(map[string]string, len(keys))
+		for i, k := range keys {
+			if k == "" {
+				continue
+			}
+			v := ""
+			if i < len(values) {
+				v = values[i]
+			}
+			result[k] = v
+		}
+		return result
+	case "list":
+		items := r.Form["list_item"]
+		result := make([]string, 0, len(items))
+		for _, item := range items {
+			if item != "" {
+				result = append(result, item)
+			}
+		}
+		return result
+	default:
+		return parseFormValue(r.FormValue("value"), valType)
 	}
 }
 

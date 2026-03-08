@@ -424,6 +424,45 @@ func (a *App) updateEditorView(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if keyMsg, ok := msg.(tea.KeyMsg); ok {
+		// For collection editors (map/list), delegate enter/esc to the editor
+		// when the user is editing an entry inline or navigating entries.
+		if a.editorView.IsCollectionEditor() {
+			switch keyMsg.String() {
+			case "esc":
+				if a.editorView.IsEditingInline() {
+					// Cancel inline edit, stay in editor.
+					var cmd tea.Cmd
+					a.editorView, cmd = a.editorView.UpdateEditor(msg)
+					return a, cmd
+				}
+				// Not editing inline: leave the editor.
+				a.activeView = viewTree
+				a.statusMsg = ""
+				return a, nil
+			case "enter":
+				if a.editorView.IsEditingInline() {
+					// Confirm inline edit.
+					var cmd tea.Cmd
+					a.editorView, cmd = a.editorView.UpdateEditor(msg)
+					return a, cmd
+				}
+				// Not editing inline: commit the collection value.
+				if a.editorView.dirty {
+					if a.editorView.NeedsConfirmation() {
+						a.editorView.StartConfirmation()
+						return a, nil
+					}
+					return a.commitEditorValue()
+				}
+				a.activeView = viewTree
+				return a, nil
+			}
+			// All other keys: delegate to editor.
+			var cmd tea.Cmd
+			a.editorView, cmd = a.editorView.UpdateEditor(msg)
+			return a, cmd
+		}
+
 		switch keyMsg.String() {
 		case "esc":
 			a.activeView = viewTree
