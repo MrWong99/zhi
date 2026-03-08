@@ -288,6 +288,41 @@ func GetPlaceholder(metadata map[string]any) string {
 	return GetString(metadata, LabelUIPlaceholder, "")
 }
 
+// GetMapKeyPlaceholder returns the ui.mapKeyPlaceholder label value.
+func GetMapKeyPlaceholder(metadata map[string]any) string {
+	return GetString(metadata, LabelUIMapKeyPlaceholder, "")
+}
+
+// GetMapValuePlaceholder returns the ui.mapValuePlaceholder label value.
+func GetMapValuePlaceholder(metadata map[string]any) string {
+	return GetString(metadata, LabelUIMapValuePlaceholder, "")
+}
+
+// GetListItemPlaceholder returns the ui.listItemPlaceholder label value.
+func GetListItemPlaceholder(metadata map[string]any) string {
+	return GetString(metadata, LabelUIListItemPlaceholder, "")
+}
+
+// GetYAMLSchema returns the ui.yamlSchema label value.
+func GetYAMLSchema(metadata map[string]any) string {
+	return GetString(metadata, LabelUIYAMLSchema, "")
+}
+
+// IsMapType returns true if the core.type is "map".
+func IsMapType(metadata map[string]any) bool {
+	return GetSemanticType(metadata) == "map"
+}
+
+// IsListType returns true if the core.type is "list".
+func IsListType(metadata map[string]any) bool {
+	return GetSemanticType(metadata) == "list"
+}
+
+// IsYAMLType returns true if the core.type is "yaml".
+func IsYAMLType(metadata map[string]any) bool {
+	return GetSemanticType(metadata) == "yaml"
+}
+
 // --- Builder helpers for creating metadata ---
 
 // Builder helps construct metadata maps with labels.
@@ -453,6 +488,26 @@ func (b *Builder) Section(section string) *Builder {
 // Placeholder sets ui.placeholder.
 func (b *Builder) Placeholder(text string) *Builder {
 	return b.Set(LabelUIPlaceholder, text)
+}
+
+// MapKeyPlaceholder sets ui.mapKeyPlaceholder.
+func (b *Builder) MapKeyPlaceholder(text string) *Builder {
+	return b.Set(LabelUIMapKeyPlaceholder, text)
+}
+
+// MapValuePlaceholder sets ui.mapValuePlaceholder.
+func (b *Builder) MapValuePlaceholder(text string) *Builder {
+	return b.Set(LabelUIMapValuePlaceholder, text)
+}
+
+// ListItemPlaceholder sets ui.listItemPlaceholder.
+func (b *Builder) ListItemPlaceholder(text string) *Builder {
+	return b.Set(LabelUIListItemPlaceholder, text)
+}
+
+// YAMLSchema sets ui.yamlSchema.
+func (b *Builder) YAMLSchema(schema string) *Builder {
+	return b.Set(LabelUIYAMLSchema, schema)
 }
 
 // Build returns the constructed metadata map.

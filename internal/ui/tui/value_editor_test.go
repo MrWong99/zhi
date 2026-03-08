@@ -365,3 +365,264 @@ func TestValueEditor_Example(t *testing.T) {
 		t.Error("expected example value in editor view")
 	}
 }
+
+func TestValueEditor_MapDisplay(t *testing.T) {
+	t.Parallel()
+	val := &config.Value{
+		Val:      map[string]string{"app": "web", "env": "prod"},
+		Metadata: map[string]any{"core.type": "map"},
+	}
+
+	editor := tui.NewValueEditorFor("test/labels", val, "", false)
+
+	if !editor.IsCollectionEditor() {
+		t.Error("expected IsCollectionEditor() to be true for map type")
+	}
+
+	view := editor.View()
+	if !strings.Contains(view, "app = web") {
+		t.Error("expected 'app = web' in map editor view")
+	}
+	if !strings.Contains(view, "env = prod") {
+		t.Error("expected 'env = prod' in map editor view")
+	}
+	if !strings.Contains(view, "a: add") {
+		t.Error("expected add hint in map editor view")
+	}
+	if !strings.Contains(view, "d: delete") {
+		t.Error("expected delete hint in map editor view")
+	}
+}
+
+func TestValueEditor_MapCommitValue(t *testing.T) {
+	t.Parallel()
+	val := &config.Value{
+		Val:      map[string]string{"key1": "val1"},
+		Metadata: map[string]any{"core.type": "map"},
+	}
+
+	editor := tui.NewValueEditorFor("test/map", val, "", false)
+
+	committed := editor.CommitValue()
+	m, ok := committed.Val.(map[string]string)
+	if !ok {
+		t.Fatalf("expected map[string]string, got %T", committed.Val)
+	}
+	if m["key1"] != "val1" {
+		t.Errorf("expected key1=val1, got key1=%s", m["key1"])
+	}
+}
+
+func TestValueEditor_MapAddEntry(t *testing.T) {
+	t.Parallel()
+	val := &config.Value{
+		Val:      map[string]string{},
+		Metadata: map[string]any{"core.type": "map"},
+	}
+
+	editor := tui.NewValueEditorFor("test/map", val, "", false)
+
+	// Press 'a' to add a new entry.
+	editor, _ = editor.UpdateEditor(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
+
+	if !editor.IsEditingInline() {
+		t.Error("expected to be editing inline after pressing 'a'")
+	}
+
+	// Type the key.
+	for _, ch := range "newkey" {
+		editor, _ = editor.UpdateEditor(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{ch}})
+	}
+	// Confirm with enter.
+	editor, _ = editor.UpdateEditor(tea.KeyMsg{Type: tea.KeyEnter})
+
+	if editor.IsEditingInline() {
+		t.Error("should not be editing inline after enter")
+	}
+
+	committed := editor.CommitValue()
+	m, ok := committed.Val.(map[string]string)
+	if !ok {
+		t.Fatalf("expected map[string]string, got %T", committed.Val)
+	}
+	if _, exists := m["newkey"]; !exists {
+		t.Error("expected 'newkey' to exist in committed map")
+	}
+}
+
+func TestValueEditor_MapDeleteEntry(t *testing.T) {
+	t.Parallel()
+	val := &config.Value{
+		Val:      map[string]string{"remove": "me", "keep": "this"},
+		Metadata: map[string]any{"core.type": "map"},
+	}
+
+	editor := tui.NewValueEditorFor("test/map", val, "", false)
+
+	// Entries are sorted, so cursor 0 = "keep", cursor 1 = "remove".
+	// Navigate to "remove".
+	editor, _ = editor.UpdateEditor(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+	// Delete it.
+	editor, _ = editor.UpdateEditor(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
+
+	committed := editor.CommitValue()
+	m, ok := committed.Val.(map[string]string)
+	if !ok {
+		t.Fatalf("expected map[string]string, got %T", committed.Val)
+	}
+	if _, exists := m["remove"]; exists {
+		t.Error("expected 'remove' key to be deleted")
+	}
+	if m["keep"] != "this" {
+		t.Error("expected 'keep' key to remain")
+	}
+}
+
+func TestValueEditor_MapReadonly(t *testing.T) {
+	t.Parallel()
+	val := &config.Value{
+		Val:      map[string]string{"k": "v"},
+		Metadata: map[string]any{"core.type": "map", "ui.readonly": true},
+	}
+
+	editor := tui.NewValueEditorFor("test/map-ro", val, "", false)
+
+	// Try to add - should be blocked.
+	editor, _ = editor.UpdateEditor(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
+
+	committed := editor.CommitValue()
+	m, ok := committed.Val.(map[string]string)
+	if !ok {
+		t.Fatalf("expected map[string]string, got %T", committed.Val)
+	}
+	if len(m) != 1 {
+		t.Errorf("readonly map should not be modified, got %d entries", len(m))
+	}
+}
+
+func TestValueEditor_ListDisplay(t *testing.T) {
+	t.Parallel()
+	val := &config.Value{
+		Val:      []string{"alpha", "beta"},
+		Metadata: map[string]any{"core.type": "list"},
+	}
+
+	editor := tui.NewValueEditorFor("test/list", val, "", false)
+
+	if !editor.IsCollectionEditor() {
+		t.Error("expected IsCollectionEditor() to be true for list type")
+	}
+
+	view := editor.View()
+	if !strings.Contains(view, "alpha") {
+		t.Error("expected 'alpha' in list editor view")
+	}
+	if !strings.Contains(view, "beta") {
+		t.Error("expected 'beta' in list editor view")
+	}
+}
+
+func TestValueEditor_ListCommitValue(t *testing.T) {
+	t.Parallel()
+	val := &config.Value{
+		Val:      []string{"item1", "item2"},
+		Metadata: map[string]any{"core.type": "list"},
+	}
+
+	editor := tui.NewValueEditorFor("test/list", val, "", false)
+
+	committed := editor.CommitValue()
+	items, ok := committed.Val.([]string)
+	if !ok {
+		t.Fatalf("expected []string, got %T", committed.Val)
+	}
+	if len(items) != 2 || items[0] != "item1" || items[1] != "item2" {
+		t.Errorf("expected [item1, item2], got %v", items)
+	}
+}
+
+func TestValueEditor_ListAddItem(t *testing.T) {
+	t.Parallel()
+	val := &config.Value{
+		Val:      []string{},
+		Metadata: map[string]any{"core.type": "list"},
+	}
+
+	editor := tui.NewValueEditorFor("test/list", val, "", false)
+
+	// Press 'a' to add.
+	editor, _ = editor.UpdateEditor(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
+
+	if !editor.IsEditingInline() {
+		t.Error("expected inline editing after 'a'")
+	}
+
+	// Type item value.
+	for _, ch := range "newitem" {
+		editor, _ = editor.UpdateEditor(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{ch}})
+	}
+	editor, _ = editor.UpdateEditor(tea.KeyMsg{Type: tea.KeyEnter})
+
+	committed := editor.CommitValue()
+	items, ok := committed.Val.([]string)
+	if !ok {
+		t.Fatalf("expected []string, got %T", committed.Val)
+	}
+	if len(items) != 1 || items[0] != "newitem" {
+		t.Errorf("expected [newitem], got %v", items)
+	}
+}
+
+func TestValueEditor_ListDeleteItem(t *testing.T) {
+	t.Parallel()
+	val := &config.Value{
+		Val:      []string{"keep", "remove"},
+		Metadata: map[string]any{"core.type": "list"},
+	}
+
+	editor := tui.NewValueEditorFor("test/list", val, "", false)
+
+	// Navigate to "remove" (index 1).
+	editor, _ = editor.UpdateEditor(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+	// Delete.
+	editor, _ = editor.UpdateEditor(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
+
+	committed := editor.CommitValue()
+	items, ok := committed.Val.([]string)
+	if !ok {
+		t.Fatalf("expected []string, got %T", committed.Val)
+	}
+	if len(items) != 1 || items[0] != "keep" {
+		t.Errorf("expected [keep], got %v", items)
+	}
+}
+
+func TestValueEditor_MapEmptyDisplay(t *testing.T) {
+	t.Parallel()
+	val := &config.Value{
+		Val:      map[string]string{},
+		Metadata: map[string]any{"core.type": "map"},
+	}
+
+	editor := tui.NewValueEditorFor("test/map-empty", val, "", false)
+
+	view := editor.View()
+	if !strings.Contains(view, "(empty map)") {
+		t.Error("expected empty map message")
+	}
+}
+
+func TestValueEditor_ListEmptyDisplay(t *testing.T) {
+	t.Parallel()
+	val := &config.Value{
+		Val:      []string{},
+		Metadata: map[string]any{"core.type": "list"},
+	}
+
+	editor := tui.NewValueEditorFor("test/list-empty", val, "", false)
+
+	view := editor.View()
+	if !strings.Contains(view, "(empty list)") {
+		t.Error("expected empty list message")
+	}
+}

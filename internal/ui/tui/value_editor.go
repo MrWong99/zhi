@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -11,6 +12,12 @@ import (
 	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
 	"github.com/MrWong99/zhi/pkg/zhiplugin/labels"
 )
+
+// mapEditEntry is a key-value pair for the TUI map editor.
+type mapEditEntry struct {
+	Key   string
+	Value string
+}
 
 // ValueEditor allows editing a single configuration value.
 type ValueEditor struct {
@@ -26,6 +33,15 @@ type ValueEditor struct {
 	patternErr    string // current pattern validation error
 	enumOptions   []string
 	enumCursor    int
+
+	// Map/list editor state.
+	isMap       bool
+	isList      bool
+	mapEntries  []mapEditEntry
+	listItems   []string
+	collCursor  int  // cursor position in map/list entries
+	editingColl bool // true when editing an entry inline
+	editField   int  // 0=editing key, 1=editing value (map only)
 }
 
 // NewValueEditor creates an empty value editor.
@@ -75,7 +91,7 @@ func NewValueEditorFor(path string, value *config.Value, componentName string, d
 		}
 	}
 
-	return ValueEditor{
+	ed := ValueEditor{
 		path:          path,
 		value:         value,
 		input:         ti,
@@ -86,6 +102,60 @@ func NewValueEditorFor(path string, value *config.Value, componentName string, d
 		enumOptions:   enumOpts,
 		enumCursor:    enumCursor,
 	}
+
+	// Map type: extract entries for interactive editing.
+	if labels.IsMapType(meta) {
+		ed.isMap = true
+		if value != nil {
+			ed.mapEntries = extractMapEditEntries(value.Val)
+		}
+	}
+
+	// List type: extract items for interactive editing.
+	if labels.IsListType(meta) {
+		ed.isList = true
+		if value != nil {
+			ed.listItems = extractListEditItems(value.Val)
+		}
+	}
+
+	return ed
+}
+
+// extractMapEditEntries converts a value to sorted mapEditEntry slice.
+func extractMapEditEntries(v any) []mapEditEntry {
+	var entries []mapEditEntry
+	switch m := v.(type) {
+	case map[string]any:
+		for k, val := range m {
+			entries = append(entries, mapEditEntry{Key: k, Value: fmt.Sprintf("%v", val)})
+		}
+	case map[string]string:
+		for k, val := range m {
+			entries = append(entries, mapEditEntry{Key: k, Value: val})
+		}
+	}
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].Key < entries[j].Key
+	})
+	return entries
+}
+
+// extractListEditItems converts a value to a string slice.
+func extractListEditItems(v any) []string {
+	switch items := v.(type) {
+	case []string:
+		result := make([]string, len(items))
+		copy(result, items)
+		return result
+	case []any:
+		result := make([]string, 0, len(items))
+		for _, item := range items {
+			result = append(result, fmt.Sprintf("%v", item))
+		}
+		return result
+	}
+	return nil
 }
 
 // Init returns the initial command for the editor (focus the text input).
@@ -133,6 +203,16 @@ func (e ValueEditor) UpdateEditor(msg tea.Msg) (ValueEditor, tea.Cmd) {
 		}
 	}
 
+	// Map editor mode.
+	if e.isMap {
+		return e.updateMapEditor(msg)
+	}
+
+	// List editor mode.
+	if e.isList {
+		return e.updateListEditor(msg)
+	}
+
 	if e.readonly {
 		// Don't process input changes for readonly values.
 		return e, nil
@@ -145,6 +225,168 @@ func (e ValueEditor) UpdateEditor(msg tea.Msg) (ValueEditor, tea.Cmd) {
 	e.validatePattern()
 
 	return e, cmd
+}
+
+func (e ValueEditor) updateMapEditor(msg tea.Msg) (ValueEditor, tea.Cmd) {
+	if e.readonly {
+		return e, nil
+	}
+
+	// When editing a field inline, delegate to the text input.
+	if e.editingColl {
+		if keyMsg, ok := msg.(tea.KeyMsg); ok {
+			switch keyMsg.String() {
+			case "enter":
+				// Commit the inline edit.
+				val := e.input.Value()
+				if e.collCursor < len(e.mapEntries) {
+					if e.editField == 0 {
+						e.mapEntries[e.collCursor].Key = val
+					} else {
+						e.mapEntries[e.collCursor].Value = val
+					}
+				}
+				e.editingColl = false
+				e.input.Blur()
+				e.dirty = true
+				return e, nil
+			case "esc":
+				e.editingColl = false
+				e.input.Blur()
+				return e, nil
+			}
+		}
+		var cmd tea.Cmd
+		e.input, cmd = e.input.Update(msg)
+		return e, cmd
+	}
+
+	if keyMsg, ok := msg.(tea.KeyMsg); ok {
+		switch keyMsg.String() {
+		case "j", "down":
+			if e.collCursor < len(e.mapEntries)-1 {
+				e.collCursor++
+			}
+			return e, nil
+		case "k", "up":
+			if e.collCursor > 0 {
+				e.collCursor--
+			}
+			return e, nil
+		case "enter":
+			// Edit the selected entry's value.
+			if len(e.mapEntries) > 0 {
+				e.editingColl = true
+				e.editField = 1
+				e.input.SetValue(e.mapEntries[e.collCursor].Value)
+				e.input.Focus()
+			}
+			return e, textinput.Blink
+		case "e":
+			// Edit the selected entry's key.
+			if len(e.mapEntries) > 0 {
+				e.editingColl = true
+				e.editField = 0
+				e.input.SetValue(e.mapEntries[e.collCursor].Key)
+				e.input.Focus()
+			}
+			return e, textinput.Blink
+		case "a":
+			// Add a new entry.
+			e.mapEntries = append(e.mapEntries, mapEditEntry{})
+			e.collCursor = len(e.mapEntries) - 1
+			e.editingColl = true
+			e.editField = 0
+			e.input.SetValue("")
+			e.input.Focus()
+			e.dirty = true
+			return e, textinput.Blink
+		case "d":
+			// Delete the selected entry.
+			if len(e.mapEntries) > 0 {
+				e.mapEntries = append(e.mapEntries[:e.collCursor], e.mapEntries[e.collCursor+1:]...)
+				if e.collCursor >= len(e.mapEntries) && e.collCursor > 0 {
+					e.collCursor--
+				}
+				e.dirty = true
+			}
+			return e, nil
+		}
+	}
+	return e, nil
+}
+
+func (e ValueEditor) updateListEditor(msg tea.Msg) (ValueEditor, tea.Cmd) {
+	if e.readonly {
+		return e, nil
+	}
+
+	// When editing an item inline, delegate to the text input.
+	if e.editingColl {
+		if keyMsg, ok := msg.(tea.KeyMsg); ok {
+			switch keyMsg.String() {
+			case "enter":
+				val := e.input.Value()
+				if e.collCursor < len(e.listItems) {
+					e.listItems[e.collCursor] = val
+				}
+				e.editingColl = false
+				e.input.Blur()
+				e.dirty = true
+				return e, nil
+			case "esc":
+				e.editingColl = false
+				e.input.Blur()
+				return e, nil
+			}
+		}
+		var cmd tea.Cmd
+		e.input, cmd = e.input.Update(msg)
+		return e, cmd
+	}
+
+	if keyMsg, ok := msg.(tea.KeyMsg); ok {
+		switch keyMsg.String() {
+		case "j", "down":
+			if e.collCursor < len(e.listItems)-1 {
+				e.collCursor++
+			}
+			return e, nil
+		case "k", "up":
+			if e.collCursor > 0 {
+				e.collCursor--
+			}
+			return e, nil
+		case "enter":
+			// Edit the selected item.
+			if len(e.listItems) > 0 {
+				e.editingColl = true
+				e.input.SetValue(e.listItems[e.collCursor])
+				e.input.Focus()
+			}
+			return e, textinput.Blink
+		case "a":
+			// Add a new item.
+			e.listItems = append(e.listItems, "")
+			e.collCursor = len(e.listItems) - 1
+			e.editingColl = true
+			e.input.SetValue("")
+			e.input.Focus()
+			e.dirty = true
+			return e, textinput.Blink
+		case "d":
+			// Delete the selected item.
+			if len(e.listItems) > 0 {
+				e.listItems = append(e.listItems[:e.collCursor], e.listItems[e.collCursor+1:]...)
+				if e.collCursor >= len(e.listItems) && e.collCursor > 0 {
+					e.collCursor--
+				}
+				e.dirty = true
+			}
+			return e, nil
+		}
+	}
+	return e, nil
 }
 
 func (e *ValueEditor) updateDirty() {
@@ -194,13 +436,43 @@ func (e *ValueEditor) HasPatternError() bool {
 	return e.patternErr != ""
 }
 
+// IsCollectionEditor returns true if this editor is in map or list mode.
+func (e *ValueEditor) IsCollectionEditor() bool {
+	return e.isMap || e.isList
+}
+
+// IsEditingInline returns true if the user is editing an entry inline.
+func (e *ValueEditor) IsEditingInline() bool {
+	return e.editingColl
+}
+
 // CommitValue returns the edited value.
 func (e *ValueEditor) CommitValue() config.Value {
-	val := config.Value{
-		Val:      e.input.Value(),
+	var v any
+	switch {
+	case e.isMap:
+		m := make(map[string]string, len(e.mapEntries))
+		for _, entry := range e.mapEntries {
+			if entry.Key != "" {
+				m[entry.Key] = entry.Value
+			}
+		}
+		v = m
+	case e.isList:
+		items := make([]string, 0, len(e.listItems))
+		for _, item := range e.listItems {
+			if item != "" {
+				items = append(items, item)
+			}
+		}
+		v = items
+	default:
+		v = e.input.Value()
+	}
+	return config.Value{
+		Val:      v,
 		Metadata: e.metadata,
 	}
-	return val
 }
 
 // View renders the value editor.
@@ -261,8 +533,58 @@ func (e ValueEditor) View() string {
 		sb.WriteString("\n\n")
 	}
 
-	// Enum selection mode.
-	if len(e.enumOptions) > 0 {
+	// Map editor mode.
+	if e.isMap {
+		sb.WriteString("  Entries (j/k: navigate, a: add, d: delete, enter: edit value, e: edit key):\n")
+		if len(e.mapEntries) == 0 {
+			sb.WriteString(DimStyle.Render("    (empty map)"))
+			sb.WriteString("\n")
+		}
+		for i, entry := range e.mapEntries {
+			marker := "  "
+			if i == e.collCursor {
+				marker = "> "
+			}
+			style := ValueStyle
+			if i == e.collCursor {
+				style = ActiveStyle
+			}
+			if e.editingColl && i == e.collCursor {
+				if e.editField == 0 {
+					fmt.Fprintf(&sb, "  %s%s = %s\n", marker, e.input.View(), DimStyle.Render(entry.Value))
+				} else {
+					fmt.Fprintf(&sb, "  %s%s = %s\n", marker, DimStyle.Render(entry.Key), e.input.View())
+				}
+			} else {
+				fmt.Fprintf(&sb, "  %s%s\n", marker, style.Render(fmt.Sprintf("%s = %s", entry.Key, entry.Value)))
+			}
+		}
+		sb.WriteString("\n")
+	} else if e.isList {
+		// List editor mode.
+		sb.WriteString("  Items (j/k: navigate, a: add, d: delete, enter: edit):\n")
+		if len(e.listItems) == 0 {
+			sb.WriteString(DimStyle.Render("    (empty list)"))
+			sb.WriteString("\n")
+		}
+		for i, item := range e.listItems {
+			marker := "  "
+			if i == e.collCursor {
+				marker = "> "
+			}
+			style := ValueStyle
+			if i == e.collCursor {
+				style = ActiveStyle
+			}
+			if e.editingColl && i == e.collCursor {
+				fmt.Fprintf(&sb, "  %s%s\n", marker, e.input.View())
+			} else {
+				fmt.Fprintf(&sb, "  %s%s\n", marker, style.Render(item))
+			}
+		}
+		sb.WriteString("\n")
+	} else if len(e.enumOptions) > 0 {
+		// Enum selection mode.
 		sb.WriteString("  Value (select with j/k):\n")
 		for i, opt := range e.enumOptions {
 			marker := "  "
@@ -306,28 +628,32 @@ func (e ValueEditor) View() string {
 
 	// Show remaining metadata that isn't already rendered as a badge/field.
 	displayedLabels := map[string]bool{
-		labels.LabelCoreDescription: true,
-		labels.LabelCoreDeprecated:  true,
-		labels.LabelCoreDoc:         true,
-		labels.LabelCoreExample:     true,
-		labels.LabelCoreType:        true,
-		labels.LabelCoreUnit:        true,
-		labels.LabelUIReadonly:      true,
-		labels.LabelUIPassword:      true,
-		labels.LabelUIHidden:        true,
-		labels.LabelUIPattern:       true,
-		labels.LabelUIPlaceholder:   true,
-		labels.LabelUIConfirm:       true,
-		labels.LabelUIDisplayName:   true,
-		labels.LabelUIEnum:          true,
-		labels.LabelUISection:       true,
-		labels.LabelUIShowIf:        true,
-		labels.LabelUIMultiline:     true,
-		labels.LabelUIOrder:         true,
-		labels.LabelUIGroup:         true,
-		labels.LabelUIFormat:        true,
-		labels.LabelConfigRequired:  true,
-		labels.LabelConfigImmutable: true,
+		labels.LabelCoreDescription:       true,
+		labels.LabelCoreDeprecated:        true,
+		labels.LabelCoreDoc:               true,
+		labels.LabelCoreExample:           true,
+		labels.LabelCoreType:              true,
+		labels.LabelCoreUnit:              true,
+		labels.LabelUIReadonly:            true,
+		labels.LabelUIPassword:            true,
+		labels.LabelUIHidden:              true,
+		labels.LabelUIPattern:             true,
+		labels.LabelUIPlaceholder:         true,
+		labels.LabelUIConfirm:             true,
+		labels.LabelUIDisplayName:         true,
+		labels.LabelUIEnum:                true,
+		labels.LabelUISection:             true,
+		labels.LabelUIShowIf:              true,
+		labels.LabelUIMultiline:           true,
+		labels.LabelUIOrder:               true,
+		labels.LabelUIGroup:               true,
+		labels.LabelUIFormat:              true,
+		labels.LabelUIMapKeyPlaceholder:   true,
+		labels.LabelUIMapValuePlaceholder: true,
+		labels.LabelUIListItemPlaceholder: true,
+		labels.LabelUIYAMLSchema:          true,
+		labels.LabelConfigRequired:        true,
+		labels.LabelConfigImmutable:       true,
 	}
 
 	var extraMeta []string
@@ -350,6 +676,12 @@ func (e ValueEditor) View() string {
 	sb.WriteString("\n")
 	if e.readonly {
 		sb.WriteString(DimStyle.Render("  This value is read-only. Press Esc to go back."))
+	} else if e.isMap || e.isList {
+		if e.editingColl {
+			sb.WriteString(DimStyle.Render("  Enter: confirm  Esc: cancel edit"))
+		} else {
+			sb.WriteString(DimStyle.Render("  j/k: navigate  a: add  d: delete  Enter: save  Esc: cancel"))
+		}
 	} else if len(e.enumOptions) > 0 {
 		sb.WriteString(DimStyle.Render("  j/k: select  Enter: save  Esc: cancel"))
 	} else {

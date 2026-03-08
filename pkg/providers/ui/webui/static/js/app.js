@@ -298,6 +298,76 @@
     }
   });
 
+  // ---------- Map & List Editor ----------
+
+  // Remove row when clicking a map-remove-btn or list-remove-btn.
+  document.body.addEventListener("click", function (e) {
+    var removeBtn = e.target.closest(".map-remove-btn, .list-remove-btn");
+    if (removeBtn) {
+      var row = removeBtn.closest(".map-row, .list-row");
+      if (row) row.remove();
+      return;
+    }
+
+    // Add a new map key-value row.
+    var mapAddBtn = e.target.closest(".map-add-btn");
+    if (mapAddBtn) {
+      var keyPh = mapAddBtn.getAttribute("data-key-placeholder") || "";
+      var valPh = mapAddBtn.getAttribute("data-value-placeholder") || "";
+      var row = document.createElement("div");
+      row.className = "map-row";
+
+      var keyInput = document.createElement("input");
+      keyInput.type = "text";
+      keyInput.name = "map_key";
+      keyInput.className = "input map-key-input";
+      if (keyPh) keyInput.placeholder = keyPh;
+
+      var valInput = document.createElement("input");
+      valInput.type = "text";
+      valInput.name = "map_value";
+      valInput.className = "input map-value-input";
+      if (valPh) valInput.placeholder = valPh;
+
+      var rmBtn = document.createElement("button");
+      rmBtn.type = "button";
+      rmBtn.className = "btn btn-outline btn-sm map-remove-btn";
+      rmBtn.innerHTML = "\u2212";
+
+      row.appendChild(keyInput);
+      row.appendChild(valInput);
+      row.appendChild(rmBtn);
+      mapAddBtn.parentNode.insertBefore(row, mapAddBtn);
+      keyInput.focus();
+      return;
+    }
+
+    // Add a new list item row.
+    var listAddBtn = e.target.closest(".list-add-btn");
+    if (listAddBtn) {
+      var itemPh = listAddBtn.getAttribute("data-item-placeholder") || "";
+      var row = document.createElement("div");
+      row.className = "list-row";
+
+      var itemInput = document.createElement("input");
+      itemInput.type = "text";
+      itemInput.name = "list_item";
+      itemInput.className = "input list-item-input";
+      if (itemPh) itemInput.placeholder = itemPh;
+
+      var rmBtn = document.createElement("button");
+      rmBtn.type = "button";
+      rmBtn.className = "btn btn-outline btn-sm list-remove-btn";
+      rmBtn.innerHTML = "\u2212";
+
+      row.appendChild(itemInput);
+      row.appendChild(rmBtn);
+      listAddBtn.parentNode.insertBefore(row, listAddBtn);
+      itemInput.focus();
+      return;
+    }
+  });
+
   // ---------- Login Page Auth Method Selector ----------
 
   var authMethodSelect = document.getElementById("auth-method-select");

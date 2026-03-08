@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -533,6 +534,12 @@ func TestFormatValue(t *testing.T) {
 		{float64(42), "42"},
 		{true, "true"},
 		{nil, "null"},
+		{map[string]string{}, "{}"},
+		{map[string]string{"a": "1", "b": "2"}, "{a: 1, b: 2}"},
+		{[]string{}, "[]"},
+		{[]string{"x", "y"}, "[x, y]"},
+		{[]any{}, "[]"},
+		{[]any{"a", "b"}, "[a, b]"},
 	}
 	for _, tt := range tests {
 		got := formatValue(tt.input)
@@ -550,7 +557,10 @@ func TestValueType(t *testing.T) {
 		{"hello", "string"},
 		{float64(42), "number"},
 		{true, "bool"},
-		{[]string{}, "other"},
+		{map[string]any{"k": "v"}, "map"},
+		{map[string]string{"k": "v"}, "map"},
+		{[]any{"a", "b"}, "list"},
+		{[]string{"a"}, "list"},
 	}
 	for _, tt := range tests {
 		got := valueType(tt.input)
@@ -928,6 +938,96 @@ func TestParseFormValue(t *testing.T) {
 			t.Errorf("parseFormValue(%q, %q) = %v (%T), want %v (%T)",
 				tt.raw, tt.valType, got, got, tt.expected, tt.expected)
 		}
+	}
+}
+
+func TestExtractMapEntries(t *testing.T) {
+	t.Parallel()
+
+	entries := extractMapEntries(map[string]string{"b": "2", "a": "1"})
+	if len(entries) != 2 {
+		t.Fatalf("expected 2 entries, got %d", len(entries))
+	}
+	// Sorted by key.
+	if entries[0].Key != "a" || entries[0].Value != "1" {
+		t.Errorf("expected first entry a=1, got %s=%s", entries[0].Key, entries[0].Value)
+	}
+	if entries[1].Key != "b" || entries[1].Value != "2" {
+		t.Errorf("expected second entry b=2, got %s=%s", entries[1].Key, entries[1].Value)
+	}
+
+	// map[string]any support.
+	entries2 := extractMapEntries(map[string]any{"k": 42})
+	if len(entries2) != 1 || entries2[0].Value != "42" {
+		t.Errorf("expected entry k=42 for map[string]any, got %v", entries2)
+	}
+
+	// Non-map returns empty.
+	entries3 := extractMapEntries("not a map")
+	if len(entries3) != 0 {
+		t.Errorf("expected empty for non-map, got %v", entries3)
+	}
+}
+
+func TestExtractListItems(t *testing.T) {
+	t.Parallel()
+
+	items := extractListItems([]string{"a", "b", "c"})
+	if len(items) != 3 || items[0] != "a" {
+		t.Errorf("expected [a b c], got %v", items)
+	}
+
+	items2 := extractListItems([]any{"x", 42})
+	if len(items2) != 2 || items2[1] != "42" {
+		t.Errorf("expected [x 42], got %v", items2)
+	}
+
+	items3 := extractListItems("not a list")
+	if items3 != nil {
+		t.Errorf("expected nil for non-list, got %v", items3)
+	}
+}
+
+func TestParseFormValueFromRequest_Map(t *testing.T) {
+	t.Parallel()
+
+	form := url.Values{
+		"map_key":   {"host", "port", ""},
+		"map_value": {"localhost", "5432", "ignored"},
+	}
+	req := &http.Request{Form: form}
+
+	result := parseFormValueFromRequest(req, "map")
+	m, ok := result.(map[string]string)
+	if !ok {
+		t.Fatalf("expected map[string]string, got %T", result)
+	}
+	if len(m) != 2 {
+		t.Errorf("expected 2 entries (empty key skipped), got %d", len(m))
+	}
+	if m["host"] != "localhost" || m["port"] != "5432" {
+		t.Errorf("unexpected map contents: %v", m)
+	}
+}
+
+func TestParseFormValueFromRequest_List(t *testing.T) {
+	t.Parallel()
+
+	form := url.Values{
+		"list_item": {"alpha", "", "beta"},
+	}
+	req := &http.Request{Form: form}
+
+	result := parseFormValueFromRequest(req, "list")
+	items, ok := result.([]string)
+	if !ok {
+		t.Fatalf("expected []string, got %T", result)
+	}
+	if len(items) != 2 {
+		t.Errorf("expected 2 items (empty skipped), got %d", len(items))
+	}
+	if items[0] != "alpha" || items[1] != "beta" {
+		t.Errorf("unexpected list contents: %v", items)
 	}
 }
 

@@ -27,6 +27,35 @@
     {{if .IsReadonly}}
       {{/* Read-only display: show value but no editable input */}}
       <div class="editor-readonly-value">{{.EditValue}}</div>
+    {{else if .IsMap}}
+      {{/* Map editor: key-value rows with add/remove */}}
+      <div class="map-editor" id="map-editor-{{.PathID}}">
+        {{range .MapEntries}}
+        <div class="map-row">
+          <input type="text" name="map_key" value="{{.Key}}" class="input map-key-input"
+                 {{if $.MapKeyPlaceholder}}placeholder="{{$.MapKeyPlaceholder}}"{{end}}>
+          <input type="text" name="map_value" value="{{.Value}}" class="input map-value-input"
+                 {{if $.MapValuePlaceholder}}placeholder="{{$.MapValuePlaceholder}}"{{end}}>
+          <button type="button" class="btn btn-outline btn-sm map-remove-btn">&#x2212;</button>
+        </div>
+        {{end}}
+        <button type="button" class="btn btn-outline btn-sm map-add-btn"
+                data-key-placeholder="{{.MapKeyPlaceholder}}"
+                data-value-placeholder="{{.MapValuePlaceholder}}">+ Add Entry</button>
+      </div>
+    {{else if .IsList}}
+      {{/* List editor: item rows with add/remove */}}
+      <div class="list-editor" id="list-editor-{{.PathID}}">
+        {{range .ListItems}}
+        <div class="list-row">
+          <input type="text" name="list_item" value="{{.}}" class="input list-item-input"
+                 {{if $.ListItemPlaceholder}}placeholder="{{$.ListItemPlaceholder}}"{{end}}>
+          <button type="button" class="btn btn-outline btn-sm list-remove-btn">&#x2212;</button>
+        </div>
+        {{end}}
+        <button type="button" class="btn btn-outline btn-sm list-add-btn"
+                data-item-placeholder="{{.ListItemPlaceholder}}">+ Add Item</button>
+      </div>
     {{else if .Options}}
       <select name="value" class="input value-input" autofocus>
         {{range .Options}}
@@ -39,6 +68,17 @@
         <span class="toggle-switch"></span>
         <span class="toggle-text">{{if eq .EditValue "true"}}true{{else}}false{{end}}</span>
       </label>
+    {{else if .IsYAML}}
+      {{/* YAML editor: larger textarea with schema hint */}}
+      {{if .YAMLSchema}}<div class="editor-hint">Expected: {{.YAMLSchema}}</div>{{end}}
+      <textarea name="value" class="input value-input value-textarea yaml-editor" autofocus
+                rows="8"
+                {{if .Placeholder}}placeholder="{{.Placeholder}}"{{end}}
+                hx-post="/validate/inline/{{.Path}}"
+                hx-trigger="input changed delay:500ms"
+                hx-target="#validation-inline-{{.PathID}}"
+                hx-swap="innerHTML"
+                hx-include="[name='value_type']">{{.EditValue}}</textarea>
     {{else if .IsMultiline}}
       <textarea name="value" class="input value-input value-textarea" autofocus
                 rows="4"

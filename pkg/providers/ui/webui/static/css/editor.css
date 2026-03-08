@@ -182,6 +182,57 @@
   background: var(--color-info-bg);
 }
 
+/* Map editor */
+.map-editor,
+.list-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.map-row,
+.list-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.map-key-input {
+  flex: 2;
+  font-family: var(--font-mono);
+}
+
+.map-value-input {
+  flex: 3;
+  font-family: var(--font-mono);
+}
+
+.list-item-input {
+  flex: 1;
+  font-family: var(--font-mono);
+}
+
+.map-remove-btn,
+.list-remove-btn {
+  flex-shrink: 0;
+  line-height: 1;
+  font-size: var(--text-base);
+}
+
+.map-add-btn,
+.list-add-btn {
+  align-self: flex-start;
+}
+
+/* YAML editor */
+.yaml-editor {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  tab-size: 2;
+  white-space: pre;
+}
+
 /* Toggle switch for booleans */
 .toggle-label {
   display: flex;
