@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"text/template"
 
 	"gopkg.in/yaml.v3"
 )
@@ -26,11 +27,13 @@ type ProviderRef struct {
 
 // ExportTemplate describes a template-based export target.
 type ExportTemplate struct {
-	Name     string `yaml:"name" json:"name"`
-	Template string `yaml:"template,omitempty" json:"template,omitempty"`
-	Format   string `yaml:"format,omitempty" json:"format,omitempty"` // built-in format: json, yaml, toml, dotenv
-	Output   string `yaml:"output" json:"output"`
-	Prefix   string `yaml:"prefix,omitempty" json:"prefix,omitempty"` // only export paths under this prefix
+	Name          string `yaml:"name" json:"name"`
+	Template      string `yaml:"template,omitempty" json:"template,omitempty"`
+	Format        string `yaml:"format,omitempty" json:"format,omitempty"` // built-in format: json, yaml, toml, dotenv
+	Output        string `yaml:"output" json:"output"`
+	Prefix        string `yaml:"prefix,omitempty" json:"prefix,omitempty"`                // only export paths under this prefix
+	Iterate       string `yaml:"iterate,omitempty" json:"iterate,omitempty"`              // tree prefix to iterate over (direct children)
+	OutputPattern string `yaml:"output-pattern,omitempty" json:"outputPattern,omitempty"` // Go template for per-child output path
 }
 
 // ExportConfig holds the export section of a workspace config.
@@ -43,6 +46,7 @@ type ApplyTargetConfig struct {
 	Command   string            `yaml:"command,omitempty" json:"command,omitempty"`
 	Workdir   string            `yaml:"workdir,omitempty" json:"workdir,omitempty"`
 	PreExport bool              `yaml:"pre-export,omitempty" json:"pre-export,omitempty"`
+	PreCheck  []string          `yaml:"pre-check,omitempty" json:"pre-check,omitempty"`
 	Env       map[string]string `yaml:"env,omitempty" json:"env,omitempty"`
 	Timeout   int               `yaml:"timeout,omitempty" json:"timeout,omitempty"` // seconds, 0 = no timeout
 }
@@ -68,6 +72,7 @@ type ApplyConfig struct {
 	Command   string            `yaml:"command,omitempty" json:"command,omitempty"`
 	Workdir   string            `yaml:"workdir,omitempty" json:"workdir,omitempty"`
 	PreExport bool              `yaml:"pre-export,omitempty" json:"pre-export,omitempty"`
+	PreCheck  []string          `yaml:"pre-check,omitempty" json:"pre-check,omitempty"`
 	Env       map[string]string `yaml:"env,omitempty" json:"env,omitempty"`
 	Timeout   int               `yaml:"timeout,omitempty" json:"timeout,omitempty"`
 
@@ -105,6 +110,7 @@ func (ac *ApplyConfig) ResolveTarget(name string) (ApplyTargetConfig, error) {
 		Command:   ac.Command,
 		Workdir:   ac.Workdir,
 		PreExport: ac.PreExport,
+		PreCheck:  ac.PreCheck,
 		Env:       ac.Env,
 		Timeout:   ac.Timeout,
 	}, nil
@@ -272,18 +278,36 @@ func ValidateWorkspace(ws *WorkspaceConfig, reg *Registry) error {
 		}
 	}
 
-	// Check that template files exist on disk (only for templates with a file, not built-in formats).
-	for _, tmpl := range ws.Export.Templates {
-		if tmpl.Template == "" {
-			// Built-in format; no template file needed.
-			continue
+	// Validate export templates.
+	for i, tmpl := range ws.Export.Templates {
+		// Check that template files exist on disk (only for templates with a file, not built-in formats).
+		if tmpl.Template != "" {
+			tmplPath := tmpl.Template
+			if !filepath.IsAbs(tmplPath) {
+				tmplPath = filepath.Join(ws.Dir, tmplPath)
+			}
+			if _, err := os.Stat(tmplPath); err != nil {
+				errs = append(errs, fmt.Errorf("export template %q: file %q not found", tmpl.Name, tmpl.Template))
+			}
 		}
-		tmplPath := tmpl.Template
-		if !filepath.IsAbs(tmplPath) {
-			tmplPath = filepath.Join(ws.Dir, tmplPath)
+
+		// Validate iterate/output-pattern consistency.
+		if tmpl.Iterate != "" && tmpl.OutputPattern == "" {
+			errs = append(errs, fmt.Errorf("export[%d] %q: iterate requires output-pattern", i, tmpl.Name))
 		}
-		if _, err := os.Stat(tmplPath); err != nil {
-			errs = append(errs, fmt.Errorf("export template %q: file %q not found", tmpl.Name, tmpl.Template))
+		if tmpl.OutputPattern != "" && tmpl.Iterate == "" {
+			errs = append(errs, fmt.Errorf("export[%d] %q: output-pattern requires iterate", i, tmpl.Name))
+		}
+		if tmpl.Iterate != "" && tmpl.Output != "" {
+			errs = append(errs, fmt.Errorf("export[%d] %q: iterate templates must not set output (use output-pattern)", i, tmpl.Name))
+		}
+		if tmpl.OutputPattern != "" {
+			if containsPathTraversal(tmpl.OutputPattern) {
+				errs = append(errs, fmt.Errorf("export[%d] %q: output-pattern %q contains path traversal", i, tmpl.Name, tmpl.OutputPattern))
+			}
+			if _, parseErr := template.New("").Parse(tmpl.OutputPattern); parseErr != nil {
+				errs = append(errs, fmt.Errorf("export[%d] %q: invalid output-pattern template: %w", i, tmpl.Name, parseErr))
+			}
 		}
 	}
 

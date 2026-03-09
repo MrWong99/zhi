@@ -81,11 +81,13 @@ func (s *controllerGRPCServer) ExportTemplates(ctx context.Context, _ *pb.CtrlEx
 	msgs := make([]*pb.CtrlExportTemplateMsg, 0, len(templates))
 	for _, t := range templates {
 		msgs = append(msgs, &pb.CtrlExportTemplateMsg{
-			Name:     t.Name,
-			Template: t.Template,
-			Format:   t.Format,
-			Output:   t.Output,
-			Prefix:   t.Prefix,
+			Name:          t.Name,
+			Template:      t.Template,
+			Format:        t.Format,
+			Output:        t.Output,
+			Prefix:        t.Prefix,
+			Iterate:       t.Iterate,
+			OutputPattern: t.OutputPattern,
 		})
 	}
 	return &pb.CtrlExportTemplatesResponse{Templates: msgs}, nil

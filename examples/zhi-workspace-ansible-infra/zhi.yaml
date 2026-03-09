@@ -1,0 +1,52 @@
+version: "1"
+
+config:
+  provider: structuredfile
+  options:
+    format: yaml
+    path: ./config.yaml
+
+components:
+  - name: webservers
+    paths: ["groups/webservers/", "hosts/webserver-1/"]
+  - name: databases
+    paths: ["groups/databases/", "hosts/dbserver-1/"]
+
+export:
+  templates:
+    - name: inventory-yaml
+      template: ./templates/inventory.yml.tmpl
+      output: ./ansible/inventory/hosts.yml
+    - name: inventory-ini
+      template: ./templates/inventory.ini.tmpl
+      output: ./ansible/inventory/hosts.ini
+    - name: ansible-cfg
+      template: ./templates/ansible.cfg.tmpl
+      output: ./ansible/ansible.cfg
+    - name: group-vars
+      template: ./templates/group-vars.yml.tmpl
+      iterate: groups
+      output-pattern: "./ansible/group_vars/{{ .Key }}.yml"
+    - name: host-vars
+      template: ./templates/host-vars.yml.tmpl
+      iterate: hosts
+      output-pattern: "./ansible/host_vars/{{ .Key }}.yml"
+    - name: vault-vars
+      template: ./templates/vault-vars.yml.tmpl
+      iterate: groups
+      output-pattern: "./ansible/group_vars/{{ .Key }}/vault.yml"
+
+apply:
+  targets:
+    default:
+      command: "ansible-playbook -i ansible/inventory/hosts.yml site.yml"
+      pre-export: true
+    check:
+      command: "ansible-playbook -i ansible/inventory/hosts.yml site.yml --check --diff"
+      pre-export: true
+    deploy-web:
+      command: "ansible-playbook -i ansible/inventory/hosts.yml site.yml --limit webservers"
+      pre-export: true
+    destroy:
+      command: "ansible-playbook -i ansible/inventory/hosts.yml teardown.yml"
+      pre-export: true

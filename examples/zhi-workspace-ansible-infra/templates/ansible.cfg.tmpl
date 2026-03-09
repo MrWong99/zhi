@@ -1,0 +1,12 @@
+[defaults]
+inventory = ./inventory/hosts.yml
+{{- if .Has "ansible/config/remote_tmp" }}
+remote_tmp = {{ .Get "ansible/config/remote_tmp" }}
+{{- end }}
+{{- if .Has "ansible/config/timeout" }}
+timeout = {{ .Get "ansible/config/timeout" }}
+{{- end }}
+{{- if .Has "ansible/config/forks" }}
+forks = {{ .Get "ansible/config/forks" }}
+{{- end }}
+host_key_checking = {{ .GetOr "ansible/config/host_key_checking" "True" }}

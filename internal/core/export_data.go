@@ -8,6 +8,15 @@ import (
 	"github.com/MrWong99/zhi/pkg/zhiplugin/config"
 )
 
+// IterateData is the template dot value when an export uses the iterate feature.
+// The template receives one IterateData per direct child of the iterate prefix.
+type IterateData struct {
+	// Key is the name of the direct child (e.g. "webservers").
+	Key string
+	// Value is a TreeData scoped to the child's subtree.
+	Value *TreeData
+}
+
 // TreeData wraps a filtered TreeReader and ComponentManager to provide
 // template-friendly access methods for use inside Go templates.
 type TreeData struct {

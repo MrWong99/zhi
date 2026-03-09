@@ -39,11 +39,13 @@ type ExportResult struct {
 
 // ExportTemplate describes a configured export template from the workspace.
 type ExportTemplate struct {
-	Name     string
-	Template string
-	Format   string
-	Output   string
-	Prefix   string
+	Name          string
+	Template      string
+	Format        string
+	Output        string
+	Prefix        string
+	Iterate       string
+	OutputPattern string
 }
 
 // ApplyEvent is a single line of output from an apply command.

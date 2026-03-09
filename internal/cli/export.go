@@ -78,6 +78,7 @@ func runExport(cmd *cobra.Command, _ []string) error {
 			OutputPath:   outputPath,
 			Prefix:       exportPrefix,
 			DryRun:       exportDryRun,
+			WorkspaceDir: eng.WorkspaceDir(),
 		}
 		result, err := core.Export(ctx, td, cfg)
 		if err != nil {
@@ -111,31 +112,7 @@ func runExport(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("no export templates defined in workspace config and no --template or --format specified")
 	}
 
-	var configs []core.ExportRunConfig
-	for _, tmpl := range ws.Export.Templates {
-		cfg := core.ExportRunConfig{
-			DryRun: exportDryRun,
-			Prefix: tmpl.Prefix,
-		}
-		if tmpl.Template != "" {
-			p := tmpl.Template
-			if !filepath.IsAbs(p) {
-				p = filepath.Join(ws.Dir, p)
-			}
-			cfg.TemplatePath = p
-		}
-		if tmpl.Format != "" {
-			cfg.Format = tmpl.Format
-		}
-		if tmpl.Output != "" {
-			p := tmpl.Output
-			if !filepath.IsAbs(p) {
-				p = filepath.Join(ws.Dir, p)
-			}
-			cfg.OutputPath = p
-		}
-		configs = append(configs, cfg)
-	}
+	configs := core.ExpandTemplates(ws.Export.Templates, ws.Dir, exportDryRun)
 
 	results, err := core.ExportAll(ctx, td, configs)
 	if err != nil {

@@ -1,0 +1,2 @@
+nginx_workers: "8"
+custom_header: "X-Custom"
