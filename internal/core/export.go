@@ -83,7 +83,7 @@ func Export(_ context.Context, tree *TreeData, cfg ExportRunConfig) (*ExportResu
 	} else if cfg.TemplatePath != "" {
 		// Use a template file. Pass opts so fileACL/fileMode can capture values.
 		opts = &exportFileOptions{}
-		content, err = renderTemplateFile(tree, cfg.TemplatePath, opts)
+		content, err = renderTemplateFile(tree, cfg.TemplatePath, cfg.WorkspaceDir, opts)
 		if err != nil {
 			return nil, fmt.Errorf("rendering template %q: %w", cfg.TemplatePath, err)
 		}
@@ -157,7 +157,7 @@ func ExportIterate(_ context.Context, tree *TreeData, cfg ExportRunConfig) ([]*E
 
 		// Render the template with IterateData.
 		opts := &exportFileOptions{}
-		content, err := renderTemplateFile(iterData, cfg.TemplatePath, opts)
+		content, err := renderTemplateFile(iterData, cfg.TemplatePath, cfg.WorkspaceDir, opts)
 		if err != nil {
 			return nil, fmt.Errorf("rendering iterate template for child %q: %w", childKey, err)
 		}
@@ -369,12 +369,28 @@ func (pt *prefixTree) List() []string {
 // renderTemplateFile reads a template file and executes it with the given data
 // as the dot value. For normal exports data is *TreeData; for iterate exports
 // data is IterateData. If opts is non-nil, template functions like fileACL and
-// fileMode will capture their values into it.
-func renderTemplateFile(dotData any, path string, opts *exportFileOptions) (string, error) {
+// fileMode will capture their values into it. workspaceDir, when non-empty,
+// confines the resolved path to the workspace directory.
+func renderTemplateFile(dotData any, path, workspaceDir string, opts *exportFileOptions) (string, error) {
 	if containsPathTraversal(path) {
 		return "", fmt.Errorf("template path %q: path traversal (.. segments) is not allowed", path)
 	}
-	raw, err := os.ReadFile(path)
+	// Confine the resolved template path to the workspace directory so that
+	// user-provided paths cannot escape (e.g. "/etc/passwd").
+	if workspaceDir != "" {
+		absPath, err := filepath.Abs(path)
+		if err != nil {
+			return "", fmt.Errorf("resolving template path: %w", err)
+		}
+		absWS, err := filepath.Abs(workspaceDir)
+		if err != nil {
+			return "", fmt.Errorf("resolving workspace dir: %w", err)
+		}
+		if !strings.HasPrefix(absPath, absWS+string(filepath.Separator)) && absPath != absWS {
+			return "", fmt.Errorf("template path %q is outside workspace directory %q", path, workspaceDir)
+		}
+	}
+	raw, err := os.ReadFile(path) // CodeQL: path is confined to workspace dir above
 	if err != nil {
 		return "", fmt.Errorf("reading template: %w", err)
 	}

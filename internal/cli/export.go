@@ -78,6 +78,7 @@ func runExport(cmd *cobra.Command, _ []string) error {
 			OutputPath:   outputPath,
 			Prefix:       exportPrefix,
 			DryRun:       exportDryRun,
+			WorkspaceDir: eng.WorkspaceDir(),
 		}
 		result, err := core.Export(ctx, td, cfg)
 		if err != nil {

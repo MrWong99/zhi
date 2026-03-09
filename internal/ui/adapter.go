@@ -77,20 +77,22 @@ func (c *ControllerAdapter) ExportTemplates(_ context.Context) ([]zhiui.ExportTe
 }
 
 func (c *ControllerAdapter) Export(ctx context.Context, req zhiui.ExportRequest) (*zhiui.ExportResult, error) {
+	wsDir := c.Inner.engine.WorkspaceDir()
 	cfg := core.ExportRunConfig{
 		TemplatePath: req.TemplatePath,
 		Format:       req.Format,
 		OutputPath:   req.OutputPath,
 		Prefix:       req.Prefix,
 		DryRun:       req.DryRun,
+		WorkspaceDir: wsDir,
 	}
 
 	// Resolve relative template path against workspace dir.
 	if cfg.TemplatePath != "" && !filepath.IsAbs(cfg.TemplatePath) {
-		cfg.TemplatePath = filepath.Join(c.Inner.engine.WorkspaceDir(), cfg.TemplatePath)
+		cfg.TemplatePath = filepath.Join(wsDir, cfg.TemplatePath)
 	}
 	if cfg.OutputPath != "" && !filepath.IsAbs(cfg.OutputPath) {
-		cfg.OutputPath = filepath.Join(c.Inner.engine.WorkspaceDir(), cfg.OutputPath)
+		cfg.OutputPath = filepath.Join(wsDir, cfg.OutputPath)
 	}
 
 	result, err := c.Inner.Export(ctx, cfg)
