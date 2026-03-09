@@ -1,0 +1,7 @@
+---
+# Vault variables for {{ .Key }}
+# These values are sourced from zhi's encrypted store.
+# Ansible Vault encryption is not applied -- rely on zhi's access controls.
+{{ range $k, $v := .Value.Prefix "vault" -}}
+{{ $k }}: {{ $v }}
+{{ end -}}

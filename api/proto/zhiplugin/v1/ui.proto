@@ -157,6 +157,8 @@ message CtrlExportTemplateMsg {
   string format = 3;
   string output = 4;
   string prefix = 5;
+  string iterate = 6;
+  string output_pattern = 7;
 }
 
 message CtrlExportTemplatesResponse {

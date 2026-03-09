@@ -1,0 +1,35 @@
+all:
+  hosts:
+{{- range $host, $_ := .Nested "hosts" }}
+    {{ $host }}:
+  {{- $vars := index $_ "ansible_host" }}
+  {{- if $vars }}
+      ansible_host: {{ $vars }}
+  {{- end }}
+  {{- $user := index $_ "ansible_user" }}
+  {{- if $user }}
+      ansible_user: {{ $user }}
+  {{- end }}
+  {{- $port := index $_ "ansible_port" }}
+  {{- if $port }}
+      ansible_port: {{ $port }}
+  {{- end }}
+{{- end }}
+  children:
+{{- range $group, $vals := .Nested "groups" }}
+    {{ $group }}:
+  {{- $members := index $vals "members" }}
+  {{- if $members }}
+      hosts:
+    {{- range $m := splitList "," (toString $members) }}
+        {{ trim $m }}:
+    {{- end }}
+  {{- end }}
+  {{- $gvars := index $vals "vars" }}
+  {{- if $gvars }}
+      vars:
+    {{- range $k, $v := $gvars }}
+        {{ $k }}: {{ $v }}
+    {{- end }}
+  {{- end }}
+{{- end }}

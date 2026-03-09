@@ -508,3 +508,150 @@ func TestApplyResolveTargetSimpleNonDefault(t *testing.T) {
 		t.Fatal("expected error for non-default target with simple config")
 	}
 }
+
+func TestPreCheckSuccess(t *testing.T) {
+	cfg := ApplyRunConfig{
+		Target: ApplyTargetConfig{
+			Command:  "echo main",
+			PreCheck: []string{"echo check1", "echo check2"},
+		},
+		WorkspaceDir:    t.TempDir(),
+		TimeoutOverride: -1,
+	}
+
+	output := make(chan ApplyOutput, 100)
+	go func() {
+		defer close(output)
+		err := RunPreChecks(context.Background(), cfg, output)
+		if err != nil {
+			t.Errorf("RunPreChecks: %v", err)
+		}
+	}()
+
+	var lines []string
+	for line := range output {
+		lines = append(lines, line.Line)
+	}
+
+	// Should have label lines + output from each check.
+	hasCheck1 := false
+	hasCheck2 := false
+	for _, line := range lines {
+		if line == "check1" {
+			hasCheck1 = true
+		}
+		if line == "check2" {
+			hasCheck2 = true
+		}
+	}
+	if !hasCheck1 || !hasCheck2 {
+		t.Errorf("expected check1 and check2 in output, got: %v", lines)
+	}
+}
+
+func TestPreCheckFailure(t *testing.T) {
+	cfg := ApplyRunConfig{
+		Target: ApplyTargetConfig{
+			Command:  "echo main",
+			PreCheck: []string{"echo ok", "exit 1", "echo should-not-run"},
+		},
+		WorkspaceDir:    t.TempDir(),
+		TimeoutOverride: -1,
+	}
+
+	output := make(chan ApplyOutput, 100)
+	var preCheckErr error
+	go func() {
+		defer close(output)
+		preCheckErr = RunPreChecks(context.Background(), cfg, output)
+	}()
+
+	// Drain output.
+	for range output {
+	}
+
+	if preCheckErr == nil {
+		t.Fatal("expected error from failed pre-check")
+	}
+	if !strings.Contains(preCheckErr.Error(), "pre-check 2") {
+		t.Errorf("error = %q, expected to mention 'pre-check 2'", preCheckErr.Error())
+	}
+}
+
+func TestPreCheckEmpty(t *testing.T) {
+	cfg := ApplyRunConfig{
+		Target: ApplyTargetConfig{
+			Command: "echo main",
+		},
+		WorkspaceDir:    t.TempDir(),
+		TimeoutOverride: -1,
+	}
+
+	output := make(chan ApplyOutput, 100)
+	err := RunPreChecks(context.Background(), cfg, output)
+	if err != nil {
+		t.Errorf("RunPreChecks with no pre-checks: %v", err)
+	}
+}
+
+func TestPreCheckDryRun(t *testing.T) {
+	// Verify that dry-run output includes pre-check info via ResolveTarget.
+	ac := &ApplyConfig{
+		Command:  "echo main",
+		PreCheck: []string{"echo check1"},
+	}
+
+	target, err := ac.ResolveTarget("")
+	if err != nil {
+		t.Fatalf("ResolveTarget: %v", err)
+	}
+	if len(target.PreCheck) != 1 || target.PreCheck[0] != "echo check1" {
+		t.Errorf("PreCheck = %v, want [echo check1]", target.PreCheck)
+	}
+}
+
+func TestPreCheckOutputStreamed(t *testing.T) {
+	cfg := ApplyRunConfig{
+		Target: ApplyTargetConfig{
+			Command:  "echo main",
+			PreCheck: []string{`echo stdout_line && echo stderr_line >&2`},
+		},
+		WorkspaceDir:    t.TempDir(),
+		TimeoutOverride: -1,
+	}
+
+	output := make(chan ApplyOutput, 100)
+	go func() {
+		defer close(output)
+		_ = RunPreChecks(context.Background(), cfg, output)
+	}()
+
+	var stdoutLines, stderrLines []string
+	for line := range output {
+		switch line.Stream {
+		case "stdout":
+			stdoutLines = append(stdoutLines, line.Line)
+		case "stderr":
+			stderrLines = append(stderrLines, line.Line)
+		}
+	}
+
+	hasStdout := false
+	for _, line := range stdoutLines {
+		if line == "stdout_line" {
+			hasStdout = true
+		}
+	}
+	hasStderr := false
+	for _, line := range stderrLines {
+		if line == "stderr_line" {
+			hasStderr = true
+		}
+	}
+	if !hasStdout {
+		t.Errorf("stdout output missing 'stdout_line', got: %v", stdoutLines)
+	}
+	if !hasStderr {
+		t.Errorf("stderr output missing 'stderr_line', got: %v", stderrLines)
+	}
+}

@@ -1,0 +1,5 @@
+---
+# Host variables for {{ .Key }}
+{{ range $k, $v := .Value.Prefix "vars" -}}
+{{ $k }}: {{ $v }}
+{{ end -}}

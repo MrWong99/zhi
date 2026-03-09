@@ -259,3 +259,66 @@ func TestValidateWorkspaceMissingTemplate(t *testing.T) {
 		t.Error("expected error for missing template file")
 	}
 }
+
+func TestValidateWorkspaceIterate(t *testing.T) {
+	reg := NewRegistry()
+	_ = reg.RegisterConfig("test", func(string, map[string]any) (config.Plugin, error) {
+		return &stubConfig{}, nil
+	})
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "t.tmpl"), []byte("ok"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name    string
+		tmpl    ExportTemplate
+		wantErr bool
+	}{
+		{
+			name:    "valid iterate",
+			tmpl:    ExportTemplate{Name: "g", Template: "t.tmpl", Iterate: "groups", OutputPattern: "./gv/{{ .Key }}.yml"},
+			wantErr: false,
+		},
+		{
+			name:    "iterate without output-pattern",
+			tmpl:    ExportTemplate{Name: "g", Template: "t.tmpl", Iterate: "groups"},
+			wantErr: true,
+		},
+		{
+			name:    "output-pattern without iterate",
+			tmpl:    ExportTemplate{Name: "g", Template: "t.tmpl", OutputPattern: "./gv/{{ .Key }}.yml"},
+			wantErr: true,
+		},
+		{
+			name:    "iterate with output (conflict)",
+			tmpl:    ExportTemplate{Name: "g", Template: "t.tmpl", Iterate: "groups", OutputPattern: "./gv/{{ .Key }}.yml", Output: "out.yml"},
+			wantErr: true,
+		},
+		{
+			name:    "output-pattern with path traversal",
+			tmpl:    ExportTemplate{Name: "g", Template: "t.tmpl", Iterate: "groups", OutputPattern: "../escape/{{ .Key }}.yml"},
+			wantErr: true,
+		},
+		{
+			name:    "output-pattern invalid template syntax",
+			tmpl:    ExportTemplate{Name: "g", Template: "t.tmpl", Iterate: "groups", OutputPattern: "{{ .Key"},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ws := &WorkspaceConfig{
+				Version: "1",
+				Config:  ProviderRef{Provider: "test"},
+				Export:  ExportConfig{Templates: []ExportTemplate{tt.tmpl}},
+				Dir:     dir,
+			}
+			err := ValidateWorkspace(ws, reg)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ValidateWorkspace() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}

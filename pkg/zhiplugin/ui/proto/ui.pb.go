@@ -574,6 +574,8 @@ type CtrlExportTemplateMsg struct {
 	Format        string                 `protobuf:"bytes,3,opt,name=format,proto3" json:"format,omitempty"`
 	Output        string                 `protobuf:"bytes,4,opt,name=output,proto3" json:"output,omitempty"`
 	Prefix        string                 `protobuf:"bytes,5,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	Iterate       string                 `protobuf:"bytes,6,opt,name=iterate,proto3" json:"iterate,omitempty"`
+	OutputPattern string                 `protobuf:"bytes,7,opt,name=output_pattern,json=outputPattern,proto3" json:"output_pattern,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -639,6 +641,20 @@ func (x *CtrlExportTemplateMsg) GetOutput() string {
 func (x *CtrlExportTemplateMsg) GetPrefix() string {
 	if x != nil {
 		return x.Prefix
+	}
+	return ""
+}
+
+func (x *CtrlExportTemplateMsg) GetIterate() string {
+	if x != nil {
+		return x.Iterate
+	}
+	return ""
+}
+
+func (x *CtrlExportTemplateMsg) GetOutputPattern() string {
+	if x != nil {
+		return x.OutputPattern
 	}
 	return ""
 }
@@ -3607,13 +3623,15 @@ const file_zhiplugin_v1_ui_proto_rawDesc = "" +
 	"\aresults\x18\x01 \x03(\v2!.zhiplugin.v1.ValidationResultMsgR\aresults\"\x1b\n" +
 	"\x13CtrlSaveTreeRequestJ\x04\b\x01\x10\x02\"\x16\n" +
 	"\x14CtrlSaveTreeResponse\"\x1c\n" +
-	"\x1aCtrlExportTemplatesRequest\"\x8f\x01\n" +
+	"\x1aCtrlExportTemplatesRequest\"\xd0\x01\n" +
 	"\x15CtrlExportTemplateMsg\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
 	"\btemplate\x18\x02 \x01(\tR\btemplate\x12\x16\n" +
 	"\x06format\x18\x03 \x01(\tR\x06format\x12\x16\n" +
 	"\x06output\x18\x04 \x01(\tR\x06output\x12\x16\n" +
-	"\x06prefix\x18\x05 \x01(\tR\x06prefix\"`\n" +
+	"\x06prefix\x18\x05 \x01(\tR\x06prefix\x12\x18\n" +
+	"\aiterate\x18\x06 \x01(\tR\aiterate\x12%\n" +
+	"\x0eoutput_pattern\x18\a \x01(\tR\routputPattern\"`\n" +
 	"\x1bCtrlExportTemplatesResponse\x12A\n" +
 	"\ttemplates\x18\x01 \x03(\v2#.zhiplugin.v1.CtrlExportTemplateMsgR\ttemplates\"\xa2\x01\n" +
 	"\x11CtrlExportRequest\x12#\n" +

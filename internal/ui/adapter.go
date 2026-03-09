@@ -64,11 +64,13 @@ func (c *ControllerAdapter) ExportTemplates(_ context.Context) ([]zhiui.ExportTe
 	result := make([]zhiui.ExportTemplate, 0, len(templates))
 	for _, t := range templates {
 		result = append(result, zhiui.ExportTemplate{
-			Name:     t.Name,
-			Template: t.Template,
-			Format:   t.Format,
-			Output:   t.Output,
-			Prefix:   t.Prefix,
+			Name:          t.Name,
+			Template:      t.Template,
+			Format:        t.Format,
+			Output:        t.Output,
+			Prefix:        t.Prefix,
+			Iterate:       t.Iterate,
+			OutputPattern: t.OutputPattern,
 		})
 	}
 	return result, nil

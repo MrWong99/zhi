@@ -250,31 +250,7 @@ func (c *UIController) ExportAll(ctx context.Context) ([]*core.ExportResult, err
 		return nil, err
 	}
 
-	var configs []core.ExportRunConfig
-	for _, tmpl := range ws.Export.Templates {
-		cfg := core.ExportRunConfig{
-			Prefix: tmpl.Prefix,
-		}
-		if tmpl.Template != "" {
-			p := tmpl.Template
-			if !filepath.IsAbs(p) {
-				p = filepath.Join(ws.Dir, p)
-			}
-			cfg.TemplatePath = p
-		}
-		if tmpl.Format != "" {
-			cfg.Format = tmpl.Format
-		}
-		if tmpl.Output != "" {
-			p := tmpl.Output
-			if !filepath.IsAbs(p) {
-				p = filepath.Join(ws.Dir, p)
-			}
-			cfg.OutputPath = p
-		}
-		configs = append(configs, cfg)
-	}
-
+	configs := core.ExpandTemplates(ws.Export.Templates, ws.Dir, false)
 	return core.ExportAll(ctx, td, configs)
 }
 
@@ -287,12 +263,20 @@ func (c *UIController) ExportTemplates() []core.ExportTemplate {
 	return ws.Export.Templates
 }
 
-// Apply runs the apply command and streams output to the provided channel.
+// Apply runs pre-checks (if configured) followed by the apply command,
+// streaming output to the provided channel.
 func (c *UIController) Apply(ctx context.Context, target string, output chan<- core.ApplyOutput) (*core.ApplyResult, error) {
 	runCfg, err := c.engine.BuildApplyRunConfig(target)
 	if err != nil {
 		return nil, err
 	}
+
+	// Run pre-checks before the main command.
+	if err := core.RunPreChecks(ctx, runCfg, output); err != nil {
+		close(output)
+		return nil, fmt.Errorf("pre-check: %w", err)
+	}
+
 	return core.Apply(ctx, runCfg, output)
 }
 

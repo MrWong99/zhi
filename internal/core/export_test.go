@@ -804,3 +804,393 @@ func TestAclEntryWithExecute(t *testing.T) {
 		}
 	}
 }
+
+// newIterateTree creates a tree simulating Ansible groups with per-group vars.
+func newIterateTree() *config.Tree {
+	t := config.NewTree()
+	_ = t.Set("groups/webservers/vars/http_port", &config.Value{Val: "8080"})
+	_ = t.Set("groups/webservers/vars/max_clients", &config.Value{Val: "200"})
+	_ = t.Set("groups/databases/vars/pg_max_connections", &config.Value{Val: "100"})
+	_ = t.Set("groups/databases/vars/backup_schedule", &config.Value{Val: "0 2 * * *"})
+	_ = t.Set("hosts/web1/ansible_host", &config.Value{Val: "10.0.1.10"})
+	return t
+}
+
+func TestDirectChildren(t *testing.T) {
+	tree := newIterateTree()
+	td := NewTreeData(tree, nil)
+
+	children := directChildren(td, "groups")
+	if len(children) != 2 {
+		t.Fatalf("directChildren(groups) = %v, want 2 entries", children)
+	}
+	if children[0] != "databases" || children[1] != "webservers" {
+		t.Errorf("directChildren(groups) = %v, want [databases webservers]", children)
+	}
+}
+
+func TestDirectChildrenEmpty(t *testing.T) {
+	tree := newIterateTree()
+	td := NewTreeData(tree, nil)
+
+	children := directChildren(td, "nonexistent")
+	if len(children) != 0 {
+		t.Errorf("directChildren(nonexistent) = %v, want empty", children)
+	}
+}
+
+func TestMaterializeChildTree(t *testing.T) {
+	tree := newIterateTree()
+	td := NewTreeData(tree, nil)
+
+	child := materializeChildTree(td, "groups", "webservers")
+	paths := child.List()
+	if len(paths) != 2 {
+		t.Fatalf("materializeChildTree(groups, webservers) has %d paths, want 2: %v", len(paths), paths)
+	}
+
+	v, ok := child.Get("vars/http_port")
+	if !ok || fmt.Sprintf("%v", v.Val) != "8080" {
+		t.Errorf("child tree vars/http_port = %v, want 8080", v)
+	}
+
+	v, ok = child.Get("vars/max_clients")
+	if !ok || fmt.Sprintf("%v", v.Val) != "200" {
+		t.Errorf("child tree vars/max_clients = %v, want 200", v)
+	}
+}
+
+func TestExportIterate(t *testing.T) {
+	dir := t.TempDir()
+
+	// Template that uses IterateData: .Key and .Value (a *TreeData).
+	tmplContent := `# {{ .Key }}
+{{ range $k, $v := .Value.Prefix "vars" }}{{ $k }}: {{ $v }}
+{{ end }}`
+
+	tmplPath := filepath.Join(dir, "group-vars.yml.tmpl")
+	if err := os.WriteFile(tmplPath, []byte(tmplContent), 0o644); err != nil {
+		t.Fatalf("writing template: %v", err)
+	}
+
+	tree := newIterateTree()
+	td := NewTreeData(tree, nil)
+
+	results, err := ExportIterate(context.Background(), td, ExportRunConfig{
+		TemplatePath:  tmplPath,
+		Iterate:       "groups",
+		OutputPattern: "./group_vars/{{ .Key }}.yml",
+		WorkspaceDir:  dir,
+		DryRun:        true,
+	})
+	if err != nil {
+		t.Fatalf("ExportIterate: %v", err)
+	}
+
+	if len(results) != 2 {
+		t.Fatalf("ExportIterate returned %d results, want 2", len(results))
+	}
+
+	// Results are sorted by child name: databases, webservers.
+	if !strings.Contains(results[0].Name, "databases") {
+		t.Errorf("result[0].Name = %q, want to contain 'databases'", results[0].Name)
+	}
+	if !strings.Contains(results[0].Content, "# databases") {
+		t.Errorf("result[0] missing '# databases': %s", results[0].Content)
+	}
+	if !strings.Contains(results[0].Content, "pg_max_connections: 100") {
+		t.Errorf("result[0] missing pg_max_connections: %s", results[0].Content)
+	}
+
+	if !strings.Contains(results[1].Name, "webservers") {
+		t.Errorf("result[1].Name = %q, want to contain 'webservers'", results[1].Name)
+	}
+	if !strings.Contains(results[1].Content, "# webservers") {
+		t.Errorf("result[1] missing '# webservers': %s", results[1].Content)
+	}
+	if !strings.Contains(results[1].Content, "http_port: 8080") {
+		t.Errorf("result[1] missing http_port: %s", results[1].Content)
+	}
+}
+
+func TestExportIterateOutputPaths(t *testing.T) {
+	dir := t.TempDir()
+
+	tmplContent := `{{ .Key }}`
+	tmplPath := filepath.Join(dir, "simple.tmpl")
+	if err := os.WriteFile(tmplPath, []byte(tmplContent), 0o644); err != nil {
+		t.Fatalf("writing template: %v", err)
+	}
+
+	tree := newIterateTree()
+	td := NewTreeData(tree, nil)
+
+	results, err := ExportIterate(context.Background(), td, ExportRunConfig{
+		TemplatePath:  tmplPath,
+		Iterate:       "groups",
+		OutputPattern: "./out/{{ .Key }}.yml",
+		WorkspaceDir:  dir,
+		DryRun:        true,
+	})
+	if err != nil {
+		t.Fatalf("ExportIterate: %v", err)
+	}
+
+	// Verify output paths are resolved relative to workspace dir.
+	for _, r := range results {
+		if !filepath.IsAbs(r.OutputPath) {
+			t.Errorf("output path %q is not absolute", r.OutputPath)
+		}
+		if !strings.HasPrefix(r.OutputPath, dir) {
+			t.Errorf("output path %q is not under workspace dir %q", r.OutputPath, dir)
+		}
+	}
+
+	expected := map[string]bool{
+		filepath.Join(dir, "out/databases.yml"):  true,
+		filepath.Join(dir, "out/webservers.yml"): true,
+	}
+	for _, r := range results {
+		if !expected[r.OutputPath] {
+			t.Errorf("unexpected output path: %q", r.OutputPath)
+		}
+	}
+}
+
+func TestExportIterateWritesToDisk(t *testing.T) {
+	dir := t.TempDir()
+
+	tmplContent := `name={{ .Key }}`
+	tmplPath := filepath.Join(dir, "name.tmpl")
+	if err := os.WriteFile(tmplPath, []byte(tmplContent), 0o644); err != nil {
+		t.Fatalf("writing template: %v", err)
+	}
+
+	tree := newIterateTree()
+	td := NewTreeData(tree, nil)
+
+	_, err := ExportIterate(context.Background(), td, ExportRunConfig{
+		TemplatePath:  tmplPath,
+		Iterate:       "groups",
+		OutputPattern: "./out/{{ .Key }}.txt",
+		WorkspaceDir:  dir,
+		DryRun:        false,
+	})
+	if err != nil {
+		t.Fatalf("ExportIterate: %v", err)
+	}
+
+	// Verify files were written.
+	for _, name := range []string{"databases", "webservers"} {
+		outPath := filepath.Join(dir, "out", name+".txt")
+		data, err := os.ReadFile(outPath)
+		if err != nil {
+			t.Errorf("reading %s: %v", outPath, err)
+			continue
+		}
+		want := "name=" + name
+		if string(data) != want {
+			t.Errorf("file %s = %q, want %q", name, string(data), want)
+		}
+	}
+}
+
+func TestExportIterateNoChildren(t *testing.T) {
+	dir := t.TempDir()
+
+	tmplContent := `{{ .Key }}`
+	tmplPath := filepath.Join(dir, "empty.tmpl")
+	if err := os.WriteFile(tmplPath, []byte(tmplContent), 0o644); err != nil {
+		t.Fatalf("writing template: %v", err)
+	}
+
+	tree := newIterateTree()
+	td := NewTreeData(tree, nil)
+
+	results, err := ExportIterate(context.Background(), td, ExportRunConfig{
+		TemplatePath:  tmplPath,
+		Iterate:       "nonexistent",
+		OutputPattern: "./out/{{ .Key }}.yml",
+		WorkspaceDir:  dir,
+		DryRun:        true,
+	})
+	if err != nil {
+		t.Fatalf("ExportIterate: %v", err)
+	}
+	if len(results) != 0 {
+		t.Errorf("expected 0 results for empty iterate, got %d", len(results))
+	}
+}
+
+func TestExportIterateRequiresTemplate(t *testing.T) {
+	td := NewTreeData(config.NewTree(), nil)
+	_, err := ExportIterate(context.Background(), td, ExportRunConfig{
+		Format:        "json",
+		Iterate:       "groups",
+		OutputPattern: "./out/{{ .Key }}.yml",
+	})
+	if err == nil {
+		t.Error("ExportIterate with format should fail")
+	}
+}
+
+func TestExportIterateRequiresOutputPattern(t *testing.T) {
+	dir := t.TempDir()
+	tmplPath := filepath.Join(dir, "test.tmpl")
+	if err := os.WriteFile(tmplPath, []byte("test"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	td := NewTreeData(config.NewTree(), nil)
+	_, err := ExportIterate(context.Background(), td, ExportRunConfig{
+		TemplatePath: tmplPath,
+		Iterate:      "groups",
+	})
+	if err == nil {
+		t.Error("ExportIterate without output-pattern should fail")
+	}
+}
+
+func TestExportAllWithIterate(t *testing.T) {
+	dir := t.TempDir()
+
+	// Regular template.
+	regularTmpl := filepath.Join(dir, "regular.tmpl")
+	if err := os.WriteFile(regularTmpl, []byte(`app={{ .Get "hosts/web1/ansible_host" }}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Iterate template.
+	iterTmpl := filepath.Join(dir, "iter.tmpl")
+	if err := os.WriteFile(iterTmpl, []byte(`group={{ .Key }}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	tree := newIterateTree()
+	td := NewTreeData(tree, nil)
+
+	configs := []ExportRunConfig{
+		{TemplatePath: regularTmpl, DryRun: true},
+		{TemplatePath: iterTmpl, Iterate: "groups", OutputPattern: "./out/{{ .Key }}.yml", WorkspaceDir: dir, DryRun: true},
+	}
+
+	results, err := ExportAll(context.Background(), td, configs)
+	if err != nil {
+		t.Fatalf("ExportAll: %v", err)
+	}
+
+	// 1 regular + 2 iterate children = 3 results.
+	if len(results) != 3 {
+		t.Fatalf("ExportAll returned %d results, want 3", len(results))
+	}
+
+	if results[0].Content != "app=10.0.1.10" {
+		t.Errorf("result[0] = %q, want app=10.0.1.10", results[0].Content)
+	}
+	if !strings.Contains(results[1].Content, "group=databases") {
+		t.Errorf("result[1] = %q, want group=databases", results[1].Content)
+	}
+	if !strings.Contains(results[2].Content, "group=webservers") {
+		t.Errorf("result[2] = %q, want group=webservers", results[2].Content)
+	}
+}
+
+func TestExportIterateOutputPatternTraversal(t *testing.T) {
+	// Path traversal in output-pattern is caught at workspace validation time
+	// (ValidateWorkspace rejects output-pattern containing ".."), not at
+	// runtime, because filepath.Join normalizes ".." away. This test verifies
+	// that containsPathTraversal detects the raw pattern.
+	if !containsPathTraversal("../escape/{{ .Key }}.yml") {
+		t.Error("containsPathTraversal should detect '..' in output-pattern")
+	}
+	if containsPathTraversal("./safe/{{ .Key }}.yml") {
+		t.Error("containsPathTraversal should not flag safe output-pattern")
+	}
+}
+
+func TestExportIterateWithFormat(t *testing.T) {
+	td := NewTreeData(newIterateTree(), nil)
+	// iterate + built-in format (no template) should fail.
+	_, err := ExportIterate(context.Background(), td, ExportRunConfig{
+		Format:        "yaml",
+		Iterate:       "groups",
+		OutputPattern: "./out/{{ .Key }}.yml",
+	})
+	if err == nil {
+		t.Error("ExportIterate with format (no template) should fail")
+	}
+}
+
+func TestIterateWithComponentFiltering(t *testing.T) {
+	// Build a tree with two groups; disable one via components.
+	tree := config.NewTree()
+	_ = tree.Set("groups/webservers/vars/port", &config.Value{Val: "80"})
+	_ = tree.Set("groups/databases/vars/port", &config.Value{Val: "5432"})
+
+	defs := []ComponentDef{
+		{Name: "web", Paths: []string{"groups/webservers/"}, Mandatory: false},
+		{Name: "db", Paths: []string{"groups/databases/"}, Mandatory: false},
+	}
+	cm, err := NewComponentManager(defs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = cm.Enable("web")
+	// db stays disabled
+
+	filtered := cm.FilterTree(tree)
+	td := NewTreeData(filtered, cm)
+
+	dir := t.TempDir()
+	tmplPath := filepath.Join(dir, "g.tmpl")
+	if err := os.WriteFile(tmplPath, []byte("{{ .Key }}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	results, err := ExportIterate(context.Background(), td, ExportRunConfig{
+		TemplatePath:  tmplPath,
+		Iterate:       "groups",
+		OutputPattern: "./out/{{ .Key }}.yml",
+		WorkspaceDir:  dir,
+		DryRun:        true,
+	})
+	if err != nil {
+		t.Fatalf("ExportIterate: %v", err)
+	}
+
+	// Only webservers should appear (databases is disabled).
+	if len(results) != 1 {
+		t.Fatalf("got %d results, want 1 (only enabled component)", len(results))
+	}
+	if results[0].Content != "webservers" {
+		t.Errorf("result content = %q, want webservers", results[0].Content)
+	}
+}
+
+func TestExpandTemplatesWithIterate(t *testing.T) {
+	templates := []ExportTemplate{
+		{Name: "regular", Template: "a.tmpl", Output: "out.txt"},
+		{Name: "groups", Template: "b.tmpl", Iterate: "groups", OutputPattern: "./gv/{{ .Key }}.yml"},
+	}
+
+	configs := ExpandTemplates(templates, "/workspace", false)
+	if len(configs) != 2 {
+		t.Fatalf("ExpandTemplates returned %d configs, want 2", len(configs))
+	}
+
+	// Regular template: iterate fields empty.
+	if configs[0].Iterate != "" {
+		t.Errorf("configs[0].Iterate = %q, want empty", configs[0].Iterate)
+	}
+
+	// Iterate template: iterate and output-pattern set, workspace dir set.
+	if configs[1].Iterate != "groups" {
+		t.Errorf("configs[1].Iterate = %q, want groups", configs[1].Iterate)
+	}
+	if configs[1].OutputPattern != "./gv/{{ .Key }}.yml" {
+		t.Errorf("configs[1].OutputPattern = %q", configs[1].OutputPattern)
+	}
+	if configs[1].WorkspaceDir != "/workspace" {
+		t.Errorf("configs[1].WorkspaceDir = %q, want /workspace", configs[1].WorkspaceDir)
+	}
+}

@@ -33,6 +33,15 @@ type ExportRunConfig struct {
 	AllComponents bool
 	// DryRun prints output without writing to disk.
 	DryRun bool
+	// Iterate is a tree prefix whose direct children are iterated. When set,
+	// the template is rendered once per child with IterateData as the dot value.
+	Iterate string
+	// OutputPattern is a Go template string that produces the output filename
+	// for each iterate child. Available variables: .Key (child name).
+	OutputPattern string
+	// WorkspaceDir is used to resolve relative output-pattern paths for iterate
+	// exports. Set automatically by ExpandTemplates.
+	WorkspaceDir string
 }
 
 // ExportResult holds the result of a single export operation.
@@ -48,12 +57,17 @@ type ExportResult struct {
 // Export renders a single export template or built-in format against the
 // given tree and component manager. The tree is filtered through the
 // ComponentManager unless AllComponents is set.
+//
+// When cfg.Iterate is set, the template is rendered once per direct child
+// of the iterate prefix and multiple results are returned via ExportIterate.
+// For non-iterate configs, a single result is returned.
 func Export(_ context.Context, tree *TreeData, cfg ExportRunConfig) (*ExportResult, error) {
 	Logger().Debug("exporting configuration",
 		"format", cfg.Format,
 		"template", cfg.TemplatePath,
 		"output", cfg.OutputPath,
 		"prefix", cfg.Prefix,
+		"iterate", cfg.Iterate,
 		"dry_run", cfg.DryRun)
 
 	var content string
@@ -99,6 +113,157 @@ func Export(_ context.Context, tree *TreeData, cfg ExportRunConfig) (*ExportResu
 	return result, nil
 }
 
+// ExportIterate renders an iterate export: for each direct child of the
+// iterate prefix, the template is rendered with IterateData as the dot value,
+// and the output path is determined by evaluating OutputPattern.
+func ExportIterate(_ context.Context, tree *TreeData, cfg ExportRunConfig) ([]*ExportResult, error) {
+	if cfg.TemplatePath == "" {
+		return nil, fmt.Errorf("iterate export requires a template (built-in formats are not supported)")
+	}
+	if cfg.OutputPattern == "" {
+		return nil, fmt.Errorf("iterate export requires output-pattern")
+	}
+
+	children := directChildren(tree, cfg.Iterate)
+	if len(children) == 0 {
+		Logger().Debug("iterate export: no children found", "prefix", cfg.Iterate)
+		return nil, nil
+	}
+
+	// Parse the output-pattern template once.
+	outTmpl, err := template.New("output-pattern").Parse(cfg.OutputPattern)
+	if err != nil {
+		return nil, fmt.Errorf("parsing output-pattern %q: %w", cfg.OutputPattern, err)
+	}
+
+	var results []*ExportResult
+	for _, childKey := range children {
+		childTree := materializeChildTree(tree, cfg.Iterate, childKey)
+
+		iterData := IterateData{
+			Key:   childKey,
+			Value: NewTreeData(childTree, tree.components),
+		}
+
+		// Resolve output path from pattern.
+		var outBuf bytes.Buffer
+		if err := outTmpl.Execute(&outBuf, iterData); err != nil {
+			return nil, fmt.Errorf("executing output-pattern for child %q: %w", childKey, err)
+		}
+		outputPath := outBuf.String()
+		if outputPath != "" && !filepath.IsAbs(outputPath) && cfg.WorkspaceDir != "" {
+			outputPath = filepath.Join(cfg.WorkspaceDir, outputPath)
+		}
+
+		// Render the template with IterateData.
+		opts := &exportFileOptions{}
+		content, err := renderTemplateFile(iterData, cfg.TemplatePath, opts)
+		if err != nil {
+			return nil, fmt.Errorf("rendering iterate template for child %q: %w", childKey, err)
+		}
+
+		result := &ExportResult{
+			Name:       fmt.Sprintf("%s[%s]", filepath.Base(cfg.TemplatePath), childKey),
+			Content:    content,
+			OutputPath: outputPath,
+		}
+
+		if !cfg.DryRun && outputPath != "" && outputPath != "-" {
+			if err := writeExportFile(outputPath, []byte(content), opts); err != nil {
+				return nil, err
+			}
+			Logger().Debug("iterate export written", "child", childKey, "path", outputPath)
+		}
+
+		results = append(results, result)
+	}
+	return results, nil
+}
+
+// directChildren returns sorted names of direct children under the given
+// prefix in the tree. A direct child is a unique first segment after the
+// prefix. For example, with prefix "groups" and paths "groups/web/port"
+// and "groups/db/host", the direct children are ["db", "web"].
+func directChildren(td *TreeData, prefix string) []string {
+	p := prefix
+	if !strings.HasSuffix(p, "/") {
+		p += "/"
+	}
+	seen := make(map[string]bool)
+	for _, path := range td.tree.List() {
+		if !strings.HasPrefix(path, p) {
+			continue
+		}
+		rest := strings.TrimPrefix(path, p)
+		if rest == "" {
+			continue
+		}
+		child, _, _ := strings.Cut(rest, "/")
+		seen[child] = true
+	}
+	return slices.Sorted(maps.Keys(seen))
+}
+
+// materializeChildTree creates a concrete config.Tree containing only the
+// paths under prefix/childKey, with the prefix/childKey/ stripped from keys.
+// This avoids the O(N*M) cost of using prefixTree for each child.
+func materializeChildTree(td *TreeData, prefix, childKey string) *config.Tree {
+	childPrefix := prefix + "/" + childKey + "/"
+	tree := config.NewTree()
+	for _, path := range td.tree.List() {
+		if !strings.HasPrefix(path, childPrefix) {
+			continue
+		}
+		v, ok := td.tree.Get(path)
+		if !ok {
+			continue
+		}
+		relPath := strings.TrimPrefix(path, childPrefix)
+		if relPath == "" {
+			continue
+		}
+		// Copy the value to avoid shared references.
+		_ = tree.Set(relPath, &v)
+	}
+	return tree
+}
+
+// ExpandTemplates converts workspace ExportTemplates into ExportRunConfigs by
+// resolving relative paths against wsDir. The dryRun flag is applied to all
+// configs. This is the single source of truth for template-to-config conversion,
+// used by both the CLI and UIController.
+func ExpandTemplates(templates []ExportTemplate, wsDir string, dryRun bool) []ExportRunConfig {
+	configs := make([]ExportRunConfig, 0, len(templates))
+	for _, tmpl := range templates {
+		cfg := ExportRunConfig{
+			DryRun:        dryRun,
+			Prefix:        tmpl.Prefix,
+			Iterate:       tmpl.Iterate,
+			OutputPattern: tmpl.OutputPattern,
+			WorkspaceDir:  wsDir,
+		}
+		if tmpl.Template != "" {
+			p := tmpl.Template
+			if !filepath.IsAbs(p) {
+				p = filepath.Join(wsDir, p)
+			}
+			cfg.TemplatePath = p
+		}
+		if tmpl.Format != "" {
+			cfg.Format = tmpl.Format
+		}
+		if tmpl.Output != "" {
+			p := tmpl.Output
+			if !filepath.IsAbs(p) {
+				p = filepath.Join(wsDir, p)
+			}
+			cfg.OutputPath = p
+		}
+		configs = append(configs, cfg)
+	}
+	return configs
+}
+
 // ExportAll runs all exports defined in the workspace configuration.
 // If workspaceDir is provided in any config and no configs are dry-run,
 // a rollback snapshot is saved before writing files.
@@ -125,11 +290,19 @@ func ExportAll(ctx context.Context, tree *TreeData, configs []ExportRunConfig) (
 
 	results := make([]*ExportResult, 0, len(configs))
 	for _, cfg := range configs {
-		r, err := Export(ctx, tree, cfg)
-		if err != nil {
-			return results, err
+		if cfg.Iterate != "" {
+			iterResults, err := ExportIterate(ctx, tree, cfg)
+			if err != nil {
+				return results, err
+			}
+			results = append(results, iterResults...)
+		} else {
+			r, err := Export(ctx, tree, cfg)
+			if err != nil {
+				return results, err
+			}
+			results = append(results, r)
 		}
-		results = append(results, r)
 	}
 	return results, nil
 }
@@ -193,25 +366,26 @@ func (pt *prefixTree) List() []string {
 	return out
 }
 
-// renderTemplateFile reads a template file and executes it with the TreeData.
-// If opts is non-nil, template functions like fileGroupID and fileMode will
-// capture their values into it.
-func renderTemplateFile(td *TreeData, path string, opts *exportFileOptions) (string, error) {
+// renderTemplateFile reads a template file and executes it with the given data
+// as the dot value. For normal exports data is *TreeData; for iterate exports
+// data is IterateData. If opts is non-nil, template functions like fileACL and
+// fileMode will capture their values into it.
+func renderTemplateFile(dotData any, path string, opts *exportFileOptions) (string, error) {
 	if containsPathTraversal(path) {
 		return "", fmt.Errorf("template path %q: path traversal (.. segments) is not allowed", path)
 	}
-	data, err := os.ReadFile(path)
+	raw, err := os.ReadFile(path)
 	if err != nil {
 		return "", fmt.Errorf("reading template: %w", err)
 	}
 
-	tmpl, err := template.New(filepath.Base(path)).Funcs(templateFuncMap(opts)).Parse(string(data))
+	tmpl, err := template.New(filepath.Base(path)).Funcs(templateFuncMap(opts)).Parse(string(raw))
 	if err != nil {
 		return "", fmt.Errorf("parsing template: %w", err)
 	}
 
 	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, td); err != nil {
+	if err := tmpl.Execute(&buf, dotData); err != nil {
 		return "", fmt.Errorf("executing template: %w", err)
 	}
 	return buf.String(), nil

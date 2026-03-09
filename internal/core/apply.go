@@ -173,6 +173,94 @@ func Apply(ctx context.Context, cfg ApplyRunConfig, output chan<- ApplyOutput) (
 	return result, nil
 }
 
+// RunPreChecks executes the pre-check commands sequentially. Each command
+// runs via "sh -c" with the same workdir and env as the main apply command.
+// Output is streamed to the output channel. On the first non-zero exit,
+// RunPreChecks returns an error identifying which command failed.
+// Returns nil if all pre-checks pass (or if none are configured).
+func RunPreChecks(ctx context.Context, cfg ApplyRunConfig, output chan<- ApplyOutput) error {
+	if len(cfg.Target.PreCheck) == 0 {
+		return nil
+	}
+
+	// Determine working directory.
+	workdir := cfg.WorkspaceDir
+	if cfg.Target.Workdir != "" {
+		if filepath.IsAbs(cfg.Target.Workdir) {
+			workdir = cfg.Target.Workdir
+		} else {
+			workdir = filepath.Join(cfg.WorkspaceDir, cfg.Target.Workdir)
+		}
+	}
+
+	env := buildApplyEnv(cfg)
+
+	for i, check := range cfg.Target.PreCheck {
+		label := fmt.Sprintf("[pre-check %d/%d] %s", i+1, len(cfg.Target.PreCheck), check)
+		output <- ApplyOutput{
+			Line:   label,
+			Stream: "stdout",
+			Time:   time.Now(),
+		}
+
+		cmd := exec.CommandContext(ctx, "sh", "-c", check)
+		cmd.Dir = workdir
+		cmd.Env = env
+
+		// Pipe stdout and stderr.
+		stdoutPipe, err := cmd.StdoutPipe()
+		if err != nil {
+			return fmt.Errorf("pre-check %d: creating stdout pipe: %w", i+1, err)
+		}
+		stderrPipe, err := cmd.StderrPipe()
+		if err != nil {
+			return fmt.Errorf("pre-check %d: creating stderr pipe: %w", i+1, err)
+		}
+
+		if err := cmd.Start(); err != nil {
+			return fmt.Errorf("pre-check %d (%s): failed to start: %w", i+1, check, err)
+		}
+
+		// Scan stdout and stderr concurrently.
+		done := make(chan struct{}, 2)
+		go func() {
+			scanner := bufio.NewScanner(stdoutPipe)
+			for scanner.Scan() {
+				output <- ApplyOutput{
+					Line:   scanner.Text(),
+					Stream: "stdout",
+					Time:   time.Now(),
+				}
+			}
+			done <- struct{}{}
+		}()
+		go func() {
+			scanner := bufio.NewScanner(stderrPipe)
+			for scanner.Scan() {
+				output <- ApplyOutput{
+					Line:   scanner.Text(),
+					Stream: "stderr",
+					Time:   time.Now(),
+				}
+			}
+			done <- struct{}{}
+		}()
+
+		<-done
+		<-done
+
+		if err := cmd.Wait(); err != nil {
+			var exitErr *exec.ExitError
+			if errors.As(err, &exitErr) {
+				return fmt.Errorf("pre-check %d failed (exit code %d): %s", i+1, exitErr.ExitCode(), check)
+			}
+			return fmt.Errorf("pre-check %d (%s): %w", i+1, check, err)
+		}
+	}
+
+	return nil
+}
+
 // buildApplyEnv constructs the environment for the apply subprocess.
 func buildApplyEnv(cfg ApplyRunConfig) []string {
 	// Start with current environment.

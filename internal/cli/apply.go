@@ -102,6 +102,12 @@ func runApply(cmd *cobra.Command, args []string) error {
 		if runCfg.Target.PreExport && !runCfg.SkipExport {
 			fmt.Fprintf(w, "Pre-export: enabled\n")
 		}
+		if len(runCfg.Target.PreCheck) > 0 {
+			fmt.Fprintf(w, "Pre-checks:\n")
+			for i, check := range runCfg.Target.PreCheck {
+				fmt.Fprintf(w, "  [%d/%d] %s\n", i+1, len(runCfg.Target.PreCheck), check)
+			}
+		}
 		if len(runCfg.Target.Env) > 0 {
 			fmt.Fprintf(w, "Environment:\n")
 			for k, v := range runCfg.Target.Env {
@@ -126,31 +132,7 @@ func runApply(cmd *cobra.Command, args []string) error {
 				return fmt.Errorf("preparing export data: %w", err)
 			}
 
-			var configs []core.ExportRunConfig
-			for _, tmpl := range ws.Export.Templates {
-				cfg := core.ExportRunConfig{
-					Prefix: tmpl.Prefix,
-				}
-				if tmpl.Template != "" {
-					p := tmpl.Template
-					if !filepath.IsAbs(p) {
-						p = filepath.Join(ws.Dir, p)
-					}
-					cfg.TemplatePath = p
-				}
-				if tmpl.Format != "" {
-					cfg.Format = tmpl.Format
-				}
-				if tmpl.Output != "" {
-					p := tmpl.Output
-					if !filepath.IsAbs(p) {
-						p = filepath.Join(ws.Dir, p)
-					}
-					cfg.OutputPath = p
-				}
-				configs = append(configs, cfg)
-			}
-
+			configs := core.ExpandTemplates(ws.Export.Templates, ws.Dir, false)
 			results, err := core.ExportAll(ctx, td, configs)
 			if err != nil {
 				return fmt.Errorf("pre-export: %w", err)
@@ -160,6 +142,26 @@ func runApply(cmd *cobra.Command, args []string) error {
 					fmt.Fprintf(w, "Exporting: %s ... done\n", filepath.Base(r.OutputPath))
 				}
 			}
+		}
+	}
+
+	// Run pre-checks.
+	if len(runCfg.Target.PreCheck) > 0 {
+		preCheckOutput := make(chan core.ApplyOutput, 100)
+		preCheckDone := make(chan error, 1)
+		go func() {
+			defer close(preCheckOutput)
+			preCheckDone <- core.RunPreChecks(ctx, runCfg, preCheckOutput)
+		}()
+		for line := range preCheckOutput {
+			if line.Stream == "stderr" {
+				fmt.Fprintln(cmd.ErrOrStderr(), line.Line)
+			} else {
+				fmt.Fprintln(w, line.Line)
+			}
+		}
+		if err := <-preCheckDone; err != nil {
+			return fmt.Errorf("pre-check: %w", err)
 		}
 	}
 

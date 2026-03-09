@@ -1,0 +1,30 @@
+# Hosts
+hosts:
+  webserver-1:
+    ansible_host: "10.0.1.10"
+    ansible_user: deploy
+    ansible_port: "22"
+    vars:
+      nginx_workers: "4"
+  dbserver-1:
+    ansible_host: "10.0.1.20"
+    ansible_user: deploy
+    vars:
+      pg_max_connections: "200"
+
+# Groups
+groups:
+  webservers:
+    members: "webserver-1"
+    vars:
+      http_port: "8080"
+  databases:
+    members: "dbserver-1"
+    vars:
+      backup_schedule: "0 2 * * *"
+
+# Ansible configuration
+ansible:
+  config:
+    remote_tmp: /tmp/.ansible/tmp
+    timeout: "30"

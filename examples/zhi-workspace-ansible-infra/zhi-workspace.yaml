@@ -1,0 +1,13 @@
+name: zhi-workspace-ansible-infra
+version: 0.1.0
+description: Workspace template for managing Ansible infrastructure with zhi
+author: MrWong99
+license: Apache-2.0
+tools:
+  - name: ansible-playbook
+    version: ">=2.9"
+keywords:
+  - ansible
+  - infrastructure
+  - provisioning
+  - ssh

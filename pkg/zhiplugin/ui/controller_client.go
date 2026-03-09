@@ -73,11 +73,13 @@ func (c *controllerGRPCClient) ExportTemplates(ctx context.Context) ([]ExportTem
 	templates := make([]ExportTemplate, 0, len(resp.GetTemplates()))
 	for _, m := range resp.GetTemplates() {
 		templates = append(templates, ExportTemplate{
-			Name:     m.GetName(),
-			Template: m.GetTemplate(),
-			Format:   m.GetFormat(),
-			Output:   m.GetOutput(),
-			Prefix:   m.GetPrefix(),
+			Name:          m.GetName(),
+			Template:      m.GetTemplate(),
+			Format:        m.GetFormat(),
+			Output:        m.GetOutput(),
+			Prefix:        m.GetPrefix(),
+			Iterate:       m.GetIterate(),
+			OutputPattern: m.GetOutputPattern(),
 		})
 	}
 	return templates, nil
