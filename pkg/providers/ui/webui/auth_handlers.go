@@ -52,9 +52,9 @@ func toAuthMethodData(methods []ui.StoreAuthMethod) []authMethodData {
 func (s *Server) handleLoginPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	// If already authenticated, redirect to /tree.
+	// If already authenticated or no auth required, redirect to /tree.
 	session, err := s.ctrl.StoreAuthStatus(ctx)
-	if err == nil && session.Status == ui.StoreSessionAuthenticated {
+	if err == nil && (session.Status == ui.StoreSessionAuthenticated || session.Status == ui.StoreSessionNone) {
 		http.Redirect(w, r, "/tree", http.StatusSeeOther)
 		return
 	}
@@ -62,6 +62,12 @@ func (s *Server) handleLoginPage(w http.ResponseWriter, r *http.Request) {
 	methods, err := s.ctrl.StoreAuthMethods(ctx)
 	if err != nil {
 		s.renderError(w, r, http.StatusInternalServerError, "Failed to load auth methods: "+err.Error())
+		return
+	}
+
+	// No auth methods means the store doesn't require auth — skip login.
+	if len(methods) == 0 {
+		http.Redirect(w, r, "/tree", http.StatusSeeOther)
 		return
 	}
 
@@ -231,6 +237,11 @@ func (s *Server) handleAuthStatus(w http.ResponseWriter, r *http.Request) {
 // requireAuth middleware checks StoreAuthStatus and redirects to /login
 // when authentication is needed. It stores the authentication state in
 // the request context so templates can conditionally render UI elements.
+//
+// When the session is unauthenticated, we probe the store's auth methods
+// to distinguish "no auth required" (SessionNone) from "needs login".
+// This handles stores like jsonfile that report Auth=false but where the
+// SessionManager hasn't yet transitioned from its default state.
 func (s *Server) requireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -245,8 +256,18 @@ func (s *Server) requireAuth(next http.Handler) http.Handler {
 		case ui.StoreSessionAuthenticated:
 			ctx = context.WithValue(ctx, authenticatedCtxKey, true)
 			next.ServeHTTP(w, r.WithContext(ctx))
+		case ui.StoreSessionUnauthenticated:
+			// Check if the store actually requires auth. Stores without
+			// auth support (e.g. jsonfile) return no methods, meaning
+			// login is not needed — treat as SessionNone.
+			methods, mErr := s.ctrl.StoreAuthMethods(ctx)
+			if mErr == nil && len(methods) == 0 {
+				next.ServeHTTP(w, r)
+				return
+			}
+			redirectToLogin(w, r)
 		default:
-			// unauthenticated or expired
+			// expired
 			redirectToLogin(w, r)
 		}
 	})
