@@ -2947,6 +2947,9 @@ func TestRequireAuthRedirectWhenUnauthenticated(t *testing.T) {
 	ctrl := &authMockController{
 		mockController: *newMockController(),
 		authStatus:     ui.StoreSessionUnauthenticated,
+		authMethods: []ui.StoreAuthMethod{
+			{Type: "userpass", Description: "Username & Password"},
+		},
 	}
 	base, _ := startTestServerWithCtrl(t, ctrl)
 	client := &http.Client{CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
@@ -2993,6 +2996,9 @@ func TestRequireAuthHTMXRedirect(t *testing.T) {
 	ctrl := &authMockController{
 		mockController: *newMockController(),
 		authStatus:     ui.StoreSessionUnauthenticated,
+		authMethods: []ui.StoreAuthMethod{
+			{Type: "userpass", Description: "Username & Password"},
+		},
 	}
 	base, _ := startTestServerWithCtrl(t, ctrl)
 	req, err := http.NewRequest("GET", base+"/tree", nil)
