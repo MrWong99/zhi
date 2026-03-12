@@ -173,3 +173,24 @@ Preview exported output without writing files:
 zhi export --format json --dry-run
 zhi export --template ./templates/my.tmpl --dry-run
 ```
+
+## Diff and Drift Detection
+
+Compare what zhi would export against the files currently on disk:
+
+```sh
+zhi export --diff   # Show unified diff for all workspace exports
+```
+
+For continuous monitoring, use `zhi drift` to detect when exported files have been modified outside of zhi (e.g. manual edits, another process overwriting a config file):
+
+```sh
+zhi drift                                          # One-shot check
+zhi drift --json                                   # Machine-readable output
+zhi drift --watch --interval 5m                    # Continuous monitoring
+zhi drift --watch --on-drift "notify-send 'drift'" # With notification hook
+```
+
+The drift command re-renders all workspace export templates and compares the result against files on disk. It returns exit code 0 when everything is in sync, 1 when drift is detected, and 2 on errors — making it suitable for CI/CD pipelines.
+
+See [CLI Reference](cli-reference.md#zhi-drift) for the full flag reference.
