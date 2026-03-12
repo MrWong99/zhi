@@ -16,6 +16,9 @@ var (
 func main() {
 	cli.SetVersionInfo(version, commit, date)
 	if err := cli.Execute(); err != nil {
+		if code := cli.ExitCode(err); code != 0 {
+			os.Exit(code)
+		}
 		os.Exit(1)
 	}
 }
