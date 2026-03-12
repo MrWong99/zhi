@@ -162,6 +162,55 @@ zhi component info database     # Show detailed component info
 
 See [Components](components.md) for details on how components work.
 
+### `zhi drift`
+
+Detect configuration drift by comparing exported files on disk against what the workspace would currently generate.
+
+```sh
+zhi drift                                          # Check all exports for drift
+zhi drift --json                                   # JSON output for scripting/CI
+zhi drift --watch --interval 5m                    # Watch mode (foreground)
+zhi drift --watch --interval 5m --on-drift "cmd"   # Watch with notification hook
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--json` | `false` | Output as JSON |
+| `--watch` | `false` | Run continuously, checking at `--interval` |
+| `--interval` | `1m` | Check interval for watch mode (e.g. `30s`, `5m`) |
+| `--on-drift` | | Shell command to run when drift is detected |
+
+**Exit codes:**
+
+| Code | Meaning |
+|------|---------|
+| `0` | No drift (all files in sync) |
+| `1` | Drift detected |
+| `2` | Error during drift check |
+
+**Example output:**
+
+```
+Drift Detection Report
+
+DRIFTED (1):
+  ansible/inventory/hosts.yml:
+    --- ansible/inventory/hosts.yml (current)
+    +++ ansible/inventory/hosts.yml (expected)
+    @@ -10,3 +10,3 @@
+    -upstream: 8.8.8.8
+    +upstream: 1.1.1.1
+
+IN SYNC (3):
+  ansible/group_vars/webservers.yml
+  ansible/group_vars/databases.yml
+  config/app.toml
+
+Run `zhi export` to reconcile, or `zhi export --diff` for full details.
+```
+
+**Watch mode** only outputs on state transitions (clean→drifted or drifted→clean). The first check treats the initial state as unknown, so if drift exists at startup the hook fires immediately. On graceful shutdown (SIGINT/SIGTERM) the command exits 0.
+
 ### `zhi export`
 
 Export configuration to files using templates or built-in formats.

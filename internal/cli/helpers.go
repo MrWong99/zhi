@@ -2,12 +2,28 @@ package cli
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 )
+
+// exitCoder is implemented by errors that carry a specific exit code.
+type exitCoder interface {
+	ExitCode() int
+}
+
+// ExitCode extracts an exit code from an error. Returns 0 if the error
+// does not implement exitCoder.
+func ExitCode(err error) int {
+	var ec exitCoder
+	if ok := errors.As(err, &ec); ok {
+		return ec.ExitCode()
+	}
+	return 0
+}
 
 // stateFilePath returns the path to the component state file.
 func stateFilePath(wsDir string) string {
