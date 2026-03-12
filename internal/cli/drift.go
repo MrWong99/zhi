@@ -287,11 +287,11 @@ func toJSONOutput(result *core.DriftCheckResult) driftJSONOutput {
 // driftDetectedError signals exit code 1.
 type driftDetectedError struct{}
 
-func (e *driftDetectedError) Error() string   { return "drift detected" }
-func (e *driftDetectedError) ExitCode() int   { return 1 }
+func (e *driftDetectedError) Error() string { return "drift detected" }
+func (e *driftDetectedError) ExitCode() int { return 1 }
 
 // driftCheckError signals exit code 2.
 type driftCheckError struct{}
 
-func (e *driftCheckError) Error() string   { return "drift check encountered errors" }
-func (e *driftCheckError) ExitCode() int   { return 2 }
+func (e *driftCheckError) Error() string { return "drift check encountered errors" }
+func (e *driftCheckError) ExitCode() int { return 2 }
