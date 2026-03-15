@@ -5,6 +5,7 @@
 [![CI](https://github.com/MrWong99/zhi/actions/workflows/ci.yml/badge.svg)](https://github.com/MrWong99/zhi/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/MrWong99/zhi?sort=semver)](https://github.com/MrWong99/zhi/releases/latest)
 [![Go Report Card](https://goreportcard.com/badge/github.com/MrWong99/zhi)](https://goreportcard.com/report/github.com/MrWong99/zhi)
+[![codecov](https://codecov.io/gh/MrWong99/zhi/graph/badge.svg?token=VS30KQT925)](https://codecov.io/gh/MrWong99/zhi)
 [![Go](https://img.shields.io/badge/Go-1.26+-00ADD8?style=flat&logo=go)](https://go.dev)
 [![Go Reference](https://pkg.go.dev/badge/github.com/MrWong99/zhi.svg)](https://pkg.go.dev/github.com/MrWong99/zhi)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)

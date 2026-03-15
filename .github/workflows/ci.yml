@@ -58,11 +58,29 @@ jobs:
         with:
           go-version-file: "go.mod"
 
-      - name: Run tests
-        run: make test
+      - name: Install gotestsum
+        run: go install gotest.tools/gotestsum@latest
 
-      - name: Run tests with coverage
-        run: make test-cover
+      - name: Run tests with coverage and JUnit output
+        run: >-
+          gotestsum
+          --junitfile junit.xml
+          --format testdox
+          -- -race -count=1 -coverprofile=coverage.txt -timeout 10m ./...
+
+      - name: Upload coverage to Codecov
+        if: ${{ !cancelled() && matrix.os == 'ubuntu-latest' }}
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.txt
+          fail_ci_if_error: false
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() && matrix.os == 'ubuntu-latest' }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   build:
     name: Build (${{ matrix.goos }}/${{ matrix.goarch }})
