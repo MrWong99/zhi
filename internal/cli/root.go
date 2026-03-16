@@ -63,24 +63,22 @@ func Execute() error {
 
 	rootCmd.SetContext(ctx)
 
-	// Configure logging level based on --verbose flag. We use a
-	// PersistentPreRun on the root command to set this early.
-	origPreRun := rootCmd.PersistentPreRun
-	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
-		if verbose {
-			core.SetLogLevel(hclog.Trace)
-			core.Logger().Debug("verbose logging enabled")
-		}
-		if origPreRun != nil {
-			origPreRun(cmd, args)
-		}
-	}
-
 	err := rootCmd.Execute()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error:", err)
 	}
 	return err
+}
+
+// applyVerbose configures the log level if --verbose was passed. Subcommand
+// PersistentPreRunE hooks must call this because Cobra (without
+// EnableTraverseRunHooks) only runs the closest persistent hook, skipping
+// the root command's PersistentPreRun.
+func applyVerbose() {
+	if verbose {
+		core.SetLogLevel(hclog.Trace)
+		core.Logger().Debug("verbose logging enabled")
+	}
 }
 
 // engineFromCmd returns the Engine stored in the command's context.
@@ -113,6 +111,7 @@ func registryFromCmd(cmd *cobra.Command) (*core.Registry, error) {
 // withEngine is a PersistentPreRunE that loads the workspace config,
 // creates a registry and engine, and stores them in the command context.
 func withEngine(cmd *cobra.Command, _ []string) error {
+	applyVerbose()
 	log := core.Logger()
 
 	dir := workspace
@@ -151,8 +150,12 @@ func withEngine(cmd *cobra.Command, _ []string) error {
 	log.Info("engine initialized")
 
 	// Register cleanup to kill plugin processes on shutdown.
+	// Capture the current context before SetContext to avoid a data race
+	// between this goroutine reading cmd.Context() and the main goroutine
+	// writing it via cmd.SetContext() below.
+	shutdownCtx := cmd.Context()
 	go func() {
-		<-cmd.Context().Done()
+		<-shutdownCtx.Done()
 		log.Info("shutting down engine, killing plugin processes")
 		eng.Close()
 	}()
@@ -179,6 +182,7 @@ func withEngine(cmd *cobra.Command, _ []string) error {
 // (no workspace needed). It still discovers external plugins from the
 // default plugin directory.
 func withRegistry(cmd *cobra.Command, _ []string) error {
+	applyVerbose()
 	reg := core.DefaultRegistry()
 
 	// Discover external plugins from default directories.
