@@ -133,8 +133,13 @@ jobs:
         with:
           go-version-file: "go.mod"
 
-      - name: Install protoc and Go plugins
-        run: make install-protoc tools
+      - name: Install protoc
+        run: make install-protoc
+
+      - name: Install protoc Go plugins
+        run: |
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 
       - name: Check generated proto code
         run: make proto-check
