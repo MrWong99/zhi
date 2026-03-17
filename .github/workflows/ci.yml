@@ -78,9 +78,11 @@ jobs:
 
       - name: Upload test results to Codecov
         if: ${{ !cancelled() && matrix.os == 'ubuntu-latest' }}
-        uses: codecov/test-results-action@v1
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          files: junit.xml
+          report_type: test_results
 
   build:
     name: Build (${{ matrix.goos }}/${{ matrix.goarch }})
@@ -131,16 +133,8 @@ jobs:
         with:
           go-version-file: "go.mod"
 
-      - name: Install protoc
-        uses: arduino/setup-protoc@v3
-        with:
-          version: "33.5"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Install protoc Go plugins
-        run: |
-          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+      - name: Install protoc and Go plugins
+        run: make install-protoc tools
 
       - name: Check generated proto code
         run: make proto-check
@@ -193,14 +187,14 @@ jobs:
           go-version-file: "go.mod"
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Extract version
         id: version
