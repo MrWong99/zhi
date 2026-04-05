@@ -17,7 +17,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.3.0
 	github.com/shibumi/go-pathspec v1.3.0
 	github.com/sigstore/protobuf-specs v0.5.0
-	github.com/sigstore/sigstore v1.10.4
+	github.com/sigstore/sigstore v1.10.5
 	github.com/sigstore/sigstore-go v1.1.4
 	github.com/spf13/cobra v1.10.2
 	github.com/traefik/yaegi v0.16.1
