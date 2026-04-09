@@ -1,0 +1,354 @@
+# Lesson 2: Your First Workspace
+
+In this lesson you'll create a workspace from scratch, explore the config tree,
+edit values, trigger validation, and export rendered files. All without any external
+services -- just zhi and your terminal.
+
+---
+
+## Step 1: Initialize a Workspace
+
+Let's create a playground workspace in a temporary directory.
+
+```sh {"name": "init-workspace", "interactive": true}
+# Create a fresh workspace
+mkdir -p /tmp/zhi-playground
+cd /tmp/zhi-playground
+zhi init
+```
+
+```sh {"name": "inspect-workspace"}
+# See what zhi init created
+ls -la /tmp/zhi-playground/
+echo ""
+echo "--- zhi.yaml ---"
+cat /tmp/zhi-playground/zhi.yaml
+```
+
+You should see:
+- `zhi.yaml` -- the workspace configuration
+- `config/` -- where you define your configuration structure
+- `templates/` -- where export templates live
+- `.zhi/` -- internal state (component toggles, etc.)
+
+---
+
+## Step 2: Define Some Configuration
+
+Let's create a config file that defines a small application's settings.
+This is a **structuredfile** config -- plain YAML that zhi reads as a config tree.
+
+Validators use Go code that returns `[]config.ValidationResult`:
+
+```sh {"name": "create-config", "interactive": true}
+cat > /tmp/zhi-playground/config/app.yml << 'YAML'
+app:
+  name:
+    val: "my-cool-app"
+    metadata:
+      description: "Application name"
+      display-name: "App Name"
+    validation: |-
+      name, ok := v.Val.(string)
+      if !ok || name == "" {
+        return []config.ValidationResult{{
+          Severity: config.Blocking,
+          Message:  "app name must be a non-empty string",
+        }}, nil
+      }
+      return nil, nil
+
+  port:
+    val: 8080
+    metadata:
+      description: "HTTP port the application listens on"
+      display-name: "Port"
+    validation: |-
+      port, ok := v.Val.(int)
+      if !ok {
+        return []config.ValidationResult{{
+          Severity: config.Blocking,
+          Message:  "port must be a number",
+        }}, nil
+      }
+      if port < 1024 || port > 65535 {
+        return []config.ValidationResult{{
+          Severity: config.Blocking,
+          Message:  "port must be between 1024 and 65535",
+        }}, nil
+      }
+      return nil, nil
+
+  debug:
+    val: false
+    metadata:
+      description: "Enable debug mode"
+      display-name: "Debug Mode"
+
+  log-level:
+    val: "info"
+    metadata:
+      description: "Logging verbosity"
+      display-name: "Log Level"
+    validation: |-
+      level, ok := v.Val.(string)
+      if !ok {
+        return []config.ValidationResult{{
+          Severity: config.Blocking,
+          Message:  "log-level must be a string",
+        }}, nil
+      }
+      allowed := map[string]bool{"trace": true, "debug": true, "info": true, "warn": true, "error": true}
+      if !allowed[level] {
+        return []config.ValidationResult{{
+          Severity: config.Blocking,
+          Message:  "must be one of: trace, debug, info, warn, error",
+        }}, nil
+      }
+      return nil, nil
+YAML
+echo "Config created!"
+```
+
+---
+
+## Step 3: Browse the Config Tree
+
+Now let's see how zhi reads that file.
+
+```sh {"name": "list-tree", "interactive": true}
+cd /tmp/zhi-playground && zhi list paths
+```
+
+```sh {"name": "get-value", "interactive": true}
+# Read a specific value
+cd /tmp/zhi-playground && zhi get app/port
+```
+
+> **Try it yourself:** Run `zhi get app/name` or `zhi get app/debug` to read other values.
+
+```sh {"name": "try-get", "interactive": true}
+# Your turn! Get any value from the tree:
+cd /tmp/zhi-playground && zhi get app/name
+```
+
+---
+
+## Step 4: Edit Values
+
+You can set values directly from the CLI.
+
+```sh {"name": "set-value", "interactive": true}
+cd /tmp/zhi-playground && zhi set app/port 3000
+echo ""
+echo "New value:"
+zhi get app/port
+```
+
+### Trigger a Validation Error
+
+Remember the validator on `port`? It requires 1024-65535. Let's break it.
+
+```sh {"name": "set-invalid-value", "interactive": true}
+cd /tmp/zhi-playground && zhi set app/port 80
+echo ""
+echo "Validation results:"
+zhi validate
+```
+
+You should see a **blocking** validation error. Let's fix it:
+
+```sh {"name": "fix-value", "interactive": true}
+cd /tmp/zhi-playground && zhi set app/port 3000
+echo ""
+zhi validate
+```
+
+> **Try it yourself:** Try setting `app/log-level` to an invalid value like `"verbose"`,
+> then check `zhi validate`. Fix it afterward!
+
+```sh {"name": "try-validation", "interactive": true}
+# Your turn! Try breaking and fixing a value:
+cd /tmp/zhi-playground && zhi set app/log-level "verbose"
+zhi validate
+```
+
+---
+
+## Step 5: Export Templates
+
+Let's create a template that renders our config into a real file.
+
+```sh {"name": "create-template", "interactive": true}
+cat > /tmp/zhi-playground/templates/app-config.json.tmpl << 'TMPL'
+{
+  "name": "{{ .Get "app/name" }}",
+  "port": {{ .Get "app/port" }},
+  "debug": {{ .Get "app/debug" }},
+  "logLevel": "{{ .Get "app/log-level" }}"
+}
+TMPL
+
+# Register the template in zhi.yaml
+cat > /tmp/zhi-playground/zhi.yaml << 'YAML'
+version: "1"
+
+config:
+  provider: structuredfile
+  options:
+    directory: ./config
+
+export:
+  templates:
+    - name: app-config
+      template: ./templates/app-config.json.tmpl
+      output: ./app-config.json
+YAML
+
+echo "Template and workspace config updated!"
+```
+
+Now export:
+
+```sh {"name": "export-config", "interactive": true}
+cd /tmp/zhi-playground && zhi export
+echo ""
+echo "--- Generated app-config.json ---"
+cat /tmp/zhi-playground/app-config.json
+```
+
+You just went from structured config definition to a rendered JSON file.
+This is the core loop: **define** -> **edit** -> **validate** -> **export**.
+
+---
+
+## Step 6: Add Components
+
+Components let you group config paths and toggle them on/off.
+Let's add a database section and make it optional.
+
+```sh {"name": "add-database-config", "interactive": true}
+cat > /tmp/zhi-playground/config/database.yml << 'YAML'
+database:
+  host:
+    val: "localhost"
+    metadata:
+      description: "Database hostname"
+      display-name: "DB Host"
+
+  port:
+    val: 5432
+    metadata:
+      description: "Database port"
+      display-name: "DB Port"
+
+  name:
+    val: "myapp"
+    metadata:
+      description: "Database name"
+      display-name: "DB Name"
+YAML
+
+# Update zhi.yaml with components
+cat > /tmp/zhi-playground/zhi.yaml << 'YAML'
+version: "1"
+
+config:
+  provider: structuredfile
+  options:
+    directory: ./config
+
+components:
+  - name: app
+    paths: ["app/"]
+    mandatory: true
+
+  - name: database
+    paths: ["database/"]
+    mandatory: false
+
+export:
+  templates:
+    - name: app-config
+      template: ./templates/app-config.json.tmpl
+      output: ./app-config.json
+YAML
+
+echo "Added database component!"
+```
+
+```sh {"name": "list-components", "interactive": true}
+cd /tmp/zhi-playground && zhi component list
+```
+
+```sh {"name": "toggle-component", "interactive": true}
+# Disable the database component
+cd /tmp/zhi-playground && zhi component disable database
+echo ""
+echo "Components after disable:"
+zhi component list
+echo ""
+echo "Tree (database paths should be excluded):"
+zhi list paths
+```
+
+```sh {"name": "enable-component", "interactive": true}
+# Re-enable it
+cd /tmp/zhi-playground && zhi component enable database
+echo ""
+zhi list paths
+```
+
+---
+
+## Checkpoint
+
+Let's verify everything works:
+
+```sh {"name": "check-02"}
+cd /tmp/zhi-playground
+ERRORS=0
+
+# Check config tree has values
+if zhi get app/port &>/dev/null; then
+  echo "✓ Config tree is readable"
+else
+  echo "✗ Config tree not readable"
+  ERRORS=$((ERRORS + 1))
+fi
+
+# Check validation passes
+if zhi validate 2>&1 | grep -q "blocking"; then
+  echo "✗ Validation has blocking errors -- fix them first!"
+  ERRORS=$((ERRORS + 1))
+else
+  echo "✓ Validation passes"
+fi
+
+# Check export works
+if [ -f app-config.json ]; then
+  echo "✓ Export file exists"
+else
+  echo "✗ Export file missing -- run 'zhi export'"
+  ERRORS=$((ERRORS + 1))
+fi
+
+if [ $ERRORS -eq 0 ]; then
+  echo ""
+  echo "All checks passed! You're ready for Lesson 3."
+fi
+```
+
+---
+
+## Cleanup
+
+```sh {"name": "cleanup-02", "interactive": true, "excludeFromRunAll": true}
+rm -rf /tmp/zhi-playground
+echo "Playground cleaned up."
+```
+
+---
+
+**Next up:** [Lesson 3 - Deploy Vault](03-vault-setup.md) -- we'll deploy a real HashiCorp
+Vault instance and experience zhi's three different editing environments.
