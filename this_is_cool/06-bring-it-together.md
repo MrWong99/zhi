@@ -1,5 +1,9 @@
 # Lesson 6: Bring It Together
 
+<audio controls src="audio/06-bring-it-together.mp3">
+  Your browser does not support the audio element.
+</audio>
+
 In this final lesson, you'll build a custom workspace from scratch that ties together
 everything from the tutorial:
 

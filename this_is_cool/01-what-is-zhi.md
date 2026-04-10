@@ -1,5 +1,9 @@
 # Lesson 1: What is zhi?
 
+<audio controls src="audio/01-what-is-zhi.mp3">
+  Your browser does not support the audio element.
+</audio>
+
 **zhi** is a security-first platform for configuration management and provisioning.
 Think of it as a framework where you define *what* your configuration looks like,
 *how* it gets transformed, *where* it's stored, and *how* you interact with it --

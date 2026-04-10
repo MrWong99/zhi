@@ -1,5 +1,9 @@
 # Lesson 2: Your First Workspace
 
+<audio controls src="audio/02-your-first-workspace.mp3">
+  Your browser does not support the audio element.
+</audio>
+
 In this lesson you'll create a workspace from scratch, explore the config tree,
 edit values, trigger validation, and export rendered files. All without any external
 services -- just zhi and your terminal.
