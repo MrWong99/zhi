@@ -19,6 +19,8 @@ This is the real zhi workflow: define config -> edit -> validate -> export -> ap
 mkdir -p /tmp/zhi-myapp
 cd /tmp/zhi-myapp
 zhi init
+# Remove default Pokedex config -- we'll define our own
+rm -f /tmp/zhi-myapp/config/app.yaml
 ```
 
 ---

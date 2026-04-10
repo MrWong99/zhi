@@ -70,6 +70,8 @@ renders each field and how the store handles sensitive values.
 ```sh {"name": "create-labels-workspace", "interactive": true}
 mkdir -p /tmp/zhi-labels/config /tmp/zhi-labels/templates
 cd /tmp/zhi-labels && zhi init --force
+# Remove default Pokedex config so only our labeled config is loaded
+rm -f /tmp/zhi-labels/config/app.yaml
 ```
 
 ```sh {"name": "define-labeled-config", "interactive": true}
@@ -233,8 +235,16 @@ Here's what each label does when applied to a configuration value:
 | `ui.enum` | string[] | Restricts input to a dropdown of allowed values |
 | `ui.order` | int | Controls display order (lower = first) |
 | `ui.group` | string | Groups related fields under a collapsible section |
+| `ui.section` | string | Assigns value to a collapsible section |
 | `ui.placeholder` | string | Placeholder text in empty input fields |
 | `ui.confirm` | bool | Requires confirmation before changing |
+| `ui.displayName` | string | Human-readable display name in the UI |
+| `ui.format` | string | Hints at display format (e.g., `json`, `yaml`) |
+| `ui.showIf` | string | Conditionally shows value based on another config value |
+| `ui.yamlSchema` | string | Description of expected YAML structure |
+| `ui.listItemPlaceholder` | string | Placeholder for list-type value items |
+| `ui.mapKeyPlaceholder` | string | Placeholder for map key input fields |
+| `ui.mapValuePlaceholder` | string | Placeholder for map value input fields |
 
 ### Store Labels (interpreted by store plugins)
 
@@ -243,6 +253,7 @@ Here's what each label does when applied to a configuration value:
 | `store.writeonly` | bool | Value can be written but never read back |
 | `store.encrypt` | bool | Forces encryption even if store-wide encryption is off |
 | `store.noversion` | bool | Excludes from version history |
+| `store.maxversions` | int | Maximum number of versions to retain |
 | `store.ttl` | int | Auto-deletes after N seconds |
 | `store.ephemeral` | bool | In-memory only, never persisted |
 
@@ -260,6 +271,7 @@ Here's what each label does when applied to a configuration value:
 | Label | Type | Effect |
 |-------|------|--------|
 | `transform.hidden` | bool | Transform plugins cannot access this value |
+| `transform.order` | int | Override the default transform order for this value |
 | `transform.skip` | string[] | List of transform plugin names to skip |
 
 ---
@@ -408,12 +420,11 @@ else
   ERRORS=$((ERRORS + 1))
 fi
 
-# Validate
-VALIDATION=$(zhi validate 2>&1)
-if echo "$VALIDATION" | grep -qi "blocking"; then
-  echo "⚠ Validation has blocking errors (expected -- api-key and admin-email are empty)"
-else
+# Validate (expect blocking errors since api-key and admin-email are empty)
+if zhi validate >/dev/null 2>&1; then
   echo "✓ Validation passes"
+else
+  echo "⚠ Validation has blocking errors (expected -- api-key and admin-email are empty)"
 fi
 
 if [ $ERRORS -eq 0 ]; then

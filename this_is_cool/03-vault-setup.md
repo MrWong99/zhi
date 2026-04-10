@@ -4,7 +4,7 @@ Time to deploy real infrastructure. We'll use zhi's **Vault deployment workspace
 to stand up a HashiCorp Vault server -- and along the way, experience three different
 ways to edit configuration.
 
-This lesson has three parts:
+This lesson has four parts:
 
 1. **Deploy Vault** using the CLI (quick path)
 2. **Explore the TUI** -- zhi's terminal editor

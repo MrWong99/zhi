@@ -26,10 +26,14 @@ cat /tmp/zhi-playground/zhi.yaml
 ```
 
 You should see:
-- `zhi.yaml` -- the workspace configuration
+- `zhi.yaml` -- the workspace configuration (a Pokedex example)
 - `config/` -- where you define your configuration structure
 - `templates/` -- where export templates live
+- `app-data/` -- example application data (from the Pokedex demo)
 - `.zhi/` -- internal state (component toggles, etc.)
+
+> **Note:** `zhi init` creates a Pokedex example workspace by default. In the next
+> step, we'll replace the config and `zhi.yaml` with our own.
 
 ---
 
@@ -41,6 +45,9 @@ This is a **structuredfile** config -- plain YAML that zhi reads as a config tre
 Validators use Go code that returns `[]config.ValidationResult`:
 
 ```sh {"name": "create-config", "interactive": true}
+# Remove the default Pokedex config so only our custom config is loaded
+rm -f /tmp/zhi-playground/config/app.yaml
+
 cat > /tmp/zhi-playground/config/app.yml << 'YAML'
 app:
   name:
@@ -395,12 +402,12 @@ else
   ERRORS=$((ERRORS + 1))
 fi
 
-# Check validation passes
-if zhi validate 2>&1 | grep -q "blocking"; then
+# Check validation passes (exit code 0 means no blocking errors)
+if zhi validate >/dev/null 2>&1; then
+  echo "✓ Validation passes"
+else
   echo "✗ Validation has blocking errors -- fix them first!"
   ERRORS=$((ERRORS + 1))
-else
-  echo "✓ Validation passes"
 fi
 
 # Check export works
