@@ -69,6 +69,7 @@ The `vault` store plugin should appear in the list.
 |------|-------------|
 | `--skip-plugins` | Do not install plugin dependencies |
 | `--skip-tools-check` | Do not check for required external tools |
+| `--dry-run` | Show what would be installed without doing it |
 
 ## Browsing the Marketplace with the Web UI
 
