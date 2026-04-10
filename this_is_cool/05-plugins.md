@@ -1,5 +1,9 @@
 # Lesson 5: Metadata Labels and the Java Plugin
 
+<audio controls src="audio/05-plugins.mp3">
+  Your browser does not support the audio element.
+</audio>
+
 Every configuration value in zhi can carry **metadata labels** -- semantic
 annotations that tell plugins how to interpret, display, and handle that value.
 Labels follow a namespace convention (`<namespace>.<name>`) and are the primary

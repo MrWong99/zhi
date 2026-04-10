@@ -1,5 +1,9 @@
 # Lesson 3: Deploy Vault
 
+<audio controls src="audio/03-vault-setup.mp3">
+  Your browser does not support the audio element.
+</audio>
+
 Time to deploy real infrastructure. We'll use zhi's **Vault deployment workspace**
 to stand up a HashiCorp Vault server -- and along the way, experience three different
 ways to edit configuration.

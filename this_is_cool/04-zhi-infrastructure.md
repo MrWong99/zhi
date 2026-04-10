@@ -1,5 +1,9 @@
 # Lesson 4: zhi Infrastructure
 
+<audio controls src="audio/04-zhi-infrastructure.mp3">
+  Your browser does not support the audio element.
+</audio>
+
 Now that Vault is running, we'll deploy zhi's own infrastructure:
 
 - **zhi-mirror** -- a pull-through cache and policy engine for plugins

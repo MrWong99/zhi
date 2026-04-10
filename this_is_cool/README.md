@@ -1,5 +1,9 @@
 # This Is Cool: An Interactive Introduction to zhi
 
+<audio controls src="audio/00-intro.mp3">
+  Your browser does not support the audio element.
+</audio>
+
 Welcome! This is a hands-on, notebook-style tutorial that walks you through **zhi** --
 a security-first platform for configuration management and provisioning.
 
