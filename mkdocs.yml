@@ -43,13 +43,6 @@ markdown_extensions:
 
 nav:
   - Home: index.md
-  - Tutorial:
-    - "Lesson 1: Getting Started": tutorial/lesson-01-getting-started.md
-    - "Lesson 2: Export and Apply": tutorial/lesson-02-export-and-apply.md
-    - "Lesson 3: Components": tutorial/lesson-03-components.md
-    - "Lesson 4: Workspaces and Marketplace": tutorial/lesson-04-workspaces-and-marketplace.md
-    - "Lesson 5: Metadata Labels": tutorial/lesson-05-metadata-labels.md
-    - "Lesson 6: Advanced Topics": tutorial/lesson-06-advanced-topics.md
   - User Guide:
     - Getting Started: user-guide/getting-started.md
     - Workspace Configuration: user-guide/workspace-configuration.md
