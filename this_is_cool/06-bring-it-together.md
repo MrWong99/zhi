@@ -3,10 +3,11 @@
 In this final lesson, you'll build a custom workspace from scratch that ties together
 everything from the tutorial:
 
-- A **structuredfile config** defining a web application's settings
+- A **structuredfile config** with metadata labels for UI rendering and store behavior
 - The **Vault store** from Lesson 3 for persistent, encrypted storage
 - A **template** that generates a docker-compose file
 - An **apply command** that deploys it
+- **Components** to toggle optional features
 
 This is the real zhi workflow: define config -> edit -> validate -> export -> apply.
 
@@ -25,7 +26,8 @@ zhi init
 ## Step 2: Define the Configuration
 
 We'll model a simple web application with a database and optional Redis cache.
-Validators use Go code that returns `[]config.ValidationResult`.
+Notice how we use **metadata labels** (from Lesson 5) to control UI rendering
+and store behavior. Validators use Go code that returns `[]config.ValidationResult`.
 
 ```sh {"name": "define-config", "interactive": true}
 cat > /tmp/zhi-myapp/config/webapp.yml << 'YAML'
@@ -35,6 +37,10 @@ webapp:
     metadata:
       description: "Application name"
       display-name: "App Name"
+      config.required: true
+      ui.pattern: "^[a-z][a-z0-9-]*$"
+      ui.placeholder: "e.g. my-webapp"
+      ui.order: 1
     validation: |-
       name, ok := v.Val.(string)
       if !ok || name == "" {
@@ -50,6 +56,8 @@ webapp:
     metadata:
       description: "Docker image to deploy"
       display-name: "Docker Image"
+      ui.order: 2
+      ui.placeholder: "registry/image:tag"
     imports:
       - strings
     validation: |-
@@ -73,6 +81,8 @@ webapp:
     metadata:
       description: "Port exposed to the host"
       display-name: "Host Port"
+      core.type: "port"
+      ui.order: 3
     validation: |-
       port, ok := v.Val.(int)
       if !ok {
@@ -94,6 +104,7 @@ webapp:
     metadata:
       description: "Number of container replicas"
       display-name: "Replicas"
+      ui.order: 4
     validation: |-
       replicas, ok := v.Val.(int)
       if !ok {
@@ -118,6 +129,10 @@ database:
     metadata:
       description: "Database engine"
       display-name: "DB Engine"
+      ui.enum:
+        - postgres
+        - mysql
+        - mariadb
     validation: |-
       engine, ok := v.Val.(string)
       if !ok {
@@ -146,12 +161,14 @@ database:
     metadata:
       description: "Database port (internal)"
       display-name: "DB Port"
+      core.type: "port"
 
   name:
     val: "appdb"
     metadata:
       description: "Database name to create"
       display-name: "DB Name"
+      config.required: true
     validation: |-
       name, ok := v.Val.(string)
       if !ok || name == "" {
@@ -169,6 +186,7 @@ database:
       display-name: "DB Password"
       ui.password: true
       config.required: true
+      store.writeonly: true
     imports:
       - strings
     validation: |-
@@ -195,12 +213,14 @@ cache:
     metadata:
       description: "Enable Redis cache"
       display-name: "Cache Enabled"
+      ui.confirm: true
 
   port:
     val: 6379
     metadata:
       description: "Redis port"
       display-name: "Cache Port"
+      core.type: "port"
 YAML
 
 echo "Config defined!"
@@ -458,13 +478,14 @@ internally.
 
 You've completed the full zhi workflow:
 
-1. **Defined** a config structure with types, defaults, and validators
+1. **Defined** a config structure with types, defaults, validators, and metadata labels
 2. **Edited** values through CLI, TUI, Web UI, and MCP
-3. **Stored** configuration securely in Vault
+3. **Stored** configuration securely in Vault (with `store.writeonly` for secrets)
 4. **Exported** templates that render into deployment files
-5. **Applied** provisioning commands
+5. **Applied** provisioning commands with `zhi apply`
 6. **Used components** to toggle optional features
-7. **Managed plugins** through a local marketplace and mirror
+7. **Installed workspaces** from OCI registries with automatic plugin resolution
+8. **Explored metadata labels** that control UI rendering, store behavior, and validation
 
 ---
 
@@ -484,10 +505,20 @@ echo "  Run the cleanup cell in README.md"
 
 ## Where to Go From Here
 
-- **Build your own config plugin** -- see [Plugin Development docs](../docs/plugin-development/overview.md)
+- **Build your own config plugin** -- see [Plugin Development Overview](../docs/plugin-development/overview.md)
+- **Build a Java plugin** -- see [Java Plugin Development](../docs/plugin-development/java-plugin.md) for Bean Validation integration
 - **Write a transform plugin** -- add validation rules, computed fields, or policy enforcement
 - **Create a workspace package** -- publish it with `zhi workspace publish` for others to install
 - **Set up for production** -- enable TLS, configure real auth methods, set up mirror policies
 - **Use zhi with AI** -- register as an MCP server and let Claude manage your infrastructure
+
+## Further Reading
+
+- [Workspace Configuration](../docs/user-guide/workspace-configuration.md) -- full `zhi.yaml` reference
+- [Sharing and Registries](../docs/user-guide/sharing-and-registries.md) -- OCI distribution, signing, workspace publishing
+- [Metadata Labels API Design](../docs/design/metadata-labels-api.md) -- label registry design and built-in labels
+- [Plugin Development Overview](../docs/plugin-development/overview.md) -- Go and non-Go plugin guides
+- [Java Plugin Development](../docs/plugin-development/java-plugin.md) -- Java beans, GraalVM native-image
+- [CLI Reference](../docs/user-guide/cli-reference.md) -- full command reference
 
 Happy configuring!

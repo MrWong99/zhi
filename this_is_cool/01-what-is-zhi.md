@@ -167,5 +167,14 @@ fi
 
 ---
 
+## Further Reading
+
+- [Getting Started](../docs/user-guide/getting-started.md) -- installation and first workspace
+- [CLI Reference](../docs/user-guide/cli-reference.md) -- full command reference
+- [Workspace Configuration](../docs/user-guide/workspace-configuration.md) -- the `zhi.yaml` file format
+- [Plugin Development Overview](../docs/plugin-development/overview.md) -- building your own plugins
+
+---
+
 **Next up:** [Lesson 2 - Your First Workspace](02-your-first-workspace.md) -- we'll create
 a workspace from scratch and explore the config tree hands-on.

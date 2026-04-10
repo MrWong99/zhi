@@ -1,312 +1,424 @@
-# Lesson 5: Plugins in Action
+# Lesson 5: Metadata Labels and the Java Plugin
 
-Now that we have plugins installed and a marketplace running, let's use them.
-We'll create a workspace powered by the **Pokedex** plugins -- a playful example
-that demonstrates config validation, cross-value rules, and transforms.
+Every configuration value in zhi can carry **metadata labels** -- semantic
+annotations that tell plugins how to interpret, display, and handle that value.
+Labels follow a namespace convention (`<namespace>.<name>`) and are the primary
+way to communicate intent across plugin boundaries.
+
+In this lesson you'll:
+
+1. Discover available labels via the CLI
+2. Use labels in a structuredfile config to control UI behavior, store handling, and validation
+3. See how the Java config plugin uses Bean Validation annotations to achieve the same thing
 
 ---
 
-## Step 1: Create a Pokedex Workspace
+## Step 1: Discover Available Labels
 
-```sh {"name": "create-pokedex-workspace", "interactive": true}
-mkdir -p /tmp/zhi-pokedex
-cd /tmp/zhi-pokedex
-zhi init
+zhi ships with a built-in label registry. Let's explore it.
+
+```sh {"name": "list-all-labels", "interactive": true}
+# List every registered metadata label, grouped by namespace
+zhi labels list
 ```
 
-Now wire it up to use the Pokedex config and transform plugins, with in-memory storage:
+Labels are organized into namespaces that correspond to plugin types:
 
-```sh {"name": "configure-pokedex", "interactive": true}
-cat > /tmp/zhi-pokedex/zhi.yaml << 'YAML'
-version: "1"
+| Namespace | Interpreted by | Purpose |
+|-----------|---------------|---------|
+| `ui.*` | UI plugins (TUI, Web UI) | Control how values are displayed and edited |
+| `store.*` | Store plugins (Vault, JSON) | Control persistence behavior |
+| `transform.*` | Transform plugins | Control which transforms apply |
+| `config.*` | Config plugins | Mark values as required, immutable, etc. |
+| `core.*` | The engine itself | Descriptions, types, deprecation notices |
 
-config:
-  provider: pokedex
+### Filter by namespace
 
-transform:
-  - provider: pokedex
+```sh {"name": "list-ui-labels", "interactive": true}
+zhi labels list --namespace ui
+```
 
-store:
-  provider: json
-  options:
-    path: ./store.json
+```sh {"name": "list-store-labels", "interactive": true}
+zhi labels list --namespace store
+```
 
-ui:
-  provider: webui
-  options:
-    addr: "127.0.0.1:9091"
-    auto_open: false
+### Get detailed info about a label
 
-components:
-  - name: trainer
-    description: "Pokemon trainer identity"
-    paths: ["pokedex/trainer.name", "pokedex/region"]
-    mandatory: true
-  - name: pokemon
-    description: "Starter Pokemon selection"
-    paths: ["pokedex/starter", "pokedex/starter.original"]
-    mandatory: true
-  - name: goals
-    description: "Pokedex completion goals"
-    paths: ["pokedex/pokedex.goal"]
-    mandatory: true
+```sh {"name": "label-info-password", "interactive": true}
+zhi labels info ui.password
+```
 
-export:
-  templates:
-    - name: trainer-card
-      template: ./templates/trainer-card.txt.tmpl
-      output: ./trainer-card.txt
+```sh {"name": "label-info-writeonly", "interactive": true}
+zhi labels info store.writeonly
+```
+
+> **Try it yourself:** Run `zhi labels info config.required` or `zhi labels info ui.readonly`
+> to see their descriptions, types, defaults, and examples.
+
+```sh {"name": "try-label-info", "interactive": true}
+# Your turn!
+zhi labels info config.required
+```
+
+---
+
+## Step 2: Use Labels in a Structuredfile Config
+
+Let's create a workspace that uses metadata labels to control how the UI
+renders each field and how the store handles sensitive values.
+
+```sh {"name": "create-labels-workspace", "interactive": true}
+mkdir -p /tmp/zhi-labels/config /tmp/zhi-labels/templates
+cd /tmp/zhi-labels && zhi init --force
+```
+
+```sh {"name": "define-labeled-config", "interactive": true}
+cat > /tmp/zhi-labels/config/service.yml << 'YAML'
+service:
+  name:
+    val: "my-api"
+    metadata:
+      description: "Service name used in deployment"
+      display-name: "Service Name"
+      config.required: true
+      ui.pattern: "^[a-z][a-z0-9-]*$"
+      ui.placeholder: "e.g. my-api"
+    validation: |-
+      name, ok := v.Val.(string)
+      if !ok || name == "" {
+        return []config.ValidationResult{{
+          Severity: config.Blocking,
+          Message:  "service name is required",
+        }}, nil
+      }
+      return nil, nil
+
+  port:
+    val: 8080
+    metadata:
+      description: "Port the service listens on"
+      display-name: "Port"
+      core.type: "port"
+      ui.order: 2
+    validation: |-
+      port, ok := v.Val.(int)
+      if !ok {
+        return []config.ValidationResult{{
+          Severity: config.Blocking,
+          Message:  "port must be a number",
+        }}, nil
+      }
+      if port < 1024 || port > 65535 {
+        return []config.ValidationResult{{
+          Severity: config.Blocking,
+          Message:  "port must be between 1024 and 65535",
+        }}, nil
+      }
+      return nil, nil
+
+  api-key:
+    val: ""
+    metadata:
+      description: "API key for external service"
+      display-name: "API Key"
+      config.required: true
+      ui.password: true
+      store.writeonly: true
+
+  admin-email:
+    val: ""
+    metadata:
+      description: "Admin contact email"
+      display-name: "Admin Email"
+      core.type: "email"
+      ui.pattern: "^[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}$"
+      ui.placeholder: "admin@example.com"
+
+  log-level:
+    val: "info"
+    metadata:
+      description: "Logging verbosity"
+      display-name: "Log Level"
+      ui.enum:
+        - trace
+        - debug
+        - info
+        - warn
+        - error
+
+  notes:
+    val: ""
+    metadata:
+      description: "Deployment notes (supports multiple lines)"
+      display-name: "Notes"
+      ui.multiline: true
+
+  version:
+    val: "1.0.0"
+    metadata:
+      description: "Current deployed version (set by CI)"
+      display-name: "Version"
+      ui.readonly: true
+      config.immutable: true
+
+  cache-ttl:
+    val: 300
+    metadata:
+      description: "Cache time-to-live"
+      display-name: "Cache TTL"
+      core.unit: "seconds"
+      store.ttl: 3600
 YAML
 
-echo "Workspace configured!"
+echo "Labeled config created!"
 ```
 
-Create a template for a trainer card:
+### See how labels affect the config tree
 
-```sh {"name": "create-trainer-template", "interactive": true}
-mkdir -p /tmp/zhi-pokedex/templates
-cat > /tmp/zhi-pokedex/templates/trainer-card.txt.tmpl << 'TMPL'
-╔══════════════════════════════════╗
-║        TRAINER CARD              ║
-╠══════════════════════════════════╣
-║  Name:    {{ .Get "pokedex/trainer.name" | printf "%-20s" }}║
-║  Region:  {{ .Get "pokedex/region" | printf "%-20s" }}║
-║  Partner: {{ .Get "pokedex/starter" | printf "%-20s" }}║
-║  Goal:    {{ .Get "pokedex/pokedex.goal" | printf "%-20s" }}║
-╚══════════════════════════════════╝
-TMPL
-
-echo "Template created!"
+```sh {"name": "list-labeled-tree", "interactive": true}
+cd /tmp/zhi-labels && zhi list paths
 ```
 
----
+```sh {"name": "get-labeled-values", "interactive": true}
+cd /tmp/zhi-labels
 
-## Step 2: Explore the Config Tree
+echo "=== Service Name ==="
+zhi get service/name
 
-The Pokedex config plugin provides a pre-defined config tree with defaults and validators.
+echo ""
+echo "=== API Key (write-only, password-masked) ==="
+zhi get service/api-key
 
-```sh {"name": "list-pokedex", "interactive": true}
-cd /tmp/zhi-pokedex && zhi list paths
+echo ""
+echo "=== Version (read-only, immutable) ==="
+zhi get service/version
 ```
 
-```sh {"name": "get-pokedex-values", "interactive": true}
-cd /tmp/zhi-pokedex
+### Observe labels in the Web UI
 
-echo "=== Trainer ==="
-zhi get pokedex/trainer.name
-zhi get pokedex/region
+Labels truly shine in the Web UI. Launch it and see how each label changes the rendering:
 
-echo ""
-echo "=== Pokemon ==="
-zhi get pokedex/starter
-
-echo ""
-echo "=== Goals ==="
-zhi get pokedex/pokedex.goal
+```sh {"name": "launch-labels-webui", "background": true, "interactive": false}
+cd /tmp/zhi-labels && zhi edit --ui webui
 ```
 
-Notice the defaults: Ash from Kanto with a Pikachu, aiming to catch 150 Pokemon.
+Open **http://127.0.0.1:8080** and observe:
 
----
+- `service/api-key` shows a **password input** (masked characters) thanks to `ui.password: true`
+- `service/version` is **grayed out / read-only** thanks to `ui.readonly: true`
+- `service/log-level` shows a **dropdown** thanks to `ui.enum`
+- `service/notes` shows a **textarea** thanks to `ui.multiline: true`
+- `service/name` validates against a **regex pattern** (`ui.pattern`)
 
-## Step 3: See Transforms in Action
-
-The Pokedex transform plugin **evolves** your starter Pokemon for display.
-Watch what happens:
-
-```sh {"name": "see-transform", "interactive": true}
-cd /tmp/zhi-pokedex
-
-echo "Setting starter to charmander..."
-zhi set pokedex/starter charmander
-
-echo ""
-echo "Now reading the value back (through the transform):"
-zhi get pokedex/starter
-echo ""
-echo "The transform evolved charmander → charizard for display!"
-echo ""
-echo "The original is preserved:"
-zhi get pokedex/starter.original
-```
-
-The transform plugin:
-- **On read:** Evolves `charmander` → `charizard` (final form) and adjusts the
-  pokedex goal (+2 for the evolution stages)
-- **On save:** Maps back to the base form for storage
-- Creates a transient `starter.original` path so you can see both forms
-
-> **Try it yourself:** Set the starter to `bulbasaur` or `squirtle` and see their evolutions!
-
-```sh {"name": "try-evolution", "interactive": true}
-cd /tmp/zhi-pokedex
-
-# Your turn! Try another starter:
-zhi set pokedex/starter squirtle
-echo ""
-echo "Starter (evolved):"
-zhi get pokedex/starter
-echo ""
-echo "Original:"
-zhi get pokedex/starter.original
+```sh {"name": "stop-labels-webui", "interactive": true, "excludeFromRunAll": true}
+lsof -ti:8080 | xargs -r kill 2>/dev/null
+echo "Web UI stopped."
 ```
 
 ---
 
-## Step 4: Trigger Validation Rules
+## Step 3: Label Effects Summary
 
-The config plugin has several validators. Let's trigger them.
+Here's what each label does when applied to a configuration value:
 
-### Invalid region
+### UI Labels (interpreted by TUI and Web UI)
 
-```sh {"name": "invalid-region", "interactive": true}
-cd /tmp/zhi-pokedex
+| Label | Type | Effect |
+|-------|------|--------|
+| `ui.readonly` | bool | Field is visible but not editable |
+| `ui.password` | bool | Input is masked (dots/asterisks) |
+| `ui.hidden` | bool | Field is completely hidden from the UI |
+| `ui.multiline` | bool | Uses a textarea for input |
+| `ui.pattern` | string | Regex pattern for input validation |
+| `ui.enum` | string[] | Restricts input to a dropdown of allowed values |
+| `ui.order` | int | Controls display order (lower = first) |
+| `ui.group` | string | Groups related fields under a collapsible section |
+| `ui.placeholder` | string | Placeholder text in empty input fields |
+| `ui.confirm` | bool | Requires confirmation before changing |
 
-zhi set pokedex/region "middle-earth"
-echo ""
-zhi validate
+### Store Labels (interpreted by store plugins)
+
+| Label | Type | Effect |
+|-------|------|--------|
+| `store.writeonly` | bool | Value can be written but never read back |
+| `store.encrypt` | bool | Forces encryption even if store-wide encryption is off |
+| `store.noversion` | bool | Excludes from version history |
+| `store.ttl` | int | Auto-deletes after N seconds |
+| `store.ephemeral` | bool | In-memory only, never persisted |
+
+### Config Labels (interpreted by config plugins)
+
+| Label | Type | Effect |
+|-------|------|--------|
+| `config.required` | bool | Validation fails if value is empty |
+| `config.immutable` | bool | Value cannot be changed after initial set |
+| `config.default` | any | Default value if not set |
+| `config.env` | string | Environment variable that can override this value |
+
+### Transform Labels
+
+| Label | Type | Effect |
+|-------|------|--------|
+| `transform.hidden` | bool | Transform plugins cannot access this value |
+| `transform.skip` | string[] | List of transform plugin names to skip |
+
+---
+
+## Step 4: The Java Config Plugin -- Labels via Bean Validation
+
+The `zhi-config-javabean` example shows a different approach: instead of writing
+labels in YAML, you define your config as a **Java bean** with Jakarta Bean
+Validation annotations. The annotations map to zhi labels and validation rules.
+
+Here's the `DatabaseConfig` bean from the example:
+
+```java {"excludeFromRunAll": true}
+// This is the actual code from examples/zhi-config-javabean/
+// Don't run this -- just read!
+
+@ConfigPrefix("database")
+@SslRequiredForRemoteHost              // custom cross-value constraint
+public class DatabaseConfig {
+
+    @NotBlank(message = "database host is required")
+    @ConfigProperty(description = "Database server hostname")
+    private String host = "localhost";
+
+    @Min(value = 1, message = "port must be at least 1")
+    @Max(value = 65535, message = "port must be at most 65535")
+    @ConfigProperty(description = "Database server port")
+    private int port = 5432;
+
+    @NotBlank(message = "database name is required")
+    @ConfigProperty(description = "Name of the database")
+    private String name = "myapp";
+
+    @NotBlank(message = "username is required")
+    @ConfigProperty(description = "Database login user")
+    private String username = "admin";
+
+    @Min(value = 1, message = "max connections must be at least 1")
+    @Max(value = 1000, message = "max connections must be at most 1000")
+    @ConfigProperty(path = "max-connections",
+                    description = "Maximum number of database connections")
+    private int maxConnections = 10;
+
+    @ConfigProperty(path = "ssl-enabled",
+                    description = "Whether TLS is used for the database connection")
+    private boolean sslEnabled = false;
+}
 ```
 
-You should see a **blocking** error -- `middle-earth` isn't a valid Pokemon region.
+### How Java annotations map to zhi concepts
 
-```sh {"name": "fix-region", "interactive": true}
-cd /tmp/zhi-pokedex && zhi set pokedex/region "johto"
-```
-
-### Non-classic starter (warning)
-
-```sh {"name": "non-classic-starter", "interactive": true}
-cd /tmp/zhi-pokedex
-
-zhi set pokedex/starter "eevee"
-echo ""
-zhi validate
-```
-
-This produces a **warning** (not blocking) -- eevee isn't a classic Kanto starter,
-but it's still allowed.
+| Java Annotation | zhi Equivalent |
+|----------------|----------------|
+| `@ConfigPrefix("database")` | Path prefix -- all fields become `database/host`, `database/port`, etc. |
+| `@ConfigProperty(description="...")` | `metadata.description` label |
+| `@ConfigProperty(path="ssl-enabled")` | Overrides the default kebab-case path segment |
+| `@NotBlank` | Similar to `config.required: true` + a blocking validation |
+| `@Min(1)` / `@Max(65535)` | Blocking validation on numeric range |
+| `@SslRequiredForRemoteHost` | Cross-value validation -- warns if host is remote but SSL is off |
 
 ### Cross-value validation
 
-```sh {"name": "cross-validation", "interactive": true}
-cd /tmp/zhi-pokedex
+The `@SslRequiredForRemoteHost` annotation is a custom class-level constraint:
 
-# Set a Kanto starter with a non-Kanto region
-zhi set pokedex/starter "charmander"
-zhi set pokedex/region "johto"
+```java {"excludeFromRunAll": true}
+// Custom validator that checks two fields together
+public class SslRequiredForRemoteHostValidator
+        implements ConstraintValidator<SslRequiredForRemoteHost, DatabaseConfig> {
+    @Override
+    public boolean isValid(DatabaseConfig cfg, ConstraintValidatorContext ctx) {
+        if (cfg == null) return true;
+        boolean isLocal = "localhost".equals(cfg.getHost());
+        if (isLocal || cfg.isSslEnabled()) return true;
+
+        // SSL should be enabled for remote hosts
+        ctx.disableDefaultConstraintViolation();
+        String msg = "SSL should be enabled for remote host '" + cfg.getHost() + "'";
+        ctx.buildConstraintViolationWithTemplate(msg)
+                .addPropertyNode("sslEnabled").addConstraintViolation();
+        return false;
+    }
+}
+```
+
+Because it's annotated with `@WarnConstraint`, violations are reported as
+**Warning** (not Blocking) -- the zhi host shows them as advisory messages.
+
+### Building and running the Java plugin
+
+The plugin is built with GraalVM `native-image` for a zero-dependency binary:
+
+```sh {"name": "show-java-plugin-build", "excludeFromRunAll": true, "interactive": true}
+echo "To build the Java plugin (requires JDK 21+ and GraalVM native-image):"
 echo ""
-zhi validate
-```
-
-The config plugin performs **cross-value validation**: it notices that Charmander
-is a Kanto starter but you chose Johto as your region, and issues an info message.
-
-### Unrealistic goal
-
-```sh {"name": "high-goal", "interactive": true}
-cd /tmp/zhi-pokedex
-
-zhi set pokedex/pokedex.goal 9999
+echo "  cd examples/zhi-config-javabean"
+echo "  ./gradlew nativeCompile"
+echo "  cp build/native/nativeCompile/zhi-config-javabean ~/.zhi/plugins/"
 echo ""
-zhi validate
+echo "Then use it in zhi.yaml:"
+echo ""
+echo "  config:"
+echo '    provider: javabean'
 ```
 
-Warning: there aren't that many Pokemon!
-
-```sh {"name": "fix-goal", "interactive": true}
-cd /tmp/zhi-pokedex
-zhi set pokedex/pokedex.goal 150
-zhi set pokedex/region "kanto"
-```
+The resulting binary follows the standard naming convention (`zhi-config-javabean`),
+so zhi discovers it automatically from `~/.zhi/plugins/`.
 
 ---
 
-## Step 5: Export Your Trainer Card
+## Step 5: Compare Approaches
 
-```sh {"name": "export-trainer-card", "interactive": true}
-cd /tmp/zhi-pokedex
+Both the YAML structuredfile and the Java plugin achieve the same goal --
+defining typed, validated, labeled configuration. Choose based on your needs:
 
-zhi export
-echo ""
-cat trainer-card.txt
-```
-
-The exported card shows the **transformed** values (evolved starter, adjusted goal).
-
-> **Try it yourself:** Change the trainer name to yours, pick your favorite starter,
-> and export again!
-
-```sh {"name": "customize-and-export", "interactive": true}
-cd /tmp/zhi-pokedex
-
-# Customize these values:
-zhi set pokedex/trainer.name "Your Name"
-zhi set pokedex/starter "bulbasaur"
-zhi set pokedex/region "kanto"
-zhi set pokedex/pokedex.goal 151
-
-zhi export
-echo ""
-cat trainer-card.txt
-```
-
----
-
-## Step 6: Inspect Plugin Manifests
-
-Every plugin has a `zhi-plugin.yaml` manifest. Let's look at what's installed.
-
-```sh {"name": "plugin-info", "interactive": true}
-# List all installed plugins with details
-zhi plugin list
-
-echo ""
-echo "=== Plugin directory ==="
-ls ~/.zhi/plugins/ 2>/dev/null || echo "(empty -- plugins may be built-in)"
-```
+| Aspect | Structuredfile (YAML) | Java Bean |
+|--------|----------------------|-----------|
+| **Language** | YAML + inline Go validation | Java + Bean Validation |
+| **Labels** | Set directly in `metadata` map | Mapped from annotations |
+| **Validation** | Inline Go code (Yaegi interpreter) | Jakarta Bean Validation (`@NotBlank`, `@Min`, etc.) |
+| **Cross-value checks** | Access `tree` parameter in validation code | Class-level custom constraints |
+| **Build** | No build step (plain files) | Gradle + GraalVM native-image |
+| **Best for** | Quick configs, ops teams | Type-safe Java ecosystems, enterprise |
 
 ---
 
 ## Checkpoint
 
 ```sh {"name": "check-05"}
-cd /tmp/zhi-pokedex
+cd /tmp/zhi-labels 2>/dev/null || exit 1
 ERRORS=0
 
-# Validation should pass with correct values
-zhi set pokedex/trainer.name "Ash" 2>/dev/null
-zhi set pokedex/starter "pikachu" 2>/dev/null
-zhi set pokedex/region "kanto" 2>/dev/null
-zhi set pokedex/pokedex.goal 150 2>/dev/null
+# Check labels CLI works
+LABEL_COUNT=$(zhi labels list 2>/dev/null | grep -c "^" || true)
+if [ "$LABEL_COUNT" -gt 10 ]; then
+  echo "✓ Label registry has $LABEL_COUNT entries"
+else
+  echo "✗ Label registry seems empty"
+  ERRORS=$((ERRORS + 1))
+fi
 
+# Check labeled config loads
+if zhi list paths 2>/dev/null | grep -q "service/name"; then
+  echo "✓ Labeled config tree loads correctly"
+else
+  echo "✗ Config tree not loading"
+  ERRORS=$((ERRORS + 1))
+fi
+
+# Validate
 VALIDATION=$(zhi validate 2>&1)
-BLOCKING=$(echo "$VALIDATION" | grep -c "Blocking" || true)
-if [ "$BLOCKING" -eq 0 ]; then
-  echo "✓ Validation passes with correct values"
+if echo "$VALIDATION" | grep -qi "blocking"; then
+  echo "⚠ Validation has blocking errors (expected -- api-key and admin-email are empty)"
 else
-  echo "✗ Unexpected blocking errors"
-  ERRORS=$((ERRORS + 1))
-fi
-
-# Export should work
-if zhi export 2>/dev/null && [ -f trainer-card.txt ]; then
-  echo "✓ Export generates trainer card"
-else
-  echo "✗ Export failed"
-  ERRORS=$((ERRORS + 1))
-fi
-
-# Transform should evolve pikachu
-STARTER=$(zhi get pokedex/starter 2>/dev/null)
-if echo "$STARTER" | grep -qi "raichu"; then
-  echo "✓ Transform evolves pikachu → raichu"
-else
-  echo "⚠ Transform may not be active (got: $STARTER)"
+  echo "✓ Validation passes"
 fi
 
 if [ $ERRORS -eq 0 ]; then
   echo ""
-  echo "Plugins are working! On to the final lesson."
+  echo "Labels and validation working! On to the final lesson."
 fi
 ```
 
@@ -315,9 +427,18 @@ fi
 ## Cleanup
 
 ```sh {"name": "cleanup-05", "interactive": true, "excludeFromRunAll": true}
-rm -rf /tmp/zhi-pokedex
-echo "Pokedex workspace cleaned up."
+rm -rf /tmp/zhi-labels
+echo "Labels workspace cleaned up."
 ```
+
+---
+
+## Further Reading
+
+- [Metadata Labels API Design](../docs/design/metadata-labels-api.md) -- full design document for the label registry
+- [Structured File Provider](../docs/plugin-development/structuredfile-provider.md) -- config file format and validation code
+- [Java Plugin Development](../docs/plugin-development/java-plugin.md) -- Gradle setup, Bean Validation, GraalVM native-image
+- [Plugin Development Overview](../docs/plugin-development/overview.md) -- building plugins in Go or other languages
 
 ---
 

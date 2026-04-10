@@ -271,5 +271,14 @@ fi
 
 ---
 
+## Further Reading
+
+- [Apply](../docs/user-guide/apply.md) -- apply commands, named targets, and streaming output
+- [Web UI](../docs/user-guide/web-ui.md) -- browser-based editing, keyboard shortcuts, TLS
+- [Vault Credential Management](../docs/user-guide/vault-credentials.md) -- AppRole and token generation for deployed apps
+- [Export and Templates](../docs/user-guide/export-and-templates.md) -- template syntax, component-aware rendering
+
+---
+
 **Next up:** [Lesson 4 - zhi Infrastructure](04-zhi-infrastructure.md) -- we'll deploy
 a plugin marketplace and mirror, then import all the published zhi plugins.

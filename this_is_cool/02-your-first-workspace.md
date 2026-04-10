@@ -218,11 +218,84 @@ cat /tmp/zhi-playground/app-config.json
 ```
 
 You just went from structured config definition to a rendered JSON file.
-This is the core loop: **define** -> **edit** -> **validate** -> **export**.
 
 ---
 
-## Step 6: Add Components
+## Step 6: Apply Configuration
+
+Exporting renders config into files -- but what about actually *doing* something
+with those files? That's where `zhi apply` comes in.
+
+`zhi apply` runs a shell command you define in `zhi.yaml`. Typically this is
+something like `docker compose up -d`, `kubectl apply`, or any provisioning tool.
+When `pre-export: true` is set, zhi re-exports all templates before running the command.
+
+Let's add an apply command to our workspace:
+
+```sh {"name": "add-apply", "interactive": true}
+cat > /tmp/zhi-playground/zhi.yaml << 'YAML'
+version: "1"
+
+config:
+  provider: structuredfile
+  options:
+    directory: ./config
+
+export:
+  templates:
+    - name: app-config
+      template: ./templates/app-config.json.tmpl
+      output: ./app-config.json
+
+apply:
+  command: "echo 'Configuration applied! Generated app-config.json:' && cat ./app-config.json"
+  pre-export: true
+  timeout: 30
+YAML
+
+echo "Workspace updated with apply command!"
+```
+
+Now run it:
+
+```sh {"name": "run-apply", "interactive": true}
+cd /tmp/zhi-playground && zhi apply
+```
+
+The apply system:
+
+1. Runs `zhi export` first (because `pre-export: true`)
+2. Executes the configured `command` in a shell
+3. Streams stdout/stderr in real-time
+4. Reports the exit code
+
+You can preview what would run without executing:
+
+```sh {"name": "dry-run-apply", "interactive": true}
+cd /tmp/zhi-playground && zhi apply --dry-run
+```
+
+You can also define **named targets** for different operations (deploy, destroy, restart):
+
+```yaml {"excludeFromRunAll": true}
+# Example: named apply targets (don't run this, just read!)
+apply:
+  default:
+    command: "docker compose up -d"
+    pre-export: true
+  destroy:
+    command: "docker compose down -v"
+  restart:
+    command: "docker compose restart"
+```
+
+Run them with `zhi apply destroy` or `zhi apply restart`.
+
+This is the full core loop: **define** -> **edit** -> **validate** -> **export** -> **apply**.
+
+---
+
+## Step 7: Add Components
 
 Components let you group config paths and toggle them on/off.
 Let's add a database section and make it optional.
@@ -249,7 +322,7 @@ database:
       display-name: "DB Name"
 YAML
 
-# Update zhi.yaml with components
+# Update zhi.yaml with components (keep apply from Step 6)
 cat > /tmp/zhi-playground/zhi.yaml << 'YAML'
 version: "1"
 
@@ -272,6 +345,11 @@ export:
     - name: app-config
       template: ./templates/app-config.json.tmpl
       output: ./app-config.json
+
+apply:
+  command: "echo 'Configuration applied!' && cat ./app-config.json"
+  pre-export: true
+  timeout: 30
 YAML
 
 echo "Added database component!"
@@ -333,6 +411,14 @@ else
   ERRORS=$((ERRORS + 1))
 fi
 
+# Check apply works
+if zhi apply 2>&1 | grep -q "exit code 0"; then
+  echo "✓ Apply runs successfully"
+else
+  echo "✗ Apply failed"
+  ERRORS=$((ERRORS + 1))
+fi
+
 if [ $ERRORS -eq 0 ]; then
   echo ""
   echo "All checks passed! You're ready for Lesson 3."
@@ -347,6 +433,17 @@ fi
 rm -rf /tmp/zhi-playground
 echo "Playground cleaned up."
 ```
+
+---
+
+## Further Reading
+
+- [Getting Started](../docs/user-guide/getting-started.md) -- installation and first workspace
+- [Workspace Configuration](../docs/user-guide/workspace-configuration.md) -- full `zhi.yaml` reference
+- [Export and Templates](../docs/user-guide/export-and-templates.md) -- template syntax and built-in formats
+- [Apply](../docs/user-guide/apply.md) -- apply commands, named targets, and streaming output
+- [Components](../docs/user-guide/components.md) -- grouping and toggling config paths
+- [Structured File Provider](../docs/plugin-development/structuredfile-provider.md) -- config file format and validation code
 
 ---
 

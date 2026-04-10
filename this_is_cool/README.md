@@ -71,11 +71,11 @@ runme run --filename 01-what-is-zhi.md verify-zhi
 | # | File | What You'll Learn |
 |---|------|-------------------|
 | 1 | [What is zhi?](01-what-is-zhi.md) | Install zhi, explore the CLI, understand the plugin architecture |
-| 2 | [Your First Workspace](02-your-first-workspace.md) | Create a workspace, browse configs, edit values, validate, export |
+| 2 | [Your First Workspace](02-your-first-workspace.md) | Create a workspace, browse configs, edit values, validate, export, apply |
 | 3 | [Deploy Vault](03-vault-setup.md) | Deploy Vault with Docker, experience TUI / Web UI / MCP editing |
-| 4 | [zhi Infrastructure](04-zhi-infrastructure.md) | Stand up a mirror + marketplace, import real plugins from GitHub |
-| 5 | [Plugins](05-plugins.md) | Search, install, and use plugins from your marketplace |
-| 6 | [Bring It Together](06-bring-it-together.md) | Build a custom workspace backed by your Vault |
+| 4 | [zhi Infrastructure](04-zhi-infrastructure.md) | Install workspaces from OCI registries, use the Web UI marketplace |
+| 5 | [Metadata Labels](05-plugins.md) | Discover labels, control UI/store behavior, Java config plugin |
+| 6 | [Bring It Together](06-bring-it-together.md) | Build a custom workspace backed by your Vault with labels |
 
 Each lesson builds on the previous one. Start with lesson 1 and work your way through.
 
