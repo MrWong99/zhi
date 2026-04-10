@@ -223,12 +223,60 @@ If you prefer a visual experience, launch `zhi edit --ui webui` and navigate to
 the **Marketplace** tab (`g m`). Search for plugins by name or type, and click
 **Install** to pull them from the registry.
 
-### Search for plugins via CLI
+### Index plugins in the marketplace
 
-```sh {"name": "search-plugins", "interactive": true}
-# Search the marketplace from the CLI
-zhi plugin search store --type store 2>/dev/null || echo "(marketplace may need indexing first)"
+The installed plugins need to be indexed in the marketplace so they're searchable.
+The marketplace API requires `name`, `type`, and `ociRef` fields:
+
+```sh {"name": "index-marketplace", "interactive": true}
+MARKETPLACE="http://127.0.0.1:8090"
+API_KEY="tutorial-key-123"
+
+# Index each plugin with the marketplace
+for entry in \
+  "zhi-config-pokedex config" \
+  "zhi-transform-pokedex transform" \
+  "zhi-store-json store" \
+  "zhi-store-memory store" \
+  "zhi-store-mirror store" \
+  "zhi-ui-httpapi ui" \
+  "zhi-ui-mcp-sse ui" \
+  "zhi-ui-webui ui"; do
+
+  plugin="${entry%% *}"
+  ptype="${entry##* }"
+  echo -n "Indexing $plugin ($ptype)... "
+  curl -sf -X POST "$MARKETPLACE/api/v1/plugins" \
+    -H "Authorization: Bearer $API_KEY" \
+    -H "Content-Type: application/json" \
+    -d "{\"name\": \"$plugin\", \"type\": \"$ptype\", \"ociRef\": \"ghcr.io/mrwong99/zhi/$plugin\"}" \
+    && echo "✓" || echo "⚠ (may already exist)"
+done
 ```
+
+### Search the marketplace
+
+You can search via curl or the Web UI:
+
+**Option A: curl**
+
+```sh {"name": "search-marketplace", "interactive": true}
+# Search for all indexed plugins
+curl -sf "http://127.0.0.1:8090/api/v1/search" | jq '.results[].name'
+```
+
+```sh {"name": "search-store-plugins", "interactive": true}
+# Search specifically for store plugins
+curl -sf "http://127.0.0.1:8090/api/v1/search?q=store&type=store" | jq '.results[].name'
+```
+
+> **Try it yourself:** Search for `ui`, `config`, or `transform` plugins!
+
+**Option B: Web UI Marketplace**
+
+Launch `zhi edit --ui webui` and navigate to the **Marketplace** tab (`g m`).
+Browse and search for plugins visually — the web UI reads from the same marketplace
+index you just populated via curl above.
 
 ---
 
