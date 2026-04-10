@@ -51,15 +51,21 @@ zhi component list
 Output:
 
 ```
-NAME          STATUS     MANDATORY  DEPENDENCIES  PATHS
-pokedex-web   enabled    yes        -             pokedex-web/
-pokemon-api   enabled    yes        -             pokemon-api/
-trainer-info  enabled    no         -             trainer-info/
+NAME          STATUS    MANDATORY  DEPENDENCIES  PATHS
+pokedex-web   enabled   yes        -             pokedex-web/
+pokemon-api   enabled   yes        -             pokemon-api/
+trainer-info  disabled  no         -             trainer-info/
+```
+
+The scaffolded workspace starts with `trainer-info` disabled. Before demonstrating the disable command, enable it first:
+
+```sh
+zhi component enable trainer-info
 ```
 
 ## Disabling a Component
 
-Disable the optional `trainer-info` component:
+Now disable the `trainer-info` component:
 
 ```sh
 zhi component disable trainer-info

@@ -21,6 +21,10 @@ You should see output similar to:
 ```
 Initialized zhi workspace:
   .zhi/store/
+  app-data/pokedex-api/pokedex.json
+  app-data/pokedex-web/html/index.html
+  app-data/pokedex-web/nginx.conf
+  .zhi/components.json
   config/app.yaml
   templates/docker-compose.yml.tmpl
   zhi.yaml

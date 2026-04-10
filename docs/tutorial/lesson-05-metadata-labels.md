@@ -99,6 +99,10 @@ These labels control how values are displayed and edited in the TUI and web UI.
 | `ui.confirm` | bool | -- | Requires confirmation before changing |
 | `ui.showIf` | string | -- | Conditionally shows based on another value (format: `path=value`) |
 | `ui.format` | string | -- | Display format hint (e.g., `json`, `yaml`) |
+| `ui.listItemPlaceholder` | string | -- | Placeholder text for items in list-type values |
+| `ui.mapKeyPlaceholder` | string | -- | Placeholder text for key fields in map-type values |
+| `ui.mapValuePlaceholder` | string | -- | Placeholder text for value fields in map-type values |
+| `ui.yamlSchema` | string | -- | Description of expected YAML structure for multiline YAML values |
 
 ### Store Labels
 
