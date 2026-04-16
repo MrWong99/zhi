@@ -47,6 +47,7 @@ nav:
     - Getting Started: user-guide/getting-started.md
     - Workspace Configuration: user-guide/workspace-configuration.md
     - CLI Reference: user-guide/cli-reference.md
+    - Doctor: user-guide/doctor.md
     - Components: user-guide/components.md
     - Export and Templates: user-guide/export-and-templates.md
     - Apply: user-guide/apply.md

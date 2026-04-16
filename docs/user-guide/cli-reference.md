@@ -110,6 +110,30 @@ Exit code 1 if any Blocking results, 0 otherwise.
 | `--path` | Validate only a specific path |
 | `--json` | Output as JSON |
 
+### `zhi doctor`
+
+Run a battery of health checks: workspace integrity, plugin installation and compatibility, store connectivity (with Vault-specific probes), config validation, and optionally marketplace updates. See [Doctor](doctor.md) for detail.
+
+```sh
+zhi doctor
+zhi doctor --check plugins --check store
+zhi doctor --check updates
+zhi doctor --json | jq .summary
+```
+
+Exit code 1 if any check reports an error, 0 otherwise. Warnings do not affect exit code.
+
+| Flag | Description |
+|------|-------------|
+| `--check` | Run only the given categories (`workspace`, `plugins`, `store`, `config`, `updates`). Repeatable. |
+| `--json` | Machine-readable output |
+| `--quiet` | Suppress OK and skipped rows |
+| `--deep` | Enable slow checks (e.g., plugin binary digest verification) |
+| `--timeout` | Per-check timeout (default 10s) |
+| `--no-color` | Disable ANSI output (also honours `NO_COLOR`) |
+| `--fix` | Reserved for future releases — no fixers registered in v1 |
+| `--updates` | Shortcut for `--check updates` |
+
 **Example output:**
 
 ```
