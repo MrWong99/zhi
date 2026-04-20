@@ -108,24 +108,23 @@ func (doctorExitError) ExitCode() int { return 1 }
 // writeJSON serialises the report as a single object with grouped
 // results plus a summary stanza so callers can branch on counts.
 func writeJSON(w io.Writer, r doctor.Report) error {
-	ok, warn, errCount, skipped := r.Counts()
+	type summaryPayload struct {
+		doctor.Counts
+		Total    int `json:"total"`
+		ExitCode int `json:"exit_code"`
+	}
+	counts := r.Counts()
 	payload := struct {
 		Groups  []doctor.CategoryGroup `json:"groups"`
-		Summary struct {
-			OK       int `json:"ok"`
-			Warnings int `json:"warnings"`
-			Errors   int `json:"errors"`
-			Skipped  int `json:"skipped"`
-			Total    int `json:"total"`
-			ExitCode int `json:"exit_code"`
-		} `json:"summary"`
-	}{Groups: r.Groups}
-	payload.Summary.OK = ok
-	payload.Summary.Warnings = warn
-	payload.Summary.Errors = errCount
-	payload.Summary.Skipped = skipped
-	payload.Summary.Total = r.Total()
-	payload.Summary.ExitCode = r.ExitCode()
+		Summary summaryPayload         `json:"summary"`
+	}{
+		Groups: r.Groups,
+		Summary: summaryPayload{
+			Counts:   counts,
+			Total:    counts.Total(),
+			ExitCode: r.ExitCode(),
+		},
+	}
 
 	data, err := json.MarshalIndent(payload, "", "  ")
 	if err != nil {
@@ -168,12 +167,11 @@ func writeText(w io.Writer, r doctor.Report, quiet, color bool) {
 		fmt.Fprintln(w)
 	}
 
-	ok, warn, errs, skipped := r.Counts()
-	total := ok + warn + errs
+	c := r.Counts()
 	fmt.Fprintf(w, "Summary: %d/%d checks passed, %d warning(s), %d error(s)",
-		ok, total, warn, errs)
-	if skipped > 0 {
-		fmt.Fprintf(w, ", %d skipped", skipped)
+		c.OK, c.Total(), c.Warnings, c.Errors)
+	if c.Skipped > 0 {
+		fmt.Fprintf(w, ", %d skipped", c.Skipped)
 	}
 	fmt.Fprintln(w)
 }
@@ -209,31 +207,18 @@ func groupStatus(g doctor.CategoryGroup) doctor.Status {
 
 // summary formats the per-category tally shown in the header.
 func summary(g doctor.CategoryGroup) string {
-	ok, warn, errs, skipped := 0, 0, 0, 0
-	for _, r := range g.Results {
-		switch r.Status {
-		case doctor.StatusOK:
-			ok++
-		case doctor.StatusWarning:
-			warn++
-		case doctor.StatusError:
-			errs++
-		case doctor.StatusSkipped:
-			skipped++
-		}
-	}
-	total := ok + warn + errs
+	c := g.Counts()
 	var extras []string
-	if warn > 0 {
-		extras = append(extras, fmt.Sprintf("%d warning", warn))
+	if c.Warnings > 0 {
+		extras = append(extras, fmt.Sprintf("%d warning", c.Warnings))
 	}
-	if errs > 0 {
-		extras = append(extras, fmt.Sprintf("%d error", errs))
+	if c.Errors > 0 {
+		extras = append(extras, fmt.Sprintf("%d error", c.Errors))
 	}
-	if skipped > 0 {
-		extras = append(extras, fmt.Sprintf("%d skipped", skipped))
+	if c.Skipped > 0 {
+		extras = append(extras, fmt.Sprintf("%d skipped", c.Skipped))
 	}
-	s := fmt.Sprintf(" — %d/%d checks passed", ok, total)
+	s := fmt.Sprintf(" — %d/%d checks passed", c.OK, c.Total())
 	if len(extras) > 0 {
 		s += " (" + strings.Join(extras, ", ") + ")"
 	}

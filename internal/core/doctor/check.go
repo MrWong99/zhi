@@ -121,43 +121,67 @@ type CategoryGroup struct {
 	Results  []Result `json:"results"`
 }
 
+// Counts tallies the results in this category.
+func (g CategoryGroup) Counts() Counts {
+	var c Counts
+	for _, res := range g.Results {
+		switch res.Status {
+		case StatusOK:
+			c.OK++
+		case StatusWarning:
+			c.Warnings++
+		case StatusError:
+			c.Errors++
+		case StatusSkipped:
+			c.Skipped++
+		}
+	}
+	return c
+}
+
 // Report is the aggregated output of a Runner.Run invocation. Groups
 // preserves the order in which categories ran.
 type Report struct {
 	Groups []CategoryGroup `json:"groups"`
 }
 
-// Counts returns the total number of results with each status across
-// the whole report.
-func (r Report) Counts() (ok, warning, errCount, skipped int) {
+// Counts bundles per-status result totals. Named fields make callers
+// self-documenting — no positional unpacking of anonymous ints.
+type Counts struct {
+	OK       int `json:"ok"`
+	Warnings int `json:"warnings"`
+	Errors   int `json:"errors"`
+	Skipped  int `json:"skipped"`
+}
+
+// Total returns the number of non-skipped results (OK + Warnings + Errors).
+func (c Counts) Total() int { return c.OK + c.Warnings + c.Errors }
+
+// Counts tallies results by status across the whole report.
+func (r Report) Counts() Counts {
+	var c Counts
 	for _, g := range r.Groups {
 		for _, res := range g.Results {
 			switch res.Status {
 			case StatusOK:
-				ok++
+				c.OK++
 			case StatusWarning:
-				warning++
+				c.Warnings++
 			case StatusError:
-				errCount++
+				c.Errors++
 			case StatusSkipped:
-				skipped++
+				c.Skipped++
 			}
 		}
 	}
-	return
+	return c
 }
 
 // Total returns the total number of non-skipped results.
-func (r Report) Total() int {
-	ok, warn, errCount, _ := r.Counts()
-	return ok + warn + errCount
-}
+func (r Report) Total() int { return r.Counts().Total() }
 
 // HasError reports whether any result has StatusError.
-func (r Report) HasError() bool {
-	_, _, e, _ := r.Counts()
-	return e > 0
-}
+func (r Report) HasError() bool { return r.Counts().Errors > 0 }
 
 // ExitCode maps a Report to a process exit code:
 //
