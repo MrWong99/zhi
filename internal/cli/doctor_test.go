@@ -159,7 +159,6 @@ func resetDoctorFlags(t *testing.T) {
 	doctorDeep = false
 	doctorTimeout = 0
 	doctorNoColor = false
-	doctorUpdates = false
 	workspace = ""
 	t.Cleanup(func() {
 		doctorChecks = nil
@@ -169,7 +168,6 @@ func resetDoctorFlags(t *testing.T) {
 		doctorDeep = false
 		doctorTimeout = 0
 		doctorNoColor = false
-		doctorUpdates = false
 		workspace = ""
 	})
 }

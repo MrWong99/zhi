@@ -41,12 +41,13 @@ Summary: 16/17 checks passed, 1 warning(s), 0 error(s), 2 skipped
 | `config` | `engine.Validate()` runs without blocking results; no `core.deprecated` fields remain in use; literal `${VAR}` patterns are flagged (zhi does not yet expand env vars) |
 | `updates` | Installed plugin versions are compared against the marketplace — opt-in, requires network |
 
-Filter with `--check`:
+Filter with `--check`. The reserved name `all` expands to every category, including those that need the network:
 
 ```bash
 zhi doctor --check workspace
 zhi doctor --check plugins --check store
-zhi doctor --check updates                 # marketplace lookup
+zhi doctor --check updates                 # marketplace lookup only
+zhi doctor --check all                     # everything, including updates
 ```
 
 ## JSON output
@@ -72,14 +73,13 @@ The full payload contains a `groups` array keyed by category, each with a `resul
 
 | Flag | Purpose |
 |------|---------|
-| `--check <category>` | Run only the named category. Repeatable. |
+| `--check <category>` | Run only the named category. Repeatable. `all` expands to every category. |
 | `--json` | Machine-readable output. Suppresses colors and headings. |
 | `--quiet` | Skip OK and Skipped results in text output; useful when piping to review summaries. |
 | `--deep` | Enable slow checks — currently plugin signature verification against `zhi-plugins.lock`. |
 | `--timeout <duration>` | Per-check wall-clock deadline (default 10s). |
 | `--no-color` | Disable ANSI output. Also honours `NO_COLOR`. |
 | `--fix` | Apply auto-fixable remediations. The v1 fixer set is empty — this flag is reserved for future releases. |
-| `--updates` | Shortcut for `--check updates`. |
 
 ## Vault checks
 

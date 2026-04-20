@@ -207,9 +207,14 @@ func AllChecks() []Check {
 	}
 }
 
+// CategoryAll is a pseudo-category that expands to every real category
+// including those excluded from DefaultCategories (e.g. updates).
+const CategoryAll = Category("all")
+
 // ParseCategories turns a list of user-supplied strings into Category
 // values, preserving order and rejecting unknown names. An empty input
-// returns DefaultCategories.
+// returns DefaultCategories. The reserved name "all" expands to every
+// registered category, including those that need network access.
 func ParseCategories(names []string) ([]Category, error) {
 	if len(names) == 0 {
 		return DefaultCategories, nil
@@ -217,8 +222,16 @@ func ParseCategories(names []string) ([]Category, error) {
 	out := make([]Category, 0, len(names))
 	for _, raw := range names {
 		c := Category(raw)
+		if c == CategoryAll {
+			for _, every := range AllCategories {
+				if !slices.Contains(out, every) {
+					out = append(out, every)
+				}
+			}
+			continue
+		}
 		if !slices.Contains(AllCategories, c) {
-			return nil, fmt.Errorf("unknown check category %q (valid: %s)", raw, categoriesString())
+			return nil, fmt.Errorf("unknown check category %q (valid: %s|all)", raw, categoriesString())
 		}
 		if !slices.Contains(out, c) {
 			out = append(out, c)

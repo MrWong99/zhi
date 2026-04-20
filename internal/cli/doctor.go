@@ -22,7 +22,6 @@ var (
 	doctorDeep    bool
 	doctorTimeout time.Duration
 	doctorNoColor bool
-	doctorUpdates bool
 )
 
 var doctorCmd = &cobra.Command{
@@ -41,6 +40,7 @@ affect the exit code.`,
 	Example: `  zhi doctor
   zhi doctor --check workspace --check plugins
   zhi doctor --check updates
+  zhi doctor --check all
   zhi doctor --json | jq .
   zhi doctor --deep`,
 	RunE: runDoctor,
@@ -49,28 +49,20 @@ affect the exit code.`,
 func init() {
 	f := doctorCmd.Flags()
 	f.StringSliceVar(&doctorChecks, "check", nil,
-		"run only the given categories (workspace|plugins|store|config|updates)")
+		"run only the given categories (workspace|plugins|store|config|updates|all)")
 	f.BoolVar(&doctorJSON, "json", false, "machine-readable output")
 	f.BoolVar(&doctorQuiet, "quiet", false, "suppress OK and skipped results in text output")
 	f.BoolVar(&doctorFix, "fix", false, "apply auto-fixable remediations (empty set in v1)")
 	f.BoolVar(&doctorDeep, "deep", false, "enable slow / expensive checks (signature verification, etc.)")
 	f.DurationVar(&doctorTimeout, "timeout", 10*time.Second, "per-check timeout")
 	f.BoolVar(&doctorNoColor, "no-color", false, "disable colored output")
-	f.BoolVar(&doctorUpdates, "updates", false,
-		"shortcut: include the updates category (same as --check updates)")
 	rootCmd.AddCommand(doctorCmd)
 }
 
 func runDoctor(cmd *cobra.Command, _ []string) error {
 	applyVerbose()
 
-	// If --updates is set, ensure "updates" is in the list.
-	checkFlags := slices.Clone(doctorChecks)
-	if doctorUpdates && !slices.Contains(checkFlags, string(doctor.CategoryUpdates)) {
-		checkFlags = append(checkFlags, string(doctor.CategoryUpdates))
-	}
-
-	cats, err := doctor.ParseCategories(checkFlags)
+	cats, err := doctor.ParseCategories(doctorChecks)
 	if err != nil {
 		return err
 	}
