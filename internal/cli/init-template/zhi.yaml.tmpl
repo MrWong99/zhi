@@ -25,8 +25,8 @@ components:
 export:
   templates:
     - name: docker-compose
-      template: ./templates/docker-compose.yml.tmpl
-      output: ./docker-compose.yml
+      template: ./templates/docker-compose.yaml.tmpl
+      output: ./docker-compose.yaml
 
 apply:
   command: "docker compose up -d"

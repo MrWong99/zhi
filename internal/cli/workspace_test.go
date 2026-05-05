@@ -1,14 +1,67 @@
 package cli
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/MrWong99/zhi/pkg/sharing/lockfile"
+	"github.com/MrWong99/zhi/pkg/sharing/manifest"
 	"github.com/MrWong99/zhi/pkg/sharing/metadata"
 )
+
+func TestCheckExternalToolMultiWordName(t *testing.T) {
+	// "docker compose" must look up "docker" on PATH, not the literal
+	// "docker compose" string. We exercise both branches by picking a
+	// binary that almost certainly exists ("sh") and one that does not.
+	tests := []struct {
+		name     string
+		tool     manifest.ToolRequirement
+		wantSym  string
+		wantWord string
+	}{
+		{
+			name:     "single-word existing binary",
+			tool:     manifest.ToolRequirement{Name: "sh"},
+			wantSym:  "+",
+			wantWord: "found",
+		},
+		{
+			name:     "multi-word resolves to first segment",
+			tool:     manifest.ToolRequirement{Name: "sh subcommand"},
+			wantSym:  "+",
+			wantWord: "found",
+		},
+		{
+			name:     "missing multi-word binary",
+			tool:     manifest.ToolRequirement{Name: "definitely-not-a-real-tool subcmd", Version: "1.0"},
+			wantSym:  "!",
+			wantWord: "not found",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			checkExternalTool(&buf, tt.tool)
+			out := buf.String()
+			if !strings.Contains(out, tt.wantSym) {
+				t.Errorf("output %q missing symbol %q", out, tt.wantSym)
+			}
+			if !strings.Contains(out, tt.wantWord) {
+				t.Errorf("output %q missing %q", out, tt.wantWord)
+			}
+			if !strings.Contains(out, tt.tool.Name) {
+				t.Errorf("output %q should mention tool name %q", out, tt.tool.Name)
+			}
+			if tt.tool.Version != "" && !strings.Contains(out, tt.tool.Version) {
+				t.Errorf("output %q should mention required version %q", out, tt.tool.Version)
+			}
+		})
+	}
+}
 
 func TestStripTag(t *testing.T) {
 	tests := []struct {

@@ -45,10 +45,10 @@ func TestInitCreatesWorkspace(t *testing.T) {
 		t.Error("config/app.yaml was not created")
 	}
 
-	// Check templates/docker-compose.yml.tmpl exists.
-	tmplFile := filepath.Join(dir, "templates", "docker-compose.yml.tmpl")
+	// Check templates/docker-compose.yaml.tmpl exists.
+	tmplFile := filepath.Join(dir, "templates", "docker-compose.yaml.tmpl")
 	if _, err := os.Stat(tmplFile); os.IsNotExist(err) {
-		t.Error("templates/docker-compose.yml.tmpl was not created")
+		t.Error("templates/docker-compose.yaml.tmpl was not created")
 	}
 
 	// Check .zhi/store/ directory exists.

@@ -30,6 +30,7 @@ Prerequisites:
   - Built binaries for target platforms listed in the manifest's binaries section`,
 	Example: `  zhi plugin publish --registry ghcr.io/myorg
   zhi plugin publish --registry ghcr.io/myorg --tag v1.0.0
+  zhi plugin publish --registry ghcr.io/myorg --tag v1.0.0 --latest
   zhi plugin publish --registry ghcr.io/myorg --sign
   zhi plugin publish --registry ghcr.io/myorg --sign --key cosign.key`,
 	RunE: runPluginPublish,
@@ -38,6 +39,8 @@ Prerequisites:
 var (
 	pluginPublishRegistry string
 	pluginPublishTag      string
+	pluginPublishExtraTag []string
+	pluginPublishLatest   bool
 	pluginPublishSign     bool
 	pluginPublishKey      string
 )
@@ -45,6 +48,8 @@ var (
 func init() {
 	pluginPublishCmd.Flags().StringVar(&pluginPublishRegistry, "registry", "", "target OCI registry (required, e.g. ghcr.io/myorg)")
 	pluginPublishCmd.Flags().StringVar(&pluginPublishTag, "tag", "", "OCI tag (default: v{version} from manifest)")
+	pluginPublishCmd.Flags().StringSliceVar(&pluginPublishExtraTag, "also-tag", nil, "additional OCI tags to apply (repeatable)")
+	pluginPublishCmd.Flags().BoolVar(&pluginPublishLatest, "latest", false, "also push the artifact under the 'latest' tag")
 	pluginPublishCmd.Flags().BoolVar(&pluginPublishSign, "sign", false, "sign the artifact with cosign after pushing")
 	pluginPublishCmd.Flags().StringVar(&pluginPublishKey, "key", "", "path to cosign private key (default: keyless via Fulcio/OIDC)")
 }
@@ -83,8 +88,14 @@ func runPluginPublish(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
+	additionalTags := append([]string{}, pluginPublishExtraTag...)
+	if pluginPublishLatest {
+		additionalTags = append(additionalTags, "latest")
+	}
+
 	opts := client.PushOptions{
-		Tag: pluginPublishTag,
+		Tag:            pluginPublishTag,
+		AdditionalTags: additionalTags,
 	}
 
 	fmt.Fprintf(w, "Publishing %s v%s to %s...\n", m.Name, m.Version, pluginPublishRegistry)
@@ -101,6 +112,9 @@ func runPluginPublish(cmd *cobra.Command, _ []string) error {
 	fmt.Fprintf(w, "\nPublished successfully!\n")
 	fmt.Fprintf(w, "  Reference: %s\n", result.Reference)
 	fmt.Fprintf(w, "  Tag:       %s\n", result.Tag)
+	for _, t := range additionalTags {
+		fmt.Fprintf(w, "  Also tagged: %s\n", t)
+	}
 	fmt.Fprintf(w, "  Digest:    %s\n", result.Digest)
 
 	// Sign the artifact if requested.

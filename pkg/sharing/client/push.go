@@ -28,6 +28,10 @@ import (
 type PushOptions struct {
 	// Tag overrides the default OCI tag (default: "v{version}").
 	Tag string
+	// AdditionalTags lists extra OCI tags to apply to the same artifact
+	// (e.g. "latest"). They are pushed alongside Tag and reference the
+	// identical manifest digest.
+	AdditionalTags []string
 }
 
 // PushResult describes the outcome of a push operation.
@@ -80,7 +84,7 @@ func (c *Client) PushPlugin(ctx context.Context, m *manifest.PluginManifest, bin
 			binaryPath = bp
 		}
 
-		desc, err := c.pushSinglePlatformPlugin(ctx, remote, configData, binaryPath, platform, tag)
+		desc, err := c.pushSinglePlatformPlugin(ctx, remote, configData, binaryPath, platform, tag, opts.AdditionalTags)
 		if err != nil {
 			return nil, err
 		}
@@ -93,7 +97,7 @@ func (c *Client) PushPlugin(ctx context.Context, m *manifest.PluginManifest, bin
 	}
 
 	// Multi-platform push: create per-platform manifests and an index.
-	desc, err := c.pushMultiPlatformPlugin(ctx, remote, configData, binaries, tag)
+	desc, err := c.pushMultiPlatformPlugin(ctx, remote, configData, binaries, tag, opts.AdditionalTags)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +111,7 @@ func (c *Client) PushPlugin(ctx context.Context, m *manifest.PluginManifest, bin
 
 // pushSinglePlatformPlugin creates and pushes a single OCI manifest with the
 // plugin binary as a layer.
-func (c *Client) pushSinglePlatformPlugin(ctx context.Context, target oras.Target, configData []byte, binaryPath, platform, tag string) (ocispec.Descriptor, error) {
+func (c *Client) pushSinglePlatformPlugin(ctx context.Context, target oras.Target, configData []byte, binaryPath, platform, tag string, additionalTags []string) (ocispec.Descriptor, error) {
 	store := memory.New()
 
 	binaryData, err := os.ReadFile(binaryPath)
@@ -152,9 +156,13 @@ func (c *Client) pushSinglePlatformPlugin(ctx context.Context, target oras.Targe
 
 	// Copy from memory store to remote. Wrap target to handle registries
 	// that return 403 on Exists for new packages (e.g. GHCR).
-	desc, err := oras.Copy(ctx, store, tag, &lenientExistsTarget{target}, tag, oras.DefaultCopyOptions)
+	wrapped := &lenientExistsTarget{target}
+	desc, err := oras.Copy(ctx, store, tag, wrapped, tag, oras.DefaultCopyOptions)
 	if err != nil {
 		return ocispec.Descriptor{}, fmt.Errorf("pushing to registry: %w", err)
+	}
+	if err := pushAdditionalTags(ctx, store, wrapped, manifestDesc, additionalTags); err != nil {
+		return ocispec.Descriptor{}, err
 	}
 	_ = platform // platform is informational for single-platform
 	return desc, nil
@@ -162,7 +170,7 @@ func (c *Client) pushSinglePlatformPlugin(ctx context.Context, target oras.Targe
 
 // pushMultiPlatformPlugin creates per-platform manifests and wraps them in an
 // OCI Image Index.
-func (c *Client) pushMultiPlatformPlugin(ctx context.Context, target oras.Target, configData []byte, binaries map[string]string, tag string) (ocispec.Descriptor, error) {
+func (c *Client) pushMultiPlatformPlugin(ctx context.Context, target oras.Target, configData []byte, binaries map[string]string, tag string, additionalTags []string) (ocispec.Descriptor, error) {
 	store := memory.New()
 
 	// Push config blob once — it is shared across all platform manifests.
@@ -236,9 +244,13 @@ func (c *Client) pushMultiPlatformPlugin(ctx context.Context, target oras.Target
 		return ocispec.Descriptor{}, fmt.Errorf("tagging index: %w", err)
 	}
 
-	desc, err := oras.Copy(ctx, store, tag, &lenientExistsTarget{target}, tag, oras.DefaultCopyOptions)
+	wrapped := &lenientExistsTarget{target}
+	desc, err := oras.Copy(ctx, store, tag, wrapped, tag, oras.DefaultCopyOptions)
 	if err != nil {
 		return ocispec.Descriptor{}, fmt.Errorf("pushing to registry: %w", err)
+	}
+	if err := pushAdditionalTags(ctx, store, wrapped, indexDesc, additionalTags); err != nil {
+		return ocispec.Descriptor{}, err
 	}
 	return desc, nil
 }
@@ -310,9 +322,13 @@ func (c *Client) PushWorkspace(ctx context.Context, m *manifest.WorkspaceManifes
 		return nil, fmt.Errorf("tagging manifest: %w", err)
 	}
 
-	desc, err := oras.Copy(ctx, store, tag, &lenientExistsTarget{remote}, tag, oras.DefaultCopyOptions)
+	wrapped := &lenientExistsTarget{remote}
+	desc, err := oras.Copy(ctx, store, tag, wrapped, tag, oras.DefaultCopyOptions)
 	if err != nil {
 		return nil, fmt.Errorf("pushing to registry: %w", err)
+	}
+	if err := pushAdditionalTags(ctx, store, wrapped, manifestDesc, opts.AdditionalTags); err != nil {
+		return nil, err
 	}
 
 	return &PushResult{
@@ -320,6 +336,23 @@ func (c *Client) PushWorkspace(ctx context.Context, m *manifest.WorkspaceManifes
 		Digest:    string(desc.Digest),
 		Tag:       tag,
 	}, nil
+}
+
+// pushAdditionalTags re-tags an already-pushed artifact with extra tags. Each
+// tag points to the same manifest digest as the primary push.
+func pushAdditionalTags(ctx context.Context, store *memory.Store, target oras.Target, desc ocispec.Descriptor, tags []string) error {
+	for _, t := range tags {
+		if t == "" {
+			continue
+		}
+		if err := store.Tag(ctx, desc, t); err != nil {
+			return fmt.Errorf("tagging %q in memory store: %w", t, err)
+		}
+		if _, err := oras.Copy(ctx, store, t, target, t, oras.DefaultCopyOptions); err != nil {
+			return fmt.Errorf("pushing additional tag %q: %w", t, err)
+		}
+	}
+	return nil
 }
 
 // PullWorkspace downloads a workspace artifact, extracts it, and installs
