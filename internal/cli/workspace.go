@@ -117,8 +117,15 @@ func runWorkspaceInstall(cmd *cobra.Command, args []string) error {
 }
 
 // checkExternalTool checks if an external tool is available on PATH.
+//
+// Tool names with spaces (e.g. "docker compose") are interpreted as
+// "<binary> <subcommand>"; only the leading binary is looked up on PATH.
 func checkExternalTool(w interface{ Write([]byte) (int, error) }, tool manifest.ToolRequirement) {
-	_, err := exec.LookPath(tool.Name)
+	binary := tool.Name
+	if i := strings.IndexByte(binary, ' '); i >= 0 {
+		binary = binary[:i]
+	}
+	_, err := exec.LookPath(binary)
 	symbol := "+"
 	status := "found"
 	if err != nil {
@@ -149,6 +156,7 @@ When --sign is used without --key, keyless signing via Sigstore Fulcio is used,
 which requires an OIDC identity (e.g. GitHub Actions).`,
 	Example: `  zhi workspace publish --registry ghcr.io/myorg
   zhi workspace publish --registry ghcr.io/myorg --tag v1.0.0
+  zhi workspace publish --registry ghcr.io/myorg --tag v1.0.0 --latest
   zhi workspace publish --registry ghcr.io/myorg --sign
   zhi workspace publish --registry ghcr.io/myorg --sign --key cosign.key`,
 	RunE: runWorkspacePublish,
@@ -157,6 +165,8 @@ which requires an OIDC identity (e.g. GitHub Actions).`,
 var (
 	workspacePublishRegistry string
 	workspacePublishTag      string
+	workspacePublishExtraTag []string
+	workspacePublishLatest   bool
 	workspacePublishSign     bool
 	workspacePublishKey      string
 )
@@ -164,6 +174,8 @@ var (
 func init() {
 	workspacePublishCmd.Flags().StringVar(&workspacePublishRegistry, "registry", "", "target OCI registry (required)")
 	workspacePublishCmd.Flags().StringVar(&workspacePublishTag, "tag", "", "OCI tag (default: v{version} from manifest)")
+	workspacePublishCmd.Flags().StringSliceVar(&workspacePublishExtraTag, "also-tag", nil, "additional OCI tags to apply (repeatable)")
+	workspacePublishCmd.Flags().BoolVar(&workspacePublishLatest, "latest", false, "also push the artifact under the 'latest' tag")
 	workspacePublishCmd.Flags().BoolVar(&workspacePublishSign, "sign", false, "sign the artifact with cosign after pushing")
 	workspacePublishCmd.Flags().StringVar(&workspacePublishKey, "key", "", "path to cosign private key (default: keyless via Fulcio/OIDC)")
 }
@@ -191,8 +203,14 @@ func runWorkspacePublish(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
+	additionalTags := append([]string{}, workspacePublishExtraTag...)
+	if workspacePublishLatest {
+		additionalTags = append(additionalTags, "latest")
+	}
+
 	opts := client.PushOptions{
-		Tag: workspacePublishTag,
+		Tag:            workspacePublishTag,
+		AdditionalTags: additionalTags,
 	}
 
 	fmt.Fprintf(w, "Publishing workspace %s v%s to %s...\n", wm.Name, wm.Version, workspacePublishRegistry)
@@ -205,6 +223,9 @@ func runWorkspacePublish(cmd *cobra.Command, _ []string) error {
 	fmt.Fprintf(w, "\nPublished successfully!\n")
 	fmt.Fprintf(w, "  Reference: %s\n", result.Reference)
 	fmt.Fprintf(w, "  Tag:       %s\n", result.Tag)
+	for _, t := range additionalTags {
+		fmt.Fprintf(w, "  Also tagged: %s\n", t)
+	}
 	fmt.Fprintf(w, "  Digest:    %s\n", result.Digest)
 
 	// Sign the artifact if requested.

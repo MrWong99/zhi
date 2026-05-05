@@ -111,6 +111,7 @@ jobs:
           ../../bin/zhi plugin publish \
             --registry ghcr.io/mrwong99/zhi \
             --tag "${{ steps.version.outputs.tag }}" \
+            --latest \
             --sign \
             --verbose
 
@@ -183,5 +184,6 @@ jobs:
           ../../bin/zhi workspace publish \
             --registry ghcr.io/mrwong99/zhi \
             --tag "${{ steps.version.outputs.tag }}" \
+            --latest \
             --sign \
             --verbose

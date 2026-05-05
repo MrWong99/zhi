@@ -25,11 +25,11 @@ application.
 This creates:
   - zhi.yaml:      Workspace configuration to manage the app.
   - config/:       Starter configuration values for the services.
-  - templates/:    A template to generate docker-compose.yml.
+  - templates/:    A template to generate docker-compose.yaml.
   - app-data/:     Data and configuration for the example services.
   - .zhi/:         Internal directory for workspace state.
 
-Run 'zhi export' to generate the final docker-compose.yml.`,
+Run 'zhi export' to generate the final docker-compose.yaml.`,
 	Example: `  zhi init
   zhi init --config-provider structuredfile --store-provider jsonfile
   zhi init --force`,
@@ -182,7 +182,7 @@ func runInit(cmd *cobra.Command, _ []string) error {
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "What's next?")
 	fmt.Fprintln(w, "  1. Generate the Docker Compose file:  zhi export")
-	fmt.Fprintln(w, "  2. Start the Pokedex stack:           docker-compose up")
+	fmt.Fprintln(w, "  2. Start the Pokedex stack:           docker compose up")
 	fmt.Fprintln(w, "  3. View the Pokedex at:               http://localhost:8080")
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Explore more commands:")
