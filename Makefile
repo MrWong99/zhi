@@ -27,6 +27,12 @@ PROTO_VERSION := 33.5
 PROTO_INSTALL_DIR := $(BIN_DIR)/protoc
 PROTOC        := $(PROTO_INSTALL_DIR)/bin/protoc
 
+# Pinned protoc Go plugin versions. Keep these in sync with the versions
+# recorded in the generated *.pb.go headers so `make proto-check` is
+# reproducible and does not drift when upstream publishes new releases.
+PROTOC_GEN_GO_VERSION      := v1.36.11
+PROTOC_GEN_GO_GRPC_VERSION := v1.6.2
+
 # Detect OS and architecture for protoc download
 UNAME_S := $(shell uname -s)
 UNAME_M := $(shell uname -m)
@@ -151,9 +157,14 @@ install-protoc: ## Download and install the required protoc version locally
 	chmod +x $(PROTOC); \
 	$(PROTOC) --version
 
+.PHONY: install-proto-plugins
+install-proto-plugins: ## Install the pinned protoc Go plugins
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@$(PROTOC_GEN_GO_VERSION)
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@$(PROTOC_GEN_GO_GRPC_VERSION)
+
 .PHONY: proto
-proto: install-protoc ## Generate Go code from Protocol Buffer definitions
-	$(PROTOC) \
+proto: install-protoc install-proto-plugins ## Generate Go code from Protocol Buffer definitions
+	PATH="$(GOPATH)/bin:$$PATH" $(PROTOC) \
 		--proto_path=$(PROTO_DIR) \
 		--go_out=. --go_opt=module=$(MODULE) \
 		--go-grpc_out=. --go-grpc_opt=module=$(MODULE) \
@@ -212,9 +223,7 @@ deps: ## Download module dependencies
 	go mod download
 
 .PHONY: tools
-tools: ## Install required development tools
-	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+tools: install-proto-plugins ## Install required development tools
 	go install github.com/goreleaser/goreleaser/v2@latest
 	curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(GOPATH)/bin v2.10.1
 
