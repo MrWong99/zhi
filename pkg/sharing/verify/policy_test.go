@@ -197,3 +197,16 @@ func TestIsBlocked(t *testing.T) {
 		t.Error("expected empty pattern to not block")
 	}
 }
+
+func TestMatchesSegments(t *testing.T) {
+	if matchesSegments([]string{"a", "b"}, nil) {
+		t.Error("expected empty pattern to not match")
+	}
+	// First pattern segment matches, a later one does not.
+	if matchesSegments([]string{"ghcr.io", "untrusted", "good-plugin"}, []string{"untrusted", "bad-plugin"}) {
+		t.Error("expected partial segment run to not match")
+	}
+	if !matchesSegments([]string{"ghcr.io", "untrusted", "bad-plugin"}, []string{"untrusted", "bad-plugin"}) {
+		t.Error("expected contiguous segment run to match")
+	}
+}
