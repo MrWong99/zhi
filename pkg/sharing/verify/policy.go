@@ -116,10 +116,43 @@ func (p *Policy) IsRegistryAllowed(ref string) bool {
 }
 
 // IsBlocked checks whether a reference matches a blocked plugin pattern.
+// Patterns match whole path segments of the repository (tag and digest are
+// ignored), so blocking "org/plugin" does not block "org/plugin-fork" or
+// "other-org/pluginish".
 func (p *Policy) IsBlocked(ref string) bool {
 	ref = strings.TrimPrefix(ref, "oci://")
+	// Strip a trailing digest or tag so patterns match the repository path.
+	if i := strings.LastIndex(ref, "@"); i >= 0 {
+		ref = ref[:i]
+	}
+	if i := strings.LastIndex(ref, ":"); i > strings.LastIndex(ref, "/") {
+		ref = ref[:i]
+	}
+	segments := strings.Split(ref, "/")
 	for _, blocked := range p.BlockedPlugins {
-		if strings.Contains(ref, blocked) {
+		pattern := strings.Split(strings.TrimPrefix(blocked, "oci://"), "/")
+		if matchesSegments(segments, pattern) {
+			return true
+		}
+	}
+	return false
+}
+
+// matchesSegments reports whether pattern occurs in segments as a
+// contiguous run of whole path segments.
+func matchesSegments(segments, pattern []string) bool {
+	if len(pattern) == 0 {
+		return false
+	}
+	for i := 0; i+len(pattern) <= len(segments); i++ {
+		matched := true
+		for j, p := range pattern {
+			if segments[i+j] != p {
+				matched = false
+				break
+			}
+		}
+		if matched {
 			return true
 		}
 	}

@@ -3,7 +3,9 @@ package config
 
 import (
 	"errors"
+	"maps"
 	"regexp"
+	"slices"
 	"strings"
 	"sync"
 )
@@ -154,7 +156,8 @@ func (t *Tree) GetPtr(path string) (*Value, bool) {
 }
 
 // Get returns a copy of the Value at path. The bool reports whether the
-// path exists.
+// path exists. The Metadata map and Validators slice are cloned so that
+// mutating them on the returned copy does not affect the tree.
 func (t *Tree) Get(path string) (Value, bool) {
 	t.mu.RLock()
 	v, ok := t.values[path]
@@ -162,7 +165,10 @@ func (t *Tree) Get(path string) (Value, bool) {
 	if !ok {
 		return Value{}, false
 	}
-	return *v, true
+	cp := *v
+	cp.Metadata = maps.Clone(cp.Metadata)
+	cp.Validators = slices.Clone(cp.Validators)
+	return cp, true
 }
 
 // Delete removes the value at path from the tree. It is a no-op if the

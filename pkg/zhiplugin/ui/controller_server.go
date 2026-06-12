@@ -132,9 +132,7 @@ func (s *controllerGRPCServer) Apply(req *pb.CtrlApplyRequest, stream grpc.Serve
 	if err != nil {
 		finalMsg.Error = err.Error()
 	}
-	_ = stream.Send(finalMsg)
-
-	return nil
+	return stream.Send(finalMsg)
 }
 
 func (s *controllerGRPCServer) ListComponents(ctx context.Context, _ *pb.CtrlListComponentsRequest) (*pb.CtrlListComponentsResponse, error) {
