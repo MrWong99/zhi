@@ -161,10 +161,39 @@ func TestIsRegistryAllowed(t *testing.T) {
 
 func TestIsBlocked(t *testing.T) {
 	p := &Policy{BlockedPlugins: []string{"untrusted/bad-plugin"}}
-	if !p.IsBlocked("oci://ghcr.io/untrusted/bad-plugin:v1.0") {
-		t.Error("expected plugin to be blocked")
+
+	tests := []struct {
+		ref     string
+		blocked bool
+	}{
+		{"oci://ghcr.io/untrusted/bad-plugin:v1.0", true},
+		{"oci://ghcr.io/trusted/good-plugin:v1.0", false},
+		// Digest references are matched on the repository path.
+		{"oci://ghcr.io/untrusted/bad-plugin@sha256:abc123", true},
+		// Tag stripping must not eat the digest segment match.
+		{"oci://ghcr.io/untrusted/bad-plugin", true},
+		// Patterns match whole segments, not substrings.
+		{"oci://ghcr.io/untrusted/bad-plugin-fork:v1.0", false},
+		{"oci://ghcr.io/very-untrusted/bad-plugin:v1.0", false},
+		{"oci://ghcr.io/org/xuntrusted/bad-pluginx:v1.0", false},
+		// Registries with a port keep the host segment intact.
+		{"oci://localhost:5000/untrusted/bad-plugin:v1.0", true},
 	}
-	if p.IsBlocked("oci://ghcr.io/trusted/good-plugin:v1.0") {
-		t.Error("expected plugin to not be blocked")
+	for _, tt := range tests {
+		if got := p.IsBlocked(tt.ref); got != tt.blocked {
+			t.Errorf("IsBlocked(%q) = %v, want %v", tt.ref, got, tt.blocked)
+		}
+	}
+
+	// Patterns may carry an oci:// prefix themselves.
+	p = &Policy{BlockedPlugins: []string{"oci://untrusted/bad-plugin"}}
+	if !p.IsBlocked("oci://ghcr.io/untrusted/bad-plugin:v1.0") {
+		t.Error("expected oci://-prefixed pattern to block")
+	}
+
+	// Empty patterns never match.
+	p = &Policy{BlockedPlugins: []string{""}}
+	if p.IsBlocked("oci://ghcr.io/org/plugin:v1.0") {
+		t.Error("expected empty pattern to not block")
 	}
 }
