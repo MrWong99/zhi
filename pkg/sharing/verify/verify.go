@@ -139,9 +139,12 @@ func NewVerifier(policy *Policy) *Verifier {
 	return &Verifier{policy: policy}
 }
 
-// VerifyArtifact checks the signature and policy for an OCI artifact
-// identified by its reference. When skipVerify is true, verification is
-// skipped but a warning-level result is returned.
+// VerifyArtifact checks the local policy (blocked plugins, allowed
+// registries, signature requirements) for an OCI artifact identified by
+// its reference. It does NOT perform cryptographic signature
+// verification — use VerifySignature with a Sigstore bundle for that —
+// so the returned Result always reports Signed: false. When skipVerify
+// is true, policy strictness checks are skipped.
 func (v *Verifier) VerifyArtifact(ref string, skipVerify bool) *Result {
 	// Check if the plugin is blocked by policy.
 	if v.policy.IsBlocked(ref) {

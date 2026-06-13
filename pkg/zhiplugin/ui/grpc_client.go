@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
 
 	goplugin "github.com/hashicorp/go-plugin"
 	"google.golang.org/grpc"
@@ -26,11 +27,14 @@ func (c *GRPCClient) Run(ctx context.Context, controller Controller) error {
 	// plugin process can call back into the host.
 	controllerServer := &controllerGRPCServer{impl: controller}
 
-	var s *grpc.Server
+	// serverFunc runs on the broker's accept goroutine, so the server
+	// pointer must be published atomically for the read after Run returns.
+	var s atomic.Pointer[grpc.Server]
 	serverFunc := func(opts []grpc.ServerOption) *grpc.Server {
-		s = grpc.NewServer(opts...)
-		pb.RegisterUIControllerServiceServer(s, controllerServer)
-		return s
+		srv := grpc.NewServer(opts...)
+		pb.RegisterUIControllerServiceServer(srv, controllerServer)
+		s.Store(srv)
+		return srv
 	}
 
 	brokerID := c.broker.NextId()
@@ -40,8 +44,8 @@ func (c *GRPCClient) Run(ctx context.Context, controller Controller) error {
 		ControllerBrokerId: brokerID,
 	})
 
-	if s != nil {
-		s.Stop()
+	if srv := s.Load(); srv != nil {
+		srv.Stop()
 	}
 
 	return err
