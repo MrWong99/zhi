@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,6 +14,37 @@ import (
 	"syscall"
 	"time"
 )
+
+// maxScanLineSize bounds the length of a single output line read from a child
+// process. The default bufio.Scanner limit is 64 KiB, which is easily exceeded
+// by tools emitting single-line JSON (e.g. terraform -json, ansible callbacks).
+const maxScanLineSize = 1024 * 1024
+
+// streamPipe reads r line by line and forwards each line to output tagged with
+// the given stream name. It raises the scanner buffer above bufio's default
+// 64 KiB so long lines do not abort the scan, and on any scan error it emits a
+// diagnostic line and drains the remainder of the pipe so the child process is
+// never blocked writing into a full, unread pipe (which would deadlock Wait()).
+func streamPipe(r io.Reader, stream string, output chan<- ApplyOutput) {
+	scanner := bufio.NewScanner(r)
+	scanner.Buffer(make([]byte, 0, 64*1024), maxScanLineSize)
+	for scanner.Scan() {
+		output <- ApplyOutput{
+			Line:   scanner.Text(),
+			Stream: stream,
+			Time:   time.Now(),
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		output <- ApplyOutput{
+			Line:   fmt.Sprintf("[zhi] error reading %s: %v", stream, err),
+			Stream: stream,
+			Time:   time.Now(),
+		}
+		// Drain remaining output so the child can finish and Wait() returns.
+		_, _ = io.Copy(io.Discard, r)
+	}
+}
 
 // ApplyOutput represents a single line of output from the apply command.
 type ApplyOutput struct {
@@ -123,29 +155,19 @@ func Apply(ctx context.Context, cfg ApplyRunConfig, output chan<- ApplyOutput) (
 	// Scan stdout and stderr concurrently.
 	done := make(chan struct{}, 2)
 	go func() {
-		scanner := bufio.NewScanner(stdoutPipe)
-		for scanner.Scan() {
-			output <- ApplyOutput{
-				Line:   scanner.Text(),
-				Stream: "stdout",
-				Time:   time.Now(),
-			}
-		}
+		streamPipe(stdoutPipe, "stdout", output)
 		done <- struct{}{}
 	}()
 	go func() {
-		scanner := bufio.NewScanner(stderrPipe)
-		for scanner.Scan() {
-			output <- ApplyOutput{
-				Line:   scanner.Text(),
-				Stream: "stderr",
-				Time:   time.Now(),
-			}
-		}
+		streamPipe(stderrPipe, "stderr", output)
 		done <- struct{}{}
 	}()
 
-	// Wait for both scanners to finish.
+	// Drain both scanners to EOF before calling Wait. cmd.Wait closes the
+	// StdoutPipe/StderrPipe read ends, so calling it while a scanner is still
+	// reading races the close and drops buffered output ("file already
+	// closed"). Reading to EOF first is the documented-correct order for
+	// StdoutPipe/StderrPipe.
 	<-done
 	<-done
 
@@ -207,6 +229,19 @@ func RunPreChecks(ctx context.Context, cfg ApplyRunConfig, output chan<- ApplyOu
 		cmd.Dir = workdir
 		cmd.Env = env
 
+		// Run in a dedicated process group and signal the whole group on
+		// cancellation so a cancelled/timed-out pre-check tears down any
+		// children it spawned. WaitDelay bounds pipe closure after the
+		// process exits.
+		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+		cmd.Cancel = func() error {
+			if cmd.Process == nil {
+				return nil
+			}
+			return syscall.Kill(-cmd.Process.Pid, syscall.SIGTERM)
+		}
+		cmd.WaitDelay = 5 * time.Second
+
 		// Pipe stdout and stderr.
 		stdoutPipe, err := cmd.StdoutPipe()
 		if err != nil {
@@ -224,32 +259,22 @@ func RunPreChecks(ctx context.Context, cfg ApplyRunConfig, output chan<- ApplyOu
 		// Scan stdout and stderr concurrently.
 		done := make(chan struct{}, 2)
 		go func() {
-			scanner := bufio.NewScanner(stdoutPipe)
-			for scanner.Scan() {
-				output <- ApplyOutput{
-					Line:   scanner.Text(),
-					Stream: "stdout",
-					Time:   time.Now(),
-				}
-			}
+			streamPipe(stdoutPipe, "stdout", output)
 			done <- struct{}{}
 		}()
 		go func() {
-			scanner := bufio.NewScanner(stderrPipe)
-			for scanner.Scan() {
-				output <- ApplyOutput{
-					Line:   scanner.Text(),
-					Stream: "stderr",
-					Time:   time.Now(),
-				}
-			}
+			streamPipe(stderrPipe, "stderr", output)
 			done <- struct{}{}
 		}()
 
+		// Drain both scanners to EOF before Wait closes the pipe read ends
+		// (see the note in Apply); reading first avoids racing the close and
+		// dropping buffered output.
 		<-done
 		<-done
+		waitErr := cmd.Wait()
 
-		if err := cmd.Wait(); err != nil {
+		if err := waitErr; err != nil {
 			var exitErr *exec.ExitError
 			if errors.As(err, &exitErr) {
 				return fmt.Errorf("pre-check %d failed (exit code %d): %s", i+1, exitErr.ExitCode(), check)

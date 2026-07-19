@@ -225,7 +225,7 @@ func TestDriftOnDriftRequiresWatch(t *testing.T) {
 
 	_, err := executeCommand(cmd, "--on-drift", "echo hi")
 	if err == nil {
-		t.Error("--on-drift without --watch should fail")
+		t.Fatal("--on-drift without --watch should fail")
 	}
 	if !strings.Contains(err.Error(), "--on-drift requires --watch") {
 		t.Errorf("unexpected error: %v", err)

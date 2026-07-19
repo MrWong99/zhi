@@ -1,8 +1,12 @@
 package server
 
 import (
+	"io"
 	"net/http"
+	"net/http/httptest"
 	"testing"
+
+	"github.com/MrWong99/zhi/cmd/zhi-mirror/storage"
 )
 
 func TestParseManifestPath(t *testing.T) {
@@ -143,6 +147,72 @@ func TestDetectMediaType(t *testing.T) {
 				t.Errorf("detectMediaType = %q, want %q", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestValidRepo(t *testing.T) {
+	tests := []struct {
+		repo string
+		want bool
+	}{
+		{"zhi-project/plugin", true},
+		{"simple", true},
+		{"a/b/c", true},
+		{"", false},
+		{"../etc", false},
+		{"foo/../../etc/passwd", false},
+		{"foo/./bar", false},
+		{"foo//bar", false},
+		{"/leading", false},
+		{"trailing/", false},
+	}
+	for _, tt := range tests {
+		if got := validRepo(tt.repo); got != tt.want {
+			t.Errorf("validRepo(%q) = %v, want %v", tt.repo, got, tt.want)
+		}
+	}
+}
+
+// TestHandleBlobRejectsInvalidDigest is an F1 regression: a percent-decoded
+// traversal digest in a blob request must be rejected with 400 before it
+// reaches the storage layer, and no out-of-tree file may be served.
+func TestHandleBlobRejectsInvalidDigest(t *testing.T) {
+	dir := t.TempDir()
+	store, err := storage.NewOCILayout(dir)
+	if err != nil {
+		t.Fatalf("NewOCILayout: %v", err)
+	}
+	h := NewOCIHandler(store, "upstream.invalid", DefaultPolicy(), NewAuditLogger(io.Discard), nil)
+
+	// r.URL.Path carries the already-decoded traversal sequence, as Go's
+	// ServeMux does not redirect the percent-encoded form.
+	req := httptest.NewRequest(http.MethodGet, "http://mirror/v2/foo/blobs/x", nil)
+	req.URL.Path = "/v2/foo/blobs/sha256:../../../../../../etc/passwd"
+	rec := httptest.NewRecorder()
+
+	h.HandleBlob(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d; body=%s", rec.Code, http.StatusBadRequest, rec.Body.String())
+	}
+}
+
+func TestHandleManifestRejectsInvalidDigestRef(t *testing.T) {
+	dir := t.TempDir()
+	store, err := storage.NewOCILayout(dir)
+	if err != nil {
+		t.Fatalf("NewOCILayout: %v", err)
+	}
+	h := NewOCIHandler(store, "upstream.invalid", DefaultPolicy(), NewAuditLogger(io.Discard), nil)
+
+	req := httptest.NewRequest(http.MethodGet, "http://mirror/v2/foo/manifests/x", nil)
+	req.URL.Path = "/v2/foo/manifests/sha256:../../../../etc/passwd"
+	rec := httptest.NewRecorder()
+
+	h.HandleManifest(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d; body=%s", rec.Code, http.StatusBadRequest, rec.Body.String())
 	}
 }
 

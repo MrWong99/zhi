@@ -61,6 +61,48 @@ func TestComponentEnable(t *testing.T) {
 	}
 }
 
+func TestComponentEnableAlreadyEnabled(t *testing.T) {
+	eng := setupComponentTestEngine(t)
+
+	dir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(dir, ".zhi"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	eng.SetTestWorkspaceDir(dir)
+
+	ctx := context.WithValue(context.Background(), engineKey, eng)
+	componentJSON = false
+
+	newEnableCmd := func() *cobra.Command {
+		cmd := &cobra.Command{
+			Use:  "enable",
+			Args: cobra.ExactArgs(1),
+			RunE: runComponentEnable,
+		}
+		cmd.SetContext(ctx)
+		cmd.SetArgs([]string{"monitoring"})
+		return cmd
+	}
+
+	// First enable succeeds.
+	if err := newEnableCmd().Execute(); err != nil {
+		t.Fatalf("first component enable: %v", err)
+	}
+
+	// Second enable must not panic (regression for slice[:-1] on empty report)
+	// and should report that the component is already enabled.
+	cmd := newEnableCmd()
+	buf := new(bytes.Buffer)
+	cmd.SetOut(buf)
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("second component enable: %v", err)
+	}
+
+	if !strings.Contains(buf.String(), "already enabled") {
+		t.Errorf("expected 'already enabled' message, got: %s", buf.String())
+	}
+}
+
 func TestComponentEnableWithDependencies(t *testing.T) {
 	eng := setupComponentTestEngine(t)
 	dir := t.TempDir()

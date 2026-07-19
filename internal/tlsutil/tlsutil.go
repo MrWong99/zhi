@@ -47,6 +47,13 @@ func (c *Config) Enabled() bool {
 // at startup to catch configuration errors before they cause opaque
 // failures deep in the TLS handshake.
 func (c *Config) Validate() error {
+	// A cert without a key (or vice versa) is a half-configured server: it
+	// would silently fall back to plaintext HTTP because Enabled reports
+	// false. Treat partial TLS configuration as a hard error rather than a
+	// silent downgrade.
+	if (c.CertFile == "") != (c.KeyFile == "") {
+		return fmt.Errorf("both -tls-cert and -tls-key must be set to enable TLS (got tls-cert=%q, tls-key=%q)", c.CertFile, c.KeyFile)
+	}
 	if c.CertFile != "" {
 		if _, err := os.Stat(c.CertFile); err != nil {
 			return fmt.Errorf("TLS certificate file not found at %q: %w", c.CertFile, err)

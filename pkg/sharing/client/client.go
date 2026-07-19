@@ -12,6 +12,7 @@ import (
 	"runtime"
 
 	"oras.land/oras-go/v2"
+	"oras.land/oras-go/v2/content"
 	"oras.land/oras-go/v2/content/memory"
 	"oras.land/oras-go/v2/registry/remote"
 	"oras.land/oras-go/v2/registry/remote/auth"
@@ -81,6 +82,10 @@ type Client struct {
 	// httpClient is an optional HTTP client used for OCI registry
 	// connections (e.g. with client TLS configured).
 	httpClient *http.Client
+	// verifier enforces the local security policy (blocked plugins,
+	// allowed registries, signature requirements). When nil, no policy
+	// enforcement is performed.
+	verifier *verify.Verifier
 }
 
 // ClientOption configures a [Client].
@@ -91,6 +96,17 @@ type ClientOption func(*Client)
 func WithHTTPClient(hc *http.Client) ClientOption {
 	return func(c *Client) {
 		c.httpClient = hc
+	}
+}
+
+// WithVerifier sets the security-policy verifier. When set, every pull
+// (including workspace dependency auto-installs) is checked against the
+// policy before any content is downloaded, so that blocked plugins,
+// disallowed registries, and signature requirements are enforced
+// consistently across install, update, and workspace flows.
+func WithVerifier(v *verify.Verifier) ClientOption {
+	return func(c *Client) {
+		c.verifier = v
 	}
 }
 
@@ -115,6 +131,16 @@ func (c *Client) PullPlugin(ctx context.Context, ref string, opts PullOptions) (
 		return nil, fmt.Errorf("parsing reference: %w", err)
 	}
 
+	// Enforce the security policy at the pull chokepoint so that every
+	// path — direct install, update, workspace setup, and workspace
+	// dependency auto-install — is subject to the same checks (blocked
+	// plugins, allowed registries, signature requirements).
+	if c.verifier != nil {
+		if vResult := c.verifier.VerifyArtifact(ref, opts.SkipVerify); !vResult.OK() {
+			return nil, fmt.Errorf("verification failed: %w", vResult.Error)
+		}
+	}
+
 	// Set up remote repository.
 	core.Logger().Debug("repository config", "host", parsed.Host, "repository", parsed.Repository, "tag", parsed.Tag)
 	repo, err := c.newRepository(parsed)
@@ -131,18 +157,31 @@ func (c *Client) PullPlugin(ctx context.Context, ref string, opts PullOptions) (
 		pullRef = "latest"
 	}
 
-	// Pull into an in-memory store.
+	// Resolve the artifact root first so we can record the true root
+	// (index) digest independently of the platform pruning below.
+	rootDesc, err := repo.Resolve(ctx, pullRef)
+	if err != nil {
+		return nil, fmt.Errorf("resolving reference: %w", err)
+	}
+
+	// Pull into an in-memory store, copying only the subgraph for the
+	// target platform. For a multi-platform index this avoids downloading
+	// the manifests and binary layers for every other platform (which the
+	// old code fetched in full and then discarded all but one of).
 	memStore := memory.New()
-	desc, err := oras.Copy(ctx, repo, pullRef, memStore, pullRef, oras.DefaultCopyOptions)
+	copyOpts := oras.DefaultCopyOptions
+	copyOpts.MapRoot = func(ctx context.Context, src content.ReadOnlyStorage, root ocispec.Descriptor) (ocispec.Descriptor, error) {
+		return c.resolvePlatform(ctx, src, root, opts.Platform)
+	}
+	manifestDesc, err := oras.Copy(ctx, repo, pullRef, memStore, pullRef, copyOpts)
 	if err != nil {
 		return nil, fmt.Errorf("pulling artifact: %w", err)
 	}
 
-	// Resolve the platform-specific manifest if this is an index.
-	manifestDesc, err := c.resolvePlatform(ctx, memStore, desc, opts.Platform)
-	if err != nil {
-		return nil, fmt.Errorf("resolving platform: %w", err)
-	}
+	// desc identifies the artifact for metadata/lockfile purposes: the
+	// index digest for a multi-platform artifact, or the manifest digest
+	// for a single-platform one.
+	desc := rootDesc
 
 	// Fetch and parse the manifest.
 	manifestData, err := readBlob(ctx, memStore, manifestDesc)
@@ -191,11 +230,11 @@ func (c *Client) PullPlugin(ctx context.Context, ref string, opts PullOptions) (
 		return nil, fmt.Errorf("installing binary: %w", err)
 	}
 
-	// Compute binary digest for integrity verification at launch time.
-	binaryDigest, err := verify.ComputeBinaryDigest(binaryPath)
-	if err != nil {
-		return nil, fmt.Errorf("computing binary digest: %w", err)
-	}
+	// Compute the launch-time integrity baseline from the verified
+	// in-memory bytes rather than by re-reading the file from disk. This
+	// closes a TOCTOU window where a concurrent write between install and
+	// hashing could enshrine tampered content as the trusted baseline.
+	binaryDigest := verify.ComputeBinaryDigestBytes(binaryData)
 
 	// Save metadata including binary digest for launch-time integrity checks.
 	platform := c.effectivePlatform(opts.Platform)
@@ -250,7 +289,7 @@ func (c *Client) newRepository(parsed *ParsedRef) (*remote.Repository, error) {
 
 // resolvePlatform selects the platform-specific manifest from an OCI Image
 // Index, or returns the descriptor as-is if it's already a single manifest.
-func (c *Client) resolvePlatform(ctx context.Context, store oras.ReadOnlyTarget, desc ocispec.Descriptor, platform *Platform) (ocispec.Descriptor, error) {
+func (c *Client) resolvePlatform(ctx context.Context, store content.ReadOnlyStorage, desc ocispec.Descriptor, platform *Platform) (ocispec.Descriptor, error) {
 	// If it's already a manifest, return it directly.
 	if desc.MediaType == ocispec.MediaTypeImageManifest {
 		return desc, nil
@@ -292,7 +331,7 @@ func (c *Client) effectivePlatform(override *Platform) Platform {
 }
 
 // extractBinaryLayer finds and reads the plugin binary layer from OCI layers.
-func (c *Client) extractBinaryLayer(ctx context.Context, store oras.ReadOnlyTarget, layers []ocispec.Descriptor) ([]byte, error) {
+func (c *Client) extractBinaryLayer(ctx context.Context, store content.Fetcher, layers []ocispec.Descriptor) ([]byte, error) {
 	for _, layer := range layers {
 		if layer.MediaType == MediaTypePluginBinary {
 			return readBlob(ctx, store, layer)
@@ -301,14 +340,45 @@ func (c *Client) extractBinaryLayer(ctx context.Context, store oras.ReadOnlyTarg
 	return nil, fmt.Errorf("no binary layer found (expected media type %s)", MediaTypePluginBinary)
 }
 
-// installBinary writes the plugin binary to disk with executable permissions.
+// installBinary writes the plugin binary to disk with executable
+// permissions. It writes to a temporary file in the same directory and
+// renames it over the final path, so the install is atomic: a crash
+// mid-write never leaves a truncated executable at the final path, and
+// replacing a currently-running plugin binary avoids ETXTBSY on Linux.
 func (c *Client) installBinary(path string, data []byte) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("creating plugin directory: %w", err)
 	}
-	if err := os.WriteFile(path, data, 0o755); err != nil {
+
+	tmp, err := os.CreateTemp(dir, "."+filepath.Base(path)+".tmp-*")
+	if err != nil {
+		return fmt.Errorf("creating temporary binary: %w", err)
+	}
+	tmpName := tmp.Name()
+	// Ensure the temp file is removed on any failure before the rename.
+	defer func() {
+		if tmpName != "" {
+			_ = os.Remove(tmpName)
+		}
+	}()
+
+	if _, err := tmp.Write(data); err != nil {
+		_ = tmp.Close()
 		return fmt.Errorf("writing binary: %w", err)
 	}
+	if err := tmp.Chmod(0o755); err != nil {
+		_ = tmp.Close()
+		return fmt.Errorf("setting binary permissions: %w", err)
+	}
+	if err := tmp.Close(); err != nil {
+		return fmt.Errorf("closing binary: %w", err)
+	}
+
+	if err := os.Rename(tmpName, path); err != nil {
+		return fmt.Errorf("finalizing binary: %w", err)
+	}
+	tmpName = "" // rename succeeded; nothing to clean up.
 	return nil
 }
 
@@ -325,7 +395,7 @@ func parseConfigBlob(data []byte) (*manifest.PluginManifest, error) {
 }
 
 // readBlob fetches the content of a descriptor from a store.
-func readBlob(ctx context.Context, store oras.ReadOnlyTarget, desc ocispec.Descriptor) ([]byte, error) {
+func readBlob(ctx context.Context, store content.Fetcher, desc ocispec.Descriptor) ([]byte, error) {
 	rc, err := store.Fetch(ctx, desc)
 	if err != nil {
 		return nil, err

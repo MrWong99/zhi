@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -31,6 +32,7 @@ type ValueEditor struct {
 	readonly      bool
 	confirming    bool   // true when awaiting y/n confirmation
 	patternErr    string // current pattern validation error
+	typeErr       string // current type-conversion error (scalar values)
 	enumOptions   []string
 	enumCursor    int
 
@@ -223,6 +225,7 @@ func (e ValueEditor) UpdateEditor(msg tea.Msg) (ValueEditor, tea.Cmd) {
 
 	e.updateDirty()
 	e.validatePattern()
+	e.validateType()
 
 	return e, cmd
 }
@@ -415,6 +418,88 @@ func (e *ValueEditor) validatePattern() {
 	}
 }
 
+// coerceToOriginalType parses the edited string back into the dynamic type of
+// the original value, preserving scalar types (int, float, bool) instead of
+// silently turning them into strings. The bool result is false when the string
+// does not parse into the original type.
+func (e *ValueEditor) coerceToOriginalType(s string) (any, bool) {
+	if e.value == nil {
+		return s, true
+	}
+	switch e.value.Val.(type) {
+	case int:
+		n, err := strconv.Atoi(s)
+		if err != nil {
+			return nil, false
+		}
+		return n, true
+	case int64:
+		n, err := strconv.ParseInt(s, 10, 64)
+		if err != nil {
+			return nil, false
+		}
+		return n, true
+	case float64:
+		f, err := strconv.ParseFloat(s, 64)
+		if err != nil {
+			return nil, false
+		}
+		return f, true
+	case float32:
+		f, err := strconv.ParseFloat(s, 32)
+		if err != nil {
+			return nil, false
+		}
+		return float32(f), true
+	case bool:
+		b, err := strconv.ParseBool(s)
+		if err != nil {
+			return nil, false
+		}
+		return b, true
+	default:
+		// Strings and any other type are kept as the raw input.
+		return s, true
+	}
+}
+
+// validateType records a type-conversion error when the current input cannot
+// be parsed back into the original scalar type. It is a no-op for string,
+// map, and list values.
+func (e *ValueEditor) validateType() {
+	e.typeErr = ""
+	if e.value == nil || e.isMap || e.isList {
+		return
+	}
+	if _, ok := e.coerceToOriginalType(e.input.Value()); !ok {
+		e.typeErr = e.typeErrorMessage()
+	}
+}
+
+// typeErrorMessage returns a human-readable description of the expected type.
+func (e *ValueEditor) typeErrorMessage() string {
+	switch e.value.Val.(type) {
+	case int, int64:
+		return "must be an integer"
+	case float64, float32:
+		return "must be a number"
+	case bool:
+		return "must be true or false"
+	default:
+		return "invalid value"
+	}
+}
+
+// HasTypeError reports whether the current input fails type conversion.
+func (e *ValueEditor) HasTypeError() bool {
+	return e.typeErr != ""
+}
+
+// TypeError returns the current type-conversion error message.
+func (e *ValueEditor) TypeError() string {
+	return e.typeErr
+}
+
 // NeedsConfirmation returns true if this value requires confirmation and has
 // been modified.
 func (e *ValueEditor) NeedsConfirmation() bool {
@@ -467,7 +552,14 @@ func (e *ValueEditor) CommitValue() config.Value {
 		}
 		v = items
 	default:
-		v = e.input.Value()
+		// Preserve the original scalar type (int/float/bool) instead of
+		// committing a string. Commit is gated on HasTypeError, so this
+		// only falls back to the raw string for genuine string values.
+		if coerced, ok := e.coerceToOriginalType(e.input.Value()); ok {
+			v = coerced
+		} else {
+			v = e.input.Value()
+		}
 	}
 	return config.Value{
 		Val:      v,
@@ -612,6 +704,12 @@ func (e ValueEditor) View() string {
 	// Pattern error.
 	if e.patternErr != "" {
 		sb.WriteString(ErrorStyle.Render(fmt.Sprintf("  Pattern error: %s", e.patternErr)))
+		sb.WriteString("\n")
+	}
+
+	// Type error.
+	if e.typeErr != "" {
+		sb.WriteString(ErrorStyle.Render(fmt.Sprintf("  Type error: %s", e.typeErr)))
 		sb.WriteString("\n")
 	}
 

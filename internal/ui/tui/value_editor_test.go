@@ -72,6 +72,67 @@ func TestValueEditor_CommitValue(t *testing.T) {
 	}
 }
 
+func TestValueEditor_PreservesScalarType(t *testing.T) {
+	t.Run("int", func(t *testing.T) {
+		val := &config.Value{Val: 5432}
+		editor := tui.NewValueEditorFor("database/port", val, "", false)
+		// Replace 5432 with 5433.
+		for range 4 {
+			editor, _ = editor.UpdateEditor(tea.KeyMsg{Type: tea.KeyBackspace})
+		}
+		editor, _ = editor.UpdateEditor(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("5433")})
+		if editor.HasTypeError() {
+			t.Fatalf("unexpected type error: %s", editor.TypeError())
+		}
+		committed := editor.CommitValue()
+		if committed.Val != 5433 {
+			t.Errorf("expected int 5433, got %T(%v)", committed.Val, committed.Val)
+		}
+	})
+
+	t.Run("bool", func(t *testing.T) {
+		val := &config.Value{Val: true}
+		editor := tui.NewValueEditorFor("app/tls/enabled", val, "", false)
+		for range len("true") {
+			editor, _ = editor.UpdateEditor(tea.KeyMsg{Type: tea.KeyBackspace})
+		}
+		editor, _ = editor.UpdateEditor(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("false")})
+		committed := editor.CommitValue()
+		if committed.Val != false {
+			t.Errorf("expected bool false, got %T(%v)", committed.Val, committed.Val)
+		}
+	})
+
+	t.Run("float", func(t *testing.T) {
+		val := &config.Value{Val: 1.5}
+		editor := tui.NewValueEditorFor("app/ratio", val, "", false)
+		for range len("1.5") {
+			editor, _ = editor.UpdateEditor(tea.KeyMsg{Type: tea.KeyBackspace})
+		}
+		editor, _ = editor.UpdateEditor(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("2.75")})
+		committed := editor.CommitValue()
+		if committed.Val != 2.75 {
+			t.Errorf("expected float64 2.75, got %T(%v)", committed.Val, committed.Val)
+		}
+	})
+}
+
+func TestValueEditor_TypeErrorBlocksBadScalar(t *testing.T) {
+	val := &config.Value{Val: 5432}
+	editor := tui.NewValueEditorFor("database/port", val, "", false)
+	for range 4 {
+		editor, _ = editor.UpdateEditor(tea.KeyMsg{Type: tea.KeyBackspace})
+	}
+	editor, _ = editor.UpdateEditor(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("abc")})
+	if !editor.HasTypeError() {
+		t.Fatal("expected a type error for non-integer input")
+	}
+	view := editor.View()
+	if !strings.Contains(view, "Type error") {
+		t.Error("expected type error shown in view")
+	}
+}
+
 func TestValueEditor_DirtyState(t *testing.T) {
 	val := &config.Value{Val: "original"}
 

@@ -2,6 +2,9 @@ package store
 
 import (
 	"testing"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func TestErrorRoundTrip(t *testing.T) {
@@ -132,5 +135,38 @@ func TestErrorToStatus_Nil(t *testing.T) {
 func TestStatusToError_Nil(t *testing.T) {
 	if got := statusToError(nil); got != nil {
 		t.Errorf("statusToError(nil) = %v, want nil", got)
+	}
+}
+
+// TestStatusToError_ForeignStatusNotMisclassified ensures a gRPC status that
+// was NOT produced by errorToStatus (no zhi "store_error" marker) is returned
+// verbatim rather than being reconstructed into a typed store error that
+// destroys the original code and message.
+func TestStatusToError_ForeignStatusNotMisclassified(t *testing.T) {
+	cases := []struct {
+		name string
+		code codes.Code
+		msg  string
+	}{
+		{"failed precondition", codes.FailedPrecondition, "tree is sealed"},
+		{"not found", codes.NotFound, "secret engine disabled"},
+		{"aborted", codes.Aborted, "downstream transaction aborted"},
+		{"unauthenticated", codes.Unauthenticated, "upstream token rejected"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			orig := status.Error(tc.code, tc.msg)
+			got := statusToError(orig)
+			st, ok := status.FromError(got)
+			if !ok {
+				t.Fatalf("expected a gRPC status, got %T: %v", got, got)
+			}
+			if st.Code() != tc.code {
+				t.Errorf("code = %v, want %v", st.Code(), tc.code)
+			}
+			if st.Message() != tc.msg {
+				t.Errorf("message = %q, want %q", st.Message(), tc.msg)
+			}
+		})
 	}
 }

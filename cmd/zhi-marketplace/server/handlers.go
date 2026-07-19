@@ -327,7 +327,6 @@ func (h *Handler) HandleRegisterPlugin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	art := &storage.Artifact{
-		ID:          generateID(),
 		PublisherID: publisherID,
 		Name:        req.Name,
 		Type:        req.Type,
@@ -397,7 +396,6 @@ func (h *Handler) HandleRegisterVersion(w http.ResponseWriter, r *http.Request) 
 	}
 
 	v := &storage.Version{
-		ID:                 generateID(),
 		ArtifactID:         art.ID,
 		Version:            req.Version,
 		Digest:             req.Digest,
@@ -460,9 +458,4 @@ func extractResolvePath(path string) (pluginType, publisher, name, version strin
 		return "", "", "", ""
 	}
 	return parts[0], parts[1], parts[2], parts[3]
-}
-
-// generateID produces a simple unique ID. In production this would be a UUID.
-func generateID() string {
-	return fmt.Sprintf("%d", uniqueCounter.Add(1))
 }

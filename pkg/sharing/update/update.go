@@ -234,11 +234,35 @@ func (c *Checker) checkPlugin(ctx context.Context, plugin *metadata.InstalledPlu
 		Pinned:    plugin.Pinned,
 	}
 
-	// Check for security advisories on the installed version.
+	// Check for security advisories that affect the installed version.
+	// An advisory only matters when the installed version falls within its
+	// AffectedVersions constraint; otherwise (e.g. the user is already on a
+	// fixed version) it must not be reported, or the warning becomes
+	// permanent noise for every future version.
 	advisories, err := c.marketplace.ListAdvisories(ctx, plugin.Publisher, plugin.Name, "")
-	if err == nil && len(advisories.Advisories) > 0 {
-		info.HasAdvisory = true
+	if err == nil {
+		for _, adv := range advisories.Advisories {
+			if advisoryAffects(plugin.Version, adv.AffectedVersions) {
+				info.HasAdvisory = true
+				break
+			}
+		}
 	}
 
 	return info, nil
+}
+
+// advisoryAffects reports whether the installed version falls within an
+// advisory's AffectedVersions constraint. An empty or unparsable
+// constraint is treated conservatively as affecting all versions, so a
+// malformed advisory still surfaces rather than being silently ignored.
+func advisoryAffects(installedVersion, affectedVersions string) bool {
+	if affectedVersions == "" {
+		return true
+	}
+	matched, err := semver.Matches(installedVersion, affectedVersions)
+	if err != nil {
+		return true
+	}
+	return matched
 }

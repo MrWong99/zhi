@@ -2,6 +2,7 @@ package launch
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
@@ -13,6 +14,11 @@ import (
 	"github.com/MrWong99/zhi/pkg/sharing/metadata"
 	"github.com/MrWong99/zhi/pkg/sharing/verify"
 )
+
+// metadataDirFunc returns the directory holding plugin install metadata.
+// It is a package variable so tests can inject a temporary directory
+// instead of the real ~/.zhi/metadata.
+var metadataDirFunc = metadata.DefaultMetadataDir
 
 // validateBinaryPath checks that the binary path is safe to execute.
 // It resolves symlinks and rejects paths containing "..".
@@ -74,7 +80,7 @@ func verifyBinaryIntegrity(log hclog.Logger, path, computedHex string) error {
 		return nil // Not an installed shared plugin.
 	}
 
-	metaDir := metadata.DefaultMetadataDir()
+	metaDir := metadataDirFunc()
 	if metaDir == "" {
 		return nil
 	}
@@ -102,6 +108,34 @@ func verifyBinaryIntegrity(log hclog.Logger, path, computedHex string) error {
 
 	log.Info("binary integrity verified", "plugin", name, "digest", actualDigest)
 	return nil
+}
+
+// storedBinaryDigest returns the raw SHA-256 digest bytes recorded for the
+// plugin at install time, or nil if no digest is available (locally-built
+// plugin or legacy metadata). It is used to bind go-plugin's SecureConfig
+// checksum verification to the same digest AuditBinary compares against,
+// closing the audit-to-exec TOCTOU gap.
+func storedBinaryDigest(path string) ([]byte, error) {
+	name := PluginNameFromPath(path)
+	if name == "" {
+		return nil, nil
+	}
+
+	metaDir := metadataDirFunc()
+	if metaDir == "" {
+		return nil, nil
+	}
+
+	meta, err := metadata.NewStore(metaDir).Load(name)
+	if err != nil || meta == nil || meta.BinaryDigest == "" {
+		return nil, nil
+	}
+
+	raw, err := hex.DecodeString(strings.TrimPrefix(meta.BinaryDigest, "sha256:"))
+	if err != nil {
+		return nil, fmt.Errorf("decoding stored digest for plugin %q: %w", name, err)
+	}
+	return raw, nil
 }
 
 // PluginNameFromPath extracts the plugin short name from a binary path.

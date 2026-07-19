@@ -95,6 +95,12 @@ func (s *Server) handleSaveValue(w http.ResponseWriter, r *http.Request) {
 	compMap := buildComponentMap(components)
 
 	if blocking {
+		// Revert the mutation: a Blocking value must never remain in the tree,
+		// otherwise a later "Save tree" would persist it despite the rejection.
+		if err := s.ctrl.SetValue(ctx, path, existing); err != nil {
+			http.Error(w, "failed to revert value: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
 		// Return the form with validation errors.
 		ed := newEditorData(path, newValue, compMap)
 		ed.ValidationResults = toValidationItems(pathResults)
@@ -170,6 +176,15 @@ func (s *Server) handleInlineValidation(w http.ResponseWriter, r *http.Request) 
 	}
 
 	existing, _ := tree.Get(path)
+
+	// Enforce the same readonly/immutable guard as handleSaveValue: this
+	// endpoint mutates the tree via SetValue, so without the check a client
+	// could change an immutable value simply by POSTing here and then saving.
+	if labels.IsReadonly(existing.Metadata) || labels.IsImmutable(existing.Metadata) {
+		http.Error(w, "this value is read-only", http.StatusForbidden)
+		return
+	}
+
 	newValue := config.Value{
 		Val:      val,
 		Metadata: existing.Metadata,
@@ -182,6 +197,14 @@ func (s *Server) handleInlineValidation(w http.ResponseWriter, r *http.Request) 
 
 	results, _ := s.ctrl.Validate(ctx)
 	pathResults := filterValidationForPath(results, path)
+
+	// Inline validation is a read-only preview: revert the temporary mutation
+	// so it leaves no side effect on the server-side tree. The save endpoint
+	// re-applies the value itself when the user commits.
+	if err := s.ctrl.SetValue(ctx, path, existing); err != nil {
+		http.Error(w, "failed to revert value: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	data := validationBadgeData{
 		Results: toValidationItems(pathResults),

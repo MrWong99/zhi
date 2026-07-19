@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -232,6 +234,67 @@ func TestGetTagEntry(t *testing.T) {
 	}
 	if entry.UpdatedAt.IsZero() {
 		t.Error("expected non-zero timestamp")
+	}
+}
+
+func TestValidDigest(t *testing.T) {
+	valid := "sha256:" + strings.Repeat("a", 64)
+	tests := []struct {
+		dgst string
+		want bool
+	}{
+		{valid, true},
+		{"sha256:" + strings.Repeat("0", 64), true},
+		{"sha256:" + strings.Repeat("A", 64), false},  // uppercase hex
+		{"sha256:" + strings.Repeat("a", 63), false},  // too short
+		{"sha256:" + strings.Repeat("a", 65), false},  // too long
+		{strings.Repeat("a", 64), false},              // missing prefix
+		{"sha256:../../../../etc/passwd", false},      // traversal
+		{"sha256:..%2f..%2f..%2fetc%2fpasswd", false}, // encoded traversal
+		{"", false},
+	}
+	for _, tt := range tests {
+		if got := ValidDigest(tt.dgst); got != tt.want {
+			t.Errorf("ValidDigest(%q) = %v, want %v", tt.dgst, got, tt.want)
+		}
+	}
+}
+
+// TestBlobTraversalRejected verifies that a malformed, path-traversing digest
+// cannot escape the content-addressed blob directory via GetBlob/HasBlob/
+// DeleteBlob (F1 regression).
+func TestBlobTraversalRejected(t *testing.T) {
+	dir := t.TempDir()
+	store, err := NewOCILayout(dir)
+	if err != nil {
+		t.Fatalf("NewOCILayout: %v", err)
+	}
+
+	// Plant a file outside the blob dir to prove it cannot be read out.
+	secret := filepath.Join(dir, "secret.txt")
+	if err := os.WriteFile(secret, []byte("top secret"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	// blobPath for this digest would resolve to <root>/secret.txt without
+	// validation ("blobs/sha256/../../secret.txt").
+	evil := "sha256:../../secret.txt"
+
+	if store.HasBlob(evil) {
+		t.Error("HasBlob must reject a traversal digest")
+	}
+	data, ok, err := store.GetBlob(evil)
+	if err != nil {
+		t.Errorf("GetBlob returned error, want (nil,false,nil): %v", err)
+	}
+	if ok || data != nil {
+		t.Errorf("GetBlob leaked out-of-tree file: ok=%v data=%q", ok, data)
+	}
+	if err := store.DeleteBlob(evil); err != nil {
+		t.Errorf("DeleteBlob on traversal digest should be a no-op, got %v", err)
+	}
+	if _, err := os.Stat(secret); err != nil {
+		t.Errorf("DeleteBlob deleted an out-of-tree file: %v", err)
 	}
 }
 

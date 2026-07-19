@@ -2,6 +2,7 @@ package storage
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"sort"
@@ -13,6 +14,10 @@ import (
 
 // idCounter provides unique IDs.
 var idCounter atomic.Int64
+
+// ErrAlreadyVoted is returned by IncrementHelpful when the given voter has
+// already cast a helpful vote for the rating.
+var ErrAlreadyVoted = errors.New("voter has already marked this rating helpful")
 
 // JSONFileStore implements Store using a JSON file for persistence.
 // It loads the full dataset into memory and flushes to disk on writes.
@@ -57,26 +62,35 @@ func NewSQLiteStore(dsn string) (*JSONFileStore, error) {
 		ratings:    make(map[string][]*Rating),
 	}
 
-	// Load existing data if present.
+	// Load existing data if present. A missing file is a legitimate first
+	// run, but an unreadable or corrupt file must be surfaced as an error
+	// so the caller does not silently start empty and then overwrite the
+	// existing (possibly recoverable) data on the next write.
 	data, err := os.ReadFile(path)
-	if err == nil {
+	switch {
+	case err == nil:
 		var sd storeData
-		if json.Unmarshal(data, &sd) == nil {
-			for _, p := range sd.Publishers {
-				s.publishers[p.ID] = p
-			}
-			for _, a := range sd.Artifacts {
-				s.artifacts[a.ID] = a
-			}
-			for _, v := range sd.Versions {
-				s.versions[v.ArtifactID] = append(s.versions[v.ArtifactID], v)
-			}
-			for _, r := range sd.Ratings {
-				s.ratings[r.ArtifactID] = append(s.ratings[r.ArtifactID], r)
-			}
-			s.advisories = sd.Advisories
-			s.downloads = sd.Downloads
+		if err := json.Unmarshal(data, &sd); err != nil {
+			return nil, fmt.Errorf("parsing marketplace data file %q: %w", path, err)
 		}
+		for _, p := range sd.Publishers {
+			s.publishers[p.ID] = p
+		}
+		for _, a := range sd.Artifacts {
+			s.artifacts[a.ID] = a
+		}
+		for _, v := range sd.Versions {
+			s.versions[v.ArtifactID] = append(s.versions[v.ArtifactID], v)
+		}
+		for _, r := range sd.Ratings {
+			s.ratings[r.ArtifactID] = append(s.ratings[r.ArtifactID], r)
+		}
+		s.advisories = sd.Advisories
+		s.downloads = sd.Downloads
+	case os.IsNotExist(err):
+		// First run: start with an empty store.
+	default:
+		return nil, fmt.Errorf("reading marketplace data file %q: %w", path, err)
 	}
 
 	return s, nil
@@ -103,7 +117,19 @@ func (s *JSONFileStore) flush() error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(s.path, data, 0o600)
+
+	// Write to a temp file and rename over the target so the destination is
+	// always either the complete old dataset or the complete new one, never a
+	// half-written file (a crash mid-write would otherwise corrupt the store).
+	tmp := s.path + ".tmp"
+	if err := os.WriteFile(tmp, data, 0o600); err != nil {
+		return err
+	}
+	if err := os.Rename(tmp, s.path); err != nil {
+		_ = os.Remove(tmp)
+		return err
+	}
+	return nil
 }
 
 func (s *JSONFileStore) nextID() string {
@@ -136,7 +162,8 @@ func (s *JSONFileStore) GetPublisher(name string) (*Publisher, error) {
 	defer s.mu.RUnlock()
 	for _, p := range s.publishers {
 		if p.Name == name {
-			return p, nil
+			cp := *p
+			return &cp, nil
 		}
 	}
 	return nil, nil
@@ -149,7 +176,8 @@ func (s *JSONFileStore) GetPublisherByID(id string) (*Publisher, error) {
 	if !ok {
 		return nil, nil
 	}
-	return p, nil
+	cp := *p
+	return &cp, nil
 }
 
 func (s *JSONFileStore) CreateArtifact(art *Artifact) error {
@@ -158,6 +186,8 @@ func (s *JSONFileStore) CreateArtifact(art *Artifact) error {
 
 	if art.ID == "" {
 		art.ID = s.nextID()
+	} else if _, exists := s.artifacts[art.ID]; exists {
+		return fmt.Errorf("artifact with ID %q already exists", art.ID)
 	}
 	if art.CreatedAt.IsZero() {
 		art.CreatedAt = time.Now().UTC()
@@ -198,7 +228,8 @@ func (s *JSONFileStore) GetArtifact(publisher, name, pluginType string) (*Artifa
 			if pluginType != "" && a.Type != pluginType {
 				continue
 			}
-			return a, nil
+			cp := *a
+			return &cp, nil
 		}
 	}
 	return nil, nil
@@ -315,6 +346,14 @@ func (s *JSONFileStore) CreateVersion(v *Version) error {
 
 	if v.ID == "" {
 		v.ID = s.nextID()
+	} else {
+		for _, vv := range s.versions {
+			for _, existing := range vv {
+				if existing.ID == v.ID {
+					return fmt.Errorf("version with ID %q already exists", v.ID)
+				}
+			}
+		}
 	}
 	if v.PublishedAt.IsZero() {
 		v.PublishedAt = time.Now().UTC()
@@ -358,7 +397,8 @@ func (s *JSONFileStore) GetVersion(artifactID, version string) (*Version, error)
 
 	for _, v := range s.versions[artifactID] {
 		if v.Version == version {
-			return v, nil
+			cp := *v
+			return &cp, nil
 		}
 	}
 	return nil, nil
@@ -438,13 +478,19 @@ func (s *JSONFileStore) ListRatings(artifactID string, page, perPage int, sortBy
 	return result[offset:end], total, nil
 }
 
-func (s *JSONFileStore) IncrementHelpful(ratingID string) error {
+func (s *JSONFileStore) IncrementHelpful(ratingID, voterID string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	for _, rr := range s.ratings {
 		for _, r := range rr {
 			if r.ID == ratingID {
+				for _, existing := range r.HelpfulVoters {
+					if existing == voterID {
+						return ErrAlreadyVoted
+					}
+				}
+				r.HelpfulVoters = append(r.HelpfulVoters, voterID)
 				r.Helpful++
 				return s.flush()
 			}

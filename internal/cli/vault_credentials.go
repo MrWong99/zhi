@@ -1,12 +1,15 @@
 package cli
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
 
 	"github.com/spf13/cobra"
+
+	"github.com/MrWong99/zhi/internal/core"
 )
 
 var vaultCredentialsCmd = &cobra.Command{
@@ -133,6 +136,60 @@ func runVaultCredentialsRefresh(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("unsupported output format %q (expected json, env, or quiet)", refreshOutput)
 	}
 
+	// Re-run a specific export template with the fresh credentials.
+	if refreshExportTemplate != "" {
+		if err := runRefreshExportTemplate(ctx, cmd, eng, refreshExportTemplate); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// runRefreshExportTemplate re-renders a single named export template from the
+// workspace configuration using the freshly loaded tree, mirroring the
+// per-template export path of `zhi export`.
+func runRefreshExportTemplate(ctx context.Context, cmd *cobra.Command, eng *core.Engine, name string) error {
+	w := cmd.OutOrStdout()
+
+	ws := eng.Workspace()
+	if ws == nil {
+		return fmt.Errorf("no workspace configuration loaded")
+	}
+
+	var selected *core.ExportTemplate
+	for i := range ws.Export.Templates {
+		if ws.Export.Templates[i].Name == name {
+			selected = &ws.Export.Templates[i]
+			break
+		}
+	}
+	if selected == nil {
+		return fmt.Errorf("unknown export template %q", name)
+	}
+
+	td, err := core.PrepareTreeData(ctx, eng, false, selected.Prefix)
+	if err != nil {
+		return err
+	}
+
+	configs := core.ExpandTemplates([]core.ExportTemplate{*selected}, ws.Dir, false)
+	results, err := core.ExportAll(ctx, td, configs)
+	if err != nil {
+		return err
+	}
+
+	for _, r := range results {
+		if r.OutputPath == "" || r.OutputPath == "-" {
+			fmt.Fprintf(w, "--- %s ---\n", r.Name)
+			fmt.Fprint(w, r.Content)
+			if len(r.Content) > 0 && r.Content[len(r.Content)-1] != '\n' {
+				fmt.Fprintln(w)
+			}
+		} else {
+			fmt.Fprintf(w, "Exported: %s -> %s\n", r.Name, r.OutputPath)
+		}
+	}
 	return nil
 }
 

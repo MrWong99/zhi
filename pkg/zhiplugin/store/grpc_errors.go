@@ -52,7 +52,7 @@ func errorToStatus(err error) error {
 
 	var encErr *ErrEncryptionNotInitialized
 	if errors.As(err, &encErr) {
-		return status.Error(codes.FailedPrecondition, err.Error())
+		return statusWithDetail(codes.FailedPrecondition, err.Error(), nil)
 	}
 
 	var nsErr *ErrNotSupported
@@ -80,10 +80,12 @@ func statusWithDetail(code codes.Code, msg string, metadata map[string]string) e
 	return st.Err()
 }
 
-// statusToError converts a gRPC status error back to a structured
-// store error based on the status code. If ErrorInfo details are
-// present, structured fields are reconstructed from the metadata.
-// If the error is not a gRPC status, it is returned as-is.
+// statusToError converts a gRPC status error back to a structured store
+// error based on the status code. Reconstruction only happens when the
+// status carries the ErrorInfo marker written by statusWithDetail
+// (Reason "store_error", Domain "zhi"); statuses from any other source keep
+// their original code and message so third-party or proxied errors are not
+// misclassified. If the error is not a gRPC status, it is returned as-is.
 func statusToError(err error) error {
 	if err == nil {
 		return nil
@@ -94,7 +96,11 @@ func statusToError(err error) error {
 		return err
 	}
 
-	md := extractErrorInfoMetadata(st)
+	md, marked := extractErrorInfoMetadata(st)
+	if !marked {
+		// Not one of our errors; preserve the original status verbatim.
+		return err
+	}
 
 	switch st.Code() {
 	case codes.Aborted:
@@ -124,18 +130,22 @@ func statusToError(err error) error {
 	}
 }
 
-// extractErrorInfoMetadata extracts metadata from the first ErrorInfo
-// detail in a gRPC status. Returns an empty map if no ErrorInfo is found.
-func extractErrorInfoMetadata(st *status.Status) map[string]string {
+// extractErrorInfoMetadata extracts metadata from the first zhi store
+// ErrorInfo detail in a gRPC status. The second return value reports whether
+// such a marker (Reason "store_error", Domain "zhi") was present. If it is
+// false the status did not originate from errorToStatus and its typed error
+// must not be reconstructed.
+func extractErrorInfoMetadata(st *status.Status) (map[string]string, bool) {
 	for _, detail := range st.Details() {
 		if info, ok := detail.(*errdetails.ErrorInfo); ok {
-			if info.Metadata != nil {
-				return info.Metadata
+			if info.Reason != "store_error" || info.Domain != "zhi" {
+				continue
 			}
-			return map[string]string{}
+			if info.Metadata != nil {
+				return info.Metadata, true
+			}
+			return map[string]string{}, true
 		}
 	}
-	// Fallback for statuses without details (e.g. from older clients):
-	// put the message in common fields so reconstruction is best-effort.
-	return map[string]string{}
+	return map[string]string{}, false
 }

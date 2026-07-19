@@ -70,6 +70,15 @@ func (w *responseTimeWriter) Unwrap() http.ResponseWriter {
 	return w.ResponseWriter
 }
 
+// Flush implements http.Flusher by delegating to the wrapped ResponseWriter.
+// Without this, SSE/streaming responses would never reach the client because
+// this wrapper would otherwise hide the underlying Flusher.
+func (w *responseTimeWriter) Flush() {
+	if f, ok := w.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
+}
+
 // etagMiddleware computes a weak ETag for bufferable GET responses and
 // returns 304 Not Modified when the client's If-None-Match header
 // matches. It skips text/event-stream (SSE) and text/html (which
@@ -171,6 +180,15 @@ func (w *statusWriter) Write(b []byte) (int, error) {
 // Unwrap returns the underlying ResponseWriter for http.ResponseController.
 func (w *statusWriter) Unwrap() http.ResponseWriter {
 	return w.ResponseWriter
+}
+
+// Flush implements http.Flusher by delegating to the wrapped ResponseWriter.
+// Without this, SSE/streaming responses would never reach the client because
+// this wrapper would otherwise hide the underlying Flusher.
+func (w *statusWriter) Flush() {
+	if f, ok := w.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
 }
 
 // recoveryMiddleware catches panics, logs the stack trace, and returns 500.

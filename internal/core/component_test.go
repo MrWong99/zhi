@@ -427,3 +427,63 @@ func TestComponentManagerEmptyDefinitions(t *testing.T) {
 		t.Errorf("expected 1 path in filtered tree, got %d", len(fPaths))
 	}
 }
+
+// TestComponentManagerMandatoryEnablesDependencies verifies that a mandatory
+// component's dependencies are transitively enabled at construction, so the
+// workspace does not start in a dependency-validation-failing state.
+func TestComponentManagerMandatoryEnablesDependencies(t *testing.T) {
+	defs := []ComponentDef{
+		{Name: "core", Paths: []string{"core/"}, Mandatory: true, Dependencies: []string{"base"}},
+		{Name: "base", Paths: []string{"base/"}},
+	}
+	cm, err := NewComponentManager(defs)
+	if err != nil {
+		t.Fatalf("NewComponentManager: %v", err)
+	}
+	if !cm.IsEnabled("base") {
+		t.Error("dependency 'base' of mandatory 'core' should start enabled")
+	}
+	if errs := cm.ValidateDependencies(); len(errs) != 0 {
+		t.Errorf("expected no dependency violations, got %v", errs)
+	}
+}
+
+// TestComponentManagerDisableCascadeRefusesMandatoryDependent verifies that
+// cascading disable refuses when a transitive dependent is mandatory, rather
+// than silently leaving the invariant broken.
+func TestComponentManagerDisableCascadeRefusesMandatoryDependent(t *testing.T) {
+	defs := []ComponentDef{
+		{Name: "core", Paths: []string{"core/"}, Mandatory: true, Dependencies: []string{"base"}},
+		{Name: "base", Paths: []string{"base/"}},
+	}
+	cm, err := NewComponentManager(defs)
+	if err != nil {
+		t.Fatalf("NewComponentManager: %v", err)
+	}
+	if _, err := cm.DisableCascade("base"); err == nil {
+		t.Error("expected DisableCascade('base') to be refused (required by mandatory 'core')")
+	}
+	if !cm.IsEnabled("base") {
+		t.Error("'base' should remain enabled after refused cascade")
+	}
+}
+
+// TestComponentManagerPathSegmentBoundary verifies that path ownership and
+// overlap checks respect segment boundaries (no trailing slash required).
+func TestComponentManagerPathSegmentBoundary(t *testing.T) {
+	// Sibling prefixes sharing a textual prefix must not be rejected as overlapping.
+	defs := []ComponentDef{
+		{Name: "app", Paths: []string{"app"}},
+		{Name: "appbackend", Paths: []string{"app-backend"}},
+	}
+	cm, err := NewComponentManager(defs)
+	if err != nil {
+		t.Fatalf("NewComponentManager should accept disjoint sibling prefixes: %v", err)
+	}
+	if comp, ok := cm.PathBelongsToComponent("app-backend/host"); ok && comp == "app" {
+		t.Errorf("'app-backend/host' should not belong to component 'app', got %q", comp)
+	}
+	if comp, ok := cm.PathBelongsToComponent("app/host"); !ok || comp != "app" {
+		t.Errorf("'app/host' should belong to component 'app', got %q ok=%v", comp, ok)
+	}
+}

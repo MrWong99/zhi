@@ -211,8 +211,8 @@ func TestScaffoldTemplateRendering(t *testing.T) {
 	if !strings.Contains(manifestStr, "type: config") {
 		t.Error("manifest should contain plugin type")
 	}
-	if !strings.Contains(manifestStr, "author: testorg") {
-		t.Error("manifest should contain author")
+	if !strings.Contains(manifestStr, `author: "testorg"`) {
+		t.Error("manifest should contain quoted author")
 	}
 
 	// Check main.go references the correct plugin type.

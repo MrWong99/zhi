@@ -72,7 +72,16 @@ type goScaffolder struct{}
 
 func (g *goScaffolder) Language() string { return "go" }
 
+// defaultZhiVersion is the zhi module version pinned in a scaffolded
+// go.mod when the caller does not supply one. It must be a real, published
+// tag so that `go mod tidy` and `make build` succeed out of the box.
+const defaultZhiVersion = "v1.10.2"
+
 func (g *goScaffolder) Scaffold(data scaffold.Data, outputDir string) error {
+	if data.ZhiVersion == "" {
+		data.ZhiVersion = defaultZhiVersion
+	}
+
 	// Refuse to overwrite an existing directory unless it is empty.
 	if entries, err := os.ReadDir(outputDir); err == nil && len(entries) > 0 {
 		return fmt.Errorf("output directory %q already exists and is not empty", outputDir)

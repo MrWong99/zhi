@@ -3,11 +3,7 @@ package server
 import (
 	"net/http"
 	"strings"
-	"sync/atomic"
 )
-
-// uniqueCounter provides unique IDs for new resources.
-var uniqueCounter atomic.Int64
 
 // NewMux creates the HTTP mux with all marketplace routes.
 func NewMux(h *Handler) *http.ServeMux {

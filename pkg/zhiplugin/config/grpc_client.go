@@ -83,6 +83,7 @@ func TreeToProto(tree TreeReader) ([]*pb.TreeEntry, error) {
 			Path:         p,
 			ValueJson:    valJSON,
 			MetadataJson: metaJSON,
+			Version:      v.Version,
 		})
 	}
 	return entries, nil

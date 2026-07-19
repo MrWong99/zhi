@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"math"
 	"reflect"
 	"strconv"
 )
@@ -37,8 +38,15 @@ func (v *Value) TryConvert(targetType reflect.Type) error {
 		case uint64:
 			v.Val = int(typedVal)
 		case float32:
-			v.Val = int(typedVal)
+			f := float64(typedVal)
+			if f != math.Trunc(f) {
+				return fmt.Errorf("cannot convert non-integer value %v to int", typedVal)
+			}
+			v.Val = int(f)
 		case float64:
+			if typedVal != math.Trunc(typedVal) {
+				return fmt.Errorf("cannot convert non-integer value %v to int", typedVal)
+			}
 			v.Val = int(typedVal)
 		case string:
 			intVal, err := strconv.Atoi(typedVal)
@@ -52,14 +60,29 @@ func (v *Value) TryConvert(targetType reflect.Type) error {
 	case reflect.Uint:
 		switch typedVal := v.Val.(type) {
 		case int:
+			if typedVal < 0 {
+				return fmt.Errorf("cannot convert negative value %v to uint", typedVal)
+			}
 			v.Val = uint(typedVal)
 		case int8:
+			if typedVal < 0 {
+				return fmt.Errorf("cannot convert negative value %v to uint", typedVal)
+			}
 			v.Val = uint(typedVal)
 		case int16:
+			if typedVal < 0 {
+				return fmt.Errorf("cannot convert negative value %v to uint", typedVal)
+			}
 			v.Val = uint(typedVal)
 		case int32:
+			if typedVal < 0 {
+				return fmt.Errorf("cannot convert negative value %v to uint", typedVal)
+			}
 			v.Val = uint(typedVal)
 		case int64:
+			if typedVal < 0 {
+				return fmt.Errorf("cannot convert negative value %v to uint", typedVal)
+			}
 			v.Val = uint(typedVal)
 		case uint:
 			v.Val = typedVal
@@ -72,15 +95,22 @@ func (v *Value) TryConvert(targetType reflect.Type) error {
 		case uint64:
 			v.Val = uint(typedVal)
 		case float32:
-			v.Val = uint(typedVal)
+			f := float64(typedVal)
+			if f < 0 || f != math.Trunc(f) {
+				return fmt.Errorf("cannot convert value %v to uint", typedVal)
+			}
+			v.Val = uint(f)
 		case float64:
+			if typedVal < 0 || typedVal != math.Trunc(typedVal) {
+				return fmt.Errorf("cannot convert value %v to uint", typedVal)
+			}
 			v.Val = uint(typedVal)
 		case string:
-			intVal, err := strconv.Atoi(typedVal)
+			uintVal, err := strconv.ParseUint(typedVal, 10, 0)
 			if err != nil {
 				return err
 			}
-			v.Val = uint(intVal)
+			v.Val = uint(uintVal)
 		default:
 			return fmt.Errorf("cannot convert %T to uint", v.Val)
 		}

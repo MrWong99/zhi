@@ -17,7 +17,7 @@ transform: []
   #   options: {}
 
 store:
-  provider: zhi-store-json
+  provider: jsonfile
   options:
     directory: ./.zhi/store
 
@@ -87,7 +87,7 @@ Specifies the storage backend for persisting configuration trees, component stat
 
 | Field | Description |
 |-------|-------------|
-| `provider` | Store provider name (e.g., `zhi-store-json`). |
+| `provider` | Store provider name (built-in: `jsonfile`; external plugins such as `zhi-store-json`). |
 | `options` | Provider-specific options. |
 
 #### Store authentication from workspace config
@@ -146,13 +146,14 @@ The `apply` section can also define multiple named targets:
 
 ```yaml
 apply:
-  default:
-    command: "docker compose up -d"
-    pre-export: true
-  destroy:
-    command: "docker compose down -v"
-  restart:
-    command: "docker compose restart"
+  targets:
+    default:
+      command: "docker compose up -d"
+      pre-export: true
+    destroy:
+      command: "docker compose down -v"
+    restart:
+      command: "docker compose restart"
 ```
 
 ### `ui`

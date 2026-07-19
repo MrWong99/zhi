@@ -305,6 +305,34 @@ goplugin.Serve(&goplugin.ServeConfig{
 })
 ```
 
+> **Pitfall: `os.Exit` skips deferred cleanups.** Once a child plugin
+> has been launched, do **not** call `os.Exit` (directly or via
+> `log.Fatal`) on a later error path — `os.Exit` does not run deferred
+> functions, so `cleanupPrimary()`/`cleanupMirror()` never fire and the
+> already-running child processes are orphaned (they live in their own
+> process group and will not receive the terminal's signals). Put the
+> launch-and-serve logic in a helper that returns an error and uses
+> `defer`, then exit only from `main`:
+>
+> ```go
+> func main() {
+>     if err := run(logger); err != nil {
+>         logger.Error("meta-plugin failed", "error", err)
+>         os.Exit(1)
+>     }
+> }
+>
+> func run(logger hclog.Logger) error {
+>     primary, cleanupPrimary, err := launch.LaunchStore(primaryBin, launch.WithLogger(logger))
+>     if err != nil {
+>         return err
+>     }
+>     defer cleanupPrimary()
+>     // ... launch mirror, compose, Serve ...
+>     return nil
+> }
+> ```
+
 ### Plugin manifest
 
 A meta-plugin's `zhi-plugin.yaml` uses the standard format. The `type`

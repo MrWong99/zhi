@@ -92,16 +92,25 @@ type ociIndexEntry struct {
 func (s *OCILayout) HasBlob(dgst string) bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	_, err := os.Stat(s.blobPath(dgst))
+	path, err := s.blobPath(dgst)
+	if err != nil {
+		return false
+	}
+	_, err = os.Stat(path)
 	return err == nil
 }
 
 // GetBlob reads a blob by digest. Returns the content and true if found,
-// or nil and false if not found.
+// or nil and false if not found. A malformed digest is treated as not found so
+// a client-supplied value can never be joined into a filesystem path.
 func (s *OCILayout) GetBlob(dgst string) ([]byte, bool, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	data, err := os.ReadFile(s.blobPath(dgst))
+	path, err := s.blobPath(dgst)
+	if err != nil {
+		return nil, false, nil
+	}
+	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, false, nil
@@ -118,11 +127,14 @@ func (s *OCILayout) PutBlob(data []byte) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	path := s.blobPath(dgst)
+	path, err := s.blobPath(dgst)
+	if err != nil {
+		return "", err
+	}
 	if _, err := os.Stat(path); err == nil {
 		return dgst, nil // already exists
 	}
-	if err := os.WriteFile(path, data, 0o644); err != nil {
+	if err := writeFileAtomic(path, data, 0o644); err != nil {
 		return "", fmt.Errorf("writing blob: %w", err)
 	}
 	return dgst, nil
@@ -145,7 +157,10 @@ func (s *OCILayout) PutBlobFromReader(r io.Reader) (string, int64, error) {
 func (s *OCILayout) DeleteBlob(dgst string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	path := s.blobPath(dgst)
+	path, err := s.blobPath(dgst)
+	if err != nil {
+		return nil // malformed digest: nothing to delete
+	}
 	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("deleting blob: %w", err)
 	}
@@ -170,7 +185,7 @@ func (s *OCILayout) putTagLocked(repo, tag, dgst string) error {
 		return fmt.Errorf("marshalling tag entry: %w", err)
 	}
 	tagFile := filepath.Join(tagsDir, sanitizeTag(tag)+".json")
-	if err := os.WriteFile(tagFile, data, 0o644); err != nil {
+	if err := writeFileAtomic(tagFile, data, 0o644); err != nil {
 		return fmt.Errorf("writing tag file: %w", err)
 	}
 	return nil
@@ -240,10 +255,78 @@ func (s *OCILayout) Root() string {
 }
 
 // blobPath returns the filesystem path for a blob with the given digest.
-func (s *OCILayout) blobPath(dgst string) string {
-	// Accept both "sha256:hex" and bare "hex" formats.
-	hex := strings.TrimPrefix(dgst, "sha256:")
-	return filepath.Join(s.root, "blobs", "sha256", hex)
+// Accepts both "sha256:hex" and bare "hex" formats, but rejects any value whose
+// hex component is not exactly 64 lowercase hex characters so a client-supplied
+// digest can never contain ".." or other path separators that escape the
+// content-addressed blob directory.
+func (s *OCILayout) blobPath(dgst string) (string, error) {
+	hexStr := strings.TrimPrefix(dgst, "sha256:")
+	if !validHex64(hexStr) {
+		return "", fmt.Errorf("invalid digest %q", dgst)
+	}
+	return filepath.Join(s.root, "blobs", "sha256", hexStr), nil
+}
+
+// ValidDigest reports whether dgst is a canonical OCI digest of the form
+// "sha256:<64 lowercase hex chars>".
+func ValidDigest(dgst string) bool {
+	hexStr, ok := strings.CutPrefix(dgst, "sha256:")
+	return ok && validHex64(hexStr)
+}
+
+// validHex64 reports whether s is exactly 64 lowercase hexadecimal characters.
+func validHex64(s string) bool {
+	if len(s) != 64 {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if (c < '0' || c > '9') && (c < 'a' || c > 'f') {
+			return false
+		}
+	}
+	return true
+}
+
+// writeFileAtomic writes data to a temporary file in the same directory as
+// path, fsyncs it, and atomically renames it into place. This ensures a crash
+// or disk-full condition mid-write can never leave a truncated file at a
+// content-addressed path (where its wrong contents would be permanent).
+func writeFileAtomic(path string, data []byte, perm os.FileMode) error {
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	tmp, err := os.CreateTemp(dir, ".tmp-*")
+	if err != nil {
+		return err
+	}
+	tmpName := tmp.Name()
+	defer os.Remove(tmpName) // no-op once the rename succeeds
+
+	if _, err := tmp.Write(data); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Sync(); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	if err := os.Chmod(tmpName, perm); err != nil {
+		return err
+	}
+	if err := os.Rename(tmpName, path); err != nil {
+		return err
+	}
+	// Best-effort fsync of the directory so the rename itself is durable.
+	if d, err := os.Open(dir); err == nil {
+		_ = d.Sync()
+		_ = d.Close()
+	}
+	return nil
 }
 
 // ComputeSHA256 returns "sha256:<hex>" for the given data.

@@ -124,6 +124,15 @@ func (v *ApplyView) readOutput() tea.Cmd {
 				}
 				// Reset timer and continue waiting.
 				timer.Reset(50 * time.Millisecond)
+			case res := <-rch:
+				// Defensive: the result arrived even though the output
+				// channel was not closed (e.g. a controller that forgot
+				// to close it). Flush any pending output first, then
+				// finish so the view can never wedge waiting on a close.
+				if len(batch) > 0 {
+					return ApplyOutputMsg{Lines: batch}
+				}
+				return res
 			}
 		}
 	}

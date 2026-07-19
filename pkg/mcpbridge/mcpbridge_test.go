@@ -35,6 +35,7 @@ type mockController struct {
 	exportReq    *ui.ExportRequest
 	applyTarget  string
 	savedCount   int
+	searchQuery  *ui.MarketplaceQuery
 }
 
 func newMockController() *mockController {
@@ -116,7 +117,11 @@ func (m *mockController) DisableComponent(_ context.Context, name string) error 
 	m.disabledName = name
 	return nil
 }
-func (m *mockController) SearchMarketplace(_ context.Context, _ ui.MarketplaceQuery) (*ui.MarketplaceResults, error) {
+func (m *mockController) SearchMarketplace(_ context.Context, query ui.MarketplaceQuery) (*ui.MarketplaceResults, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	q := query
+	m.searchQuery = &q
 	return &ui.MarketplaceResults{}, nil
 }
 func (m *mockController) GetMarketplaceDetail(_ context.Context, _, _, _ string) (*ui.MarketplaceDetail, error) {
@@ -366,6 +371,35 @@ func TestCallExportNotFound(t *testing.T) {
 	}
 	if !result.IsError {
 		t.Fatal("expected error for nonexistent template")
+	}
+}
+
+func TestCallMarketplaceSearchPagination(t *testing.T) {
+	mc := newMockController()
+	cs := connectTestServer(t, mc)
+	ctx := context.Background()
+
+	result, err := cs.CallTool(ctx, &mcp.CallToolParams{
+		Name:      "marketplace_search",
+		Arguments: json.RawMessage(`{"query":"store","limit":10,"page":2}`),
+	})
+	if err != nil {
+		t.Fatalf("call marketplace_search: %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("marketplace_search returned error: %v", result.Content)
+	}
+	mc.mu.Lock()
+	defer mc.mu.Unlock()
+	if mc.searchQuery == nil {
+		t.Fatal("expected SearchMarketplace to be called")
+	}
+	// The 1-based page number must be forwarded verbatim, not treated as an offset.
+	if mc.searchQuery.Page != 2 {
+		t.Errorf("expected Page 2, got %d", mc.searchQuery.Page)
+	}
+	if mc.searchQuery.PerPage != 10 {
+		t.Errorf("expected PerPage 10, got %d", mc.searchQuery.PerPage)
 	}
 }
 

@@ -217,6 +217,21 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return a, nil
 				}
 			}
+			// Views with modal/nested state own their Esc semantics: route
+			// Esc to them instead of unconditionally returning to the tree.
+			if a.activeView == viewEditor && (a.editorView.IsConfirming() || a.editorView.IsEditingInline()) {
+				break
+			}
+			if a.activeView == viewMarketplace && a.marketplaceView.searching {
+				break
+			}
+			// Plugin detail was opened from the marketplace: Esc returns
+			// there, preserving search results, filters, and list position.
+			if a.activeView == viewPluginDetail {
+				a.activeView = viewMarketplace
+				a.statusMsg = ""
+				return a, nil
+			}
 			if a.activeView != viewTree {
 				if a.activeView == viewApply && a.applyView.running {
 					return a, nil // Can't leave apply while running
@@ -473,6 +488,11 @@ func (a *App) updateEditorView(msg tea.Msg) (tea.Model, tea.Cmd) {
 				// Block save if pattern validation fails.
 				if a.editorView.HasPatternError() {
 					a.statusMsg = "Fix pattern errors before saving"
+					return a, nil
+				}
+				// Block save if the value no longer matches its type.
+				if a.editorView.HasTypeError() {
+					a.statusMsg = "Fix type error before saving: " + a.editorView.TypeError()
 					return a, nil
 				}
 				// Check if confirmation is required.

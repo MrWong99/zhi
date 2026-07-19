@@ -23,7 +23,7 @@ func (c *controllerGRPCClient) LoadTree(ctx context.Context) (*config.Tree, erro
 	if err != nil {
 		return nil, err
 	}
-	return treeFromProto(resp.GetTree()), nil
+	return treeFromProto(resp.GetTree())
 }
 
 func (c *controllerGRPCClient) SetValue(ctx context.Context, path string, value config.Value) error {

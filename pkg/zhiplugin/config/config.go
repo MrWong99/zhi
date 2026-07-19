@@ -217,7 +217,12 @@ func (r *unsafeTreeReader) Get(path string) (Value, bool) {
 	if !ok {
 		return Value{}, false
 	}
-	return *v, true
+	// Return a copy per the TreeReader contract; cloning Metadata and
+	// Validators prevents callers from mutating the live tree maps.
+	cp := *v
+	cp.Metadata = maps.Clone(cp.Metadata)
+	cp.Validators = slices.Clone(cp.Validators)
+	return cp, true
 }
 
 func (r *unsafeTreeReader) List() []string {

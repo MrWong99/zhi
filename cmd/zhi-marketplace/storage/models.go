@@ -16,21 +16,25 @@ type Publisher struct {
 
 // Rating represents a user's rating of an artifact.
 type Rating struct {
-	ID         string    `json:"id"`
-	ArtifactID string    `json:"artifactId"`
-	UserID     string    `json:"userId"`
-	UserName   string    `json:"userName"`
-	Score      int       `json:"score"`
-	Comment    string    `json:"comment,omitempty"`
-	Helpful    int       `json:"helpful"`
-	CreatedAt  time.Time `json:"createdAt"`
-	UpdatedAt  time.Time `json:"updatedAt"`
+	ID         string `json:"id"`
+	ArtifactID string `json:"artifactId"`
+	UserID     string `json:"userId"`
+	UserName   string `json:"userName"`
+	Score      int    `json:"score"`
+	Comment    string `json:"comment,omitempty"`
+	Helpful    int    `json:"helpful"`
+	// HelpfulVoters records the publisher IDs that have cast a helpful vote,
+	// so a single voter cannot inflate the count.
+	HelpfulVoters []string  `json:"helpfulVoters,omitempty"`
+	CreatedAt     time.Time `json:"createdAt"`
+	UpdatedAt     time.Time `json:"updatedAt"`
 }
 
 // Advisory represents a security vulnerability advisory for a plugin.
 type Advisory struct {
 	ID               string    `json:"id"`
 	ArtifactID       string    `json:"artifactId"`
+	ReporterID       string    `json:"reporterId,omitempty"`
 	PublisherName    string    `json:"publisherName"`
 	PluginName       string    `json:"pluginName"`
 	Severity         string    `json:"severity"`
@@ -140,8 +144,10 @@ type Store interface {
 	CreateOrUpdateRating(r *Rating) error
 	// ListRatings lists ratings for an artifact with pagination.
 	ListRatings(artifactID string, page, perPage int, sort string) ([]Rating, int, error)
-	// IncrementHelpful increments the helpful count for a rating.
-	IncrementHelpful(ratingID string) error
+	// IncrementHelpful records a helpful vote from voterID for a rating.
+	// It is idempotent per voter: a repeat vote from the same voter returns
+	// ErrAlreadyVoted and does not change the count.
+	IncrementHelpful(ratingID, voterID string) error
 	// GetRatingAggregation returns the average score, count, and distribution for an artifact.
 	GetRatingAggregation(artifactID string) (avg float64, count int, distribution map[int]int, err error)
 

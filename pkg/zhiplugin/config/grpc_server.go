@@ -54,7 +54,10 @@ func (s *GRPCServer) Set(ctx context.Context, req *pb.SetRequest) (*pb.SetRespon
 }
 
 func (s *GRPCServer) Validate(ctx context.Context, req *pb.ValidateRequest) (*pb.ValidateResponse, error) {
-	tree := TreeFromProto(req.GetTree())
+	tree, err := TreeFromProto(req.GetTree())
+	if err != nil {
+		return nil, err
+	}
 	results, err := s.Impl.Validate(ctx, req.GetPath(), tree)
 	if err != nil {
 		return nil, err
@@ -79,17 +82,18 @@ func (s *GRPCServer) Validate(ctx context.Context, req *pb.ValidateRequest) (*pb
 
 // TreeFromProto reconstructs a Tree from the proto TreeEntry slice received
 // over the wire. Path validation is skipped because the entries were
-// validated when they were originally Set.
-func TreeFromProto(entries []*pb.TreeEntry) *Tree {
+// validated when they were originally Set. An error is returned if any entry
+// cannot be decoded, so callers do not silently proceed with a partial tree.
+func TreeFromProto(entries []*pb.TreeEntry) (*Tree, error) {
 	t := NewTree()
 	for _, e := range entries {
-		v, err := ValueFromProto(e.GetValueJson(), e.GetMetadataJson())
+		v, err := ValueFromProtoVersioned(e.GetValueJson(), e.GetMetadataJson(), e.GetVersion())
 		if err != nil {
-			continue
+			return nil, fmt.Errorf("decoding tree entry %q: %w", e.GetPath(), err)
 		}
 		// Paths were validated at Set time; skip re-validation to avoid
 		// rejecting values that are already in the tree.
 		t.values[e.GetPath()] = &v
 	}
-	return t
+	return t, nil
 }

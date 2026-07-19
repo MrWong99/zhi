@@ -3,6 +3,7 @@ package core
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"maps"
 	"os"
@@ -75,15 +76,27 @@ func Export(_ context.Context, tree *TreeData, cfg ExportRunConfig) (*ExportResu
 	var opts *exportFileOptions
 
 	if cfg.Format != "" {
-		// Use a built-in format.
-		content, err = renderBuiltinFormat(tree, cfg.Format, cfg.Prefix)
+		// Use a built-in format. json/yaml/toml strip the prefix themselves via
+		// `.Nested <prefix>`; dotenv renders the whole tree (`.All`), so it must
+		// be pre-filtered by prefix here or unrelated subtrees leak into .env.
+		formatTree := tree
+		if cfg.Format == "dotenv" && cfg.Prefix != "" {
+			formatTree = newPrefixedTreeData(tree, cfg.Prefix)
+		}
+		content, err = renderBuiltinFormat(formatTree, cfg.Format, cfg.Prefix)
 		if err != nil {
 			return nil, fmt.Errorf("rendering format %q: %w", cfg.Format, err)
 		}
 	} else if cfg.TemplatePath != "" {
 		// Use a template file. Pass opts so fileACL/fileMode can capture values.
+		// Template files receive the full tree, so honor cfg.Prefix by confining
+		// the tree to that subtree before rendering.
 		opts = &exportFileOptions{}
-		content, err = renderTemplateFile(tree, cfg.TemplatePath, cfg.WorkspaceDir, opts)
+		tmplTree := tree
+		if cfg.Prefix != "" {
+			tmplTree = newPrefixedTreeData(tree, cfg.Prefix)
+		}
+		content, err = renderTemplateFile(tmplTree, cfg.TemplatePath, cfg.WorkspaceDir, opts)
 		if err != nil {
 			return nil, fmt.Errorf("rendering template %q: %w", cfg.TemplatePath, err)
 		}
@@ -140,9 +153,13 @@ func ExportIterate(_ context.Context, tree *TreeData, cfg ExportRunConfig) ([]*E
 	for _, childKey := range children {
 		childTree := materializeChildTree(tree, cfg.Iterate, childKey)
 
+		childValue := NewTreeData(childTree, tree.components)
+		if cfg.Prefix != "" {
+			childValue = newPrefixedTreeData(childValue, cfg.Prefix)
+		}
 		iterData := IterateData{
 			Key:   childKey,
-			Value: NewTreeData(childTree, tree.components),
+			Value: childValue,
 		}
 
 		// Resolve output path from pattern.
@@ -178,6 +195,42 @@ func ExportIterate(_ context.Context, tree *TreeData, cfg ExportRunConfig) ([]*E
 		results = append(results, result)
 	}
 	return results, nil
+}
+
+// iterateOutputPaths pre-computes the output file paths an iterate export would
+// write, by evaluating OutputPattern for each direct child of the iterate
+// prefix. It mirrors the path resolution in ExportIterate and is used to seed
+// the rollback snapshot before any files are written.
+func iterateOutputPaths(tree *TreeData, cfg ExportRunConfig) ([]string, error) {
+	if cfg.TemplatePath == "" || cfg.OutputPattern == "" {
+		return nil, nil
+	}
+	children := directChildren(tree, cfg.Iterate)
+	if len(children) == 0 {
+		return nil, nil
+	}
+	outTmpl, err := template.New("output-pattern").Parse(cfg.OutputPattern)
+	if err != nil {
+		return nil, fmt.Errorf("parsing output-pattern %q: %w", cfg.OutputPattern, err)
+	}
+	var paths []string
+	for _, childKey := range children {
+		childTree := materializeChildTree(tree, cfg.Iterate, childKey)
+		iterData := IterateData{
+			Key:   childKey,
+			Value: NewTreeData(childTree, tree.components),
+		}
+		var outBuf bytes.Buffer
+		if err := outTmpl.Execute(&outBuf, iterData); err != nil {
+			return nil, fmt.Errorf("executing output-pattern for child %q: %w", childKey, err)
+		}
+		outputPath := outBuf.String()
+		if outputPath != "" && !filepath.IsAbs(outputPath) && cfg.WorkspaceDir != "" {
+			outputPath = filepath.Join(cfg.WorkspaceDir, outputPath)
+		}
+		paths = append(paths, outputPath)
+	}
+	return paths, nil
 }
 
 // directChildren returns sorted names of direct children under the given
@@ -270,18 +323,38 @@ func ExpandTemplates(templates []ExportTemplate, wsDir string, dryRun bool) []Ex
 func ExportAll(ctx context.Context, tree *TreeData, configs []ExportRunConfig) ([]*ExportResult, error) {
 	Logger().Info("running all exports", "count", len(configs))
 
-	// Save rollback snapshot before writing (skip for dry-run).
-	anyWrite := false
+	// Save rollback snapshot before writing (skip for dry-run). The snapshot
+	// must live in the workspace directory so `zhi rollback` (which reads
+	// <workspaceDir>/.zhi-rollback) can find it — never in an output file's
+	// parent directory.
+	wsDir := ""
 	var outputPaths []string
 	for _, cfg := range configs {
-		if !cfg.DryRun && cfg.OutputPath != "" && cfg.OutputPath != "-" {
-			anyWrite = true
+		if cfg.DryRun {
+			continue
 		}
-		outputPaths = append(outputPaths, cfg.OutputPath)
+		if cfg.WorkspaceDir != "" && wsDir == "" {
+			wsDir = cfg.WorkspaceDir
+		}
+		if cfg.Iterate != "" {
+			// Iterate exports write via OutputPattern; pre-compute the per-child
+			// output paths so they are included in the snapshot manifest.
+			paths, err := iterateOutputPaths(tree, cfg)
+			if err != nil {
+				return nil, err
+			}
+			for _, p := range paths {
+				if p != "" && p != "-" {
+					outputPaths = append(outputPaths, p)
+				}
+			}
+			continue
+		}
+		if cfg.OutputPath != "" && cfg.OutputPath != "-" {
+			outputPaths = append(outputPaths, cfg.OutputPath)
+		}
 	}
-	if anyWrite && len(outputPaths) > 0 {
-		// Determine workspace dir from first output path's parent.
-		wsDir := filepath.Dir(outputPaths[0])
+	if len(outputPaths) > 0 && wsDir != "" {
 		if err := SaveRollbackSnapshot(wsDir, outputPaths); err != nil {
 			Logger().Warn("failed to save rollback snapshot", "error", err)
 			// Non-fatal: continue with export even if snapshot fails.
@@ -472,6 +545,8 @@ func templateFuncMap(opts *exportFileOptions) template.FuncMap {
 	fm := sprig.TxtFuncMap()
 
 	// Add zhi-specific functions that have no Sprig equivalent.
+	fm["toJSON"] = toJSON
+	fm["toJSONCompact"] = toJSONCompact
 	fm["toYAML"] = toYAML
 	fm["toTOML"] = toTOML
 	fm["toDotenv"] = toDotenv
@@ -490,6 +565,26 @@ func templateFuncMap(opts *exportFileOptions) template.FuncMap {
 	}
 
 	return fm
+}
+
+// toJSON marshals a value to indented JSON. It is registered as the documented
+// `toJSON` template function.
+func toJSON(v any) (string, error) {
+	b, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
+// toJSONCompact marshals a value to single-line JSON. It is registered as the
+// documented `toJSONCompact` template function.
+func toJSONCompact(v any) (string, error) {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
 }
 
 func toYAML(v any) (string, error) {

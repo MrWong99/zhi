@@ -51,6 +51,11 @@ type Data struct {
 	// ZhiModule is the zhi Go module path.
 	ZhiModule string
 
+	// ZhiVersion is the zhi Go module version to require in go.mod (e.g.
+	// "v1.10.2"). When empty, the scaffolder substitutes a known-good
+	// default so the generated project builds out of the box.
+	ZhiVersion string
+
 	// Year is the current year for license headers.
 	Year string
 }

@@ -1194,3 +1194,89 @@ func TestExpandTemplatesWithIterate(t *testing.T) {
 		t.Errorf("configs[1].WorkspaceDir = %q, want /workspace", configs[1].WorkspaceDir)
 	}
 }
+
+// TestExportDotenvWithPrefix verifies that a per-template prefix confines a
+// dotenv export to the requested subtree instead of dumping the whole tree.
+// Regression test for the prefix being ignored for the dotenv format.
+func TestExportDotenvWithPrefix(t *testing.T) {
+	tree := config.NewTree()
+	_ = tree.Set("app/env/db-host", &config.Value{Val: "db.example.com"})
+	_ = tree.Set("app/env/db-port", &config.Value{Val: 5432})
+	_ = tree.Set("secrets/api-token", &config.Value{Val: "super-secret"})
+	td := NewTreeData(tree, nil)
+
+	result, err := Export(context.Background(), td, ExportRunConfig{
+		Format: "dotenv",
+		Prefix: "app/env",
+	})
+	if err != nil {
+		t.Fatalf("Export: %v", err)
+	}
+	if strings.Contains(result.Content, "super-secret") ||
+		strings.Contains(result.Content, "API_TOKEN") {
+		t.Errorf("dotenv export leaked unrelated subtree:\n%s", result.Content)
+	}
+	if !strings.Contains(result.Content, "db.example.com") {
+		t.Errorf("dotenv export missing prefixed value:\n%s", result.Content)
+	}
+}
+
+// TestExportAllDotenvPrefixSnapshotAndFiltering verifies via ExportAll that a
+// dotenv template with a prefix writes only the prefixed subtree, and that the
+// rollback snapshot lands in the workspace directory (not the output's parent).
+func TestExportAllDotenvPrefixViaExportAll(t *testing.T) {
+	wsDir := t.TempDir()
+	tree := config.NewTree()
+	_ = tree.Set("app/env/db-host", &config.Value{Val: "db.example.com"})
+	_ = tree.Set("secrets/api-token", &config.Value{Val: "super-secret"})
+	td := NewTreeData(tree, nil)
+
+	configs := ExpandTemplates([]ExportTemplate{
+		{Format: "dotenv", Output: "deploy/.env", Prefix: "app/env"},
+	}, wsDir, false)
+
+	if _, err := ExportAll(context.Background(), td, configs); err != nil {
+		t.Fatalf("ExportAll: %v", err)
+	}
+
+	data, err := os.ReadFile(filepath.Join(wsDir, "deploy", ".env"))
+	if err != nil {
+		t.Fatalf("reading exported .env: %v", err)
+	}
+	if strings.Contains(string(data), "super-secret") {
+		t.Errorf(".env leaked unrelated subtree:\n%s", data)
+	}
+
+	// Rollback snapshot must be in the workspace dir, not deploy/.
+	if _, err := os.Stat(filepath.Join(wsDir, rollbackDir, rollbackManifest)); err != nil {
+		t.Errorf("rollback snapshot not found in workspace dir: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(wsDir, "deploy", rollbackDir)); !os.IsNotExist(err) {
+		t.Errorf("rollback snapshot wrongly created under output dir")
+	}
+}
+
+// TestToJSONTemplateFuncs verifies the documented toJSON / toJSONCompact
+// template functions are registered and usable.
+func TestToJSONTemplateFuncs(t *testing.T) {
+	tree := config.NewTree()
+	_ = tree.Set("app/name", &config.Value{Val: "myapp"})
+	td := NewTreeData(tree, nil)
+
+	dir := t.TempDir()
+	tmplPath := filepath.Join(dir, "out.tmpl")
+	if err := os.WriteFile(tmplPath, []byte(`{{ .Nested "" | toJSON }}`), 0o644); err != nil {
+		t.Fatalf("writing template: %v", err)
+	}
+
+	result, err := Export(context.Background(), td, ExportRunConfig{
+		TemplatePath: tmplPath,
+		WorkspaceDir: dir,
+	})
+	if err != nil {
+		t.Fatalf("Export with toJSON: %v", err)
+	}
+	if !strings.Contains(result.Content, "\"myapp\"") {
+		t.Errorf("toJSON output unexpected:\n%s", result.Content)
+	}
+}

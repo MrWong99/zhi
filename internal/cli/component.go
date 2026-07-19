@@ -96,7 +96,9 @@ func runComponentEnable(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	if len(enabled) == 1 {
+	if len(enabled) == 0 {
+		fmt.Fprintf(w, "'%s' is already enabled\n", name)
+	} else if len(enabled) == 1 {
 		fmt.Fprintf(w, "Enabled '%s'\n", name)
 	} else {
 		// The last entry is the target; others are auto-enabled dependencies.

@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"errors"
 	"testing"
 )
 
@@ -110,10 +111,11 @@ func TestIncrementHelpful(t *testing.T) {
 	ratings, _, _ := s.ListRatings("art-1", 1, 20, "")
 	ratingID := ratings[0].ID
 
-	if err := s.IncrementHelpful(ratingID); err != nil {
+	// Two distinct voters each count once.
+	if err := s.IncrementHelpful(ratingID, "voter-a"); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.IncrementHelpful(ratingID); err != nil {
+	if err := s.IncrementHelpful(ratingID, "voter-b"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -123,9 +125,34 @@ func TestIncrementHelpful(t *testing.T) {
 	}
 }
 
+func TestIncrementHelpfulDeduplicatesPerVoter(t *testing.T) {
+	s := newTestStore(t)
+	seedStore(t, s)
+
+	r := &Rating{ArtifactID: "art-1", UserID: "pub-1", UserName: "org", Score: 5}
+	if err := s.CreateOrUpdateRating(r); err != nil {
+		t.Fatal(err)
+	}
+	ratings, _, _ := s.ListRatings("art-1", 1, 20, "")
+	ratingID := ratings[0].ID
+
+	if err := s.IncrementHelpful(ratingID, "voter-a"); err != nil {
+		t.Fatal(err)
+	}
+	// A repeat vote from the same voter is rejected and does not change the count.
+	if err := s.IncrementHelpful(ratingID, "voter-a"); !errors.Is(err, ErrAlreadyVoted) {
+		t.Fatalf("second vote err = %v, want ErrAlreadyVoted", err)
+	}
+
+	ratings, _, _ = s.ListRatings("art-1", 1, 20, "")
+	if ratings[0].Helpful != 1 {
+		t.Errorf("helpful = %d, want 1 (repeat vote ignored)", ratings[0].Helpful)
+	}
+}
+
 func TestIncrementHelpfulNotFound(t *testing.T) {
 	s := newTestStore(t)
-	if err := s.IncrementHelpful("nonexistent"); err == nil {
+	if err := s.IncrementHelpful("nonexistent", "voter-a"); err == nil {
 		t.Error("expected error for nonexistent rating")
 	}
 }
@@ -239,8 +266,8 @@ func TestListRatingsSortByHelpful(t *testing.T) {
 	ratings, _, _ := s.ListRatings("art-1", 1, 20, "")
 	for _, r := range ratings {
 		if r.UserName == "bob" {
-			s.IncrementHelpful(r.ID)
-			s.IncrementHelpful(r.ID)
+			s.IncrementHelpful(r.ID, "voter-a")
+			s.IncrementHelpful(r.ID, "voter-b")
 		}
 	}
 

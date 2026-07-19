@@ -13,6 +13,14 @@ import (
 // Mirror write errors are logged but do not fail the operation unless the
 // primary write fails. The logger is optional; if nil, hclog.Default() is
 // used.
+//
+// Operations that change current tree values are treated as writes and
+// forwarded to mirrors: PutValues, DeleteValues, DeleteTree, and the
+// rollback operations (RollbackTree, RollbackValue). Because mirror version
+// namespaces may differ from the primary's, a mirror rollback may fail; such
+// failures are logged and the mirror should be resynced out of band. Version
+// history operations that do not affect current values (DeleteTreeVersion,
+// DeleteValueVersion) and all reads delegate to the primary only.
 func MirroredPlugin(logger hclog.Logger, primary Plugin, mirrors ...Plugin) Plugin {
 	if logger == nil {
 		logger = hclog.Default()
@@ -32,7 +40,11 @@ type mirroredPlugin struct {
 
 // --- Capabilities ---
 
-// Capabilities returns the intersection of all stores' capabilities.
+// Capabilities reports the primary's capabilities verbatim. Every
+// capability-gated operation (auth, encryption, versioning, access control)
+// delegates to the primary only, so the primary's capabilities accurately
+// describe what the composed plugin can do. Mirror capabilities are only
+// inspected to warn when a mirror cannot mirror what the primary supports.
 func (m *mirroredPlugin) Capabilities(ctx context.Context) (*Capabilities, error) {
 	caps, err := m.primary.Capabilities(ctx)
 	if err != nil {
@@ -45,18 +57,13 @@ func (m *mirroredPlugin) Capabilities(ctx context.Context) (*Capabilities, error
 			m.log.Warn("mirror capabilities failed", "mirror", i, "error", err)
 			continue
 		}
-		// Intersect: use the most restrictive.
-		if mc.Versioning < caps.Versioning {
-			caps.Versioning = mc.Versioning
-		}
-		if mc.Encryption < caps.Encryption {
-			caps.Encryption = mc.Encryption
-		}
-		if !mc.Auth {
-			caps.Auth = false
-		}
-		if !mc.AccessControl {
-			caps.AccessControl = false
+		if mc.Versioning < caps.Versioning || mc.Encryption < caps.Encryption ||
+			(caps.Auth && !mc.Auth) || (caps.AccessControl && !mc.AccessControl) {
+			m.log.Warn("mirror has weaker capabilities than primary; mirrored writes may lose fidelity",
+				"mirror", i,
+				"primary_versioning", caps.Versioning, "mirror_versioning", mc.Versioning,
+				"primary_encryption", caps.Encryption, "mirror_encryption", mc.Encryption,
+			)
 		}
 	}
 
@@ -133,8 +140,19 @@ func (m *mirroredPlugin) GetTreeVersion(ctx context.Context, id string, version 
 	return m.primary.GetTreeVersion(ctx, id, version, paths)
 }
 
+// RollbackTree changes the tree's current values, so it is a write and must
+// be forwarded to mirrors to keep them in sync. Mirror version namespaces may
+// differ from the primary's, so mirror rollback failures are logged (like
+// other mirror writes) rather than failing the operation; a persistently
+// failing mirror will diverge and should be resynced out of band.
 func (m *mirroredPlugin) RollbackTree(ctx context.Context, id string, version string) error {
-	return m.primary.RollbackTree(ctx, id, version)
+	if err := m.primary.RollbackTree(ctx, id, version); err != nil {
+		return fmt.Errorf("mirrored primary rollback tree: %w", err)
+	}
+	m.mirrorAction(ctx, "RollbackTree", func(mirror Plugin) error {
+		return mirror.RollbackTree(ctx, id, version)
+	})
+	return nil
 }
 
 func (m *mirroredPlugin) DeleteTreeVersion(ctx context.Context, id string, version string) error {
@@ -151,8 +169,17 @@ func (m *mirroredPlugin) GetValueVersion(ctx context.Context, id string, path st
 	return m.primary.GetValueVersion(ctx, id, path, version)
 }
 
+// RollbackValue changes the value's current state, so it is a write and is
+// forwarded to mirrors (best-effort, logged) to keep them in sync. See
+// RollbackTree for the divergence caveat.
 func (m *mirroredPlugin) RollbackValue(ctx context.Context, id string, path string, version string) error {
-	return m.primary.RollbackValue(ctx, id, path, version)
+	if err := m.primary.RollbackValue(ctx, id, path, version); err != nil {
+		return fmt.Errorf("mirrored primary rollback value: %w", err)
+	}
+	m.mirrorAction(ctx, "RollbackValue", func(mirror Plugin) error {
+		return mirror.RollbackValue(ctx, id, path, version)
+	})
+	return nil
 }
 
 func (m *mirroredPlugin) DeleteValueVersion(ctx context.Context, id string, path string, version string) error {
