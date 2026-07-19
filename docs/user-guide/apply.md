@@ -22,7 +22,7 @@ apply:
 | `workdir` | `.` | Working directory, relative to workspace root |
 | `pre-export` | `false` | Run all configured exports before the command |
 | `env` | `{}` | Extra environment variables for the subprocess |
-| `timeout` | `300` | Timeout in seconds (0 = no timeout) |
+| `timeout` | `0` | Timeout in seconds (0 = no timeout) |
 
 ### Named Targets
 
@@ -30,13 +30,14 @@ Define multiple apply targets for different operations:
 
 ```yaml
 apply:
-  default:
-    command: "docker compose up -d"
-    pre-export: true
-  destroy:
-    command: "docker compose down -v"
-  restart:
-    command: "docker compose restart"
+  targets:
+    default:
+      command: "docker compose up -d"
+      pre-export: true
+    destroy:
+      command: "docker compose down -v"
+    restart:
+      command: "docker compose restart"
 ```
 
 Run a specific target:

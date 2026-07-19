@@ -211,6 +211,25 @@ func TestComputeBinaryDigest(t *testing.T) {
 	}
 }
 
+func TestComputeBinaryDigestBytesMatchesFile(t *testing.T) {
+	data := []byte("some plugin binary content")
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "bin")
+	if err := os.WriteFile(path, data, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	fromFile, err := ComputeBinaryDigest(path)
+	if err != nil {
+		t.Fatalf("ComputeBinaryDigest: %v", err)
+	}
+	fromBytes := ComputeBinaryDigestBytes(data)
+	if fromBytes != fromFile {
+		t.Errorf("ComputeBinaryDigestBytes = %q, ComputeBinaryDigest = %q; want equal", fromBytes, fromFile)
+	}
+}
+
 func TestComputeBinaryDigestNotExist(t *testing.T) {
 	_, err := ComputeBinaryDigest("/nonexistent/path")
 	if err == nil {

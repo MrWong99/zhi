@@ -14,7 +14,7 @@ func treeToProto(tree config.TreeReader) ([]*cfgpb.TreeEntry, error) {
 }
 
 // treeFromProto delegates to config.TreeFromProto.
-func treeFromProto(entries []*cfgpb.TreeEntry) *config.Tree {
+func treeFromProto(entries []*cfgpb.TreeEntry) (*config.Tree, error) {
 	return config.TreeFromProto(entries)
 }
 

@@ -58,20 +58,27 @@ func (h *Handler) HandleCreateAdvisory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Look up the artifact to link the advisory.
+	// Look up the artifact the advisory targets. The advisory must reference a
+	// real, registered plugin, and only that plugin's owner may file an
+	// advisory against it — otherwise any authenticated key could forge a
+	// critical CVE against a competitor's plugin.
 	art, err := h.store.GetArtifact(req.Publisher, req.Plugin, "")
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-
-	var artifactID string
-	if art != nil {
-		artifactID = art.ID
+	if art == nil {
+		writeError(w, http.StatusNotFound, "plugin not found")
+		return
+	}
+	if art.PublisherID != publisherID {
+		writeError(w, http.StatusForbidden, "you do not own this plugin")
+		return
 	}
 
 	adv := &storage.Advisory{
-		ArtifactID:       artifactID,
+		ArtifactID:       art.ID,
+		ReporterID:       publisherID,
 		PublisherName:    req.Publisher,
 		PluginName:       req.Plugin,
 		Severity:         req.Severity,
@@ -105,9 +112,15 @@ func (h *Handler) HandleListAdvisories(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
-		if art != nil {
-			artifactID = art.ID
+		if art == nil {
+			// The caller filtered by a specific plugin that does not exist;
+			// return an empty list rather than falling back to every advisory
+			// on the server (which would make an install-time advisory gate
+			// falsely flag a clean plugin).
+			writeJSON(w, http.StatusOK, map[string]any{"advisories": []advisoryResponse{}})
+			return
 		}
+		artifactID = art.ID
 	}
 
 	advisories, err := h.store.ListAdvisories(artifactID, severity)

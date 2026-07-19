@@ -48,7 +48,7 @@ func NewCallbackServer() (*CallbackServer, error) {
 
 	go func() {
 		if err := cs.server.Serve(ln); err != nil && err != http.ErrServerClosed {
-			cs.result <- CallbackResult{Err: fmt.Errorf("callback server: %w", err)}
+			cs.deliver(CallbackResult{Err: fmt.Errorf("callback server: %w", err)})
 		}
 	}()
 
@@ -100,8 +100,19 @@ func (s *CallbackServer) handleCallback(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprint(w, successHTML)
 
-	s.result <- CallbackResult{Params: params}
+	s.deliver(CallbackResult{Params: params})
 
 	// Shut down asynchronously after responding.
 	go s.Close()
+}
+
+// deliver sends a result on the buffered result channel without blocking.
+// Delivery is single-shot: the first result wins and any subsequent callback
+// (e.g. a browser refresh or a duplicate IdP GET) is dropped instead of
+// parking its handler goroutine forever on the full channel.
+func (s *CallbackServer) deliver(r CallbackResult) {
+	select {
+	case s.result <- r:
+	default:
+	}
 }

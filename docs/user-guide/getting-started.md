@@ -67,11 +67,11 @@ This creates:
 # View all configuration paths
 zhi list paths
 
-# Get a specific value
-zhi get database/host
+# Get a specific value (paths from the scaffolded demo)
+zhi get pokedex-web/external_port
 
 # Set a value
-zhi set database/host mydb.example.com
+zhi set trainer-info/name "Misty"
 
 # Validate the configuration
 zhi validate

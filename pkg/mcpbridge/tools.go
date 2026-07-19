@@ -56,7 +56,7 @@ type SearchInput struct {
 	Type   string `json:"type,omitempty" jsonschema:"Filter by plugin type (config, transform, store, ui, workspace)"`
 	SortBy string `json:"sort_by,omitempty" jsonschema:"Sort order (relevance, downloads, rating, updated)"`
 	Limit  int    `json:"limit,omitempty" jsonschema:"Max results per page"`
-	Offset int    `json:"offset,omitempty" jsonschema:"Page offset"`
+	Page   int    `json:"page,omitempty" jsonschema:"1-based page number (first page is 1)"`
 }
 
 // InstallInput is the input for marketplace_install.
@@ -143,7 +143,7 @@ func addReadTools(server *mcp.Server, ctrl ui.Controller) {
 			Type:    input.Type,
 			Sort:    input.SortBy,
 			PerPage: input.Limit,
-			Page:    input.Offset,
+			Page:    input.Page,
 		})
 		if err != nil {
 			return errResult(err), nil, nil

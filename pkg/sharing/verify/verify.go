@@ -211,6 +211,15 @@ func VerifyBinaryDigest(binaryPath, expectedDigest string) error {
 	return nil
 }
 
+// ComputeBinaryDigestBytes computes the SHA-256 digest of the given bytes
+// and returns it in the "sha256:<hex>" format used by OCI digests. It is
+// equivalent to ComputeBinaryDigest applied to a file with the same
+// contents, but operates on in-memory data to avoid a re-read from disk.
+func ComputeBinaryDigestBytes(data []byte) string {
+	sum := sha256.Sum256(data)
+	return fmt.Sprintf("sha256:%x", sum)
+}
+
 // ComputeBinaryDigest computes the SHA-256 digest of a file and returns
 // it in the "sha256:<hex>" format used by OCI digests.
 func ComputeBinaryDigest(path string) (string, error) {
@@ -308,14 +317,16 @@ func VerifySignature(ctx context.Context, bundlePath string, artifactDigest stri
 		identityPolicies = append(identityPolicies, verify.WithCertificateIdentity(certID))
 	}
 
-	// Parse the artifact digest.
-	digestBytes, err := parseDigest(artifactDigest)
-	if err != nil {
-		return nil, fmt.Errorf("parsing digest: %w", err)
+	// Create verification policy over the signed artifact. SignArtifact
+	// signs the digest STRING (e.g. "sha256:<hex>") as plain content, so
+	// the bundle's message digest is sha256("sha256:<hex>"). Verify the
+	// same content here — hashing the digest string — rather than
+	// asserting the raw manifest digest bytes via WithArtifactDigest,
+	// which would never match what was signed.
+	if artifactDigest == "" {
+		return nil, fmt.Errorf("artifactDigest is required")
 	}
-
-	// Create verification policy with artifact digest.
-	artifactPolicy := verify.WithArtifactDigest("sha256", digestBytes)
+	artifactPolicy := verify.WithArtifact(strings.NewReader(artifactDigest))
 	policy := verify.NewPolicy(artifactPolicy, identityPolicies...)
 
 	// Verify the bundle.

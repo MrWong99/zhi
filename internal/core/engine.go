@@ -130,34 +130,43 @@ func (e *Engine) LoadTree(ctx context.Context) (*config.Tree, error) {
 		}
 	}
 
-	// Load stored tree and merge if available
-	if storedTree, ok, err := e.LoadStoredTree(ctx); err == nil && ok {
-		for _, path := range tree.List() {
-			storedVal, found := storedTree.Get(path)
-			if !found {
-				continue
-			}
-			currentVal, found := tree.GetPtr(path) // pointer so we can modify it directly
-			if !found {
-				continue // should not happen since we used "List()"
-			}
-			// Check stored value has same type as current value, attempting
-			// lossless numeric conversion when types differ (e.g. float64 from
-			// JSON store vs int from YAML config).
-			if reflect.TypeOf(storedVal.Val) != reflect.TypeOf(currentVal.Val) {
-				converted, ok := tryNumericConvert(storedVal.Val, reflect.TypeOf(currentVal.Val))
-				if !ok {
-					Logger().Warn("stored value has different type and won't be updated",
-						"path", path, "storedType", reflect.TypeOf(storedVal.Val), "newType", reflect.TypeOf(currentVal.Val))
+	// Load stored tree and merge if available. A store read failure (store
+	// unreachable, Vault sealed, auth expired, corrupt store file) must abort
+	// rather than silently falling back to config-provider defaults — otherwise
+	// export/apply would overwrite real config with defaults and exit 0. A
+	// genuinely empty store (first run) returns ok=false with a nil error and
+	// is not treated as a failure. Workspaces without a store skip this entirely.
+	if e.storePlugin != nil {
+		storedTree, ok, err := e.LoadStoredTree(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("loading stored values: %w", err)
+		}
+		if ok {
+			for _, path := range tree.List() {
+				storedVal, found := storedTree.Get(path)
+				if !found {
 					continue
 				}
-				storedVal.Val = converted
+				currentVal, found := tree.GetPtr(path) // pointer so we can modify it directly
+				if !found {
+					continue // should not happen since we used "List()"
+				}
+				// Check stored value has same type as current value, attempting
+				// lossless numeric conversion when types differ (e.g. float64 from
+				// JSON store vs int from YAML config).
+				if reflect.TypeOf(storedVal.Val) != reflect.TypeOf(currentVal.Val) {
+					converted, ok := tryNumericConvert(storedVal.Val, reflect.TypeOf(currentVal.Val))
+					if !ok {
+						Logger().Warn("stored value has different type and won't be updated",
+							"path", path, "storedType", reflect.TypeOf(storedVal.Val), "newType", reflect.TypeOf(currentVal.Val))
+						continue
+					}
+					storedVal.Val = converted
+				}
+				currentVal.Val = storedVal.Val
+				Logger().Debug("updated value from stored value", "path", path)
 			}
-			currentVal.Val = storedVal.Val
-			Logger().Debug("updated value from stored value", "path", path)
 		}
-	} else if err != nil {
-		Logger().Warn("could not load stored values", "error", err)
 	}
 
 	return tree, nil

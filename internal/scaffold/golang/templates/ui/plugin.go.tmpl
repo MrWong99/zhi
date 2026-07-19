@@ -39,7 +39,7 @@ func (p *Plugin) Run(ctx context.Context, controller ui.Controller) error {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintf(w, `{"paths":%d}`+"\n", len(tree.Paths()))
+		fmt.Fprintf(w, `{"paths":%d}`+"\n", len(tree.List()))
 	})
 
 	addr := ":9090"

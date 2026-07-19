@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -147,13 +148,23 @@ func (h *Handler) HandleSubmitRating(w http.ResponseWriter, r *http.Request) {
 
 // HandleRatingHelpful handles POST /api/v1/plugins/{publisher}/{name}/ratings/{id}/helpful.
 func (h *Handler) HandleRatingHelpful(w http.ResponseWriter, r *http.Request) {
+	publisherID := r.Header.Get("X-Publisher-ID")
+	if publisherID == "" {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+
 	ratingID := extractRatingHelpfulID(r.URL.Path)
 	if ratingID == "" {
 		writeError(w, http.StatusBadRequest, "invalid rating path")
 		return
 	}
 
-	if err := h.store.IncrementHelpful(ratingID); err != nil {
+	if err := h.store.IncrementHelpful(ratingID, publisherID); err != nil {
+		if errors.Is(err, storage.ErrAlreadyVoted) {
+			writeError(w, http.StatusConflict, "you have already marked this review helpful")
+			return
+		}
 		writeError(w, http.StatusNotFound, err.Error())
 		return
 	}

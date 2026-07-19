@@ -14,7 +14,7 @@ import (
 )
 
 var editCmd = &cobra.Command{
-	Use:   "edit [tree-id]",
+	Use:   "edit",
 	Short: "Launch the interactive configuration editor",
 	Long: `Launch the interactive configuration editor.
 
@@ -34,9 +34,8 @@ Examples:
   zhi edit                    # launch the default UI (tui)
   zhi edit --ui tui           # explicitly select the TUI driver
   zhi edit --ui webui         # launch the web UI in your browser
-  zhi edit --ui mcp-stdio     # start MCP server over stdio for LLM clients
-  zhi edit myconfig           # edit a specific stored tree`,
-	Args:              cobra.MaximumNArgs(1),
+  zhi edit --ui mcp-stdio     # start MCP server over stdio for LLM clients`,
+	Args:              cobra.NoArgs,
 	PersistentPreRunE: withEngine,
 	RunE:              runEdit,
 }

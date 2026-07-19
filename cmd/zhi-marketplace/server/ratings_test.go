@@ -205,4 +205,18 @@ func TestHandleRatingHelpful(t *testing.T) {
 	if len(ratings) > 0 && ratings[0].Helpful != 1 {
 		t.Errorf("helpful = %d, want 1", ratings[0].Helpful)
 	}
+
+	// A second vote from the same key is rejected and does not inflate the count.
+	req = httptest.NewRequest("POST", "/api/v1/plugins/config/zhi-project/ansible-config/ratings/"+ratingID+"/helpful", nil)
+	req.Header.Set("Authorization", "Bearer test-key")
+	w = httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+	if w.Code != http.StatusConflict {
+		t.Errorf("repeat vote status = %d, want 409, body: %s", w.Code, w.Body.String())
+	}
+
+	ratings, _, _ = store.ListRatings("art-1", 1, 20, "")
+	if len(ratings) > 0 && ratings[0].Helpful != 1 {
+		t.Errorf("helpful after repeat vote = %d, want 1", ratings[0].Helpful)
+	}
 }

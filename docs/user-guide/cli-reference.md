@@ -18,7 +18,7 @@ Scaffold a new workspace in the current (or specified) directory.
 
 ```sh
 zhi init
-zhi init --config-provider structuredfile --store-provider zhi-store-json
+zhi init --config-provider structuredfile --store-provider jsonfile
 zhi init --force  # overwrite existing zhi.yaml
 ```
 
@@ -27,7 +27,7 @@ Creates `zhi.yaml`, starter configuration files, sample export templates, and th
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--config-provider` | `structuredfile` | Config provider to use |
-| `--store-provider` | `zhi-store-json` | Store provider to use |
+| `--store-provider` | `jsonfile` | Store provider to use (built-in: `jsonfile`; external plugins such as `zhi-store-json` work once installed) |
 | `--force` | `false` | Overwrite existing `zhi.yaml` |
 
 ### `zhi edit`
@@ -38,15 +38,17 @@ Launch the interactive UI to browse, edit, and manage configuration.
 
 ```sh
 zhi edit
-zhi edit --tree production
+zhi edit production        # edit a specific stored tree (positional [tree-id])
 zhi edit --ui tui
 zhi edit --ui webui
 zhi edit --ui mcp-stdio
 ```
 
+Accepts an optional positional `[tree-id]` argument to select which stored tree
+to edit; when omitted, the default tree is used.
+
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--tree` | (default tree) | Tree ID to load from store |
 | `--ui` | `tui` | UI driver to use (`tui`, `webui`, `mcp-stdio`, or an external plugin) |
 
 **TUI key bindings:**
@@ -474,7 +476,6 @@ zhi workspace install oci://ghcr.io/org/zhi-workspace-k8s:v1.0 ./my-cluster
 |------|-------------|
 | `--skip-plugins` | Don't install plugin dependencies |
 | `--skip-tools-check` | Don't check for required external tools |
-| `--dry-run` | Show what would be installed |
 
 #### `zhi workspace publish`
 
@@ -493,17 +494,25 @@ zhi workspace publish --registry ghcr.io/myorg --sign
 
 #### `zhi workspace lock`
 
-Generate or update `zhi-plugins.lock` by resolving all plugin references to exact OCI digests.
+Generate or update `zhi-plugins.lock` by pinning the currently-installed plugins to their exact OCI digests. This snapshots the plugins already present in the local metadata store; it does not resolve or update plugin references.
 
 ```sh
-zhi workspace lock              # Lock current versions
-zhi workspace lock --update     # Update and re-lock
+zhi workspace lock              # Pin currently-installed plugin digests
+```
+
+This command takes no flags.
+
+#### `zhi workspace setup`
+
+Install all plugins at the exact versions pinned in `zhi-plugins.lock`. Intended for CI/CD where reproducibility matters.
+
+```sh
+zhi workspace setup --from-lock
 ```
 
 | Flag | Description |
 |------|-------------|
-| `--update` | Update all plugins to latest matching versions |
-| `--update-plugin` | Update a specific plugin |
+| `--from-lock` | Install from `zhi-plugins.lock` (required) |
 
 ### `zhi registry`
 

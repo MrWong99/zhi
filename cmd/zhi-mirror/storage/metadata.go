@@ -78,7 +78,7 @@ func (s *MetadataStore) Put(key string, responseData json.RawMessage, sourceURL 
 		return fmt.Errorf("creating cache directory: %w", err)
 	}
 
-	if err := os.WriteFile(path, data, 0o644); err != nil {
+	if err := writeFileAtomic(path, data, 0o644); err != nil {
 		return fmt.Errorf("writing cache entry: %w", err)
 	}
 	return nil

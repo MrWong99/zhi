@@ -7,6 +7,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -269,6 +271,55 @@ func TestExtractTarGzPathTraversal(t *testing.T) {
 	err := extractTarGz(buf.Bytes(), targetDir)
 	if err == nil {
 		t.Error("expected error for path traversal")
+	}
+}
+
+func TestExtractTarGzSizeLimit(t *testing.T) {
+	// Lower the extraction budget so the bomb guard trips cheaply.
+	origBytes := maxExtractedBytes
+	t.Cleanup(func() { maxExtractedBytes = origBytes })
+	maxExtractedBytes = 16
+
+	var buf bytes.Buffer
+	gw := gzip.NewWriter(&buf)
+	tw := tar.NewWriter(gw)
+	content := strings.Repeat("A", 1024) // exceeds the 16-byte budget
+	tw.WriteHeader(&tar.Header{Name: "big.bin", Size: int64(len(content)), Mode: 0o644})
+	tw.Write([]byte(content))
+	tw.Close()
+	gw.Close()
+
+	err := extractTarGz(buf.Bytes(), t.TempDir())
+	if err == nil {
+		t.Fatal("expected error for oversized archive, got nil")
+	}
+	if !strings.Contains(err.Error(), "maximum extracted size") {
+		t.Errorf("error = %v, want maximum extracted size error", err)
+	}
+}
+
+func TestExtractTarGzEntryLimit(t *testing.T) {
+	origEntries := maxExtractedEntries
+	t.Cleanup(func() { maxExtractedEntries = origEntries })
+	maxExtractedEntries = 2
+
+	var buf bytes.Buffer
+	gw := gzip.NewWriter(&buf)
+	tw := tar.NewWriter(gw)
+	for i := 0; i < 5; i++ {
+		name := "f" + strconv.Itoa(i)
+		tw.WriteHeader(&tar.Header{Name: name, Size: 1, Mode: 0o644})
+		tw.Write([]byte("x"))
+	}
+	tw.Close()
+	gw.Close()
+
+	err := extractTarGz(buf.Bytes(), t.TempDir())
+	if err == nil {
+		t.Fatal("expected error for too many entries, got nil")
+	}
+	if !strings.Contains(err.Error(), "too many entries") {
+		t.Errorf("error = %v, want too many entries error", err)
 	}
 }
 

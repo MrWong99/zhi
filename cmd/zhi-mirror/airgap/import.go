@@ -58,22 +58,38 @@ func Import(store *storage.OCILayout, opts ImportOptions) (*BundleManifest, erro
 		if entry.IsDir() {
 			continue
 		}
-		data, err := os.ReadFile(filepath.Join(blobsDir, entry.Name()))
+		name := entry.Name()
+		data, err := os.ReadFile(filepath.Join(blobsDir, name))
 		if err != nil {
-			return nil, fmt.Errorf("reading blob %s: %w", entry.Name(), err)
+			return nil, fmt.Errorf("reading blob %s: %w", name, err)
+		}
+		// The filename is the blob's content digest (bare hex). Verify the bytes
+		// hash to it so bit-rot or truncation on the transfer medium is caught
+		// loudly here rather than as an opaque pull failure later. PutBlob stores
+		// under the recomputed digest, so a mismatch would otherwise silently
+		// store the blob under the wrong key.
+		expected := "sha256:" + name
+		if got := storage.ComputeSHA256(data); got != expected {
+			return nil, fmt.Errorf("blob %s failed integrity check: content digest is %s", name, got)
 		}
 		if _, err := store.PutBlob(data); err != nil {
-			return nil, fmt.Errorf("storing blob %s: %w", entry.Name(), err)
+			return nil, fmt.Errorf("storing blob %s: %w", name, err)
 		}
 	}
 
-	// Create tag mappings for each artifact.
+	// Create tag mappings for each artifact. Verify the referenced digest is
+	// actually present so an incomplete bundle is rejected atomically rather
+	// than surfacing as a missing-blob pull failure with no upstream to recover.
 	for _, art := range manifest.Artifacts {
 		repo, tag := parseRefParts(art.Ref)
-		if repo != "" && tag != "" && art.Digest != "" {
-			if err := store.PutTag(repo, tag, art.Digest); err != nil {
-				return nil, fmt.Errorf("storing tag for %s: %w", art.Ref, err)
-			}
+		if repo == "" || tag == "" || art.Digest == "" {
+			continue
+		}
+		if !store.HasBlob(art.Digest) {
+			return nil, fmt.Errorf("bundle references digest %s for %s but it is missing from the bundle", art.Digest, art.Ref)
+		}
+		if err := store.PutTag(repo, tag, art.Digest); err != nil {
+			return nil, fmt.Errorf("storing tag for %s: %w", art.Ref, err)
 		}
 	}
 
@@ -88,6 +104,14 @@ func parseRefParts(ref string) (repo, tag string) {
 	}
 	return ref, ""
 }
+
+const (
+	// maxExtractedBytes caps the total decompressed size of a bundle to
+	// guard against gzip/zip bombs.
+	maxExtractedBytes int64 = 1 << 30
+	// maxExtractedEntries caps the number of archive entries.
+	maxExtractedEntries = 50_000
+)
 
 // extractTarball extracts a gzipped tarball to the target directory.
 func extractTarball(src, dst string) error {
@@ -104,6 +128,10 @@ func extractTarball(src, dst string) error {
 	defer gr.Close()
 
 	tr := tar.NewReader(gr)
+	var (
+		entries       int
+		extractedSize int64
+	)
 	for {
 		header, err := tr.Next()
 		if err == io.EOF {
@@ -111,6 +139,11 @@ func extractTarball(src, dst string) error {
 		}
 		if err != nil {
 			return fmt.Errorf("reading tar: %w", err)
+		}
+
+		entries++
+		if entries > maxExtractedEntries {
+			return fmt.Errorf("archive has too many entries (limit %d)", maxExtractedEntries)
 		}
 
 		// Reject archive entries with absolute paths or ".." components before
@@ -145,11 +178,18 @@ func extractTarball(src, dst string) error {
 			if err != nil {
 				return err
 			}
-			if _, err := io.Copy(out, tr); err != nil {
-				out.Close()
+			// Cap decompression to guard against gzip bombs. LimitReader is
+			// given one extra byte so an over-budget entry is detectable.
+			remaining := maxExtractedBytes - extractedSize
+			n, err := io.Copy(out, io.LimitReader(tr, remaining+1))
+			out.Close()
+			if err != nil {
 				return err
 			}
-			out.Close()
+			extractedSize += n
+			if extractedSize > maxExtractedBytes {
+				return fmt.Errorf("archive exceeds maximum extracted size (limit %d bytes)", maxExtractedBytes)
+			}
 		}
 	}
 	return nil

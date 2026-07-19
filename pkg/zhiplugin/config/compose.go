@@ -29,6 +29,9 @@ func MergedPlugin(children ...MountedPlugin) (Plugin, error) {
 		if a.Prefix == "" {
 			return nil, fmt.Errorf("MergedPlugin: child %d has an empty prefix", i)
 		}
+		if !strings.HasSuffix(a.Prefix, "/") {
+			return nil, fmt.Errorf("MergedPlugin: child %d prefix %q must end with '/'", i, a.Prefix)
+		}
 		if a.Impl == nil {
 			return nil, fmt.Errorf("MergedPlugin: child %d (prefix %q) has nil Impl", i, a.Prefix)
 		}

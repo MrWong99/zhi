@@ -349,7 +349,11 @@ func TestClientRegisterPlugin(t *testing.T) {
 
 		var req RegisterPluginRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			t.Fatalf("decode: %v", err)
+			// t.Fatalf must not be called from a non-test goroutine; record
+			// the failure and respond cleanly instead.
+			t.Errorf("decode: %v", err)
+			http.Error(w, "bad request", http.StatusBadRequest)
+			return
 		}
 		if req.Name != "my-plugin" {
 			t.Errorf("Name = %q", req.Name)

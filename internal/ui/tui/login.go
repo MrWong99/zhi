@@ -65,8 +65,10 @@ func newLoginModel(ctx context.Context, controller *ui.UIController, methods []z
 		m.selectedMethod = methods[0]
 		if m.selectedMethod.Interactive {
 			// Interactive single method: go straight to interactive phase.
-			// The startInteractiveLogin cmd is triggered via Init().
+			// The interactiveLoginCmd is triggered via Init(); mark it as
+			// in flight so its loginResultMsg (including errors) is handled.
 			m.phase = loginPhaseInteractive
+			m.submitting = true
 		} else {
 			m.phase = loginPhaseForm
 			m.buildInputs()
@@ -116,16 +118,19 @@ func (m loginModel) Init() tea.Cmd {
 
 // UpdateLogin handles messages for the login view.
 func (m loginModel) UpdateLogin(msg tea.Msg) (loginModel, tea.Cmd) {
-	if m.submitting {
-		if result, ok := msg.(loginResultMsg); ok {
-			m.submitting = false
-			if result.err != nil {
-				m.errMsg = result.err.Error()
-				return m, nil
-			}
-			// Success is handled by the app model checking the result message.
-			return m, nil
+	// Always consume the login result, regardless of phase or submitting
+	// state, so an error can never be dropped on the floor (which would
+	// leave the view stuck on "Waiting for browser authentication...").
+	if result, ok := msg.(loginResultMsg); ok {
+		m.submitting = false
+		if result.err != nil {
+			m.errMsg = result.err.Error()
 		}
+		// Success is handled by the app model checking the result message.
+		return m, nil
+	}
+	if m.submitting {
+		// Ignore all other input while a login attempt is in flight.
 		return m, nil
 	}
 
@@ -169,6 +174,11 @@ func (m loginModel) updateCredentialForm(msg tea.Msg) (loginModel, tea.Cmd) {
 	if keyMsg, ok := msg.(tea.KeyMsg); ok {
 		switch keyMsg.String() {
 		case "tab", "shift+tab":
+			if len(m.inputs) == 0 {
+				// A method with no fields (e.g. ambient credentials) has an
+				// empty form; skip focus cycling to avoid a divide by zero.
+				return m, nil
+			}
 			dir := 1
 			if keyMsg.String() == "shift+tab" {
 				dir = -1
@@ -266,13 +276,23 @@ func (m loginModel) interactiveLoginCmd() tea.Cmd {
 }
 
 func (m loginModel) updateInteractive(msg tea.Msg) (loginModel, tea.Cmd) {
-	// While waiting for browser callback, allow esc to go back (if multiple methods).
+	// While waiting for browser callback, allow esc to go back (if multiple
+	// methods) and 'r' to retry a failed attempt.
 	if keyMsg, ok := msg.(tea.KeyMsg); ok {
-		if keyMsg.String() == "esc" && len(m.methods) > 1 {
-			m.phase = loginPhaseMethod
-			m.submitting = false
-			m.errMsg = ""
-			return m, nil
+		switch keyMsg.String() {
+		case "esc":
+			if len(m.methods) > 1 {
+				m.phase = loginPhaseMethod
+				m.submitting = false
+				m.errMsg = ""
+				return m, nil
+			}
+		case "r":
+			if !m.submitting {
+				m.submitting = true
+				m.errMsg = ""
+				return m, m.interactiveLoginCmd()
+			}
 		}
 	}
 	return m, nil
@@ -363,9 +383,15 @@ func (m loginModel) viewInteractive() string {
 		sb.WriteString(DimStyle.Render(fmt.Sprintf("  Method: %s", m.selectedMethod.Type)))
 		sb.WriteString("\n\n")
 	}
-	sb.WriteString("  Waiting for browser authentication...\n")
-	sb.WriteString(DimStyle.Render("  A browser window should open. Complete the login there."))
-	sb.WriteString("\n")
+	if m.submitting {
+		sb.WriteString("  Waiting for browser authentication...\n")
+		sb.WriteString(DimStyle.Render("  A browser window should open. Complete the login there."))
+		sb.WriteString("\n")
+	} else {
+		sb.WriteString("  Interactive login did not complete.\n")
+		sb.WriteString(DimStyle.Render("  Press r to try again."))
+		sb.WriteString("\n")
+	}
 	return sb.String()
 }
 
@@ -399,11 +425,15 @@ func (m loginModel) viewHints() string {
 		}
 		return DimStyle.Render(hints)
 	case loginPhaseInteractive:
-		hints := "  Ctrl+C: quit"
-		if len(m.methods) > 1 {
-			hints = "  Esc: back  Ctrl+C: quit"
+		var parts []string
+		if !m.submitting {
+			parts = append(parts, "r: retry")
 		}
-		return DimStyle.Render(hints)
+		if len(m.methods) > 1 {
+			parts = append(parts, "Esc: back")
+		}
+		parts = append(parts, "Ctrl+C: quit")
+		return DimStyle.Render("  " + strings.Join(parts, "  "))
 	}
 	return ""
 }

@@ -225,12 +225,15 @@ zhi workspace publish --registry ghcr.io/myorg --sign
 
 ### Lock Files
 
-Generate a `zhi-plugins.lock` file that pins all plugin dependencies to exact OCI digests for reproducible builds:
+Generate a `zhi-plugins.lock` file that pins the currently-installed plugins to their exact OCI digests for reproducible builds:
 
 ```sh
-zhi workspace lock              # Lock current versions
-zhi workspace lock --update     # Update all plugins and re-lock
+zhi workspace lock              # Pin currently-installed plugin digests
 ```
+
+`zhi workspace lock` snapshots the plugins already installed in the local
+metadata store; it does not resolve or update plugin references. Install plugins
+at the pinned versions with `zhi workspace setup --from-lock`.
 
 Lock files ensure CI/CD pipelines and team members install identical plugin versions.
 

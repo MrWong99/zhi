@@ -551,6 +551,40 @@ func TestApp_LoginTabNavigation(t *testing.T) {
 	}
 }
 
+// TestApp_LoginTabNoFieldsNoPanic ensures that pressing Tab in a credential
+// form for an auth method with zero fields does not panic (regression for a
+// modulo-by-zero on the empty inputs slice).
+func TestApp_LoginTabNoFieldsNoPanic(t *testing.T) {
+	ms := newAuthMockStore()
+	ms.methods = []store.AuthMethod{
+		{
+			Type:        "ambient",
+			Description: "Ambient environment credentials",
+			Fields:      nil,
+		},
+	}
+	ctrl := setupAuthTestController(t, ms)
+	ctx := context.Background()
+
+	app, err := tui.NewApp(ctx, ctrl)
+	if err != nil {
+		t.Fatalf("NewApp: %v", err)
+	}
+
+	model, _ := app.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
+	app = model.(*tui.App)
+
+	// Tab and Shift+Tab must not panic with an empty form.
+	model, _ = app.Update(tea.KeyMsg{Type: tea.KeyTab})
+	app = model.(*tui.App)
+	model, _ = app.Update(tea.KeyMsg{Type: tea.KeyShiftTab})
+	app = model.(*tui.App)
+
+	if view := app.View(); view == "" {
+		t.Error("expected non-empty view after tabbing an empty form")
+	}
+}
+
 func TestApp_LoginRequiredFieldsMarked(t *testing.T) {
 	ms := newAuthMockStore()
 	ms.methods = []store.AuthMethod{

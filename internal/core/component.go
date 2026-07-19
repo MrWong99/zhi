@@ -71,9 +71,17 @@ func NewComponentManager(defs []ComponentDef) (*ComponentManager, error) {
 		return nil, err
 	}
 
-	// Mandatory components start enabled; others start disabled.
+	// Mandatory components start enabled together with their transitive
+	// dependencies. Enabling only the mandatory components themselves would
+	// leave their dependencies disabled, which immediately fails dependency
+	// validation and omits dependency paths from exports.
 	for _, d := range defs {
-		cm.state[d.Name] = d.Mandatory
+		cm.state[d.Name] = false
+	}
+	for _, d := range defs {
+		if d.Mandatory {
+			cm.enableTransitive(d.Name)
+		}
 	}
 
 	return cm, nil
@@ -149,9 +157,22 @@ func (cm *ComponentManager) checkOverlappingPaths() error {
 	return nil
 }
 
-// prefixOverlaps returns true if either prefix contains the other.
+// prefixOverlaps returns true if either prefix contains the other, respecting
+// path segment boundaries so that e.g. "app" and "app-backend" do not overlap.
 func prefixOverlaps(a, b string) bool {
-	return strings.HasPrefix(a, b) || strings.HasPrefix(b, a)
+	return pathHasPrefix(a, b) || pathHasPrefix(b, a)
+}
+
+// pathHasPrefix reports whether path equals prefix or lies beneath it,
+// respecting slash-delimited segment boundaries. A trailing slash on prefix is
+// ignored, so both "app" and "app/" match "app/host" but neither matches
+// "app-backend/host".
+func pathHasPrefix(path, prefix string) bool {
+	prefix = strings.TrimSuffix(prefix, "/")
+	if prefix == "" {
+		return false
+	}
+	return path == prefix || strings.HasPrefix(path, prefix+"/")
 }
 
 // Enable enables a component and transitively enables its dependencies.
@@ -232,7 +253,7 @@ func (cm *ComponentManager) EnabledPaths() []string {
 func (cm *ComponentManager) PathBelongsToComponent(path string) (string, bool) {
 	for _, d := range cm.definitions {
 		for _, prefix := range d.Paths {
-			if strings.HasPrefix(path, prefix) {
+			if pathHasPrefix(path, prefix) {
 				return d.Name, true
 			}
 		}
@@ -332,9 +353,38 @@ func (cm *ComponentManager) DisableCascade(name string) ([]string, error) {
 	if def.Mandatory {
 		return nil, fmt.Errorf("cannot disable %q: component is mandatory", name)
 	}
+	// Refuse if any transitively-dependent component is mandatory. Cascading
+	// would otherwise skip the mandatory dependent (leaving it enabled) while
+	// still disabling this component, recreating the broken "mandatory enabled,
+	// its dependency disabled" state.
+	for _, dep := range cm.transitiveDependents(name) {
+		if d, ok := cm.defsByName[dep]; ok && d.Mandatory {
+			return nil, fmt.Errorf("cannot disable %q: required by mandatory component %q", name, dep)
+		}
+	}
 	var disabled []string
 	cm.disableCascadeRecursive(name, &disabled)
 	return disabled, nil
+}
+
+// transitiveDependents returns the names of all components that depend on the
+// given component, directly or transitively.
+func (cm *ComponentManager) transitiveDependents(name string) []string {
+	visited := make(map[string]bool)
+	var walk func(string)
+	walk = func(n string) {
+		for _, d := range cm.definitions {
+			if visited[d.Name] {
+				continue
+			}
+			if slices.Contains(d.Dependencies, n) {
+				visited[d.Name] = true
+				walk(d.Name)
+			}
+		}
+	}
+	walk(name)
+	return slices.Sorted(maps.Keys(visited))
 }
 
 func (cm *ComponentManager) disableCascadeRecursive(name string, disabled *[]string) {

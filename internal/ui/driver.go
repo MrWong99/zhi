@@ -265,9 +265,15 @@ func (c *UIController) ExportTemplates() []core.ExportTemplate {
 
 // Apply runs pre-checks (if configured) followed by the apply command,
 // streaming output to the provided channel.
+//
+// Apply always closes output before returning, on every path (including
+// the error paths). Consumers rely on the channel closing to know that no
+// further output will arrive; leaving it open wedges any `range output`
+// reader (and, in the TUI, blocks every exit route).
 func (c *UIController) Apply(ctx context.Context, target string, output chan<- core.ApplyOutput) (*core.ApplyResult, error) {
 	runCfg, err := c.engine.BuildApplyRunConfig(target)
 	if err != nil {
+		close(output)
 		return nil, err
 	}
 

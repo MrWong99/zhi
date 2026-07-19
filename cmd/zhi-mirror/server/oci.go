@@ -59,6 +59,17 @@ func (h *OCIHandler) HandleManifest(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"errors":[{"code":"NAME_UNKNOWN","message":"invalid path"}]}`, http.StatusNotFound)
 		return
 	}
+	if !validRepo(repo) {
+		http.Error(w, `{"errors":[{"code":"NAME_INVALID","message":"invalid repository name"}]}`, http.StatusBadRequest)
+		return
+	}
+	// A digest reference is used directly as a content-addressed lookup key, so
+	// reject anything that is not a canonical sha256 digest before it reaches
+	// the storage layer.
+	if strings.HasPrefix(ref, "sha256:") && !storage.ValidDigest(ref) {
+		http.Error(w, `{"errors":[{"code":"DIGEST_INVALID","message":"invalid digest"}]}`, http.StatusBadRequest)
+		return
+	}
 
 	// Check policy.
 	if err := h.policy.CheckRepository(repo); err != nil {
@@ -152,6 +163,16 @@ func (h *OCIHandler) HandleBlob(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"errors":[{"code":"BLOB_UNKNOWN","message":"invalid path"}]}`, http.StatusNotFound)
 		return
 	}
+	if !validRepo(repo) {
+		http.Error(w, `{"errors":[{"code":"NAME_INVALID","message":"invalid repository name"}]}`, http.StatusBadRequest)
+		return
+	}
+	// Blobs are addressed exclusively by digest; reject any non-canonical value
+	// before it is used as a storage lookup key or upstream path component.
+	if !storage.ValidDigest(dgst) {
+		http.Error(w, `{"errors":[{"code":"DIGEST_INVALID","message":"invalid digest"}]}`, http.StatusBadRequest)
+		return
+	}
 
 	// Check policy.
 	if err := h.policy.CheckRepository(repo); err != nil {
@@ -193,6 +214,10 @@ func (h *OCIHandler) HandleTagsList(w http.ResponseWriter, r *http.Request) {
 	repo := parseTagsListPath(r.URL.Path)
 	if repo == "" {
 		http.Error(w, `{"errors":[{"code":"NAME_UNKNOWN","message":"invalid path"}]}`, http.StatusNotFound)
+		return
+	}
+	if !validRepo(repo) {
+		http.Error(w, `{"errors":[{"code":"NAME_INVALID","message":"invalid repository name"}]}`, http.StatusBadRequest)
 		return
 	}
 
@@ -301,6 +326,22 @@ func parseBlobPath(path string) (repo, dgst string) {
 		return "", ""
 	}
 	return rest[:idx], rest[idx+len(segment):]
+}
+
+// validRepo reports whether repo is a safe repository name to embed in a
+// filesystem path or upstream URL. It rejects empty names and any "."/".."/
+// empty path segment, so a crafted name cannot traverse out of the tags
+// directory (used by PutTag/GetTag/ListTags for per-repo tag files).
+func validRepo(repo string) bool {
+	if repo == "" {
+		return false
+	}
+	for _, seg := range strings.Split(repo, "/") {
+		if seg == "" || seg == "." || seg == ".." {
+			return false
+		}
+	}
+	return true
 }
 
 // parseTagsListPath extracts the repository name from /v2/{name}/tags/list.

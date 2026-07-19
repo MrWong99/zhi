@@ -1011,10 +1011,15 @@ func TestDefaultConfig(t *testing.T) {
 // --- Integration tests with a real Vault dev server ---
 
 func TestIntegrationWithVaultDev(t *testing.T) {
-	addr := os.Getenv("VAULT_ADDR")
-	token := os.Getenv("VAULT_TOKEN")
+	// Gate on dedicated opt-in variables rather than the standard
+	// VAULT_ADDR/VAULT_TOKEN, which real Vault users routinely export to talk
+	// to shared, staging, or production servers. This test writes and deletes
+	// secrets, so it must only run against a Vault the developer explicitly
+	// dedicates to testing (e.g. a throwaway `vault server -dev`).
+	addr := os.Getenv("ZHI_TEST_VAULT_ADDR")
+	token := os.Getenv("ZHI_TEST_VAULT_TOKEN")
 	if addr == "" || token == "" {
-		t.Skip("Skipping: set VAULT_ADDR and VAULT_TOKEN (e.g. vault server -dev)")
+		t.Skip("Skipping: set ZHI_TEST_VAULT_ADDR and ZHI_TEST_VAULT_TOKEN (e.g. a throwaway `vault server -dev`)")
 	}
 
 	s, err := New(Config{
@@ -1586,7 +1591,12 @@ func TestBuildHTTPClientWithSkipVerify(t *testing.T) {
 	}
 }
 
-func TestStartRenewal_CancelledContext(t *testing.T) {
+// TestStartRenewal_DetachedFromRequestContext verifies that renewal is NOT
+// tied to the context passed into Login. That context is often request-scoped
+// (an HTTP request or a unary RPC) and is cancelled the instant the login call
+// returns; if renewal died with it, a renewable token would silently expire.
+// Only Stop() (via the stopRenew channel) may halt renewal.
+func TestStartRenewal_DetachedFromRequestContext(t *testing.T) {
 	renewCalls := make(chan struct{}, 10)
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -1622,20 +1632,35 @@ func TestStartRenewal_CancelledContext(t *testing.T) {
 		t.Fatal("renewal goroutine did not fire within timeout")
 	}
 
-	// Cancel the context and verify the goroutine stops (no more renewal calls).
+	// Cancel the login context: renewal must survive it (it is detached via
+	// context.WithoutCancel), so another renewal call should still arrive.
 	cancel()
-	time.Sleep(200 * time.Millisecond) // give goroutine time to exit
 
-	// Drain any in-flight call.
+	// Drain any in-flight call so we observe a fresh one after cancellation.
 	for len(renewCalls) > 0 {
 		<-renewCalls
 	}
 
-	// No further calls should arrive.
 	select {
 	case <-renewCalls:
-		t.Error("renewal goroutine continued after context cancellation")
+		// Good: renewal continued despite the login context being cancelled.
+	case <-time.After(5 * time.Second):
+		t.Error("renewal goroutine stopped after login context cancellation; it must be detached from the request context")
+	}
+
+	// Stop() is the only thing that should halt renewal.
+	s.Stop()
+
+	// Drain any in-flight call triggered before Stop took effect.
+	time.Sleep(200 * time.Millisecond)
+	for len(renewCalls) > 0 {
+		<-renewCalls
+	}
+
+	select {
+	case <-renewCalls:
+		t.Error("renewal goroutine continued after Stop()")
 	case <-time.After(3 * time.Second):
-		// Good, no more calls.
+		// Good: Stop() halted renewal.
 	}
 }

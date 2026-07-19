@@ -565,6 +565,17 @@ func loadGitignorePatterns(dir string) []string {
 	return patterns
 }
 
+// Decompression limits guard against gzip/zip bombs. They are package
+// variables (rather than constants) only so tests can lower them; the
+// production values are a generous ceiling for real workspace bundles.
+var (
+	// maxExtractedBytes caps the total decompressed size of a bundle.
+	maxExtractedBytes int64 = 1 << 30
+	// maxExtractedEntries caps the number of archive entries to guard
+	// against archives with an enormous number of tiny files.
+	maxExtractedEntries = 50_000
+)
+
 // extractTarGz extracts a tar.gz archive to the target directory.
 func extractTarGz(data []byte, targetDir string) error {
 	if err := os.MkdirAll(targetDir, 0o755); err != nil {
@@ -585,6 +596,10 @@ func extractTarGz(data []byte, targetDir string) error {
 	defer gr.Close()
 
 	tr := tar.NewReader(gr)
+	var (
+		entries       int
+		extractedSize int64
+	)
 	for {
 		header, err := tr.Next()
 		if err == io.EOF {
@@ -592,6 +607,11 @@ func extractTarGz(data []byte, targetDir string) error {
 		}
 		if err != nil {
 			return fmt.Errorf("reading tar: %w", err)
+		}
+
+		entries++
+		if entries > maxExtractedEntries {
+			return fmt.Errorf("archive has too many entries (limit %d)", maxExtractedEntries)
 		}
 
 		// Reject archive entries with absolute paths or ".." components before
@@ -626,11 +646,18 @@ func extractTarGz(data []byte, targetDir string) error {
 			if err != nil {
 				return err
 			}
-			if _, err := io.Copy(f, tr); err != nil {
-				f.Close()
+			// Cap decompression to guard against gzip bombs. LimitReader is
+			// given one extra byte so an over-budget entry is detectable.
+			remaining := maxExtractedBytes - extractedSize
+			n, err := io.Copy(f, io.LimitReader(tr, remaining+1))
+			f.Close()
+			if err != nil {
 				return err
 			}
-			f.Close()
+			extractedSize += n
+			if extractedSize > maxExtractedBytes {
+				return fmt.Errorf("archive exceeds maximum extracted size (limit %d bytes)", maxExtractedBytes)
+			}
 		}
 	}
 	return nil

@@ -732,7 +732,16 @@ func newSharingClient() (*client.Client, error) {
 
 	metaStore := metadata.NewStore(metaDir)
 
-	var opts []client.ClientOption
+	// Load the local security policy (blocked plugins, allowed registries,
+	// signature requirements) and attach it as the client verifier so the
+	// policy is enforced consistently across install, update, and workspace
+	// pull paths. A missing policy file yields the permissive default.
+	policy, err := verify.LoadPolicyFile(verify.DefaultPolicyPath())
+	if err != nil {
+		return nil, fmt.Errorf("loading verification policy: %w", err)
+	}
+
+	opts := []client.ClientOption{client.WithVerifier(verify.NewVerifier(policy))}
 	tlsCfg := regStore.GlobalClientTLS()
 	clientTLS := &tlsutil.ClientConfig{
 		CertFile: tlsCfg.CertFile,

@@ -148,8 +148,25 @@ func copyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	// Close on the early-error path only; the success path closes explicitly so
+	// deferred write errors (surfaced on close on NFS/quota/fuse filesystems)
+	// are not silently discarded, which would corrupt backups and restores.
+	defer func() {
+		if out != nil {
+			_ = out.Close()
+		}
+	}()
 
-	_, err = io.Copy(out, in)
-	return err
+	if _, err := io.Copy(out, in); err != nil {
+		return err
+	}
+	if err := out.Sync(); err != nil {
+		return fmt.Errorf("syncing %s: %w", dst, err)
+	}
+	cerr := out.Close()
+	out = nil
+	if cerr != nil {
+		return fmt.Errorf("closing %s: %w", dst, cerr)
+	}
+	return nil
 }

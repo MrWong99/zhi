@@ -339,6 +339,27 @@ func TestConfig_Validate_MissingClientCA(t *testing.T) {
 	}
 }
 
+func TestConfig_Validate_HalfConfigured(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  Config
+	}{
+		{"cert without key", Config{CertFile: "server.pem"}},
+		{"key without cert", Config{KeyFile: "server-key.pem"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.cfg.Validate()
+			if err == nil {
+				t.Fatal("expected error for half-configured TLS, got nil (would silently downgrade to plaintext)")
+			}
+			if !strings.Contains(err.Error(), "both -tls-cert and -tls-key must be set") {
+				t.Errorf("error should mention the tls-cert/tls-key pairing, got: %v", err)
+			}
+		})
+	}
+}
+
 // --- ClientConfig tests ---
 
 func TestClientConfig_Enabled(t *testing.T) {

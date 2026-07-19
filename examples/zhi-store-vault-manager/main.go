@@ -33,26 +33,34 @@ func main() {
 		Level:  level,
 		Output: os.Stderr,
 	})
+
+	// Run through a helper that uses deferred cleanup so that no os.Exit call
+	// bypasses the child-plugin Kill deferred. Calling os.Exit inside main
+	// after launching the child would orphan the already-running child process.
+	if err := run(logger); err != nil {
+		logger.Error("vault manager meta-plugin failed", "error", err)
+		os.Exit(1)
+	}
+}
+
+func run(logger hclog.Logger) error {
 	logger.Info("starting vault manager meta-plugin")
 
 	opts := pluginopts.Options()
 	cfg, err := vaultmanager.ParseConfig(opts)
 	if err != nil {
-		logger.Error("failed to parse configuration", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to parse configuration: %w", err)
 	}
 
 	selfPath, err := os.Executable()
 	if err != nil {
-		logger.Error("cannot determine own executable path", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("cannot determine own executable path: %w", err)
 	}
 	dir := filepath.Dir(selfPath)
 
 	vaultBin := findBinary(dir, "zhi-store-vault")
 	if vaultBin == "" {
-		logger.Error("child plugin zhi-store-vault not found", "dir", dir)
-		os.Exit(1)
+		return fmt.Errorf("child plugin zhi-store-vault not found in %s", dir)
 	}
 
 	childOpts := vaultmanager.ChildVaultOptions(cfg)
@@ -62,15 +70,14 @@ func main() {
 		launch.WithPluginOptions(childOpts),
 	)
 	if err != nil {
-		logger.Error("failed to launch child vault plugin", "binary", vaultBin, "error", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to launch child vault plugin %q: %w", vaultBin, err)
 	}
+	// Deferred cleanup ensures the child is killed on every error path below.
 	defer cleanup()
 
 	adminHTTPClient, err := buildAdminHTTPClient(cfg)
 	if err != nil {
-		logger.Error("failed to configure TLS for admin client", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to configure TLS for admin client: %w", err)
 	}
 	admin := vaultmanager.NewAdminClient(cfg.Addr, "", cfg.Namespace, adminHTTPClient)
 	cm := vaultmanager.NewCredManager(admin, cfg.Mount, cfg.Prefix, cfg.Workspace, logger)
@@ -92,6 +99,7 @@ func main() {
 		GRPCServer: goplugin.DefaultGRPCServer,
 		Logger:     logger,
 	})
+	return nil
 }
 
 func buildAdminHTTPClient(cfg *vaultmanager.Config) (*http.Client, error) {

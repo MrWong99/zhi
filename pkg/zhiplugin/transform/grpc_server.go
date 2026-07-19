@@ -15,7 +15,10 @@ type GRPCServer struct {
 }
 
 func (s *GRPCServer) BeforeDisplay(ctx context.Context, req *pb.BeforeDisplayRequest) (*pb.BeforeDisplayResponse, error) {
-	tree := config.TreeFromProto(req.GetTree())
+	tree, err := config.TreeFromProto(req.GetTree())
+	if err != nil {
+		return nil, err
+	}
 	if err := s.Impl.BeforeDisplay(ctx, tree); err != nil {
 		return nil, err
 	}
@@ -29,7 +32,10 @@ func (s *GRPCServer) BeforeDisplay(ctx context.Context, req *pb.BeforeDisplayReq
 }
 
 func (s *GRPCServer) AfterSave(ctx context.Context, req *pb.AfterSaveRequest) (*pb.AfterSaveResponse, error) {
-	tree := config.TreeFromProto(req.GetTree())
+	tree, err := config.TreeFromProto(req.GetTree())
+	if err != nil {
+		return nil, err
+	}
 	if err := s.Impl.AfterSave(ctx, tree); err != nil {
 		return nil, err
 	}

@@ -72,7 +72,43 @@ func (s *Store) writeFile(id string, entries map[string]*config.Value) error {
 	if err := os.MkdirAll(s.dir, 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(s.filePath(id), data, 0o644)
+
+	// Write atomically: write to a temp file in the same directory, fsync,
+	// then rename onto the destination. This prevents a crash mid-write from
+	// leaving a truncated or empty file that would make the whole tree
+	// unrecoverable (there is no versioning to fall back on).
+	tmp, err := os.CreateTemp(s.dir, "."+id+".json.tmp-*")
+	if err != nil {
+		return err
+	}
+	tmpName := tmp.Name()
+	// Best-effort cleanup if we fail before the rename succeeds.
+	defer func() {
+		if tmpName != "" {
+			_ = os.Remove(tmpName)
+		}
+	}()
+
+	if _, err := tmp.Write(data); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Sync(); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	if err := os.Chmod(tmpName, 0o644); err != nil {
+		return err
+	}
+	if err := os.Rename(tmpName, s.filePath(id)); err != nil {
+		return err
+	}
+	// Rename succeeded; disarm the cleanup.
+	tmpName = ""
+	return nil
 }
 
 // --- Capabilities ---

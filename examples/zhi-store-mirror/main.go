@@ -38,13 +38,23 @@ func main() {
 		Level:  level,
 		Output: os.Stderr,
 	})
+
+	// Run through a helper that uses deferred cleanup so that no os.Exit call
+	// bypasses the child-plugin Kill deferreds. Calling os.Exit inside main
+	// after launching a child would orphan the already-running child process.
+	if err := run(logger); err != nil {
+		logger.Error("mirror store plugin failed", "error", err)
+		os.Exit(1)
+	}
+}
+
+func run(logger hclog.Logger) error {
 	logger.Info("starting mirror store plugin")
 
 	// Find sibling plugin binaries in the same directory as this binary.
 	selfPath, err := os.Executable()
 	if err != nil {
-		logger.Error("cannot determine own executable path", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("cannot determine own executable path: %w", err)
 	}
 	dir := filepath.Dir(selfPath)
 
@@ -52,26 +62,20 @@ func main() {
 	mirrorBin := findBinary(dir, "zhi-store-json")
 
 	if primaryBin == "" || mirrorBin == "" {
-		logger.Error("required child plugins not found",
-			"dir", dir,
-			"primary", primaryBin,
-			"mirror", mirrorBin,
-		)
-		os.Exit(1)
+		return fmt.Errorf("required child plugins not found in %s (primary=%q, mirror=%q)", dir, primaryBin, mirrorBin)
 	}
 
-	// Launch child plugins.
+	// Launch child plugins. Deferred cleanups ensure both children are killed
+	// on every error path once launched.
 	primary, cleanupPrimary, err := launch.LaunchStore(primaryBin, launch.WithLogger(logger))
 	if err != nil {
-		logger.Error("failed to launch primary store", "binary", primaryBin, "error", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to launch primary store %q: %w", primaryBin, err)
 	}
 	defer cleanupPrimary()
 
 	mirror, cleanupMirror, err := launch.LaunchStore(mirrorBin, launch.WithLogger(logger))
 	if err != nil {
-		logger.Error("failed to launch mirror store", "binary", mirrorBin, "error", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to launch mirror store %q: %w", mirrorBin, err)
 	}
 	defer cleanupMirror()
 
@@ -87,6 +91,7 @@ func main() {
 		GRPCServer: goplugin.DefaultGRPCServer,
 		Logger:     logger,
 	})
+	return nil
 }
 
 // findBinary searches for a plugin binary by name. It checks the given

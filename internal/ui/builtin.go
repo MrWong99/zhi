@@ -1,7 +1,9 @@
 package ui
 
 import (
+	"fmt"
 	"os"
+	"strings"
 
 	mcpplugin "github.com/MrWong99/zhi/internal/ui/mcp"
 
@@ -75,11 +77,47 @@ func NewWebUIProvider(_ string, options map[string]any) (zhiui.Plugin, error) {
 		if v, ok := options["tls_min_version"].(string); ok {
 			cfg.TLSMinVersion = v
 		}
-		if v, ok := options["tls_cipher_suites"].([]string); ok {
-			cfg.TLSCipherSuites = v
+		if v, ok := options["tls_cipher_suites"]; ok {
+			suites, err := parseCipherSuites(v)
+			if err != nil {
+				return nil, err
+			}
+			cfg.TLSCipherSuites = suites
 		}
 	}
 	return webui.New(cfg), nil
+}
+
+// parseCipherSuites normalizes the tls_cipher_suites workspace option into a
+// []string. Workspace options are decoded from YAML/JSON into map[string]any,
+// so a sequence arrives as []any (never []string). A comma-separated string is
+// also accepted for symmetry with the ZHI_WEBUI_TLS_CIPHER_SUITES env var.
+// A malformed value is rejected with an error rather than silently ignored.
+func parseCipherSuites(v any) ([]string, error) {
+	switch val := v.(type) {
+	case []string:
+		return val, nil
+	case string:
+		var suites []string
+		for _, s := range strings.Split(val, ",") {
+			if s = strings.TrimSpace(s); s != "" {
+				suites = append(suites, s)
+			}
+		}
+		return suites, nil
+	case []any:
+		suites := make([]string, 0, len(val))
+		for i, elem := range val {
+			s, ok := elem.(string)
+			if !ok {
+				return nil, fmt.Errorf("tls_cipher_suites[%d]: expected string, got %T", i, elem)
+			}
+			suites = append(suites, s)
+		}
+		return suites, nil
+	default:
+		return nil, fmt.Errorf("tls_cipher_suites: expected a list of strings or a comma-separated string, got %T", v)
+	}
 }
 
 // NewMCPStdioProvider is a UIFactory that creates an MCP stdio plugin.

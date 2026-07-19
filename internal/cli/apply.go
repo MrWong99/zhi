@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -199,8 +198,18 @@ func runApply(cmd *cobra.Command, args []string) error {
 	fmt.Fprintf(w, "\nApply completed (exit code %d)\n", res.result.ExitCode)
 
 	if res.result.ExitCode != 0 {
-		os.Exit(res.result.ExitCode)
+		return &applyFailedError{code: res.result.ExitCode}
 	}
 
 	return nil
 }
+
+// applyFailedError signals that the apply target exited non-zero. It carries
+// the target's exit code so main() can propagate it after normal cleanup runs,
+// mirroring the exitCoder pattern used by drift.go.
+type applyFailedError struct{ code int }
+
+func (e *applyFailedError) Error() string {
+	return fmt.Sprintf("apply target exited with code %d", e.code)
+}
+func (e *applyFailedError) ExitCode() int { return e.code }

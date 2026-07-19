@@ -124,6 +124,42 @@ func TestMirroredPlugin_DeleteValuesMirrored(t *testing.T) {
 	}
 }
 
+func TestMirroredPlugin_RollbackTreeMirrored(t *testing.T) {
+	t.Parallel()
+	primary := newMockStore()
+	mirror := newMockStore()
+
+	mp := store.MirroredPlugin(nil, primary, mirror)
+
+	if err := mp.RollbackTree(context.Background(), "t1", "v3"); err != nil {
+		t.Fatalf("RollbackTree: %v", err)
+	}
+	if !primary.calledMethods["RollbackTree"] {
+		t.Error("RollbackTree should be called on primary")
+	}
+	if !mirror.calledMethods["RollbackTree"] {
+		t.Error("RollbackTree should be forwarded to mirror to avoid divergence")
+	}
+}
+
+func TestMirroredPlugin_RollbackValueMirrored(t *testing.T) {
+	t.Parallel()
+	primary := newMockStore()
+	mirror := newMockStore()
+
+	mp := store.MirroredPlugin(nil, primary, mirror)
+
+	if err := mp.RollbackValue(context.Background(), "t1", "db/host", "v3"); err != nil {
+		t.Fatalf("RollbackValue: %v", err)
+	}
+	if !primary.calledMethods["RollbackValue"] {
+		t.Error("RollbackValue should be called on primary")
+	}
+	if !mirror.calledMethods["RollbackValue"] {
+		t.Error("RollbackValue should be forwarded to mirror to avoid divergence")
+	}
+}
+
 func TestMirroredPlugin_AuthDelegatesToPrimary(t *testing.T) {
 	t.Parallel()
 	primary := newMockStore()
@@ -147,7 +183,7 @@ func TestMirroredPlugin_AuthDelegatesToPrimary(t *testing.T) {
 	}
 }
 
-func TestMirroredPlugin_CapabilitiesIntersection(t *testing.T) {
+func TestMirroredPlugin_CapabilitiesReportPrimary(t *testing.T) {
 	t.Parallel()
 	primary := newMockStore()
 	primary.caps = &store.Capabilities{
@@ -170,17 +206,20 @@ func TestMirroredPlugin_CapabilitiesIntersection(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Capabilities: %v", err)
 	}
-	if caps.Versioning != store.VersioningNone {
-		t.Errorf("Versioning = %v, want VersioningNone (intersection)", caps.Versioning)
+	// All capability-gated operations delegate to the primary only, so the
+	// composed plugin must report the primary's capabilities verbatim
+	// rather than intersecting with weaker mirrors.
+	if caps.Versioning != store.VersioningTree {
+		t.Errorf("Versioning = %v, want VersioningTree (primary)", caps.Versioning)
 	}
-	if caps.Encryption != store.EncryptionNone {
-		t.Errorf("Encryption = %v, want EncryptionNone (intersection)", caps.Encryption)
+	if caps.Encryption != store.EncryptionActive {
+		t.Errorf("Encryption = %v, want EncryptionActive (primary)", caps.Encryption)
 	}
-	if caps.Auth {
-		t.Error("Auth should be false (intersection)")
+	if !caps.Auth {
+		t.Error("Auth should be true (primary)")
 	}
-	if caps.AccessControl {
-		t.Error("AccessControl should be false (intersection)")
+	if !caps.AccessControl {
+		t.Error("AccessControl should be true (primary)")
 	}
 }
 

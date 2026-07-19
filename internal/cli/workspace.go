@@ -314,7 +314,7 @@ func runWorkspaceLock(cmd *cobra.Command, _ []string) error {
 	lf := &lockfile.LockFile{
 		Version:     lockfile.Version,
 		GeneratedAt: time.Now().UTC(),
-		ZhiVersion:  "0.8.0",
+		ZhiVersion:  appVersion,
 	}
 
 	for _, p := range plugins {

@@ -479,11 +479,21 @@ func (s *Store) processAuthResponse(ctx context.Context, resp *vaultResponse) (*
 }
 
 // startRenewal starts a background goroutine that renews the Vault token
-// at half the lease duration interval. The goroutine exits when the parent
-// context is cancelled, Stop() is called, or renewal fails.
+// at half the lease duration interval. The goroutine exits when Stop() is
+// called or renewal fails.
+//
+// The renewal loop is deliberately detached from the caller's request-scoped
+// context (via context.WithoutCancel): the parent passed to Login is often a
+// per-request context (an HTTP request in the web UI, or the unary RPC context
+// when the store runs as an external plugin) that is cancelled the instant the
+// login call returns. Tying renewal to it would kill the goroutine before the
+// first renewal ever fires, silently letting the token expire at lease end.
 func (s *Store) startRenewal(parent context.Context, leaseDuration int) {
 	s.renewMu.Lock()
 	defer s.renewMu.Unlock()
+
+	// Detach from the request-scoped context so renewal outlives the login call.
+	renewCtx := context.WithoutCancel(parent)
 
 	// Stop any existing renewal.
 	if s.stopRenew != nil {
@@ -502,10 +512,8 @@ func (s *Store) startRenewal(parent context.Context, leaseDuration int) {
 			select {
 			case <-stop:
 				return
-			case <-parent.Done():
-				return
 			case <-timer.C:
-				ctx, cancel := context.WithTimeout(parent, 30*time.Second)
+				ctx, cancel := context.WithTimeout(renewCtx, 30*time.Second)
 				_, err := s.client.request(ctx, http.MethodPost, "auth/token/renew-self", nil)
 				cancel()
 				if err != nil {
@@ -610,7 +618,10 @@ func (s *Store) PutValues(ctx context.Context, id string, values map[string]conf
 
 		// Wire CAS: explicit PutOptions take precedence, then fall back
 		// to Value.Version (populated by prior reads for optimistic locking).
-		casVersion := 0
+		// -1 is the "no CAS requested" sentinel so that an explicit cas=0
+		// (Vault KV v2 "write only if the secret does not exist") is honored
+		// rather than being conflated with "unset".
+		casVersion := -1
 		if opts != nil && opts.CASVersions != nil {
 			if expected, ok := opts.CASVersions[p]; ok {
 				cas, err := strconv.Atoi(expected)
@@ -620,13 +631,13 @@ func (s *Store) PutValues(ctx context.Context, id string, values map[string]conf
 				casVersion = cas
 			}
 		}
-		if casVersion == 0 && v.Version != "" {
+		if casVersion < 0 && v.Version != "" {
 			cas, err := strconv.Atoi(v.Version)
 			if err == nil {
 				casVersion = cas
 			}
 		}
-		if casVersion > 0 {
+		if casVersion >= 0 {
 			body["options"] = map[string]any{"cas": casVersion}
 		}
 

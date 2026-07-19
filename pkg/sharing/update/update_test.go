@@ -8,6 +8,30 @@ import (
 	"time"
 )
 
+func TestAdvisoryAffects(t *testing.T) {
+	tests := []struct {
+		name      string
+		installed string
+		affected  string
+		want      bool
+	}{
+		{"within range", "1.2.0", "<1.5.0", true},
+		{"outside range (fixed)", "1.6.2", "<1.5.0", false},
+		{"exact boundary excluded", "1.5.0", "<1.5.0", false},
+		{"range match", "1.3.0", ">=1.0.0, <2.0.0", true},
+		{"range no match", "2.1.0", ">=1.0.0, <2.0.0", false},
+		{"empty constraint treated as affected", "1.6.2", "", true},
+		{"unparsable constraint treated as affected", "1.6.2", "not-a-constraint", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := advisoryAffects(tt.installed, tt.affected); got != tt.want {
+				t.Errorf("advisoryAffects(%q, %q) = %v, want %v", tt.installed, tt.affected, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestCacheSaveAndLoad(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "cache", "update-check.json")

@@ -49,13 +49,22 @@ It gives you an extensible plugin system that auto-generates a friendly terminal
 
 **From a release (recommended):**
 
+Release archives are named `zhi_<version>_<os>_<arch>.tar.gz`. Download the
+archive for your platform from the
+[releases page](https://github.com/MrWong99/zhi/releases/latest), or fetch it
+via the GitHub API:
+
 ```sh
+# Determine the latest version
+ZHI_TAG=$(curl -sSL https://api.github.com/repos/MrWong99/zhi/releases/latest | jq -r '.tag_name')
+ZHI_VERSION="${ZHI_TAG#v}"
+
 # Linux amd64
-curl -sSL https://github.com/MrWong99/zhi/releases/latest/download/zhi_linux_amd64.tar.gz | tar xz
+curl -sSL "https://github.com/MrWong99/zhi/releases/download/${ZHI_TAG}/zhi_${ZHI_VERSION}_linux_amd64.tar.gz" | tar xz
 sudo mv zhi /usr/local/bin/
 
 # macOS arm64 (Apple Silicon)
-curl -sSL https://github.com/MrWong99/zhi/releases/latest/download/zhi_darwin_arm64.tar.gz | tar xz
+curl -sSL "https://github.com/MrWong99/zhi/releases/download/${ZHI_TAG}/zhi_${ZHI_VERSION}_darwin_arm64.tar.gz" | tar xz
 sudo mv zhi /usr/local/bin/
 ```
 
@@ -84,11 +93,11 @@ zhi init
 # View all configuration paths
 zhi list paths
 
-# Get a specific value
-zhi get database/host
+# Get a specific value (paths from the scaffolded demo)
+zhi get pokedex-web/external_port
 
 # Set a value
-zhi set database/host mydb.example.com
+zhi set trainer-info/name "Misty"
 
 # Validate the configuration
 zhi validate

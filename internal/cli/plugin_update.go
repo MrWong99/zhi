@@ -163,7 +163,7 @@ func updateSinglePlugin(cmd *cobra.Command, name string, metaStore *metadata.Sto
 	pluginDir := core.DefaultPluginDir()
 	binaryName := fmt.Sprintf("zhi-%s-%s", meta.Type, meta.Name)
 	if err := metadata.BackupBinary(pluginDir, binaryName, meta.Version); err != nil {
-		fmt.Fprintf(w, "  Warning: could not back up current version: %v\n", err)
+		fmt.Fprintf(cmd.ErrOrStderr(), "  Warning: could not back up current version: %v\n", err)
 	}
 
 	// Install the new version via OCI pull.
@@ -185,6 +185,7 @@ func updateSinglePlugin(cmd *cobra.Command, name string, metaStore *metadata.Sto
 
 func updateAllPlugins(cmd *cobra.Command, metaStore *metadata.Store, checker *update.Checker) error {
 	w := cmd.OutOrStdout()
+	errW := cmd.ErrOrStderr()
 
 	fmt.Fprintln(w, "Checking for updates...")
 
@@ -200,6 +201,7 @@ func updateAllPlugins(cmd *cobra.Command, metaStore *metadata.Store, checker *up
 
 	updated := 0
 	skipped := 0
+	failed := 0
 	for _, u := range result.Updates {
 		if u.Pinned {
 			fmt.Fprintf(w, "Skipping %s (pinned at v%s)\n", u.Name, u.Installed)
@@ -211,26 +213,29 @@ func updateAllPlugins(cmd *cobra.Command, metaStore *metadata.Store, checker *up
 
 		meta, err := metaStore.Load(u.Name)
 		if err != nil || meta == nil {
-			fmt.Fprintf(w, "  Error: could not load metadata for %s\n", u.Name)
+			fmt.Fprintf(errW, "  Error: could not load metadata for %s\n", u.Name)
+			failed++
 			continue
 		}
 
 		pluginDir := core.DefaultPluginDir()
 		binaryName := fmt.Sprintf("zhi-%s-%s", meta.Type, meta.Name)
 		if err := metadata.BackupBinary(pluginDir, binaryName, meta.Version); err != nil {
-			fmt.Fprintf(w, "  Warning: could not back up current version: %v\n", err)
+			fmt.Fprintf(errW, "  Warning: could not back up current version: %v\n", err)
 		}
 
 		ociClient, err := newSharingClient()
 		if err != nil {
-			fmt.Fprintf(w, "  Error: %v\n", err)
+			fmt.Fprintf(errW, "  Error: %v\n", err)
+			failed++
 			continue
 		}
 
 		ref := buildUpdateRef(meta.Ref, u.Available)
 		_, err = ociClient.PullPlugin(cmd.Context(), ref, client.PullOptions{Force: true})
 		if err != nil {
-			fmt.Fprintf(w, "  Error updating %s: %v\n", u.Name, err)
+			fmt.Fprintf(errW, "  Error updating %s: %v\n", u.Name, err)
+			failed++
 			continue
 		}
 
@@ -242,7 +247,13 @@ func updateAllPlugins(cmd *cobra.Command, metaStore *metadata.Store, checker *up
 	if skipped > 0 {
 		fmt.Fprintf(w, ", %d skipped (pinned)", skipped)
 	}
+	if failed > 0 {
+		fmt.Fprintf(w, ", %d failed", failed)
+	}
 	fmt.Fprintln(w, ".")
+	if failed > 0 {
+		return fmt.Errorf("%d plugin update(s) failed", failed)
+	}
 	return nil
 }
 

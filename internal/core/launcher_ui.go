@@ -18,10 +18,25 @@ import (
 // is not supported by the public launch package.
 func launchUI(path string, options map[string]any) (zhiui.Plugin, func(), error) {
 	log := Logger()
+
+	// Resolve symlinks and audit the binary the same way the config/transform/
+	// store launch paths do (launch.launchClient). Skipping this let a tampered
+	// UI plugin binary launch with a full ui.Controller without the install-time
+	// SHA-256 integrity check ever running.
+	resolved, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		return nil, nil, fmt.Errorf("resolving UI plugin binary path %q: %w", path, err)
+	}
+	path = resolved
+
 	pluginName := filepath.Base(path)
 	pluginLogger := log.Named("plugin.ui." + pluginName)
 
 	log.Info("launching UI plugin", "binary", path)
+	// Warn-only audit, matching the engine's AuditWarnOnly policy for other
+	// plugin types (AuditBinary logs the digest mismatch / world-writable
+	// warning; the error is intentionally not fatal here).
+	auditPluginBinary(path)
 	cmd := exec.Command(path)
 
 	// Inject workspace options as JSON in ZHI_PLUGIN_OPTIONS.

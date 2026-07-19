@@ -1,6 +1,7 @@
 package launch
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -199,12 +200,36 @@ func launchClient(binary string, pluginMap map[string]goplugin.Plugin, o *option
 	// logger to capture and forward the child process's stderr.
 	pluginLogger := log.Named(pluginLogName(resolved))
 
+	// In AuditHardFail mode, when a digest was stored at install time, hand it
+	// to go-plugin's SecureConfig so the checksum is re-verified immediately
+	// before exec, closing the audit-to-exec TOCTOU window that AuditBinary
+	// alone leaves open. In AuditWarnOnly mode we must not attach SecureConfig
+	// (which always hard-fails): the caller has explicitly opted into
+	// warn-and-continue, so a mismatch is logged by AuditBinary but launch
+	// proceeds. Locally-built plugins without a stored digest keep the current
+	// behavior (no SecureConfig) regardless of mode.
+	var secureConfig *goplugin.SecureConfig
+	if o.auditMode == AuditHardFail {
+		digest, err := storedBinaryDigest(resolved)
+		if err != nil {
+			return nil, err
+		}
+		if digest != nil {
+			secureConfig = &goplugin.SecureConfig{Checksum: digest, Hash: sha256.New()}
+		}
+	}
+
 	client := goplugin.NewClient(&goplugin.ClientConfig{
 		HandshakeConfig:  zhiplugin.Handshake,
 		Plugins:          pluginMap,
 		Cmd:              cmd,
 		AllowedProtocols: []goplugin.Protocol{goplugin.ProtocolGRPC},
 		Logger:           pluginLogger,
+		// When isolatedEnv is set, prevent go-plugin from appending the
+		// host's full environment (which os/exec dedupe would let override
+		// our isolated values and leak parent secrets to the child).
+		SkipHostEnv:  o.isolatedEnv != nil,
+		SecureConfig: secureConfig,
 	})
 
 	return client, nil
