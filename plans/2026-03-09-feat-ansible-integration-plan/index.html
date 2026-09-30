@@ -1,0 +1,2015 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Security-first configuration management and provisioning platform">
+      
+      
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>feat: Ansible Integration - zhi Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#feat-ansible-integration" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="zhi Documentation" class="md-header__button md-logo" aria-label="zhi Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            zhi Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              feat: Ansible Integration
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/MrWong99/zhi" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    MrWong99/zhi
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="zhi Documentation" class="md-nav__button md-logo" aria-label="zhi Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    zhi Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/MrWong99/zhi" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    MrWong99/zhi
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/workspace-configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workspace Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/cli-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/components/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Components
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/export-and-templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Export and Templates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/apply/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Apply
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/plugin-discovery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plugin Discovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/sharing-and-registries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sharing and Registries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/marketplace-indexing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Marketplace Indexing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/enterprise-mirror/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Enterprise Mirror
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/vault-credentials/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vault Credentials
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/web-ui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web UI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plugin Development
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Plugin Development
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugin-development/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugin-development/config-plugin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Config Plugin
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugin-development/transform-plugin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transform Plugin
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugin-development/store-plugin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Store Plugin
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugin-development/ui-plugin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    UI Plugin
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugin-development/meta-plugin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Meta-Plugin SDK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugin-development/structuredfile-provider/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Structured File Provider
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugin-development/java-plugin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java Plugin
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugin-development/scaffolding/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plugin Scaffolding
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#enhancement-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enhancement Summary
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Enhancement Summary">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-improvements-from-research" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Improvements from Research
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-decisions-from-brainstorm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Decisions from Brainstorm
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-0-prerequisite-refactoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 0: Prerequisite Refactoring
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 0: Prerequisite Refactoring">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tasks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tasks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#acceptance-criteria" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acceptance Criteria
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-1-workspace-template" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 1: Workspace Template
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 1: Workspace Template">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tasks_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tasks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#research-insights-ansible-best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Research Insights (Ansible Best Practices)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tree-convention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tree Convention
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#component-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Component Mapping
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#apply-targets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Apply Targets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#acceptance-criteria_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acceptance Criteria
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-2-multi-file-export-iterate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 2: Multi-file Export (iterate)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 2: Multi-file Export (iterate)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#design" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#research-insights" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Research Insights
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#files-to-modify" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Files to Modify
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#edge-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Edge Cases
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#acceptance-criteria_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acceptance Criteria
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-3-ansible-config-plugin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 3: Ansible Config Plugin
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 3: Ansible Config Plugin">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#design_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#research-insights_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Research Insights
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#files-to-create" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Files to Create
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#write-back-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Write-back Strategy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#acceptance-criteria_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acceptance Criteria
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-4-pre-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 4: Pre-checks
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 4: Pre-checks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#design_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#research-insights_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Research Insights
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#files-to-modify_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Files to Modify
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tests_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#acceptance-criteria_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acceptance Criteria
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="References">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#internal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Internal
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="feat-ansible-integration">feat: Ansible Integration<a class="headerlink" href="#feat-ansible-integration" title="Permanent link">&para;</a></h1>
+<h2 id="enhancement-summary">Enhancement Summary<a class="headerlink" href="#enhancement-summary" title="Permanent link">&para;</a></h2>
+<p><strong>Deepened on:</strong> 2026-03-09
+<strong>Agents used:</strong> Architecture strategist, security sentinel, performance oracle, code simplicity reviewer, pattern recognition specialist, config plugin skill checker, Ansible best practices researcher</p>
+<h3 id="key-improvements-from-research">Key Improvements from Research<a class="headerlink" href="#key-improvements-from-research" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Prerequisite refactoring: extract shared <code>ExpandTemplates</code> before implementing iterate (eliminates duplication between CLI and UIController)</li>
+<li>Performance: materialize child trees instead of using <code>prefixTree</code> wrappers to avoid O(N*M) scans</li>
+<li>Security: confine <code>ansible.source_file</code> write-back to project root directory; validate <code>output-pattern</code> at workspace load time</li>
+<li>Simplification: drop label registration (doesn't work across process boundary), reduce v1 validation to 2 core rules, limit nested YAML to flat var files</li>
+<li>Template contract: use <code>IterateData{Key, Value}</code> with <code>renderTemplateFile</code> accepting <code>any</code> data — cleanest approach despite breaking dot-is-TreeData convention</li>
+<li>Missing files identified: <code>pkg/zhiplugin/ui/ui.go</code> ExportTemplate needs new fields too</li>
+</ol>
+<hr />
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>Integrate Ansible with zhi through four independent, incrementally adoptable layers. Each layer builds on existing extension points — no new plugin types. The integration makes zhi a first-class configuration source for Ansible without reimplementing Ansible itself.</p>
+<p><strong>Implementation order:</strong> Layer 1 (Templates) → Layer 2 (Multi-file Export) → Layer 3 (Config Plugin) → Layer 4 (Pre-checks)</p>
+<p><strong>Design document:</strong> <code>docs/design/ansible-integration.md</code></p>
+<h2 id="key-decisions-from-brainstorm">Key Decisions from Brainstorm<a class="headerlink" href="#key-decisions-from-brainstorm" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Use Ansible-native underscore naming (<code>ansible_host</code>, <code>ansible_port</code>) — zhi's path regex allows underscores</li>
+<li>Multi-file export iterates over direct children only, no deeper nesting</li>
+<li>No orphan file cleanup — consistent with existing export behavior</li>
+<li>Config plugin v1 scoped to YAML inventory only</li>
+<li>Config plugin supports <code>Set()</code> from day one using <code>ansible.source_file</code> metadata for write-back</li>
+<li>Pre-checks are hard stop on failure — users create separate apply targets for with/without</li>
+<li>Output parsing (Layer 3b from design doc) is deferred indefinitely</li>
+</ul>
+<hr />
+<h2 id="phase-0-prerequisite-refactoring">Phase 0: Prerequisite Refactoring<a class="headerlink" href="#phase-0-prerequisite-refactoring" title="Permanent link">&para;</a></h2>
+<p><strong>Goal:</strong> Extract the ExportTemplate-to-ExportRunConfig conversion into a shared function before implementing iterate.</p>
+<p><strong>Why:</strong> This conversion is currently duplicated between <code>internal/cli/export.go:115-138</code> and <code>internal/ui/driver.go:253-278</code>. Adding iterate awareness to both would compound the duplication. Extract once, then iterate expansion becomes a natural extension.</p>
+<h3 id="tasks">Tasks<a class="headerlink" href="#tasks" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] Create <code>core.ExpandTemplates(templates []ExportTemplate, td *TreeData, wsDir string) []ExportRunConfig</code> in <code>internal/core/export.go</code></li>
+<li>[x] Refactor <code>internal/cli/export.go:115-138</code> to call <code>core.ExpandTemplates</code></li>
+<li>[x] Refactor <code>internal/ui/driver.go:253-278</code> (<code>UIController.ExportAll</code>) to call <code>core.ExpandTemplates</code></li>
+<li>[x] Verify existing export tests still pass</li>
+</ul>
+<h3 id="acceptance-criteria">Acceptance Criteria<a class="headerlink" href="#acceptance-criteria" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] Single conversion function used by both CLI and UI code paths</li>
+<li>[x] No behavior change — pure refactoring</li>
+<li>[x] All existing export tests pass</li>
+</ul>
+<hr />
+<h2 id="phase-1-workspace-template">Phase 1: Workspace Template<a class="headerlink" href="#phase-1-workspace-template" title="Permanent link">&para;</a></h2>
+<p><strong>Goal:</strong> Publishable workspace template providing ready-made export templates for Ansible artifacts.</p>
+<p><strong>Scope:</strong> Template files only — zero code changes in zhi core.</p>
+<h3 id="tasks_1">Tasks<a class="headerlink" href="#tasks_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] Create workspace template directory structure under <code>examples/zhi-workspace-ansible-infra/</code></li>
+<li>[x] Create <code>zhi.yaml</code> with config provider, component definitions, export templates, and apply targets</li>
+<li>[x] Create <code>templates/inventory.yml.tmpl</code> — YAML-format static inventory from <code>hosts/</code> tree</li>
+<li>[x] Create <code>templates/group-vars.yml.tmpl</code> — per-group variable file from <code>groups/&lt;name&gt;/vars/</code></li>
+<li>[x] Create <code>templates/host-vars.yml.tmpl</code> — per-host variable file from <code>hosts/&lt;name&gt;/vars/</code></li>
+<li>[x] Create <code>templates/ansible-cfg.tmpl</code> — ansible.cfg from <code>ansible/config/</code> tree prefix</li>
+<li>[x] Create example tree data files (YAML) with sample hosts, groups, and variables using underscore naming</li>
+<li>[x] Create <code>zhi-workspace.yaml</code> manifest for workspace publishing</li>
+<li>[ ] Add <code>README.md</code> explaining the tree convention and usage</li>
+<li>[ ] Test: manually verify export produces valid Ansible inventory and variable files</li>
+</ul>
+<h3 id="research-insights-ansible-best-practices">Research Insights (Ansible Best Practices)<a class="headerlink" href="#research-insights-ansible-best-practices" title="Permanent link">&para;</a></h3>
+<p><strong>YAML inventory structure:</strong> The root key MUST be <code>all</code>. Groups go under <code>children</code>, hosts under <code>hosts</code>, variables under <code>vars</code>. The <code>inventory.yml.tmpl</code> template must generate this exact structure:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">all</span><span class="p">:</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">hosts</span><span class="p">:</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="nt">ungrouped_host</span><span class="p">:</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">      </span><span class="nt">ansible_host</span><span class="p">:</span><span class="w"> </span><span class="s">"..."</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span><span class="nt">children</span><span class="p">:</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="nt">webservers</span><span class="p">:</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">      </span><span class="nt">hosts</span><span class="p">:</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">        </span><span class="nt">web1</span><span class="p">:</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">          </span><span class="nt">ansible_host</span><span class="p">:</span><span class="w"> </span><span class="s">"10.0.1.10"</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">      </span><span class="nt">vars</span><span class="p">:</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">        </span><span class="nt">http_port</span><span class="p">:</span><span class="w"> </span><span class="s">"8080"</span>
+</code></pre></div>
+<p><strong>group_vars files must be flat YAML</strong> — key-value pairs at the top level, NOT nested under the group name.</p>
+<p><strong>Group name restrictions:</strong> Ansible requires group names to match <code>[a-zA-Z_][a-zA-Z0-9_]*</code> — no hyphens allowed. This is stricter than zhi's path regex. The workspace template should use underscores in group names and document this constraint.</p>
+<p><strong>Behavioral inventory parameters:</strong> Beyond <code>ansible_host</code>/<code>ansible_port</code>/<code>ansible_user</code>, Ansible recognizes <code>ansible_connection</code> (ssh/local/winrm/docker), <code>ansible_become</code> (privilege escalation), <code>ansible_python_interpreter</code>, <code>ansible_shell_type</code>, and others. The template should support these as optional host vars.</p>
+<h3 id="tree-convention">Tree Convention<a class="headerlink" href="#tree-convention" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>hosts/
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>  webserver_1/
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    ansible_host: "10.0.1.10"
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    ansible_user: "deploy"
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    ansible_port: "22"
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    vars/
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>      nginx_workers: "4"
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>groups/
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>  webservers/
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    members: "webserver_1"
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    vars/
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>      http_port: "8080"
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>ansible/
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>  config/
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    remote_tmp: "/tmp/.ansible/tmp"
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>    timeout: "30"
+</code></pre></div>
+<h3 id="component-mapping">Component Mapping<a class="headerlink" href="#component-mapping" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">components</span><span class="p">:</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webservers</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">paths</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"groups/webservers"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"hosts/webserver_1"</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">databases</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="nt">paths</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"groups/databases"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"hosts/dbserver_1"</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<h3 id="apply-targets">Apply Targets<a class="headerlink" href="#apply-targets" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">apply</span><span class="p">:</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">targets</span><span class="p">:</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">default</span><span class="p">:</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="s">"ansible-playbook</span><span class="nv"> </span><span class="s">-i</span><span class="nv"> </span><span class="s">inventory/hosts.yml</span><span class="nv"> </span><span class="s">site.yml"</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">      </span><span class="nt">pre-export</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">    </span><span class="nt">check</span><span class="p">:</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="s">"ansible-playbook</span><span class="nv"> </span><span class="s">-i</span><span class="nv"> </span><span class="s">inventory/hosts.yml</span><span class="nv"> </span><span class="s">site.yml</span><span class="nv"> </span><span class="s">--check</span><span class="nv"> </span><span class="s">--diff"</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">      </span><span class="nt">pre-export</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">    </span><span class="nt">deploy-web</span><span class="p">:</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">      </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="s">"ansible-playbook</span><span class="nv"> </span><span class="s">-i</span><span class="nv"> </span><span class="s">inventory/hosts.yml</span><span class="nv"> </span><span class="s">site.yml</span><span class="nv"> </span><span class="s">--limit</span><span class="nv"> </span><span class="s">webservers"</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">      </span><span class="nt">pre-export</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+<h3 id="acceptance-criteria_1">Acceptance Criteria<a class="headerlink" href="#acceptance-criteria_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[ ] <code>zhi export</code> produces valid Ansible inventory YAML</li>
+<li>[ ] <code>zhi export</code> produces correct <code>group_vars/</code> and <code>host_vars/</code> files</li>
+<li>[ ] Disabling a component removes its hosts/groups from exported files</li>
+<li>[ ] Template can be published as OCI artifact via <code>zhi workspace publish</code></li>
+</ul>
+<hr />
+<h2 id="phase-2-multi-file-export-iterate">Phase 2: Multi-file Export (<code>iterate</code>)<a class="headerlink" href="#phase-2-multi-file-export-iterate" title="Permanent link">&para;</a></h2>
+<p><strong>Goal:</strong> Add <code>iterate</code> and <code>output-pattern</code> fields to the export system so one template can produce multiple output files.</p>
+<p><strong>Scope:</strong> Core changes to <code>internal/core/</code> — export system and workspace config.</p>
+<h3 id="design">Design<a class="headerlink" href="#design" title="Permanent link">&para;</a></h3>
+<p>When <code>iterate</code> is set on an <code>ExportTemplate</code>:</p>
+<ol>
+<li><strong>Enumerate children:</strong> Scan all tree paths starting with <code>iterate + "/"</code>, extract unique first path segments after the prefix. Sort alphabetically.</li>
+<li><strong>Materialize child trees:</strong> For each child, materialize a new <code>config.Tree</code> containing only that child's paths (with the prefix stripped). This avoids the O(N*M) cost of <code>prefixTree</code> wrappers that re-scan the full tree on every <code>List()</code> call.</li>
+<li><strong>Expand to configs:</strong> For each child, create an <code>ExportRunConfig</code> with:</li>
+<li>Template data: <code>IterateData{Key: childName, Value: materializedTreeData}</code> where <code>Value</code> is a <code>TreeData</code> with relative paths</li>
+<li>Output path: resolve <code>output-pattern</code> as a Go template with <code>{.Key}</code> available</li>
+<li><strong>Feed to ExpandTemplates:</strong> The expanded configs join the regular configs, getting rollback snapshot coverage for free.</li>
+</ol>
+<h3 id="research-insights">Research Insights<a class="headerlink" href="#research-insights" title="Permanent link">&para;</a></h3>
+<p><strong>Performance (from performance review):</strong>
+- <code>prefixTree.List()</code> re-scans all M paths on every call. With N children, template methods like <code>.All()</code> and <code>.Nested()</code> each trigger another full scan, creating O(N*M) total work.
+- Materializing child trees into concrete <code>config.Tree</code> instances reduces this to O(M) for the initial scan + O(M_child) per child for subsequent operations. At 1,000 hosts with 30,000 paths, this is ~15ms vs ~200ms.</p>
+<p><strong>Security (from security review):</strong>
+- <code>.Key</code> values are guaranteed safe by the path segment regex (<code>^[a-z](?:[a-z0-9._-]*[a-z0-9])?$</code>) — <code>..</code> cannot appear as a Key.
+- Add <code>containsPathTraversal</code> check on raw <code>output-pattern</code> string during <code>ValidateWorkspace</code> (fail-early, before template expansion).
+- After template expansion, <code>writeExportFile</code> already rejects <code>..</code> (belt-and-suspenders).</p>
+<p><strong>Template contract (from architecture + pattern reviews):</strong>
+- Regular templates receive <code>*TreeData</code> as dot. Iterate templates receive <code>*IterateData</code> — this is a deliberate deviation. The alternative (adding a <code>Name</code> field to <code>TreeData</code>) would pollute the type for all templates. <code>IterateData</code> is explicit about what iterate templates receive.
+- Change <code>renderTemplateFile</code> data parameter from <code>*TreeData</code> to <code>any</code>. This is backward-compatible — existing templates still receive <code>*TreeData</code>. Adding a parallel <code>renderIterateTemplateFile</code> would duplicate template parsing, execution, and security logic.</p>
+<h3 id="files-to-modify">Files to Modify<a class="headerlink" href="#files-to-modify" title="Permanent link">&para;</a></h3>
+<p><strong><code>internal/core/workspace.go</code></strong></p>
+<ul>
+<li>[x] Add <code>Iterate</code> and <code>OutputPattern</code> fields to <code>ExportTemplate</code> struct (workspace.go:28-34)</li>
+<li>[x] Add validation in <code>ValidateWorkspace</code> (workspace.go:219+):</li>
+<li>Reject if <code>iterate</code> set without <code>output-pattern</code></li>
+<li>Reject if both <code>output</code> and <code>output-pattern</code> set</li>
+<li>Parse-check <code>output-pattern</code> as Go template (syntax only, no execution)</li>
+<li>Apply <code>containsPathTraversal</code> check on raw <code>output-pattern</code> string</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kd">type</span><span class="w"> </span><span class="nx">ExportTemplate</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span><span class="nx">Name</span><span class="w">          </span><span class="kt">string</span><span class="w"> </span><span class="s">`yaml:"name" json:"name"`</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="nx">Template</span><span class="w">      </span><span class="kt">string</span><span class="w"> </span><span class="s">`yaml:"template,omitempty" json:"template,omitempty"`</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="nx">Format</span><span class="w">        </span><span class="kt">string</span><span class="w"> </span><span class="s">`yaml:"format,omitempty" json:"format,omitempty"`</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="nx">Output</span><span class="w">        </span><span class="kt">string</span><span class="w"> </span><span class="s">`yaml:"output,omitempty" json:"output,omitempty"`</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span><span class="nx">Prefix</span><span class="w">        </span><span class="kt">string</span><span class="w"> </span><span class="s">`yaml:"prefix,omitempty" json:"prefix,omitempty"`</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span><span class="nx">Iterate</span><span class="w">       </span><span class="kt">string</span><span class="w"> </span><span class="s">`yaml:"iterate,omitempty" json:"iterate,omitempty"`</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">    </span><span class="nx">OutputPattern</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="s">`yaml:"output-pattern,omitempty" json:"output-pattern,omitempty"`</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong><code>internal/core/export_data.go</code></strong></p>
+<ul>
+<li>[x] Add <code>IterateData</code> struct:</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1">// IterateData is the template data passed when rendering an iterate export.</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="c1">// .Key is the child name, .Value is a TreeData scoped to the child subtree.</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="kd">type</span><span class="w"> </span><span class="nx">IterateData</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span><span class="nx">Key</span><span class="w">   </span><span class="kt">string</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">    </span><span class="nx">Value</span><span class="w"> </span><span class="o">*</span><span class="nx">TreeData</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="p">}</span>
+</code></pre></div>
+<ul>
+<li>[x] Add <code>directChildren(prefix string) []string</code> as a <strong>private</strong> helper function (not a TreeData method — only used internally by <code>ExportIterate</code>, not needed in templates):</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kd">func</span><span class="w"> </span><span class="nx">directChildren</span><span class="p">(</span><span class="nx">tree</span><span class="w"> </span><span class="nx">config</span><span class="p">.</span><span class="nx">TreeReader</span><span class="p">,</span><span class="w"> </span><span class="nx">prefix</span><span class="w"> </span><span class="kt">string</span><span class="p">)</span><span class="w"> </span><span class="p">[]</span><span class="kt">string</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">    </span><span class="nx">p</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">prefix</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="o">!</span><span class="nx">strings</span><span class="p">.</span><span class="nx">HasSuffix</span><span class="p">(</span><span class="nx">p</span><span class="p">,</span><span class="w"> </span><span class="s">"/"</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">        </span><span class="nx">p</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="s">"/"</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">    </span><span class="nx">seen</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nb">make</span><span class="p">(</span><span class="kt">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kd">struct</span><span class="p">{})</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">path</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="nx">tree</span><span class="p">.</span><span class="nx">List</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="o">!</span><span class="nx">strings</span><span class="p">.</span><span class="nx">HasPrefix</span><span class="p">(</span><span class="nx">path</span><span class="p">,</span><span class="w"> </span><span class="nx">p</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="w">            </span><span class="k">continue</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="w">        </span><span class="nx">rest</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">strings</span><span class="p">.</span><span class="nx">TrimPrefix</span><span class="p">(</span><span class="nx">path</span><span class="p">,</span><span class="w"> </span><span class="nx">p</span><span class="p">)</span>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="w">        </span><span class="nx">seg</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">strings</span><span class="p">.</span><span class="nx">Cut</span><span class="p">(</span><span class="nx">rest</span><span class="p">,</span><span class="w"> </span><span class="s">"/"</span><span class="p">)</span>
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="nx">seg</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s">""</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="w">            </span><span class="nx">seen</span><span class="p">[</span><span class="nx">seg</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kd">struct</span><span class="p">{}{}</span>
+<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nx">slices</span><span class="p">.</span><span class="nx">Sorted</span><span class="p">(</span><span class="nx">maps</span><span class="p">.</span><span class="nx">Keys</span><span class="p">(</span><span class="nx">seen</span><span class="p">))</span>
+<a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a><span class="p">}</span>
+</code></pre></div>
+<ul>
+<li>[x] Add <code>materializeChildTree</code> helper that creates a concrete <code>config.Tree</code> with prefix-stripped paths (avoids O(N*M) re-scanning):</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kd">func</span><span class="w"> </span><span class="nx">materializeChildTree</span><span class="p">(</span><span class="nx">reader</span><span class="w"> </span><span class="nx">config</span><span class="p">.</span><span class="nx">TreeReader</span><span class="p">,</span><span class="w"> </span><span class="nx">prefix</span><span class="w"> </span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="nx">cm</span><span class="w"> </span><span class="o">*</span><span class="nx">ComponentManager</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="nx">TreeData</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">    </span><span class="nx">p</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">prefix</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="o">!</span><span class="nx">strings</span><span class="p">.</span><span class="nx">HasSuffix</span><span class="p">(</span><span class="nx">p</span><span class="p">,</span><span class="w"> </span><span class="s">"/"</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">        </span><span class="nx">p</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="s">"/"</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">    </span><span class="nx">tree</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">config</span><span class="p">.</span><span class="nx">NewTree</span><span class="p">()</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">path</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="k">range</span><span class="w"> </span><span class="nx">reader</span><span class="p">.</span><span class="nx">List</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="nx">strings</span><span class="p">.</span><span class="nx">HasPrefix</span><span class="p">(</span><span class="nx">path</span><span class="p">,</span><span class="w"> </span><span class="nx">p</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">            </span><span class="nx">v</span><span class="p">,</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="nx">reader</span><span class="p">.</span><span class="nx">Get</span><span class="p">(</span><span class="nx">path</span><span class="p">)</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="nx">ok</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="w">                </span><span class="nx">tree</span><span class="p">.</span><span class="nx">Set</span><span class="p">(</span><span class="nx">strings</span><span class="p">.</span><span class="nx">TrimPrefix</span><span class="p">(</span><span class="nx">path</span><span class="p">,</span><span class="w"> </span><span class="nx">p</span><span class="p">),</span><span class="w"> </span><span class="o">&amp;</span><span class="nx">v</span><span class="p">)</span>
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="w">            </span><span class="p">}</span>
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nx">NewTreeData</span><span class="p">(</span><span class="nx">tree</span><span class="p">,</span><span class="w"> </span><span class="nx">cm</span><span class="p">)</span>
+<a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong><code>internal/core/export.go</code></strong></p>
+<ul>
+<li>[x] Extend <code>ExpandTemplates</code> (from Phase 0 refactoring) with iterate support:</li>
+<li>For non-iterate templates: convert to <code>ExportRunConfig</code> as before</li>
+<li>For iterate templates: call <code>directChildren</code>, materialize per-child tree, resolve output path, create one <code>ExportRunConfig</code> per child</li>
+<li>[x] Change <code>renderTemplateFile</code> data parameter from <code>*TreeData</code> to <code>any</code> (backward-compatible)</li>
+</ul>
+<p><strong><code>pkg/zhiplugin/ui/ui.go</code></strong></p>
+<ul>
+<li>[x] Add <code>Iterate</code> and <code>OutputPattern</code> fields to the UI-facing <code>ExportTemplate</code> struct (mirrors core struct)</li>
+</ul>
+<p><strong><code>internal/ui/adapter.go</code></strong></p>
+<ul>
+<li>[x] Update <code>ControllerAdapter.ExportTemplates</code> to propagate <code>Iterate</code> and <code>OutputPattern</code> fields</li>
+<li>[ ] TUI export view: display iterate templates with a note (e.g., "group-vars (iterates over groups/)")</li>
+</ul>
+<p><strong><code>internal/ui/driver.go</code></strong></p>
+<ul>
+<li>[x] <code>UIController.ExportAll</code> already uses shared <code>ExpandTemplates</code> from Phase 0 — iterate support comes for free</li>
+</ul>
+<h3 id="edge-cases">Edge Cases<a class="headerlink" href="#edge-cases" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Empty prefix / no children:</strong> Empty loop produces zero files — natural behavior, no special handling needed</li>
+<li><strong>Component filtering:</strong> Iterate runs after component filtering (since <code>PrepareTreeData</code> filters first), so disabled components' children are naturally excluded</li>
+<li><strong>iterate + format:</strong> Allow combining <code>iterate</code> with <code>format</code> (built-in format), not only with <code>template</code></li>
+</ul>
+<h3 id="tests">Tests<a class="headerlink" href="#tests" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] <code>TestDirectChildren</code> — unit test for the helper function</li>
+<li>[x] <code>TestExpandIterateTemplates</code> — verify expansion produces correct configs; include subtest for zero children</li>
+<li>[x] <code>TestIterateExport</code> — end-to-end: tree with groups → output files per child</li>
+<li>[x] <code>TestIterateWithComponentFiltering</code> — disabled component's children excluded</li>
+<li>[x] <code>TestIterateOutputPatternTraversal</code> — output-pattern producing <code>../</code> rejected</li>
+<li>[x] <code>TestIterateWithFormat</code> — iterate + built-in format (yaml/json)</li>
+<li>[x] <code>TestValidateWorkspaceIterate</code> — mutual exclusivity validation for iterate/output-pattern/output</li>
+</ul>
+<p>Note: do NOT use <code>t.Parallel()</code> in <code>internal/core/</code> tests — existing tests in that package don't use it.</p>
+<h3 id="acceptance-criteria_2">Acceptance Criteria<a class="headerlink" href="#acceptance-criteria_2" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] <code>zhi export</code> with iterate config produces one file per direct child of the prefix</li>
+<li>[x] Templates receive <code>{.Key, .Value}</code> with relative paths in <code>.Value</code></li>
+<li>[x] Rollback snapshot covers all iterated output files (automatic via <code>ExportAll</code>)</li>
+<li>[x] Workspace validation rejects invalid iterate/output-pattern combinations</li>
+<li>[x] <code>--dry-run</code> and <code>--diff</code> work correctly with iterate exports</li>
+<li>[x] Zero children under prefix produces zero files without error</li>
+</ul>
+<hr />
+<h2 id="phase-3-ansible-config-plugin">Phase 3: Ansible Config Plugin<a class="headerlink" href="#phase-3-ansible-config-plugin" title="Permanent link">&para;</a></h2>
+<p><strong>Goal:</strong> A config plugin (<code>zhi-config-ansible</code>) that reads existing Ansible YAML inventory and variable files, exposing them as a zhi tree with write-back support.</p>
+<p><strong>Scope:</strong> New external plugin binary in <code>examples/zhi-config-ansible/</code>.</p>
+<h3 id="design_1">Design<a class="headerlink" href="#design_1" title="Permanent link">&para;</a></h3>
+<p>The plugin reads an Ansible project's YAML inventory and <code>group_vars/</code>/<code>host_vars/</code> directories, mapping them to zhi's flat path model. Each value carries an <code>ansible.source_file</code> metadata key tracking its origin file for write-back.</p>
+<p><strong>Tree mapping:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Ansible source</th>
+<th>zhi path</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Inventory host entry</td>
+<td><code>hosts/&lt;hostname&gt;/ansible_host</code></td>
+<td><code>hosts/web1/ansible_host</code> = <code>"10.0.1.10"</code></td>
+</tr>
+<tr>
+<td>Inventory group membership</td>
+<td><code>groups/&lt;group&gt;/members</code></td>
+<td><code>groups/webservers/members</code> = <code>"web1,web2"</code></td>
+</tr>
+<tr>
+<td><code>host_vars/&lt;host&gt;/&lt;file&gt;.yml</code> key</td>
+<td><code>hosts/&lt;host&gt;/vars/&lt;key&gt;</code></td>
+<td><code>hosts/web1/vars/nginx_workers</code> = <code>"4"</code></td>
+</tr>
+<tr>
+<td><code>group_vars/&lt;group&gt;/&lt;file&gt;.yml</code> key</td>
+<td><code>groups/&lt;group&gt;/vars/&lt;key&gt;</code></td>
+<td><code>groups/webservers/vars/http_port</code> = <code>"8080"</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Plugin options:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nt">config</span><span class="p">:</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ansible</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span><span class="nt">options</span><span class="p">:</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">    </span><span class="nt">inventory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./inventory/hosts.yml</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">    </span><span class="nt">group_vars_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./group_vars</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">    </span><span class="nt">host_vars_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./host_vars</span>
+</code></pre></div>
+<h3 id="research-insights_1">Research Insights<a class="headerlink" href="#research-insights_1" title="Permanent link">&para;</a></h3>
+<p><strong>Config plugin skill (14 findings applied):</strong>
+- Numeric values arrive as <code>float64</code> after gRPC JSON round-trip — <code>ansible_port</code> validation must type-assert <code>float64</code>, not <code>int</code>
+- Never populate <code>Value.Validators</code> field — closures don't cross gRPC wire
+- <code>Set</code> must call <code>config.ValidatePath(path)</code> to reject invalid path segments
+- <code>Get</code> must return a copy (<code>return *v, true, nil</code>), not a pointer to internal state
+- <code>Validate</code> must read from the <code>tree</code> parameter (engine's snapshot), not internal cache
+- Return <code>nil, nil</code> from <code>Validate</code> when path not found in tree (early return)
+- All <code>Metadata</code> values must be JSON-primitive types (string, float64, bool, etc.)</p>
+<p><strong>Label registration doesn't work across process boundaries:</strong> The plugin runs as a separate gRPC process. Registering a label in the plugin's <code>init()</code> has no effect on the host's <code>DefaultRegistry</code>. Just use <code>"ansible.source_file"</code> as a plain metadata key — unknown labels are allowed (the registry returns no error for them).</p>
+<p><strong>Security (from security review):</strong>
+- <strong>Confine writes to project root.</strong> Resolve <code>ansible.source_file</code> relative to the Ansible project root. Reject absolute paths. Use <code>filepath.Rel</code> after <code>filepath.EvalSymlinks</code> to verify containment. Apply <code>containsPathTraversal</code> check.
+- <strong>File size limit.</strong> Check file size with <code>os.Stat</code> before reading (reject files &gt; 10 MB to prevent DoS from malformed YAML).</p>
+<p><strong>Simplicity considerations:</strong>
+- V1 only supports flat key-value YAML var files. If a var file contains nested YAML, flatten one level deep only. Do not attempt general recursive flattening.
+- Start with 3 core validation rules: host-in-group existence, port-is-numeric, and group-name-format. Add more when users ask.
+- Drop comment-preserving YAML round-trip — rabbit hole with no demonstrated need.</p>
+<h3 id="files-to-create">Files to Create<a class="headerlink" href="#files-to-create" title="Permanent link">&para;</a></h3>
+<p><strong><code>examples/zhi-config-ansible/main.go</code></strong></p>
+<ul>
+<li>[x] Implement <code>ansiblePlugin</code> struct with <code>sync.RWMutex</code>, inventory path, group/host vars dirs, in-memory <code>map[string]*config.Value</code> cache, and dirty file tracker</li>
+<li>[x] Set up <code>hclog</code> logger with <code>ZHI_LOG_LEVEL</code> env var support (matching pokedex pattern)</li>
+<li>[x] Plugin receives options via workspace config <code>options</code> map (inventory path, var dirs)</li>
+<li>[x] <code>List(ctx)</code> — return keys from in-memory cache under <code>RLock</code></li>
+<li>[x] <code>Get(ctx, path)</code> — return <code>*v</code> (copy) with <code>ansible.source_file</code> in Metadata, under <code>RLock</code></li>
+<li>[x] <code>Set(ctx, path, value)</code>:</li>
+<li>Call <code>config.ValidatePath(path)</code> first</li>
+<li>Update in-memory cache under <code>Lock</code></li>
+<li>Determine target file from existing <code>ansible.source_file</code> metadata or derive from path convention</li>
+<li>Validate target file is within project root (path confinement)</li>
+<li>Flush the affected source file immediately (synchronous write-back, atomic temp+rename)</li>
+<li>[x] <code>Validate(ctx, path, tree)</code>:</li>
+<li>Early return <code>nil, nil</code> if path not found in <code>tree</code></li>
+<li>Use <code>tree.Get</code>/<code>tree.List</code> for cross-value checks (not internal cache)</li>
+<li>Rule 1: Host references in groups must exist (<code>groups/&lt;g&gt;/members</code> → each member must have <code>hosts/&lt;member&gt;/...</code>)</li>
+<li>Rule 2: <code>ansible_port</code> should be numeric 1-65535 (type-assert <code>float64</code>, check no fractional part)</li>
+<li>Rule 3: Group names must match <code>[a-zA-Z_][a-zA-Z0-9_]*</code> (Ansible restriction — no hyphens)</li>
+<li>[x] <code>loadInventory()</code> — parse YAML inventory file (check size &lt; 10 MB first), build hosts/groups tree. Inventory structure: root is <code>all</code> with <code>hosts</code>, <code>children</code>, <code>vars</code> sub-keys per group</li>
+<li>[x] <code>loadVarFiles(dir, prefix)</code> — scan <code>group_vars/</code> or <code>host_vars/</code> directories, flatten one level of nesting only</li>
+<li>[x] <code>main()</code> — <code>goplugin.Serve</code> with <code>zhiplugin.Handshake</code>, <code>config.GRPCPlugin{Impl: plugin}</code>, <code>hclog</code> logger</li>
+</ul>
+<p><strong><code>examples/zhi-config-ansible/main_test.go</code></strong></p>
+<ul>
+<li>[x] <code>dispense</code> helper using <code>goplugin.TestPluginGRPCConn</code> pattern</li>
+<li>[x] Test <code>List</code>/<code>Get</code> with fixture YAML inventory and var files</li>
+<li>[x] Test round-trip: <code>Get</code> → <code>Set</code> (modified value) → <code>Get</code> verifies value persisted</li>
+<li>[x] Test validation: missing host in group membership → Blocking result</li>
+<li>[x] Test validation: invalid <code>ansible_port</code> (non-numeric, out of range) → Warning result</li>
+<li>[x] Build <code>config.Tree</code> from plugin's <code>List</code>/<code>Get</code> output for <code>Validate</code> calls (standard pattern)</li>
+<li>[x] Test path confinement: <code>Set</code> with <code>ansible.source_file</code> pointing outside project root → error</li>
+</ul>
+<p><strong><code>examples/zhi-config-ansible/go.mod</code></strong></p>
+<ul>
+<li>[x] Part of main module (no separate go.mod needed, gopkg.in/yaml.v3 already in main go.mod)</li>
+</ul>
+<p><strong><code>examples/zhi-config-ansible/zhi-plugin.yaml</code></strong></p>
+<ul>
+<li>[x] Plugin manifest with <code>type: config</code>, <code>name: ansible</code></li>
+</ul>
+<p><strong><code>examples/zhi-config-ansible/testdata/</code></strong></p>
+<ul>
+<li>[x] Fixture: <code>inventory/hosts.yml</code> with sample groups and hosts</li>
+<li>[x] Fixture: <code>group_vars/webservers.yml</code> with sample vars</li>
+<li>[x] Fixture: <code>host_vars/web1/main.yml</code> with sample vars</li>
+</ul>
+<h3 id="write-back-strategy">Write-back Strategy<a class="headerlink" href="#write-back-strategy" title="Permanent link">&para;</a></h3>
+<ol>
+<li>On construction: Load all files into memory, cache values with <code>ansible.source_file</code> metadata</li>
+<li>On <code>Set</code>: Validate path, update cache, flush the affected source file immediately (no lazy buffering — avoids data loss window)</li>
+<li>For new paths with no existing source file: derive target file from path convention:</li>
+<li><code>hosts/&lt;host&gt;/vars/&lt;key&gt;</code> → <code>host_vars/&lt;host&gt;/main.yml</code></li>
+<li><code>groups/&lt;group&gt;/vars/&lt;key&gt;</code> → <code>group_vars/&lt;group&gt;/main.yml</code></li>
+<li>Path confinement: all write targets must resolve within the configured project root</li>
+</ol>
+<h3 id="acceptance-criteria_3">Acceptance Criteria<a class="headerlink" href="#acceptance-criteria_3" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[ ] Plugin reads YAML inventory and var files into a zhi tree</li>
+<li>[ ] <code>zhi tree</code> (via TUI or CLI) shows Ansible hosts, groups, and variables</li>
+<li>[ ] Editing a value via TUI writes it back to the correct Ansible file</li>
+<li>[ ] Creating a new host/group path creates the appropriate var file</li>
+<li>[ ] Write-back is confined to project root — paths outside are rejected</li>
+<li>[ ] Validation catches missing hosts in groups and invalid port numbers</li>
+<li>[ ] Plugin publishes as OCI artifact via <code>zhi plugin publish</code></li>
+</ul>
+<hr />
+<h2 id="phase-4-pre-checks">Phase 4: Pre-checks<a class="headerlink" href="#phase-4-pre-checks" title="Permanent link">&para;</a></h2>
+<p><strong>Goal:</strong> Add <code>pre-check</code> field to apply targets — commands that must succeed before the main command runs.</p>
+<p><strong>Scope:</strong> Small core changes to <code>internal/core/</code> — apply system and workspace config.</p>
+<h3 id="design_2">Design<a class="headerlink" href="#design_2" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>pre-check</code> is a list of shell commands on <code>ApplyTargetConfig</code></li>
+<li>Each runs sequentially, inheriting <code>workdir</code>, <code>env</code> from the parent target</li>
+<li>Output is streamed via the existing <code>ApplyOutput</code> channel</li>
+<li>Any non-zero exit aborts the apply with an error identifying which pre-check failed (command index, text, exit code)</li>
+<li>Execution order: pre-export → pre-check → main command</li>
+<li>Timeout: the target's timeout applies to the entire sequence (pre-checks + main command) via a shared context</li>
+</ul>
+<h3 id="research-insights_2">Research Insights<a class="headerlink" href="#research-insights_2" title="Permanent link">&para;</a></h3>
+<p><strong>Security (from security review):</strong>
+- Pre-check commands run via <code>sh -c</code> — same trust model as existing apply commands. User-controlled <code>zhi.yaml</code> is the command source, which is inherently trusted.
+- Document clearly that env var values are not shell-escaped when referenced in commands.</p>
+<p><strong>Performance (from performance review):</strong>
+- Keep sequential execution. Parallel would interleave output, cause SSH connection contention, and break implicit ordering dependencies between pre-checks. The time savings are marginal compared to a multi-minute playbook run.</p>
+<h3 id="files-to-modify_1">Files to Modify<a class="headerlink" href="#files-to-modify_1" title="Permanent link">&para;</a></h3>
+<p><strong><code>internal/core/workspace.go</code></strong></p>
+<ul>
+<li>[x] Add <code>PreCheck []string</code> field to <code>ApplyTargetConfig</code> (workspace.go:42-48)</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kd">type</span><span class="w"> </span><span class="nx">ApplyTargetConfig</span><span class="w"> </span><span class="kd">struct</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">    </span><span class="nx">Command</span><span class="w">   </span><span class="kt">string</span><span class="w">            </span><span class="s">`yaml:"command,omitempty" json:"command,omitempty"`</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">    </span><span class="nx">Workdir</span><span class="w">   </span><span class="kt">string</span><span class="w">            </span><span class="s">`yaml:"workdir,omitempty" json:"workdir,omitempty"`</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">    </span><span class="nx">PreExport</span><span class="w"> </span><span class="kt">bool</span><span class="w">              </span><span class="s">`yaml:"pre-export,omitempty" json:"pre-export,omitempty"`</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">    </span><span class="nx">PreCheck</span><span class="w">  </span><span class="p">[]</span><span class="kt">string</span><span class="w">          </span><span class="s">`yaml:"pre-check,omitempty" json:"pre-check,omitempty"`</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">    </span><span class="nx">Env</span><span class="w">       </span><span class="kt">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span><span class="w"> </span><span class="s">`yaml:"env,omitempty" json:"env,omitempty"`</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="w">    </span><span class="nx">Timeout</span><span class="w">   </span><span class="kt">int</span><span class="w">               </span><span class="s">`yaml:"timeout,omitempty" json:"timeout,omitempty"`</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong><code>internal/core/apply.go</code></strong></p>
+<ul>
+<li>[x] Add <code>RunPreChecks</code> function that iterates over <code>PreCheck</code> commands:</li>
+<li>Each command runs via <code>sh -c</code> with same workdir/env as main command (reuse <code>buildApplyEnv</code>)</li>
+<li>Output streams to the same <code>ApplyOutput</code> channel</li>
+<li>On non-zero exit: return error with command index, command text, and exit code</li>
+<li>On success: continue to next pre-check</li>
+</ul>
+<p><strong><code>internal/cli/apply.go</code></strong></p>
+<ul>
+<li>[x] Insert pre-check execution between pre-export and main command (around line 121)</li>
+<li>[x] <code>--dry-run</code>: print pre-check commands along with main command</li>
+<li>[x] Stream pre-check output to terminal</li>
+</ul>
+<p><strong><code>internal/ui/adapter.go</code> or <code>internal/ui/driver.go</code></strong></p>
+<ul>
+<li>[x] Add pre-check orchestration to UIController (not just CLI) so TUI apply also runs pre-checks</li>
+<li>[x] Display which pre-check is running (e.g., "[pre-check 1/2] ansible all -m ping")</li>
+</ul>
+<h3 id="tests_1">Tests<a class="headerlink" href="#tests_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[x] <code>TestPreCheckSuccess</code> — all pre-checks pass, main command runs</li>
+<li>[x] <code>TestPreCheckFailure</code> — second pre-check fails, main command does not run, error identifies which command</li>
+<li>[x] <code>TestPreCheckEmpty</code> — no pre-checks configured, main command runs normally</li>
+<li>[x] <code>TestPreCheckDryRun</code> — dry-run prints pre-check commands</li>
+<li>[x] <code>TestPreCheckOutputStreamed</code> — pre-check stdout/stderr appears in output channel</li>
+</ul>
+<p>Note: workdir/env inheritance is structural (reuses <code>buildApplyEnv</code>) — no separate tests needed.</p>
+<h3 id="acceptance-criteria_4">Acceptance Criteria<a class="headerlink" href="#acceptance-criteria_4" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[ ] Pre-checks run after pre-export, before main command</li>
+<li>[ ] Failed pre-check aborts apply with clear error message (command index + text + exit code)</li>
+<li>[ ] Pre-check output is streamed to user in real-time</li>
+<li>[ ] Pre-checks inherit workdir and env from parent target</li>
+<li>[ ] <code>--dry-run</code> shows pre-check commands</li>
+<li>[ ] Empty pre-check list is a no-op (backward compatible)</li>
+<li>[ ] Target timeout covers entire sequence (pre-checks + main command)</li>
+</ul>
+<hr />
+<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
+<h3 id="internal">Internal<a class="headerlink" href="#internal" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Design document: <code>docs/design/ansible-integration.md</code></li>
+<li>Export system: <code>internal/core/export.go:51</code> (<code>Export</code>), <code>internal/core/export.go:105</code> (<code>ExportAll</code>)</li>
+<li>Export data: <code>internal/core/export_data.go:13</code> (<code>TreeData</code>)</li>
+<li>Workspace config: <code>internal/core/workspace.go:28</code> (<code>ExportTemplate</code>), <code>internal/core/workspace.go:42</code> (<code>ApplyTargetConfig</code>)</li>
+<li>Apply system: <code>internal/core/apply.go:56</code> (<code>Apply</code>)</li>
+<li>Config plugin interface: <code>pkg/zhiplugin/config/config.go</code> (line 14 regex, <code>Value</code> struct)</li>
+<li>Example config plugin: <code>examples/zhi-config-pokedex/main.go</code></li>
+<li>CLI export: <code>internal/cli/export.go</code> (ExportTemplate-to-ExportRunConfig at line 115)</li>
+<li>CLI apply: <code>internal/cli/apply.go</code></li>
+<li>UI controller: <code>internal/ui/driver.go:253</code> (ExportAll — duplicated conversion logic)</li>
+<li>UI adapter: <code>internal/ui/adapter.go:62</code> (ExportTemplate field propagation)</li>
+<li>UI plugin ExportTemplate: <code>pkg/zhiplugin/ui/ui.go:41</code></li>
+<li>TUI export view: <code>internal/ui/tui/export_view.go</code></li>
+<li>TUI apply view: <code>internal/ui/tui/apply_view.go</code></li>
+</ul>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

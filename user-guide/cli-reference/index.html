@@ -1,0 +1,3048 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Security-first configuration management and provisioning platform">
+      
+      
+      
+      
+        <link rel="prev" href="../workspace-configuration/">
+      
+      
+        <link rel="next" href="../components/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>CLI Reference - zhi Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#cli-reference" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="zhi Documentation" class="md-header__button md-logo" aria-label="zhi Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            zhi Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              CLI Reference
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/MrWong99/zhi" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    MrWong99/zhi
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="zhi Documentation" class="md-nav__button md-logo" aria-label="zhi Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    zhi Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/MrWong99/zhi" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    MrWong99/zhi
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workspace-configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workspace Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#global-flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Global Flags
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Commands
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zhi-init" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi init
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-edit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi edit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-get" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi get
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi set
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-validate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi validate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi list
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-component" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi component
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-drift" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi drift
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi export
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-apply" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi apply
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-plugin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi plugin
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="zhi plugin">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zhi-plugin-install" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi plugin install
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-plugin-uninstall" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi plugin uninstall
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-plugin-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi plugin list
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-plugin-info" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi plugin info
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-plugin-rate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi plugin rate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-plugin-verify" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi plugin verify
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-plugin-publish" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi plugin publish
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-plugin-new" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi plugin new
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-plugin-init" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi plugin init
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-plugin-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi plugin update
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-plugin-pin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi plugin pin
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-plugin-unpin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi plugin unpin
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-plugin-rollback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi plugin rollback
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-plugin-search" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi plugin search
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="zhi plugin search">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zhi-plugin-register" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi plugin register
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-workspace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi workspace
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="zhi workspace">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zhi-workspace-install" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi workspace install
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-workspace-publish" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi workspace publish
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-workspace-lock" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi workspace lock
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-workspace-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi workspace setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-registry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi registry
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="zhi registry">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zhi-registry-login" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi registry login
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-registry-logout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi registry logout
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-registry-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi registry list
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-vault-credentials" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi vault-credentials
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="zhi vault-credentials">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zhi-vault-credentials-refresh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi vault-credentials refresh
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-vault-credentials-bootstrap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi vault-credentials bootstrap
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi version
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../components/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Components
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../export-and-templates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Export and Templates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../apply/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Apply
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugin-discovery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plugin Discovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sharing-and-registries/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sharing and Registries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../marketplace-indexing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Marketplace Indexing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../enterprise-mirror/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Enterprise Mirror
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../vault-credentials/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vault Credentials
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../web-ui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web UI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plugin Development
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Plugin Development
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugin-development/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugin-development/config-plugin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Config Plugin
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugin-development/transform-plugin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Transform Plugin
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugin-development/store-plugin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Store Plugin
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugin-development/ui-plugin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    UI Plugin
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugin-development/meta-plugin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Meta-Plugin SDK
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugin-development/structuredfile-provider/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Structured File Provider
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugin-development/java-plugin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java Plugin
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugin-development/scaffolding/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plugin Scaffolding
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#global-flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Global Flags
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Commands
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zhi-init" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi init
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-edit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi edit
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-get" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi get
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi set
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-validate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi validate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi list
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-component" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi component
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-drift" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi drift
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi export
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-apply" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi apply
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-plugin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi plugin
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="zhi plugin">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zhi-plugin-install" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi plugin install
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-plugin-uninstall" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi plugin uninstall
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-plugin-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi plugin list
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-plugin-info" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi plugin info
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-plugin-rate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi plugin rate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-plugin-verify" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi plugin verify
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-plugin-publish" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi plugin publish
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-plugin-new" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi plugin new
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-plugin-init" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi plugin init
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-plugin-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi plugin update
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-plugin-pin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi plugin pin
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-plugin-unpin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi plugin unpin
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-plugin-rollback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi plugin rollback
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-plugin-search" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi plugin search
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="zhi plugin search">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zhi-plugin-register" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi plugin register
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-workspace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi workspace
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="zhi workspace">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zhi-workspace-install" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi workspace install
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-workspace-publish" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi workspace publish
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-workspace-lock" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi workspace lock
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-workspace-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi workspace setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-registry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi registry
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="zhi registry">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zhi-registry-login" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi registry login
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-registry-logout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi registry logout
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-registry-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi registry list
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-vault-credentials" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi vault-credentials
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="zhi vault-credentials">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zhi-vault-credentials-refresh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi vault-credentials refresh
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-vault-credentials-bootstrap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi vault-credentials bootstrap
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zhi-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        zhi version
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="cli-reference">CLI Reference<a class="headerlink" href="#cli-reference" title="Permanent link">&para;</a></h1>
+<p>zhi provides a subcommand-based CLI for all operations. Pass <code>--help</code> to any command for usage details.</p>
+<h2 id="global-flags">Global Flags<a class="headerlink" href="#global-flags" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--workspace</code></td>
+<td>Path to workspace directory (default: current directory, walks up to find <code>zhi.yaml</code>)</td>
+</tr>
+<tr>
+<td><code>--verbose</code></td>
+<td>Enable debug-level logging to stderr</td>
+</tr>
+<tr>
+<td><code>--version</code></td>
+<td>Print version information</td>
+</tr>
+</tbody>
+</table>
+<h2 id="commands">Commands<a class="headerlink" href="#commands" title="Permanent link">&para;</a></h2>
+<h3 id="zhi-init"><code>zhi init</code><a class="headerlink" href="#zhi-init" title="Permanent link">&para;</a></h3>
+<p>Scaffold a new workspace in the current (or specified) directory.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>zhi<span class="w"> </span>init
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>zhi<span class="w"> </span>init<span class="w"> </span>--config-provider<span class="w"> </span>structuredfile<span class="w"> </span>--store-provider<span class="w"> </span>jsonfile
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>zhi<span class="w"> </span>init<span class="w"> </span>--force<span class="w">  </span><span class="c1"># overwrite existing zhi.yaml</span>
+</code></pre></div>
+<p>Creates <code>zhi.yaml</code>, starter configuration files, sample export templates, and the <code>.zhi/</code> directory.</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--config-provider</code></td>
+<td><code>structuredfile</code></td>
+<td>Config provider to use</td>
+</tr>
+<tr>
+<td><code>--store-provider</code></td>
+<td><code>jsonfile</code></td>
+<td>Store provider to use (built-in: <code>jsonfile</code>; external plugins such as <code>zhi-store-json</code> work once installed)</td>
+</tr>
+<tr>
+<td><code>--force</code></td>
+<td><code>false</code></td>
+<td>Overwrite existing <code>zhi.yaml</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="zhi-edit"><code>zhi edit</code><a class="headerlink" href="#zhi-edit" title="Permanent link">&para;</a></h3>
+<p><img alt="tui-gif" src="../../assets/tui.gif" /></p>
+<p>Launch the interactive UI to browse, edit, and manage configuration.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>zhi<span class="w"> </span>edit
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>zhi<span class="w"> </span>edit<span class="w"> </span>production<span class="w">        </span><span class="c1"># edit a specific stored tree (positional [tree-id])</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>zhi<span class="w"> </span>edit<span class="w"> </span>--ui<span class="w"> </span>tui
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>zhi<span class="w"> </span>edit<span class="w"> </span>--ui<span class="w"> </span>webui
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>zhi<span class="w"> </span>edit<span class="w"> </span>--ui<span class="w"> </span>mcp-stdio
+</code></pre></div>
+<p>Accepts an optional positional <code>[tree-id]</code> argument to select which stored tree
+to edit; when omitted, the default tree is used.</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--ui</code></td>
+<td><code>tui</code></td>
+<td>UI driver to use (<code>tui</code>, <code>webui</code>, <code>mcp-stdio</code>, or an external plugin)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>TUI key bindings:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>j</code> / <code>k</code> / arrows</td>
+<td>Navigate</td>
+</tr>
+<tr>
+<td><code>Enter</code></td>
+<td>Edit selected value</td>
+</tr>
+<tr>
+<td><code>s</code></td>
+<td>Save tree to store</td>
+</tr>
+<tr>
+<td><code>v</code></td>
+<td>Validate configuration</td>
+</tr>
+<tr>
+<td><code>a</code></td>
+<td>Run apply command</td>
+</tr>
+<tr>
+<td><code>e</code></td>
+<td>Open export view</td>
+</tr>
+<tr>
+<td><code>c</code></td>
+<td>Open component view</td>
+</tr>
+<tr>
+<td><code>r</code></td>
+<td>Reload tree</td>
+</tr>
+<tr>
+<td><code>/</code></td>
+<td>Filter paths</td>
+</tr>
+<tr>
+<td><code>q</code> / <code>Ctrl+C</code></td>
+<td>Quit</td>
+</tr>
+<tr>
+<td><code>Esc</code></td>
+<td>Return to tree view</td>
+</tr>
+</tbody>
+</table>
+<h3 id="zhi-get"><code>zhi get</code><a class="headerlink" href="#zhi-get" title="Permanent link">&para;</a></h3>
+<p>Retrieve a single configuration value.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>zhi<span class="w"> </span>get<span class="w"> </span>database/host
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>zhi<span class="w"> </span>get<span class="w"> </span>database/host<span class="w"> </span>--raw
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>zhi<span class="w"> </span>get<span class="w"> </span>database/host<span class="w"> </span>--json
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--raw</code></td>
+<td>Print just the value, no metadata</td>
+</tr>
+<tr>
+<td><code>--json</code></td>
+<td>Output as JSON including metadata</td>
+</tr>
+</tbody>
+</table>
+<h3 id="zhi-set"><code>zhi set</code><a class="headerlink" href="#zhi-set" title="Permanent link">&para;</a></h3>
+<p>Set a single configuration value.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>zhi<span class="w"> </span><span class="nb">set</span><span class="w"> </span>database/host<span class="w"> </span>mydb.example.com
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>zhi<span class="w"> </span><span class="nb">set</span><span class="w"> </span>database/port<span class="w"> </span><span class="m">5432</span><span class="w"> </span>--validate
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--validate</code></td>
+<td>Validate after setting</td>
+</tr>
+</tbody>
+</table>
+<h3 id="zhi-validate"><code>zhi validate</code><a class="headerlink" href="#zhi-validate" title="Permanent link">&para;</a></h3>
+<p>Validate the configuration tree and print results grouped by severity.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>zhi<span class="w"> </span>validate
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>zhi<span class="w"> </span>validate<span class="w"> </span>--path<span class="w"> </span>database/port
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>zhi<span class="w"> </span>validate<span class="w"> </span>--json
+</code></pre></div>
+<p>Exit code 1 if any Blocking results, 0 otherwise.</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--path</code></td>
+<td>Validate only a specific path</td>
+</tr>
+<tr>
+<td><code>--json</code></td>
+<td>Output as JSON</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example output:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>BLOCKING  database/port    Port must be between 1024 and 65535
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>WARNING   app/log-level    Consider using "info" in production
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>INFO      app/name         Value is using default
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>Validation: 1 blocking, 1 warning, 1 info
+</code></pre></div>
+<h3 id="zhi-list"><code>zhi list</code><a class="headerlink" href="#zhi-list" title="Permanent link">&para;</a></h3>
+<p>List information about the workspace.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>zhi<span class="w"> </span>list<span class="w"> </span>providers<span class="w">    </span><span class="c1"># Show built-in and external providers</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>zhi<span class="w"> </span>list<span class="w"> </span>trees<span class="w">        </span><span class="c1"># Show stored tree IDs</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>zhi<span class="w"> </span>list<span class="w"> </span>paths<span class="w">        </span><span class="c1"># Show all config paths</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>zhi<span class="w"> </span>list<span class="w"> </span>components<span class="w">   </span><span class="c1"># Show components with status</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--json</code></td>
+<td>Machine-readable JSON output</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Component list example:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>NAME          STATUS     MANDATORY  DEPENDENCIES  PATHS
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>database      enabled    yes        -             database/
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>redis         enabled    no         database      redis/
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>monitoring    disabled   no         -             monitoring/
+</code></pre></div>
+<h3 id="zhi-component"><code>zhi component</code><a class="headerlink" href="#zhi-component" title="Permanent link">&para;</a></h3>
+<p>Manage component state.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>zhi<span class="w"> </span>component<span class="w"> </span>list<span class="w">              </span><span class="c1"># List all components</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>zhi<span class="w"> </span>component<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>redis<span class="w">      </span><span class="c1"># Enable a component (and dependencies)</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>zhi<span class="w"> </span>component<span class="w"> </span>disable<span class="w"> </span>monitoring<span class="w"> </span><span class="c1"># Disable a component</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>zhi<span class="w"> </span>component<span class="w"> </span>info<span class="w"> </span>database<span class="w">     </span><span class="c1"># Show detailed component info</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--json</code></td>
+<td>JSON output</td>
+</tr>
+<tr>
+<td><code>--force</code></td>
+<td>Cascading disable (also disable dependent components)</td>
+</tr>
+</tbody>
+</table>
+<p>See <a href="../components/">Components</a> for details on how components work.</p>
+<h3 id="zhi-drift"><code>zhi drift</code><a class="headerlink" href="#zhi-drift" title="Permanent link">&para;</a></h3>
+<p>Detect configuration drift by comparing exported files on disk against what the workspace would currently generate.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>zhi<span class="w"> </span>drift<span class="w">                                          </span><span class="c1"># Check all exports for drift</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>zhi<span class="w"> </span>drift<span class="w"> </span>--json<span class="w">                                   </span><span class="c1"># JSON output for scripting/CI</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>zhi<span class="w"> </span>drift<span class="w"> </span>--watch<span class="w"> </span>--interval<span class="w"> </span>5m<span class="w">                    </span><span class="c1"># Watch mode (foreground)</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>zhi<span class="w"> </span>drift<span class="w"> </span>--watch<span class="w"> </span>--interval<span class="w"> </span>5m<span class="w"> </span>--on-drift<span class="w"> </span><span class="s2">"cmd"</span><span class="w">   </span><span class="c1"># Watch with notification hook</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--json</code></td>
+<td><code>false</code></td>
+<td>Output as JSON</td>
+</tr>
+<tr>
+<td><code>--watch</code></td>
+<td><code>false</code></td>
+<td>Run continuously, checking at <code>--interval</code></td>
+</tr>
+<tr>
+<td><code>--interval</code></td>
+<td><code>1m</code></td>
+<td>Check interval for watch mode (e.g. <code>30s</code>, <code>5m</code>)</td>
+</tr>
+<tr>
+<td><code>--on-drift</code></td>
+<td></td>
+<td>Shell command to run when drift is detected</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Exit codes:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0</code></td>
+<td>No drift (all files in sync)</td>
+</tr>
+<tr>
+<td><code>1</code></td>
+<td>Drift detected</td>
+</tr>
+<tr>
+<td><code>2</code></td>
+<td>Error during drift check</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example output:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>Drift Detection Report
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>DRIFTED (1):
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>  ansible/inventory/hosts.yml:
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>    --- ansible/inventory/hosts.yml (current)
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>    +++ ansible/inventory/hosts.yml (expected)
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>    @@ -10,3 +10,3 @@
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>    -upstream: 8.8.8.8
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>    +upstream: 1.1.1.1
+<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>
+<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>IN SYNC (3):
+<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>  ansible/group_vars/webservers.yml
+<a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a>  ansible/group_vars/databases.yml
+<a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a>  config/app.toml
+<a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a>
+<a id="__codelineno-10-16" name="__codelineno-10-16" href="#__codelineno-10-16"></a>Run `zhi export` to reconcile, or `zhi export --diff` for full details.
+</code></pre></div>
+<p><strong>Watch mode</strong> only outputs on state transitions (clean→drifted or drifted→clean). The first check treats the initial state as unknown, so if drift exists at startup the hook fires immediately. On graceful shutdown (SIGINT/SIGTERM) the command exits 0.</p>
+<h3 id="zhi-export"><code>zhi export</code><a class="headerlink" href="#zhi-export" title="Permanent link">&para;</a></h3>
+<p>Export configuration to files using templates or built-in formats.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>zhi<span class="w"> </span><span class="nb">export</span><span class="w">                                      </span><span class="c1"># Export all templates in zhi.yaml</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>zhi<span class="w"> </span><span class="nb">export</span><span class="w"> </span>--format<span class="w"> </span>json<span class="w">                        </span><span class="c1"># Built-in JSON format</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>zhi<span class="w"> </span><span class="nb">export</span><span class="w"> </span>--format<span class="w"> </span>yaml<span class="w"> </span>--output<span class="w"> </span>config.yml<span class="w">    </span><span class="c1"># YAML to file</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>zhi<span class="w"> </span><span class="nb">export</span><span class="w"> </span>--template<span class="w"> </span>./templates/my.tmpl<span class="w">       </span><span class="c1"># Custom template</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>zhi<span class="w"> </span><span class="nb">export</span><span class="w"> </span>--format<span class="w"> </span>dotenv<span class="w"> </span>--all-components<span class="w">     </span><span class="c1"># Include disabled components</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>zhi<span class="w"> </span><span class="nb">export</span><span class="w"> </span>--dry-run<span class="w">                            </span><span class="c1"># Preview without writing</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--template</code></td>
+<td>Path to a Go template file</td>
+</tr>
+<tr>
+<td><code>--format</code></td>
+<td>Built-in format: <code>json</code>, <code>yaml</code>, <code>toml</code>, <code>dotenv</code></td>
+</tr>
+<tr>
+<td><code>--output</code> / <code>-o</code></td>
+<td>Output file path (default: stdout)</td>
+</tr>
+<tr>
+<td><code>--prefix</code></td>
+<td>Only export paths under this prefix</td>
+</tr>
+<tr>
+<td><code>--all-components</code></td>
+<td>Include all components regardless of state</td>
+</tr>
+<tr>
+<td><code>--dry-run</code></td>
+<td>Print output without writing files</td>
+</tr>
+</tbody>
+</table>
+<p>See <a href="../export-and-templates/">Export and Templates</a> for template syntax.</p>
+<h3 id="zhi-apply"><code>zhi apply</code><a class="headerlink" href="#zhi-apply" title="Permanent link">&para;</a></h3>
+<p>Run the configured provisioning command.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>zhi<span class="w"> </span>apply<span class="w">              </span><span class="c1"># Run the default apply target</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>zhi<span class="w"> </span>apply<span class="w"> </span>destroy<span class="w">      </span><span class="c1"># Run a named target</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>zhi<span class="w"> </span>apply<span class="w"> </span>--dry-run<span class="w">    </span><span class="c1"># Show command without executing</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--dry-run</code></td>
+<td>Print command without executing</td>
+</tr>
+<tr>
+<td><code>--no-export</code></td>
+<td>Skip the pre-export step</td>
+</tr>
+<tr>
+<td><code>--timeout</code></td>
+<td>Override configured timeout (seconds)</td>
+</tr>
+<tr>
+<td><code>--env KEY=VALUE</code></td>
+<td>Add/override environment variables (repeatable)</td>
+</tr>
+</tbody>
+</table>
+<p>See <a href="../apply/">Apply</a> for details.</p>
+<h3 id="zhi-plugin"><code>zhi plugin</code><a class="headerlink" href="#zhi-plugin" title="Permanent link">&para;</a></h3>
+<p>Manage shared plugins from OCI registries.</p>
+<h4 id="zhi-plugin-install"><code>zhi plugin install</code><a class="headerlink" href="#zhi-plugin-install" title="Permanent link">&para;</a></h4>
+<p>Download and install a plugin from an OCI registry.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>zhi<span class="w"> </span>plugin<span class="w"> </span>install<span class="w"> </span>oci://ghcr.io/zhi-project/zhi-config-ansible:v1.2.0
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>zhi<span class="w"> </span>plugin<span class="w"> </span>install<span class="w"> </span>ghcr.io/org/zhi-config-custom:v1.0.0<span class="w"> </span>--force
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>zhi<span class="w"> </span>plugin<span class="w"> </span>install<span class="w"> </span>ghcr.io/org/zhi-config-custom:v1.0.0<span class="w"> </span>--skip-verify
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--platform</code></td>
+<td>Override platform detection (e.g. <code>linux/amd64</code>)</td>
+</tr>
+<tr>
+<td><code>--force</code></td>
+<td>Overwrite existing plugin even if same version</td>
+</tr>
+<tr>
+<td><code>--skip-verify</code></td>
+<td>Skip signature verification (not recommended)</td>
+</tr>
+</tbody>
+</table>
+<h4 id="zhi-plugin-uninstall"><code>zhi plugin uninstall</code><a class="headerlink" href="#zhi-plugin-uninstall" title="Permanent link">&para;</a></h4>
+<p>Remove an installed shared plugin binary and its metadata.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>zhi<span class="w"> </span>plugin<span class="w"> </span>uninstall<span class="w"> </span>ansible-config
+</code></pre></div>
+<h4 id="zhi-plugin-list"><code>zhi plugin list</code><a class="headerlink" href="#zhi-plugin-list" title="Permanent link">&para;</a></h4>
+<p>List all installed shared plugins with version, signing status, and source.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>zhi<span class="w"> </span>plugin<span class="w"> </span>list
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>zhi<span class="w"> </span>plugin<span class="w"> </span>list<span class="w"> </span>--json
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--json</code></td>
+<td>Output as JSON</td>
+</tr>
+</tbody>
+</table>
+<h4 id="zhi-plugin-info"><code>zhi plugin info</code><a class="headerlink" href="#zhi-plugin-info" title="Permanent link">&para;</a></h4>
+<p>Show detailed information about a plugin including signer identity, binary digest, trust level, ratings, and download statistics. If the plugin is not installed locally, the marketplace is queried.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>zhi<span class="w"> </span>plugin<span class="w"> </span>info<span class="w"> </span>ansible-config
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>zhi<span class="w"> </span>plugin<span class="w"> </span>info<span class="w"> </span>ansible-config<span class="w"> </span>--json
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--json</code></td>
+<td>Output as JSON</td>
+</tr>
+</tbody>
+</table>
+<h4 id="zhi-plugin-rate"><code>zhi plugin rate</code><a class="headerlink" href="#zhi-plugin-rate" title="Permanent link">&para;</a></h4>
+<p>Rate a plugin on the marketplace (1-5 stars with optional review comment). Requires a marketplace API key in <code>~/.zhi/config.yaml</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>zhi<span class="w"> </span>plugin<span class="w"> </span>rate<span class="w"> </span>zhi-project/ansible-config<span class="w"> </span><span class="m">5</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>zhi<span class="w"> </span>plugin<span class="w"> </span>rate<span class="w"> </span>zhi-project/ansible-config<span class="w"> </span><span class="m">4</span><span class="w"> </span>--comment<span class="w"> </span><span class="s2">"Works well but missing docs"</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--comment</code></td>
+<td>Optional review text (max 2000 characters)</td>
+</tr>
+</tbody>
+</table>
+<h4 id="zhi-plugin-verify"><code>zhi plugin verify</code><a class="headerlink" href="#zhi-plugin-verify" title="Permanent link">&para;</a></h4>
+<p>Verify a plugin artifact's signature without installing. Useful for auditing and compliance.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>zhi<span class="w"> </span>plugin<span class="w"> </span>verify<span class="w"> </span>oci://ghcr.io/zhi-project/zhi-config-ansible:v1.2.0
+</code></pre></div>
+<h4 id="zhi-plugin-publish"><code>zhi plugin publish</code><a class="headerlink" href="#zhi-plugin-publish" title="Permanent link">&para;</a></h4>
+<p>Build an OCI artifact from a <code>zhi-plugin.yaml</code> manifest and push to a registry.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>zhi<span class="w"> </span>plugin<span class="w"> </span>publish<span class="w"> </span>--registry<span class="w"> </span>ghcr.io/myorg
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>zhi<span class="w"> </span>plugin<span class="w"> </span>publish<span class="w"> </span>--registry<span class="w"> </span>ghcr.io/myorg<span class="w"> </span>--sign
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>zhi<span class="w"> </span>plugin<span class="w"> </span>publish<span class="w"> </span>--registry<span class="w"> </span>ghcr.io/myorg<span class="w"> </span>--sign<span class="w"> </span>--key<span class="w"> </span>cosign.key
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--registry</code></td>
+<td>Target OCI registry (required)</td>
+</tr>
+<tr>
+<td><code>--tag</code></td>
+<td>OCI tag (default: <code>v{version}</code> from manifest)</td>
+</tr>
+<tr>
+<td><code>--sign</code></td>
+<td>Sign the artifact with cosign after pushing</td>
+</tr>
+<tr>
+<td><code>--key</code></td>
+<td>Path to cosign private key (default: keyless via Fulcio/OIDC)</td>
+</tr>
+</tbody>
+</table>
+<h4 id="zhi-plugin-new"><code>zhi plugin new</code><a class="headerlink" href="#zhi-plugin-new" title="Permanent link">&para;</a></h4>
+<p>Scaffold a complete plugin project from a template. Generates a standalone repository with implementation stubs, tests, build automation, CI/CD workflows, and a sample workspace. See the <a href="../../plugin-development/scaffolding/">Scaffolding Guide</a> for the full reference.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>zhi<span class="w"> </span>plugin<span class="w"> </span>new<span class="w"> </span>--name<span class="w"> </span>my-config<span class="w"> </span>--type<span class="w"> </span>config
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>zhi<span class="w"> </span>plugin<span class="w"> </span>new<span class="w"> </span>--name<span class="w"> </span>my-store<span class="w"> </span>--type<span class="w"> </span>store<span class="w"> </span>--author<span class="w"> </span>myorg<span class="w"> </span>--license<span class="w"> </span>MIT
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>zhi<span class="w"> </span>plugin<span class="w"> </span>new<span class="w"> </span>--name<span class="w"> </span>my-transform<span class="w"> </span>--type<span class="w"> </span>transform<span class="w"> </span>--registry<span class="w"> </span>ghcr.io/myorg
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--name</code></td>
+<td>(required)</td>
+<td>Plugin short name, must match <code>[a-z][a-z0-9-]*</code></td>
+</tr>
+<tr>
+<td><code>--type</code></td>
+<td>(required)</td>
+<td>Plugin type: config, transform, store, ui</td>
+</tr>
+<tr>
+<td><code>--lang</code></td>
+<td><code>go</code></td>
+<td>Project language</td>
+</tr>
+<tr>
+<td><code>--module</code></td>
+<td>auto-derived</td>
+<td>Go module path</td>
+</tr>
+<tr>
+<td><code>--registry</code></td>
+<td></td>
+<td>Target OCI registry for publishing</td>
+</tr>
+<tr>
+<td><code>--author</code></td>
+<td></td>
+<td>Author or organisation name</td>
+</tr>
+<tr>
+<td><code>--license</code></td>
+<td></td>
+<td>SPDX license identifier</td>
+</tr>
+<tr>
+<td><code>--description</code></td>
+<td></td>
+<td>Short description of the plugin</td>
+</tr>
+<tr>
+<td><code>--output-dir</code>, <code>-o</code></td>
+<td><code>./zhi-&lt;type&gt;-&lt;name&gt;</code></td>
+<td>Output directory</td>
+</tr>
+</tbody>
+</table>
+<h4 id="zhi-plugin-init"><code>zhi plugin init</code><a class="headerlink" href="#zhi-plugin-init" title="Permanent link">&para;</a></h4>
+<p>Generate a <code>zhi-plugin.yaml</code> manifest for an existing plugin project. For new projects, prefer <a href="#zhi-plugin-new"><code>zhi plugin new</code></a> which generates the full project structure.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>zhi<span class="w"> </span>plugin<span class="w"> </span>init<span class="w"> </span>--name<span class="w"> </span>my-config<span class="w"> </span>--type<span class="w"> </span>config<span class="w"> </span>--version<span class="w"> </span><span class="m">1</span>.0.0
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--name</code></td>
+<td>Plugin name (required)</td>
+</tr>
+<tr>
+<td><code>--type</code></td>
+<td>Plugin type: config, transform, store, ui (required)</td>
+</tr>
+<tr>
+<td><code>--version</code></td>
+<td>Initial version (required)</td>
+</tr>
+<tr>
+<td><code>--description</code></td>
+<td>Plugin description</td>
+</tr>
+<tr>
+<td><code>--author</code></td>
+<td>Author name</td>
+</tr>
+<tr>
+<td><code>--license</code></td>
+<td>SPDX license identifier</td>
+</tr>
+</tbody>
+</table>
+<h4 id="zhi-plugin-update"><code>zhi plugin update</code><a class="headerlink" href="#zhi-plugin-update" title="Permanent link">&para;</a></h4>
+<p>Check for and install plugin updates from the marketplace.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>zhi<span class="w"> </span>plugin<span class="w"> </span>update<span class="w"> </span>--check<span class="w">              </span><span class="c1"># Check for available updates</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>zhi<span class="w"> </span>plugin<span class="w"> </span>update<span class="w"> </span>--check<span class="w"> </span>--changelog<span class="w">  </span><span class="c1"># Show changelogs for available updates</span>
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>zhi<span class="w"> </span>plugin<span class="w"> </span>update<span class="w"> </span>ansible-config<span class="w">       </span><span class="c1"># Update a specific plugin</span>
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>zhi<span class="w"> </span>plugin<span class="w"> </span>update<span class="w"> </span>--all<span class="w">                </span><span class="c1"># Update all plugins</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--check</code></td>
+<td>Only check for updates, don't install</td>
+</tr>
+<tr>
+<td><code>--all</code></td>
+<td>Update all plugins with available updates</td>
+</tr>
+<tr>
+<td><code>--changelog</code></td>
+<td>Show changelogs for available updates</td>
+</tr>
+<tr>
+<td><code>--json</code></td>
+<td>Output as JSON</td>
+</tr>
+</tbody>
+</table>
+<p>Pinned plugins are skipped during <code>--all</code> updates but can still be updated explicitly by name.</p>
+<h4 id="zhi-plugin-pin"><code>zhi plugin pin</code><a class="headerlink" href="#zhi-plugin-pin" title="Permanent link">&para;</a></h4>
+<p>Pin a plugin at its current version to prevent it from being updated during <code>zhi plugin update --all</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>zhi<span class="w"> </span>plugin<span class="w"> </span>pin<span class="w"> </span>ansible-config
+</code></pre></div>
+<h4 id="zhi-plugin-unpin"><code>zhi plugin unpin</code><a class="headerlink" href="#zhi-plugin-unpin" title="Permanent link">&para;</a></h4>
+<p>Remove the version pin from a plugin, making it eligible for updates again.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>zhi<span class="w"> </span>plugin<span class="w"> </span>unpin<span class="w"> </span>ansible-config
+</code></pre></div>
+<h4 id="zhi-plugin-rollback"><code>zhi plugin rollback</code><a class="headerlink" href="#zhi-plugin-rollback" title="Permanent link">&para;</a></h4>
+<p>Restore a plugin to the version that was installed before the most recent update. The previous binary is kept as a backup during each update.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>zhi<span class="w"> </span>plugin<span class="w"> </span>rollback<span class="w"> </span>ansible-config
+</code></pre></div>
+<p>If no backup exists, use <code>zhi plugin install &lt;name&gt;@&lt;version&gt; --force</code> to install a specific version.</p>
+<h3 id="zhi-plugin-search"><code>zhi plugin search</code><a class="headerlink" href="#zhi-plugin-search" title="Permanent link">&para;</a></h3>
+<p>Search the marketplace for plugins.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>zhi<span class="w"> </span>plugin<span class="w"> </span>search<span class="w"> </span>ansible
+<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>zhi<span class="w"> </span>plugin<span class="w"> </span>search<span class="w"> </span><span class="s2">"vault store"</span><span class="w"> </span>--type<span class="w"> </span>store
+<a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>zhi<span class="w"> </span>plugin<span class="w"> </span>search<span class="w"> </span>--type<span class="w"> </span>ui<span class="w"> </span>--sort<span class="w"> </span>rating<span class="w"> </span>--verified
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--type</code></td>
+<td>Filter by plugin type (config, transform, store, ui)</td>
+</tr>
+<tr>
+<td><code>--sort</code></td>
+<td>Sort by: relevance, downloads, rating, updated (default: relevance)</td>
+</tr>
+<tr>
+<td><code>--verified</code></td>
+<td>Show only verified plugins</td>
+</tr>
+<tr>
+<td><code>--json</code></td>
+<td>Output as JSON</td>
+</tr>
+<tr>
+<td><code>--limit</code></td>
+<td>Maximum results (default: 20)</td>
+</tr>
+</tbody>
+</table>
+<h4 id="zhi-plugin-register"><code>zhi plugin register</code><a class="headerlink" href="#zhi-plugin-register" title="Permanent link">&para;</a></h4>
+<p>Register a published plugin with the central marketplace.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>zhi<span class="w"> </span>plugin<span class="w"> </span>register<span class="w"> </span>ghcr.io/myorg/zhi-config-custom:v1.0.0
+</code></pre></div>
+<h3 id="zhi-workspace"><code>zhi workspace</code><a class="headerlink" href="#zhi-workspace" title="Permanent link">&para;</a></h3>
+<p>Manage shareable workspaces.</p>
+<h4 id="zhi-workspace-install"><code>zhi workspace install</code><a class="headerlink" href="#zhi-workspace-install" title="Permanent link">&para;</a></h4>
+<p>Install a workspace and its plugin dependencies from an OCI registry or marketplace.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>zhi<span class="w"> </span>workspace<span class="w"> </span>install<span class="w"> </span>k8s-cluster
+<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>zhi<span class="w"> </span>workspace<span class="w"> </span>install<span class="w"> </span>oci://ghcr.io/org/zhi-workspace-k8s:v1.0<span class="w"> </span>./my-cluster
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--skip-plugins</code></td>
+<td>Don't install plugin dependencies</td>
+</tr>
+<tr>
+<td><code>--skip-tools-check</code></td>
+<td>Don't check for required external tools</td>
+</tr>
+</tbody>
+</table>
+<h4 id="zhi-workspace-publish"><code>zhi workspace publish</code><a class="headerlink" href="#zhi-workspace-publish" title="Permanent link">&para;</a></h4>
+<p>Publish the current workspace as a shareable OCI artifact.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>zhi<span class="w"> </span>workspace<span class="w"> </span>publish<span class="w"> </span>--registry<span class="w"> </span>ghcr.io/myorg
+<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>zhi<span class="w"> </span>workspace<span class="w"> </span>publish<span class="w"> </span>--registry<span class="w"> </span>ghcr.io/myorg<span class="w"> </span>--sign
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--registry</code></td>
+<td>Target OCI registry (required)</td>
+</tr>
+<tr>
+<td><code>--sign</code></td>
+<td>Sign the artifact with cosign</td>
+</tr>
+<tr>
+<td><code>--tag</code></td>
+<td>OCI tag (default: from workspace version)</td>
+</tr>
+</tbody>
+</table>
+<h4 id="zhi-workspace-lock"><code>zhi workspace lock</code><a class="headerlink" href="#zhi-workspace-lock" title="Permanent link">&para;</a></h4>
+<p>Generate or update <code>zhi-plugins.lock</code> by pinning the currently-installed plugins to their exact OCI digests. This snapshots the plugins already present in the local metadata store; it does not resolve or update plugin references.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>zhi<span class="w"> </span>workspace<span class="w"> </span>lock<span class="w">              </span><span class="c1"># Pin currently-installed plugin digests</span>
+</code></pre></div>
+<p>This command takes no flags.</p>
+<h4 id="zhi-workspace-setup"><code>zhi workspace setup</code><a class="headerlink" href="#zhi-workspace-setup" title="Permanent link">&para;</a></h4>
+<p>Install all plugins at the exact versions pinned in <code>zhi-plugins.lock</code>. Intended for CI/CD where reproducibility matters.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>zhi<span class="w"> </span>workspace<span class="w"> </span>setup<span class="w"> </span>--from-lock
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--from-lock</code></td>
+<td>Install from <code>zhi-plugins.lock</code> (required)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="zhi-registry"><code>zhi registry</code><a class="headerlink" href="#zhi-registry" title="Permanent link">&para;</a></h3>
+<p>Manage OCI registry authentication.</p>
+<h4 id="zhi-registry-login"><code>zhi registry login</code><a class="headerlink" href="#zhi-registry-login" title="Permanent link">&para;</a></h4>
+<p>Authenticate with an OCI registry.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>zhi<span class="w"> </span>registry<span class="w"> </span>login<span class="w"> </span>ghcr.io<span class="w"> </span>--username<span class="w"> </span>myuser
+<a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a><span class="nb">echo</span><span class="w"> </span><span class="nv">$GHCR_TOKEN</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>zhi<span class="w"> </span>registry<span class="w"> </span>login<span class="w"> </span>ghcr.io<span class="w"> </span>--username<span class="w"> </span>myuser<span class="w"> </span>--password-stdin
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--username</code></td>
+<td>Registry username</td>
+</tr>
+<tr>
+<td><code>--password</code></td>
+<td>Registry password</td>
+</tr>
+<tr>
+<td><code>--password-stdin</code></td>
+<td>Read password from stdin</td>
+</tr>
+</tbody>
+</table>
+<h4 id="zhi-registry-logout"><code>zhi registry logout</code><a class="headerlink" href="#zhi-registry-logout" title="Permanent link">&para;</a></h4>
+<p>Remove stored credentials for a registry.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>zhi<span class="w"> </span>registry<span class="w"> </span><span class="nb">logout</span><span class="w"> </span>ghcr.io
+</code></pre></div>
+<h4 id="zhi-registry-list"><code>zhi registry list</code><a class="headerlink" href="#zhi-registry-list" title="Permanent link">&para;</a></h4>
+<p>List configured registries and their authentication status.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a>zhi<span class="w"> </span>registry<span class="w"> </span>list
+</code></pre></div>
+<h3 id="zhi-vault-credentials"><code>zhi vault-credentials</code><a class="headerlink" href="#zhi-vault-credentials" title="Permanent link">&para;</a></h3>
+<p>Manage Vault credentials for applications deployed with the <code>zhi-store-vault-manager</code> meta-plugin. See <a href="../vault-credentials/">Vault Credential Management</a> for the full guide.</p>
+<h4 id="zhi-vault-credentials-refresh"><code>zhi vault-credentials refresh</code><a class="headerlink" href="#zhi-vault-credentials-refresh" title="Permanent link">&para;</a></h4>
+<p>Generate fresh credentials (AppRole wrapped secret_ids or tokens) without a full export/apply cycle.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>zhi<span class="w"> </span>vault-credentials<span class="w"> </span>refresh
+<a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a>zhi<span class="w"> </span>vault-credentials<span class="w"> </span>refresh<span class="w"> </span>--app<span class="w"> </span>web-api<span class="w"> </span>--output<span class="w"> </span>env
+<a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a>zhi<span class="w"> </span>vault-credentials<span class="w"> </span>refresh<span class="w"> </span>--output<span class="w"> </span>quiet
+<a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a>zhi<span class="w"> </span>vault-credentials<span class="w"> </span>refresh<span class="w"> </span>--export-template<span class="w"> </span>docker-compose
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--app</code></td>
+<td>(all apps)</td>
+<td>Refresh only a specific app's credentials</td>
+</tr>
+<tr>
+<td><code>--output</code></td>
+<td><code>json</code></td>
+<td>Output format: <code>json</code>, <code>env</code>, <code>quiet</code></td>
+</tr>
+<tr>
+<td><code>--export-template</code></td>
+<td></td>
+<td>Re-run a specific export template with fresh credentials</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example JSON output:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a>{
+<a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a>  "vault/credentials/web-api/auth-method": "approle",
+<a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a>  "vault/credentials/web-api/role-id": "abc-123",
+<a id="__codelineno-36-4" name="__codelineno-36-4" href="#__codelineno-36-4"></a>  "vault/credentials/web-api/wrapped-secret-id": "hvs.CAES..."
+<a id="__codelineno-36-5" name="__codelineno-36-5" href="#__codelineno-36-5"></a>}
+</code></pre></div>
+<p><strong>Example env output:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a>VAULT_CREDENTIALS_WEB_API_AUTH_METHOD=approle
+<a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a>VAULT_CREDENTIALS_WEB_API_ROLE_ID=abc-123
+<a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a>VAULT_CREDENTIALS_WEB_API_WRAPPED_SECRET_ID=hvs.CAES...
+</code></pre></div>
+<h4 id="zhi-vault-credentials-bootstrap"><code>zhi vault-credentials bootstrap</code><a class="headerlink" href="#zhi-vault-credentials-bootstrap" title="Permanent link">&para;</a></h4>
+<p>Generate the Vault ACL policy required by the vault-manager's admin token. Run once during initial setup.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a>zhi<span class="w"> </span>vault-credentials<span class="w"> </span>bootstrap<span class="w"> </span>--dry-run
+<a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a>zhi<span class="w"> </span>vault-credentials<span class="w"> </span>bootstrap
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--dry-run</code></td>
+<td><code>false</code></td>
+<td>Print the policy HCL without instructions for applying it</td>
+</tr>
+</tbody>
+</table>
+<p>The output includes the HCL policy and a ready-to-run <code>vault policy write</code> command.</p>
+<h3 id="zhi-version"><code>zhi version</code><a class="headerlink" href="#zhi-version" title="Permanent link">&para;</a></h3>
+<p>Print version, commit hash, and build date.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a>$<span class="w"> </span>zhi<span class="w"> </span>version
+<a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a>zhi<span class="w"> </span>v0.1.0<span class="w"> </span><span class="o">(</span>commit:<span class="w"> </span>abc1234,<span class="w"> </span>built:<span class="w"> </span><span class="m">2026</span>-01-29<span class="o">)</span>
+</code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
